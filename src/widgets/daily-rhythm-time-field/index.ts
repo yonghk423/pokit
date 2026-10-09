@@ -7,7 +7,15 @@ export {
   pickerDateToSnappedHhmm,
   snapMinutes,
 } from './lib/snappedPickerMath';
-export { DayBalanceOcean, dayBalanceSegmentPalette, dayBalanceTimeFieldPalette } from './lib/dayBalanceOceanPalette';
+export {
+  DAY_BALANCE_SOFT_SHADOW_DARK,
+  DAY_BALANCE_SOFT_SHADOW_LIGHT,
+  DAY_BALANCE_SOFT_SHADOW_OFFSET,
+  DayBalanceOcean,
+  dayBalanceSegmentPalette,
+  dayBalanceSoftShadow,
+  dayBalanceTimeFieldPalette,
+} from './lib/dayBalanceOceanPalette';
 export type { DayBalanceTimeRole } from './lib/dayBalanceOceanPalette';
 export { paletteForReminderTimeCard } from './lib/uiPalette';
 export type { ReminderCardSurfacePalette } from './lib/uiPalette';

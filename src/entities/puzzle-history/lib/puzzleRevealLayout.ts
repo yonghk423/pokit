@@ -128,9 +128,10 @@ function initialCollageTiles(): RawTile[] {
   ];
 
   return base.map((t, i) => {
-    const jx = (rand(i * 3 + 1) - 0.5) * 0.03;
-    const jy = (rand(i * 3 + 2) - 0.5) * 0.03;
-    const rotate = (rand(i * 3 + 3) - 0.5) * 4.5;
+    /** 프레임만 살짝 흔들림 — 완성본이 원본과 크게 어긋나지 않게 */
+    const jx = (rand(i * 3 + 1) - 0.5) * 0.014;
+    const jy = (rand(i * 3 + 2) - 0.5) * 0.014;
+    const rotate = (rand(i * 3 + 3) - 0.5) * 2.8;
     const x = clamp01(t.x + jx);
     const y = clamp01(t.y + jy);
     const w = Math.min(t.w, 1 - x);
@@ -142,83 +143,95 @@ function initialCollageTiles(): RawTile[] {
       w,
       h,
       rotate,
-      imgX: t.x,
-      imgY: t.y,
-      imgW: t.w,
-      imgH: t.h,
+      imgX: x,
+      imgY: y,
+      imgW: w,
+      imgH: h,
     };
   });
+}
+
+/**
+ * 프레임 좌표에 사진 창을 맞춘다.
+ * 완성 시 원본과 같은 구도가 보이도록 하고, 아주 작은 잔여 오프셋만 남긴다.
+ */
+function syncImageWindowToFrame(tile: RawTile, salt: number): RawTile {
+  const drift = 0.005;
+  const dx = (rand(salt + 11) - 0.5) * drift;
+  const dy = (rand(salt + 12) - 0.5) * drift;
+  const imgX = clamp01(tile.x + dx);
+  const imgY = clamp01(tile.y + dy);
+  const imgW = Math.min(tile.w, 1 - imgX);
+  const imgH = Math.min(tile.h, 1 - imgY);
+  return { ...tile, imgX, imgY, imgW, imgH };
 }
 
 function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
   const vertical = tile.w >= tile.h;
   const t = 0.4 + rand(salt) * 0.2;
-  const rotA = (rand(salt + 1) - 0.5) * 4;
-  const rotB = (rand(salt + 2) - 0.5) * 4;
-  const j = 0.012;
+  const rotA = (rand(salt + 1) - 0.5) * 2.6;
+  const rotB = (rand(salt + 2) - 0.5) * 2.6;
+  /** 분할 시 프레임 흔들림 — 사진 창은 아래에서 프레임에 재동기화 */
+  const j = 0.006;
 
   if (vertical) {
     const w1 = tile.w * t;
-    const left: RawTile = {
-      ...tile,
-      id: `${tile.id}-a`,
-      w: w1,
-      rotate: rotA,
-      z: tile.z + 1,
-      seedScore: Math.max(0, tile.seedScore - 1),
-      imgX: tile.imgX,
-      imgY: tile.imgY,
-      imgW: tile.imgW * t,
-      imgH: tile.imgH,
-      x: clamp01(tile.x + (rand(salt + 3) - 0.5) * j),
-      y: clamp01(tile.y + (rand(salt + 4) - 0.5) * j),
-    };
-    const right: RawTile = {
-      ...tile,
-      id: `${tile.id}-b`,
-      x: clamp01(tile.x + w1 + (rand(salt + 5) - 0.5) * j),
-      y: clamp01(tile.y + (rand(salt + 6) - 0.5) * j),
-      w: tile.w - w1,
-      rotate: rotB,
-      z: tile.z + 2,
-      seedScore: Math.max(0, tile.seedScore - 1),
-      imgX: tile.imgX + tile.imgW * t,
-      imgY: tile.imgY,
-      imgW: tile.imgW * (1 - t),
-      imgH: tile.imgH,
-    };
+    const left = syncImageWindowToFrame(
+      {
+        ...tile,
+        id: `${tile.id}-a`,
+        w: w1,
+        rotate: rotA,
+        z: tile.z + 1,
+        seedScore: Math.max(0, tile.seedScore - 1),
+        x: clamp01(tile.x + (rand(salt + 3) - 0.5) * j),
+        y: clamp01(tile.y + (rand(salt + 4) - 0.5) * j),
+      },
+      salt + 21,
+    );
+    const right = syncImageWindowToFrame(
+      {
+        ...tile,
+        id: `${tile.id}-b`,
+        x: clamp01(tile.x + w1 + (rand(salt + 5) - 0.5) * j),
+        y: clamp01(tile.y + (rand(salt + 6) - 0.5) * j),
+        w: tile.w - w1,
+        rotate: rotB,
+        z: tile.z + 2,
+        seedScore: Math.max(0, tile.seedScore - 1),
+      },
+      salt + 34,
+    );
     return [left, right];
   }
 
   const h1 = tile.h * t;
-  const top: RawTile = {
-    ...tile,
-    id: `${tile.id}-a`,
-    h: h1,
-    rotate: rotA,
-    z: tile.z + 1,
-    seedScore: Math.max(0, tile.seedScore - 1),
-    imgX: tile.imgX,
-    imgY: tile.imgY,
-    imgW: tile.imgW,
-    imgH: tile.imgH * t,
-    x: clamp01(tile.x + (rand(salt + 3) - 0.5) * j),
-    y: clamp01(tile.y + (rand(salt + 4) - 0.5) * j),
-  };
-  const bottom: RawTile = {
-    ...tile,
-    id: `${tile.id}-b`,
-    x: clamp01(tile.x + (rand(salt + 5) - 0.5) * j),
-    y: clamp01(tile.y + h1 + (rand(salt + 6) - 0.5) * j),
-    h: tile.h - h1,
-    rotate: rotB,
-    z: tile.z + 2,
-    seedScore: Math.max(0, tile.seedScore - 1),
-    imgX: tile.imgX,
-    imgY: tile.imgY + tile.imgH * t,
-    imgW: tile.imgW,
-    imgH: tile.imgH * (1 - t),
-  };
+  const top = syncImageWindowToFrame(
+    {
+      ...tile,
+      id: `${tile.id}-a`,
+      h: h1,
+      rotate: rotA,
+      z: tile.z + 1,
+      seedScore: Math.max(0, tile.seedScore - 1),
+      x: clamp01(tile.x + (rand(salt + 3) - 0.5) * j),
+      y: clamp01(tile.y + (rand(salt + 4) - 0.5) * j),
+    },
+    salt + 21,
+  );
+  const bottom = syncImageWindowToFrame(
+    {
+      ...tile,
+      id: `${tile.id}-b`,
+      x: clamp01(tile.x + (rand(salt + 5) - 0.5) * j),
+      y: clamp01(tile.y + h1 + (rand(salt + 6) - 0.5) * j),
+      h: tile.h - h1,
+      rotate: rotB,
+      z: tile.z + 2,
+      seedScore: Math.max(0, tile.seedScore - 1),
+    },
+    salt + 34,
+  );
   return [top, bottom];
 }
 
@@ -280,43 +293,49 @@ export function buildPuzzleRevealLayout(
     },
   );
 
-  const seeds: PuzzleSeedPiece[] = seedPieces.map((tile, i) => ({
-    id: tile.id || `seed-${i}`,
-    x: tile.x,
-    y: tile.y,
-    w: tile.w,
-    h: tile.h,
-    z: tile.z,
-    rotate: tile.rotate,
-    fill: tile.fill,
-    solidColor: tile.solidColor,
-    imgX: tile.imgX,
-    imgY: tile.imgY,
-    imgW: tile.imgW,
-    imgH: tile.imgH,
-    kind: 'seed' as const,
-    tx: tile.x * PUZZLE_POSTIT_WIDTH,
-    ty: tile.y * PUZZLE_POSTIT_HEIGHT,
-  }));
+  const seeds: PuzzleSeedPiece[] = seedPieces.map((tile, i) => {
+    const synced = syncImageWindowToFrame(tile, i * 19 + 7);
+    return {
+      id: synced.id || `seed-${i}`,
+      x: synced.x,
+      y: synced.y,
+      w: synced.w,
+      h: synced.h,
+      z: synced.z,
+      rotate: synced.rotate,
+      fill: synced.fill,
+      solidColor: synced.solidColor,
+      imgX: synced.imgX,
+      imgY: synced.imgY,
+      imgW: synced.imgW,
+      imgH: synced.imgH,
+      kind: 'seed' as const,
+      tx: synced.x * PUZZLE_POSTIT_WIDTH,
+      ty: synced.y * PUZZLE_POSTIT_HEIGHT,
+    };
+  });
 
-  const units: PuzzleRevealUnit[] = progressSorted.map((tile, puzzleIndex) => ({
-    puzzleIndex,
-    x: tile.x,
-    y: tile.y,
-    w: tile.w,
-    h: tile.h,
-    z: tile.z + 10 + puzzleIndex,
-    rotate: tile.rotate,
-    fill: tile.fill,
-    solidColor: tile.solidColor,
-    imgX: tile.imgX,
-    imgY: tile.imgY,
-    imgW: tile.imgW,
-    imgH: tile.imgH,
-    kind: 'progress' as const,
-    tx: tile.x * PUZZLE_POSTIT_WIDTH,
-    ty: tile.y * PUZZLE_POSTIT_HEIGHT,
-  }));
+  const units: PuzzleRevealUnit[] = progressSorted.map((tile, puzzleIndex) => {
+    const synced = syncImageWindowToFrame(tile, puzzleIndex * 23 + 13);
+    return {
+      puzzleIndex,
+      x: synced.x,
+      y: synced.y,
+      w: synced.w,
+      h: synced.h,
+      z: synced.z + 10 + puzzleIndex,
+      rotate: synced.rotate,
+      fill: synced.fill,
+      solidColor: synced.solidColor,
+      imgX: synced.imgX,
+      imgY: synced.imgY,
+      imgW: synced.imgW,
+      imgH: synced.imgH,
+      kind: 'progress' as const,
+      tx: synced.x * PUZZLE_POSTIT_WIDTH,
+      ty: synced.y * PUZZLE_POSTIT_HEIGHT,
+    };
+  });
 
   return {
     targetCount,

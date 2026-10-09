@@ -52,6 +52,8 @@ type PuzzleBoardProps = {
   imageBroken?: boolean;
   onPieceRevealed?: (puzzleIndex: number) => void;
   onJustCompleted?: () => void;
+  /** 첫 페인트 직후(디코드 대기 전) — 스켈레톤 오버레이 해제 타이밍용 */
+  onPaint?: () => void;
 };
 
 type VisualTile = (PuzzleSeedPiece | PuzzleRevealUnit) & {
@@ -168,8 +170,8 @@ function StaticPostItTile({
           boardH={boardH}
           imageUri={imageUri}
           recyclingKey={recyclingKey}
-          priority={lite ? 'low' : 'normal'}
-          decodeEdge={lite ? Math.max(boardW, boardH) : undefined}
+          priority={lite ? 'low' : 'high'}
+          decodeEdge={Math.max(boardW, boardH)}
         />
       </View>
     </View>
@@ -235,6 +237,8 @@ function AnimatedPostItTile({
           boardH={boardH}
           imageUri={imageUri}
           recyclingKey={recyclingKey}
+          priority="high"
+          decodeEdge={Math.max(boardW, boardH)}
         />
       </View>
     </Animated.View>
@@ -308,6 +312,7 @@ function PuzzleBoardComponent({
   imageBroken = false,
   onPieceRevealed,
   onJustCompleted,
+  onPaint,
 }: PuzzleBoardProps) {
   const { t } = useTranslation();
   const targetCount = history.targetCount ?? history.duration ?? 10;
@@ -325,6 +330,14 @@ function PuzzleBoardComponent({
       ),
     [boardW, history.imageUri, history.thumbnailUri, isPreview],
   );
+
+  useEffect(() => {
+    if (!onPaint || boardW <= 0) return;
+    const id = requestAnimationFrame(() => {
+      onPaint();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [boardW, history.id, onPaint, variant]);
   const imageRecyclingKey = `${history.id}:${isPreview ? 'p' : 'f'}:${Math.round(boardW)}`;
 
   const [animatingIndices, setAnimatingIndices] = useState<ReadonlySet<number>>(
@@ -346,6 +359,10 @@ function PuzzleBoardComponent({
     [completedIndices, layout.units],
   );
 
+  const isFullyComplete =
+    history.status === 'completed' ||
+    completedIndices.size >= (history.totalPieces ?? history.totalDays ?? targetCount);
+
   const visualTiles: VisualTile[] = useMemo(() => {
     const seeds: VisualTile[] = layout.seeds.map((seed) => ({
       ...seed,
@@ -358,16 +375,22 @@ function PuzzleBoardComponent({
       animate: isPreview ? false : animatingIndices.has(unit.puzzleIndex),
     }));
 
-    if (isPreview) {
+    // 진행 중 미리보기만 장수 상한. 완료 썸네일은 조각 전부로 완성 콜라주.
+    if (isPreview && !isFullyComplete) {
       const budget = Math.max(0, WALL_PREVIEW_MAX_TILES - seeds.length);
       if (progress.length > budget) {
-        // 위에 보이는(z 높은) 장을 우선 남겨 콜라주 느낌 유지
         progress = [...progress].sort((a, b) => b.z - a.z).slice(0, budget);
       }
     }
 
     return [...seeds, ...progress].sort((a, b) => a.z - b.z);
-  }, [animatingIndices, isPreview, layout.seeds, visibleProgress]);
+  }, [
+    animatingIndices,
+    isFullyComplete,
+    isPreview,
+    layout.seeds,
+    visibleProgress,
+  ]);
 
   useEffect(() => {
     if (isPreview) return;

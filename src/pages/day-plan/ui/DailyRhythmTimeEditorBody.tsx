@@ -22,21 +22,21 @@ import Animated, {
 import { addDaysToLocalDateKey, parseHHmmToMinutes } from '@entities/day-plan';
 import {
   RetroFlatColors,
-  SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
-import { RoutineMarginSlideshow } from '@shared/ui/routine-atmosphere';
 import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { SmoothSegmentedControl } from '@shared/ui/smooth-segmented-control';
 import { ThemedText } from '@shared/ui/themed-text';
 import {
+  DAY_BALANCE_SOFT_SHADOW_OFFSET,
   DayBalanceOcean,
   DayCycleDial,
   SnappedTimePickerField,
   dayBalanceSegmentPalette,
+  dayBalanceSoftShadow,
   dayBalanceTimeFieldPalette,
 } from '@widgets/daily-rhythm-time-field';
 
@@ -253,7 +253,7 @@ function SolidShadowFace({
   style,
   shellStyle,
   children,
-  shadowSize = SOLID_SHADOW_OFFSET,
+  shadowSize = DAY_BALANCE_SOFT_SHADOW_OFFSET,
 }: {
   /** @deprecated 외곽선 없음 — API 호환용 */
   borderColor?: string;
@@ -335,7 +335,6 @@ function OnboardingTimeRow({
           borderColor={ocean.border}
           shadowColor={ocean.shadow}
           backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
-          shadowSize={2}
           style={styles.thumbFace}
           shellStyle={styles.thumbShell}>
           <Image
@@ -377,7 +376,7 @@ function OnboardingTimeRow({
             borderColor={ocean.border}
             shadowColor={ocean.shadow}
             backgroundColor={pillBg}
-            shadowSize={expanded ? 0 : 2}
+            shadowSize={expanded ? 0 : DAY_BALANCE_SOFT_SHADOW_OFFSET}
             style={styles.timePillFace}>
             <ThemedText
               style={[styles.timePillText, { color: pillFg }, cityPopFont('800')]}
@@ -484,7 +483,7 @@ export function DailyRhythmTimeEditorBody({
   const ink = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const isOnboarding = variant === 'onboarding';
   const showOnboardingHero = isOnboarding && !hideOnboardingHero;
-  const shadowInk = isDark ? ink.solidShadow : DayBalanceOcean.deepSpace;
+  const shadowInk = dayBalanceSoftShadow(isDark);
   const endDateSegmentColors = dayBalanceSegmentPalette(isDark);
 
   useEffect(() => {
@@ -715,28 +714,17 @@ export function DailyRhythmTimeEditorBody({
       <View style={[styles.topBlock, isOnboarding && styles.topBlockOnboarding]}>
         {showOnboardingHero ? (
           <View style={styles.onboardHeroCompact}>
-            <View style={styles.onboardHeroTopRow}>
-              <RoutineMarginSlideshow
-                isDark={isDark}
-                blendColor={ink.bg}
-                width={120}
-                height={128}
-                style={styles.onboardHeroArt}
-              />
-              <View style={styles.onboardHeroCopyCol}>
-                <OnboardingHeroCopy
-                  kickerWords={[
-                    t('dayRhythm.heroWord1'),
-                    t('dayRhythm.heroWord2'),
-                    t('dayRhythm.heroWord3'),
-                  ]}
-                  title={t('dayRhythm.onboardTitle')}
-                  subtitle={t('dayRhythm.onboardSubtitle')}
-                  titleColor={c.onSurface}
-                  mutedColor={c.onVariant}
-                />
-              </View>
-            </View>
+            <OnboardingHeroCopy
+              kickerWords={[
+                t('dayRhythm.heroWord1'),
+                t('dayRhythm.heroWord2'),
+                t('dayRhythm.heroWord3'),
+              ]}
+              title={t('dayRhythm.onboardTitle')}
+              subtitle={t('dayRhythm.onboardSubtitle')}
+              titleColor={c.onSurface}
+              mutedColor={c.onVariant}
+            />
 
             <View style={styles.onboardDialEnter}>
               <DayCycleDial
@@ -847,25 +835,12 @@ export function DailyRhythmTimeEditorBody({
 
               <FinalReviewCue active={pickerTarget === null && !dialDragging}>
                 <View style={styles.summaryBox}>
-                  <View
-                    style={[
-                      styles.summaryBadge,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 183, 3, 0.88)'
-                          : DayBalanceOcean.amber,
-                        borderColor: DayBalanceOcean.deepSpace,
-                      },
-                    ]}>
-                    <ThemedText
-                      style={[
-                        styles.summaryBadgeText,
-                        { color: DayBalanceOcean.deepSpace },
-                        cityPopFont('800'),
-                      ]}>
-                      {t('dayRhythm.myDaySummary')}
-                    </ThemedText>
-                  </View>
+                  <ScrapTapeLabel
+                    text={t('dayRhythm.myDaySummary')}
+                    isDark={isDark}
+                    rotateDeg={-1.5}
+                    style={styles.summaryTape}
+                  />
                   <View style={styles.summarySplit}>
                     <View
                       style={[
@@ -910,28 +885,34 @@ export function DailyRhythmTimeEditorBody({
       <View style={[styles.footer, isOnboarding && styles.footerOnboarding]}>
         {isOnboarding ? (
           <>
-            <Pressable
-              onPress={validateAndPrimary}
-              style={({ pressed }) => [
-                styles.primaryPress,
-                pressed && { opacity: 0.94 },
-              ]}>
-              <SolidShadowFace
-                borderColor={DayBalanceOcean.deepSpace}
-                shadowColor={DayBalanceOcean.deepSpace}
-                backgroundColor={DayBalanceOcean.amber}
-                shellStyle={styles.primaryShell}
-                style={styles.primaryFace}>
-                <ThemedText
-                  style={[
-                    styles.primaryBtnTextOnboard,
-                    { color: DayBalanceOcean.deepSpace },
-                    cityPopFont('800'),
-                  ]}>
-                  {primaryLabel}
-                </ThemedText>
-              </SolidShadowFace>
-            </Pressable>
+            <View style={styles.primaryPress}>
+              <View pointerEvents="none" style={styles.primaryTapeWrap}>
+                <ScrapTapeLabel
+                  text={t('dayRhythm.startBtnTape')}
+                  isDark={isDark}
+                  tone="masking"
+                  rotateDeg={-8}
+                  style={styles.primaryTape}
+                />
+              </View>
+              <Pressable onPress={validateAndPrimary}>
+                <SolidShadowFace
+                  borderColor={DayBalanceOcean.deepSpace}
+                  shadowColor={shadowInk}
+                  backgroundColor="#1C1C1C"
+                  shellStyle={styles.primaryShell}
+                  style={styles.primaryFace}>
+                  <ThemedText
+                    style={[
+                      styles.primaryBtnTextOnboard,
+                      { color: '#FAFAFA' },
+                      cityPopFont('800'),
+                    ]}>
+                    {primaryLabel}
+                  </ThemedText>
+                </SolidShadowFace>
+              </Pressable>
+            </View>
             {secondaryLabel && onSecondaryPress ? (
               <Pressable
                 onPress={() => {
@@ -1000,20 +981,6 @@ const styles = StyleSheet.create({
   topBlock: { gap: 16, paddingBottom: 4 },
   topBlockOnboarding: { gap: 10 },
   onboardHeroCompact: { gap: 4 },
-  onboardHeroTopRow: {
-    position: 'relative',
-    minHeight: 96,
-  },
-  onboardHeroCopyCol: {
-    zIndex: 2,
-    paddingRight: 72,
-  },
-  onboardHeroArt: {
-    position: 'absolute',
-    right: -10,
-    top: -4,
-    zIndex: 0,
-  },
   onboardHeroCopy: { gap: 6 },
   onboardDialEnter: { width: '100%', marginTop: 0 },
   shadowShell: { position: 'relative' },
@@ -1195,20 +1162,14 @@ const styles = StyleSheet.create({
   summaryBox: {
     marginTop: 10,
     position: 'relative',
+    overflow: 'visible',
   },
-  summaryBadge: {
+  summaryTape: {
     position: 'absolute',
-    top: -16,
-    right: 14,
+    top: -18,
+    right: 10,
     zIndex: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderWidth: 1.5,
-  },
-  summaryBadgeText: {
-    fontSize: 10,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
+    maxWidth: 120,
   },
   summarySplit: {
     flexDirection: 'row',
@@ -1256,6 +1217,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '78%',
     maxWidth: 280,
+    position: 'relative',
+    overflow: 'visible',
+    paddingTop: 8,
+  },
+  primaryTapeWrap: {
+    position: 'absolute',
+    left: -4,
+    top: -2,
+    zIndex: 4,
+  },
+  primaryTape: {
+    maxWidth: 92,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   primaryShell: { alignSelf: 'stretch', width: '100%' },
   primaryFace: {

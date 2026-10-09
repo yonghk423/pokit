@@ -71,7 +71,7 @@ export function RoutineTemplateListPanel({
             <Image
               source={headerArtForVariant('templates')}
               style={styles.headerArt}
-              contentFit="contain"
+              contentFit="cover"
               cachePolicy="memory-disk"
               transition={0}
             />
@@ -166,7 +166,8 @@ const styles = StyleSheet.create({
     marginBottom: -2,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    overflow: 'visible',
+    overflow: 'hidden',
+    borderRadius: 4,
   },
   headerArt: {
     width: 88,

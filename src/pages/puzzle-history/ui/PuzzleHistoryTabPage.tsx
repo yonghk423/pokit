@@ -37,6 +37,10 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ListRowSkeletonStack } from '@shared/ui/list-row-skeleton';
+import {
+  RoutineAtmosphereFooterStrip,
+  RoutineTabAtmosphere,
+} from '@shared/ui/routine-atmosphere';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import {
@@ -432,7 +436,7 @@ export function PuzzleHistoryTabPage() {
         </View>
       );
     }
-    return null;
+    return <RoutineAtmosphereFooterStrip variant="puzzle" isDark={isDark} />;
   }, [isDark, isHydrated, palette.muted, t]);
 
   return (
@@ -440,6 +444,7 @@ export function PuzzleHistoryTabPage() {
       style={[styles.root, { backgroundColor: palette.pageBg }]}
       lightColor={palette.pageBg}
       darkColor={palette.pageBg}>
+      <RoutineTabAtmosphere variant="puzzle" isDark={isDark} />
       <View style={styles.foreground}>
         <View style={styles.stickyHeader}>
           <View style={styles.headerTitleRow}>
@@ -477,15 +482,15 @@ export function PuzzleHistoryTabPage() {
                 <ThemedText
                   style={[styles.headerPuzzleCount, { color: palette.muted }]}
                   numberOfLines={1}>
-                  {expanded.status === 'completed'
-                    ? t('history.puzzle.albumItemMeta', {
-                        count: expanded.targetCount ?? expanded.duration ?? 0,
-                      })
-                    : t('history.puzzle.progress', {
-                        completed:
-                          expanded.completedCount ?? expanded.completedDays ?? 0,
-                        total: expanded.targetCount ?? expanded.duration ?? 0,
-                      })}
+                  {t('history.puzzle.progress', {
+                    completed:
+                      expanded.completedCount ??
+                      expanded.completedDays ??
+                      (expanded.status === 'completed'
+                        ? (expanded.targetCount ?? expanded.duration ?? 0)
+                        : 0),
+                    total: expanded.targetCount ?? expanded.duration ?? 0,
+                  })}
                 </ThemedText>
               </Pressable>
             ) : (
@@ -615,7 +620,12 @@ export function PuzzleHistoryTabPage() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  foreground: { flex: 1, zIndex: 1 },
+  foreground: {
+    flex: 1,
+    minHeight: 0,
+    zIndex: 1,
+    backgroundColor: 'transparent',
+  },
   stickyHeader: {
     flexDirection: 'row',
     alignItems: 'center',

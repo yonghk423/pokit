@@ -54,7 +54,6 @@ import { useGoalDetailSettingsPalette, type GoalDetailSettingsPalette } from '..
 
 import { ReadingAddBookSheet } from './ReadingAddBookSheet';
 import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
-import { ReadingBookstoreAtmosphere } from './ReadingBookstoreAtmosphere';
 import {
   readingAccentOnInk,
   readingStatusDoneFace,

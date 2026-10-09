@@ -3,37 +3,35 @@ import { Image } from 'expo-image';
 import type { ImageSourcePropType, ImageStyle, StyleProp } from 'react-native';
 
 /**
- * 시티팝 분위기 일러스트 (`assets/routine`).
- * 루틴·히스토리 등 탭 뒤 장식 — 화면별 서로 다른 여러 장.
- * 파일명은 일러스트 주제와 동일한 kebab-case.
+ * 루틴 탭·히스토리 분위기 사진 (`assets/unsplash-routine`).
+ * collage·다이얼 전용 크롭은 제외.
  */
 export const routineAtmosphereAssets = {
-  baking: require('../../../../assets/routine/baking.webp') as ImageSourcePropType,
-  guitar: require('../../../../assets/routine/guitar.webp') as ImageSourcePropType,
-  stretch: require('../../../../assets/routine/stretch.webp') as ImageSourcePropType,
-  drawing: require('../../../../assets/routine/drawing.webp') as ImageSourcePropType,
-  tea: require('../../../../assets/routine/tea.webp') as ImageSourcePropType,
-  flowers: require('../../../../assets/routine/flowers.webp') as ImageSourcePropType,
-  breakfast: require('../../../../assets/routine/breakfast.webp') as ImageSourcePropType,
-  cook: require('../../../../assets/routine/cook.webp') as ImageSourcePropType,
-  dogWalk: require('../../../../assets/routine/dog-walk.webp') as ImageSourcePropType,
-  vinyl: require('../../../../assets/routine/vinyl.webp') as ImageSourcePropType,
-  photo: require('../../../../assets/routine/photo.webp') as ImageSourcePropType,
-  hydrate: require('../../../../assets/routine/hydrate.webp') as ImageSourcePropType,
-  shoes: require('../../../../assets/routine/shoes.webp') as ImageSourcePropType,
-  journal: require('../../../../assets/routine/journal.webp') as ImageSourcePropType,
-  coffee: require('../../../../assets/routine/coffee.webp') as ImageSourcePropType,
-  plants: require('../../../../assets/routine/plants.webp') as ImageSourcePropType,
-  bike: require('../../../../assets/routine/bike.webp') as ImageSourcePropType,
-  reading: require('../../../../assets/routine/reading.webp') as ImageSourcePropType,
-  swim: require('../../../../assets/routine/swim.webp') as ImageSourcePropType,
+  basketball: require('../../../../assets/unsplash-routine/basketball.webp') as ImageSourcePropType,
+  handsHeart: require('../../../../assets/unsplash-routine/hands-heart.webp') as ImageSourcePropType,
+  catStretch: require('../../../../assets/unsplash-routine/cat-stretch.webp') as ImageSourcePropType,
+  deskStretch: require('../../../../assets/unsplash-routine/desk-stretch.webp') as ImageSourcePropType,
+  headphones: require('../../../../assets/unsplash-routine/headphones.webp') as ImageSourcePropType,
+  lakeJump: require('../../../../assets/unsplash-routine/lake-jump.webp') as ImageSourcePropType,
+  mealPrep: require('../../../../assets/unsplash-routine/meal-prep.webp') as ImageSourcePropType,
+  morningBrunch: require('../../../../assets/unsplash-routine/morning-brunch.webp') as ImageSourcePropType,
+  goldenRiverRunner: require('../../../../assets/unsplash-routine/golden-river-runner.webp') as ImageSourcePropType,
+  openBook: require('../../../../assets/unsplash-routine/open-book.webp') as ImageSourcePropType,
+  peaceShadow: require('../../../../assets/unsplash-routine/peace-shadow.webp') as ImageSourcePropType,
+  rockClimb: require('../../../../assets/unsplash-routine/rock-climb.webp') as ImageSourcePropType,
+  rockyShore: require('../../../../assets/unsplash-routine/rocky-shore.webp') as ImageSourcePropType,
+  sunsetRaise: require('../../../../assets/unsplash-routine/sunset-raise.webp') as ImageSourcePropType,
+  sunsetRidge: require('../../../../assets/unsplash-routine/sunset-ridge.webp') as ImageSourcePropType,
+  tabletCollab: require('../../../../assets/unsplash-routine/tablet-collab.webp') as ImageSourcePropType,
+  yogaSunrise: require('../../../../assets/unsplash-routine/yoga-sunrise.webp') as ImageSourcePropType,
+  runnersShadow: require('../../../../assets/unsplash-routine/runners-shadow.webp') as ImageSourcePropType,
 } as const;
 
 export type RoutineAtmosphereAssetKey = keyof typeof routineAtmosphereAssets;
 
 let prefetchPromise: Promise<void> | null = null;
 
-/** 탭 전환 디코드 지연을 줄이기 위해 분위기 PNG를 미리 메모리·디스크에 올린다. */
+/** 탭 전환 디코드 지연을 줄이기 위해 분위기 이미지를 미리 올린다. */
 export function prefetchRoutineAtmosphereAssets(): Promise<void> {
   if (prefetchPromise) return prefetchPromise;
 
@@ -62,7 +60,8 @@ export type RoutineAtmosphereVariant =
   | 'myRoutines'
   | 'fixed'
   | 'historyWeek'
-  | 'historyMonth';
+  | 'historyMonth'
+  | 'puzzle';
 
 export type AtmosphereSlot =
   | 'topLeft'
@@ -86,7 +85,7 @@ const ALL_ASSET_KEYS = Object.keys(routineAtmosphereAssets) as RoutineAtmosphere
 
 /** 탭당 배경 3장 — 모서리로 흩뿌려 부담을 줄임 */
 const LAYER_SLOTS: AtmosphereSlot[] = ['topLeft', 'topRight', 'bottomRight'];
-const LAYER_OPACITIES = [0.62, 0.6, 0.78] as const;
+const LAYER_OPACITIES = [0.55, 0.52, 0.68] as const;
 const ATMOSPHERE_LAYER_COUNT = 3;
 const FOOTER_STRIP_COUNT = 3;
 
@@ -120,7 +119,7 @@ export function atmosphereLayersForVariant(
     key,
     source: A[key],
     slot: LAYER_SLOTS[index] ?? 'bottomRight',
-    opacity: LAYER_OPACITIES[index] ?? 0.6,
+    opacity: LAYER_OPACITIES[index] ?? 0.55,
   }));
   layerPickCache.set(variant, layers);
   return layers;
@@ -131,18 +130,20 @@ export function headerArtForVariant(
 ): ImageSourcePropType {
   switch (variant) {
     case 'templates':
-      return A.tea;
+      return A.yogaSunrise;
     case 'myRoutines':
-      return A.hydrate;
+      return A.deskStretch;
     case 'fixed':
-      return A.cook;
+      return A.mealPrep;
     case 'historyWeek':
-      return A.journal;
+      return A.openBook;
     case 'historyMonth':
-      return A.reading;
+      return A.handsHeart;
+    case 'puzzle':
+      return A.peaceShadow;
     case 'catalog':
     default:
-      return A.guitar;
+      return A.headphones;
   }
 }
 

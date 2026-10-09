@@ -3,16 +3,16 @@ import { Image } from 'expo-image';
 import type { ImageSourcePropType } from 'react-native';
 
 /**
- * 하루 일과 온보딩 전용 일러스트 — 표시 크기에 맞춘 경량 JPEG (`assets/onboarding/`).
- * (원본 1024 PNG ~1.4MB × 3 → 합 ~120KB)
+ * 하루 일과 온보딩 전용 일러스트.
+ * 히어로: `assets/onboarding/` · 시작·마무리: `assets/unsplash-routine/`
  */
 export const dailyRhythmOnboardingAssets = {
   /** 히어로 — 아침 러닝 */
   hero: require('../../../../assets/onboarding/hero.jpg') as ImageSourcePropType,
-  /** 하루 시작 행 — 아침 루틴 */
-  startThumb: require('../../../../assets/onboarding/start-thumb.jpg') as ImageSourcePropType,
-  /** 하루 마무리 행 — 저녁 독서 */
-  endThumb: require('../../../../assets/onboarding/end-thumb.jpg') as ImageSourcePropType,
+  /** 하루 시작 행 — 아침 브런치 */
+  startThumb: require('../../../../assets/unsplash-routine/morning-brunch.webp') as ImageSourcePropType,
+  /** 하루 마무리 행 — 노을 실루엣 */
+  endThumb: require('../../../../assets/unsplash-routine/sunset-ridge.webp') as ImageSourcePropType,
 } as const;
 
 let prefetchPromise: Promise<void> | null = null;

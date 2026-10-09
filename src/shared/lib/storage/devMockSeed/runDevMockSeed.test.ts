@@ -18,7 +18,7 @@ describe('devMockSeed', () => {
 
   it('getDevMockSeedBundleVersion reflects registered modules', () => {
     expect(getDevMockSeedBundleVersion()).toBe(
-      'history-daily@9+horizon-completions@6+puzzle-history@6',
+      'history-daily@9+horizon-completions@6+puzzle-history@16',
     );
   });
 

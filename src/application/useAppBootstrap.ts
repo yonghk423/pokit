@@ -121,7 +121,7 @@ export function useAppBootstrap() {
       }
       if (!cancelled) setIsReady(true);
 
-      // 탭 전환 시 분위기 PNG 디코드 지연 완화 — 스플래시 해제와 분리
+      // 탭 전환 시 분위기 이미지 디코드 지연 완화 — 스플래시 해제와 분리
       void prefetchRoutineAtmosphereAssets();
 
       /**

@@ -31,6 +31,10 @@ import {
   type DevMockSeedResult,
 } from '@shared/lib/storage/devMockSeed';
 import { horizonCompletionMockSeed } from '@shared/lib/storage/devMockSeed/modules/horizonCompletionMockSeed';
+import {
+  puzzleHistoryMockSeed,
+  seedPuzzleHistoryMockData,
+} from '@shared/lib/storage/devMockSeed/modules/puzzleHistoryMockSeed';
 import { screenshotDemoMockSeed } from '@shared/lib/storage/devMockSeed/modules/screenshotDemoMockSeed';
 import {
   clearDevTemplateDemoRoutines,
@@ -91,6 +95,19 @@ export async function runTemplateDemoRoutinesSeedWithStoreSync(): Promise<DevMoc
   syncPinnedRoutineToWidget();
   syncBookstoreAndNoteWidgets();
   return result;
+}
+
+/** Puzzle 탭 전용 — `assets/puzzle` 샘플 사진 목업만 */
+export async function runPuzzleHistoryMockSeedWithStoreSync(): Promise<DevMockSeedResult> {
+  const puzzlePartial = seedPuzzleHistoryMockData();
+  localStorageClient.setItemRaw(
+    'pokit:dev-mock-seed-bundle-version',
+    `${getDevMockSeedBundleVersion()}+puzzle-history@${puzzleHistoryMockSeed.version}`,
+  );
+  await flushLocalStorageClientWrites();
+  clearPuzzleRevealSeen();
+  usePuzzleHistoryStore.getState().reloadFromStorage();
+  return puzzlePartial;
 }
 
 /** 앱스토어 스크린샷용 — 오늘 루틴·투두·도서·노트 + 고달성 히스토리/호라이즌 */

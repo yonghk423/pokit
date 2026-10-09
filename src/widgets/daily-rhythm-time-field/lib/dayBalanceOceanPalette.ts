@@ -1,6 +1,6 @@
 /**
  * 하루 밸런스 Ocean 팔레트
- * Sky · Blue Green · Deep Space · Amber Flame · Tiger Orange
+ * Sky · Blue Green · Deep Space · Amber Flame · Tiger Orange · Pastel Rose
  */
 export const DayBalanceOcean = {
   sky: '#8ecae6',
@@ -8,6 +8,8 @@ export const DayBalanceOcean = {
   deepSpace: '#023047',
   amber: '#ffb703',
   tiger: '#fb8500',
+  /** 활동(다이얼) — 파스텔 톤 진한 분홍 */
+  pastelRose: '#E07A9B',
   /** 트랙·카드용 아주 옅은 하늘 */
   skyWash: '#EAF6FB',
   skyWashDark: 'rgba(142, 202, 230, 0.14)',
@@ -16,6 +18,18 @@ export const DayBalanceOcean = {
   amberWashDark: 'rgba(255, 183, 3, 0.16)',
 } as const;
 
+/**
+ * 루틴 탭(PriorityCatalog / FixedRoutine)과 맞춘 솔리드 음영.
+ * 불투명 deepSpace 대신 옅은 잉크 + offset 1.
+ */
+export const DAY_BALANCE_SOFT_SHADOW_OFFSET = 1;
+export const DAY_BALANCE_SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
+export const DAY_BALANCE_SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
+
+export function dayBalanceSoftShadow(isDark: boolean): string {
+  return isDark ? DAY_BALANCE_SOFT_SHADOW_DARK : DAY_BALANCE_SOFT_SHADOW_LIGHT;
+}
+
 /** 당일 / 다음 날 SmoothSegmentedControl */
 export function dayBalanceSegmentPalette(isDark: boolean) {
   return {
@@ -23,7 +37,7 @@ export function dayBalanceSegmentPalette(isDark: boolean) {
     trackFill: isDark ? DayBalanceOcean.skyWashDark : DayBalanceOcean.skyWash,
     selectedInk: isDark ? '#FFFFFF' : DayBalanceOcean.deepSpace,
     unselectedInk: isDark ? DayBalanceOcean.sky : DayBalanceOcean.blueGreen,
-    shadow: DayBalanceOcean.deepSpace,
+    shadow: dayBalanceSoftShadow(isDark),
   };
 }
 
@@ -47,6 +61,6 @@ export function dayBalanceTimeFieldPalette(isDark: boolean, role: DayBalanceTime
         : DayBalanceOcean.amberWash,
     pillInk: onWashInk,
     border: DayBalanceOcean.deepSpace,
-    shadow: DayBalanceOcean.deepSpace,
+    shadow: dayBalanceSoftShadow(isDark),
   };
 }

@@ -17,6 +17,7 @@ import {
   formatDevMockSeedProfileAlertMessage,
   runDevMockClearWithStoreSync,
   runDevMockSeedProfileWithStoreSync,
+  runPuzzleHistoryMockSeedWithStoreSync,
   runScreenshotDemoSeedWithStoreSync,
   runTemplateDemoRoutinesSeedWithStoreSync,
 } from './devMockSeedRunner';
@@ -57,6 +58,8 @@ export function useDevSeedMenu(): void {
   templateDemoSeedRef.current = runTemplateDemoRoutinesSeedWithStoreSync;
   const historySeedRef = useRef(runDevMockSeedProfileWithStoreSync);
   historySeedRef.current = runDevMockSeedProfileWithStoreSync;
+  const puzzleSeedRef = useRef(runPuzzleHistoryMockSeedWithStoreSync);
+  puzzleSeedRef.current = runPuzzleHistoryMockSeedWithStoreSync;
   const clearSeedRef = useRef(runDevMockClearWithStoreSync);
   clearSeedRef.current = runDevMockClearWithStoreSync;
 
@@ -80,6 +83,16 @@ export function useDevSeedMenu(): void {
         Alert.alert(
           'Seed 완료',
           `${formatDevMockSeedAlertMessage(result)}\n\n템플릿 루틴 7종 + 알라딘 책방 + 빠른 메모 + 상세 노트 목업이 채워졌어요.\n면색·잉크·중요도 색도 템플릿마다 다르게 들어가 있어요.\n위젯(루틴·책방·노트)·오늘 탭에서 확인하세요.`,
+        );
+      })();
+    });
+
+    DevSettings.addMenuItem('[Seed] 퍼즐 목업', () => {
+      void (async () => {
+        const result = await puzzleSeedRef.current();
+        Alert.alert(
+          'Seed 완료',
+          `${formatDevMockSeedAlertMessage(result)}\n\nassets/puzzle 사진을 모두 완료(앨범) 목업으로 넣었어요.\n퍼즐 탭에서 확인하세요.`,
         );
       })();
     });

@@ -2479,6 +2479,8 @@ export function FixedRoutinePage({
     [setPriorityCategoryMarkColor],
   );
 
+  const historyActiveBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(24,26,46,0.06)';
+
   const atmosphereVariant: RoutineAtmosphereVariant = isHistoryMode
     ? 'historyWeek'
     : isMyRoutinesMode
@@ -2488,8 +2490,6 @@ export function FixedRoutinePage({
         : activeSection === 'templates'
           ? 'templates'
           : 'catalog';
-
-  const historyActiveBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(24,26,46,0.06)';
 
   const pageBody = (
     <>

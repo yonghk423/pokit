@@ -16,13 +16,13 @@ type Props = {
 };
 
 /**
- * 탭 뒤쪽 시티팝 콜라주 (탭당 랜덤 3장).
+ * 탭 뒤쪽 Unsplash 콜라주 (탭당 랜덤 3장).
  * 본문·탭 전환을 우선하고, 준비되면 한꺼번에 페이드인한다.
  */
 function RoutineTabAtmosphereBase({ variant, isDark = false }: Props) {
   const ready = useDeferredAtmosphereReady(80);
   const layers = useMemo(() => atmosphereLayersForVariant(variant), [variant]);
-  const opacityScale = isDark ? 0.52 : 1;
+  const opacityScale = isDark ? 0.45 : 1;
 
   return (
     <View pointerEvents="none" style={styles.root} accessibilityElementsHidden>
@@ -35,7 +35,7 @@ function RoutineTabAtmosphereBase({ variant, isDark = false }: Props) {
               ATMOSPHERE_SLOT_STYLE[layer.slot],
               { opacity: layer.opacity * opacityScale },
             ]}
-            contentFit="contain"
+            contentFit="cover"
             cachePolicy="memory-disk"
             recyclingKey={`atmosphere-${layer.key}`}
             transition={0}

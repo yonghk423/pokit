@@ -179,7 +179,7 @@ export function DailyRhythmSettingsPage() {
           seedKey={seedKey}
           variant="onboarding"
           hideOnboardingHero
-          primaryLabel={t('common.save')}
+          primaryLabel={t('dayRhythm.startCta')}
           onPrimaryPress={handleSave}
           secondaryLabel={t('common.cancel')}
           onSecondaryPress={() => {

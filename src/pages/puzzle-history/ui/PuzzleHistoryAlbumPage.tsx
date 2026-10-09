@@ -118,8 +118,14 @@ export function PuzzleHistoryAlbumPage() {
                 {item.title}
               </ThemedText>
               <ThemedText style={[styles.cardMeta, { color: c.textMuted }]}>
-                {t('history.puzzle.albumItemMeta', {
-                  count: item.targetCount ?? item.duration,
+                {t('history.puzzle.progress', {
+                  completed:
+                    item.completedCount ??
+                    item.completedDays ??
+                    (item.status === 'completed'
+                      ? (item.targetCount ?? item.duration ?? 0)
+                      : 0),
+                  total: item.targetCount ?? item.duration ?? 0,
                 })}
               </ThemedText>
             </View>

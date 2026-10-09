@@ -17,28 +17,36 @@ describe('puzzleHistoryMockSeed', () => {
     localStorageClient.removeItem(StorageKeys.puzzleHistory);
   });
 
-  it('seeds several active puzzles plus a full album of completed histories', async () => {
+  it('seeds a full album of completed puzzles', async () => {
     const result = await puzzleHistoryMockSeed.seed();
 
-    expect(result.puzzleHistories).toBe(11);
-    expect(result.puzzleActive).toBe(4);
-    expect(result.puzzleAlbum).toBe(7);
+    expect(result.puzzleHistories).toBe(9);
+    expect(result.puzzleActive).toBe(0);
+    expect(result.puzzleAlbum).toBe(9);
 
     const state = loadPuzzleHistoryState();
-    expect(state.activeHistoryId).toBe(`${PUZZLE_MOCK_ID_PREFIX}active_10_kitty`);
-    const actives = state.histories.filter((h) => h.status === 'active');
-    expect(actives).toHaveLength(4);
-    const focused = state.histories.find((h) => h.id === state.activeHistoryId);
-    expect(focused?.status).toBe('active');
-    expect(focused?.targetCount).toBe(10);
-    expect(focused?.completedCount).toBe(4);
-    expect(focused?.title).toBe('야옹이랑 놀아주기');
-
-    const album = state.histories.filter((h) => h.status === 'completed');
-    expect(album).toHaveLength(7);
-    expect(album.every((h) => h.completedCount === h.totalPieces)).toBe(true);
-    expect(album.some((h) => h.targetCount === 100)).toBe(true);
-    expect(album.some((h) => h.targetCount === 50)).toBe(true);
+    expect(state.activeHistoryId).toBeNull();
+    expect(state.histories).toHaveLength(9);
+    expect(state.histories.every((h) => h.status === 'completed')).toBe(true);
+    expect(state.histories.every((h) => h.completedCount === h.totalPieces)).toBe(true);
+    const titles = state.histories.map((h) => h.title);
+    expect(titles).toEqual(
+      expect.arrayContaining([
+        '한 슛',
+        '하트 실루엣',
+        '책상 스트레칭',
+        '호수 점프',
+        '식탁 준비',
+        '황금 강변',
+        '펼친 책',
+        '그림자 브이',
+        '반짝이는 해안',
+      ]),
+    );
+    expect(state.histories.some((h) => h.targetCount === 100)).toBe(true);
+    expect(state.histories.some((h) => h.targetCount === 50)).toBe(true);
+    expect(state.histories.some((h) => h.targetCount === 20)).toBe(true);
+    expect(state.histories.some((h) => h.targetCount === 10)).toBe(true);
   });
 
   it('covers the full photo when completed (no leftover units)', () => {
@@ -46,9 +54,7 @@ describe('puzzleHistoryMockSeed', () => {
     const state = loadPuzzleHistoryState();
     for (const history of state.histories) {
       expect(history.pieces).toHaveLength(history.targetCount);
-      if (history.status === 'completed') {
-        expect(history.pieces.every((r) => r.completed)).toBe(true);
-      }
+      expect(history.pieces.every((r) => r.completed)).toBe(true);
     }
   });
 

@@ -16,6 +16,9 @@ type Props = {
   density?: 'default' | 'rich';
 };
 
+const TILE_ROTATE = [-6, 4, -3, 5, -4] as const;
+const TILE_LIFT = [0, 10, 2, 14, 4] as const;
+
 /**
  * 리스트 하단 스크랩북 스트립.
  * 전환 직후에는 자리만 잡고, 준비되면 타일을 한꺼번에 페이드인한다.
@@ -27,9 +30,9 @@ function RoutineAtmosphereFooterStripBase({
 }: Props) {
   const ready = useDeferredAtmosphereReady(100);
   const sources = useMemo(() => footerStripForVariant(variant), [variant]);
-  const opacity = isDark ? 0.42 : 0.88;
+  const opacity = isDark ? 0.38 : 0.82;
   const rich = density === 'rich';
-  const tileSize = rich ? 120 : 96;
+  const tileSize = rich ? 148 : 132;
 
   return (
     <View
@@ -48,11 +51,15 @@ function RoutineAtmosphereFooterStripBase({
                 height: tileSize,
                 opacity,
                 zIndex: index + 1,
-                marginLeft: index === 0 ? 0 : rich ? -36 : -28,
-                transform: [{ rotate: `${(index % 2 === 0 ? -1 : 1) * (4 + index)}deg` }],
+                marginTop: TILE_LIFT[index % TILE_LIFT.length] ?? 0,
+                transform: [
+                  {
+                    rotate: `${TILE_ROTATE[index % TILE_ROTATE.length] ?? 0}deg`,
+                  },
+                ],
               },
             ]}
-            contentFit="contain"
+            contentFit="cover"
             cachePolicy="memory-disk"
             recyclingKey={`atmosphere-footer-${index}`}
             transition={0}
@@ -68,25 +75,28 @@ export const RoutineAtmosphereFooterStrip = memo(RoutineAtmosphereFooterStripBas
 
 const styles = StyleSheet.create({
   root: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    paddingTop: 18,
-    paddingBottom: 8,
-    minHeight: 108,
+    alignSelf: 'stretch',
+    paddingTop: 22,
+    paddingBottom: 12,
+    paddingHorizontal: 8,
+    minHeight: 160,
   },
   rootRich: {
-    paddingTop: 28,
-    paddingBottom: 16,
-    minHeight: 148,
+    paddingTop: 32,
+    paddingBottom: 18,
+    paddingHorizontal: 4,
+    minHeight: 196,
   },
   fadeRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   tile: {
-    width: 96,
-    height: 96,
+    width: 132,
+    height: 132,
+    borderRadius: 2,
+    overflow: 'hidden',
   },
 });

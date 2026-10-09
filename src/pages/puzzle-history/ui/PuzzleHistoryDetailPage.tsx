@@ -219,12 +219,13 @@ export function PuzzleHistoryDetailPage() {
             <IconSymbol name="pencil" size={10} color={c.textMuted} />
           </View>
           <ThemedText style={[styles.topCount, { color: c.textMuted }]} numberOfLines={1}>
-            {history.status === 'completed'
-              ? t('history.puzzle.albumItemMeta', { count: targetCount })
-              : t('history.puzzle.progress', {
-                  completed: completedCount,
-                  total: totalPieces,
-                })}
+            {t('history.puzzle.progress', {
+              completed:
+                history.status === 'completed' && completedCount <= 0
+                  ? targetCount
+                  : completedCount,
+              total: totalPieces,
+            })}
           </ThemedText>
         </Pressable>
         <Pressable

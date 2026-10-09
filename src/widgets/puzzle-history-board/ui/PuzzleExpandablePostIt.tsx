@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { memo, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { Dimensions, InteractionManager, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -12,12 +13,17 @@ import Animated, {
 
 import type { PuzzleHistory } from '@entities/puzzle-history';
 import { useTranslation } from '@shared/lib/i18n';
+import { resolvePuzzleBoardImageUri } from '@shared/lib/media/pickPuzzleHistoryImage';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { PuzzleHistoryCardPalette } from './PuzzleHistoryHomeCard';
 import { PuzzleBoard } from './PuzzleBoard';
+import { PuzzleBoardSkeleton } from './PuzzleBoardSkeleton';
+
+/** 펼침 카드 좌우 패딩(탭·리스트)에 맞춘 추정 — onLayout 전 빈 프레임 방지 */
+const EXPAND_H_INSET = 40;
 
 /** 회색빛 화이트 포스트잇 면 (벽 #F5F4F2 위에서 살짝 밝게) */
 const WALL_NOTE = '#FFFFFF';
@@ -122,7 +128,9 @@ function PuzzleExpandablePostItComponent({
   onOpenDetail,
 }: Props) {
   const { t } = useTranslation();
-  const [boardWidth, setBoardWidth] = useState(0);
+  const estimatedW = Math.max(120, Dimensions.get('window').width - EXPAND_H_INSET);
+  const [boardWidth, setBoardWidth] = useState(estimatedW);
+  const [boardReady, setBoardReady] = useState(false);
   const press = useSharedValue(0);
   const cover = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const noteFace = isDark ? WALL_NOTE_DARK : WALL_NOTE;
@@ -137,11 +145,25 @@ function PuzzleExpandablePostItComponent({
     transform: [{ translateY: press.value }],
   }));
 
+  const prefetchFullImage = useCallback(() => {
+    const uri = resolvePuzzleBoardImageUri(
+      history.imageUri,
+      history.thumbnailUri,
+      estimatedW,
+    );
+    if (!uri) return;
+    void Image.prefetch(uri, 'memory-disk');
+  }, [estimatedW, history.imageUri, history.thumbnailUri]);
+
   useEffect(() => {
-    if (!expanded) setBoardWidth(0);
-  }, [expanded]);
+    if (!expanded) {
+      setBoardReady(false);
+      setBoardWidth(estimatedW);
+    }
+  }, [estimatedW, expanded]);
 
   if (expanded) {
+    const showSkeleton = !boardReady;
     return (
       <Animated.View entering={expandIn} exiting={expandOut} style={styles.expandedWrap}>
         <PostItCardShell
@@ -152,30 +174,47 @@ function PuzzleExpandablePostItComponent({
           showTape={false}
           contentStyle={styles.cardBleed}>
           <View
+            style={styles.expandedBoardHost}
             onLayout={(e) => {
               const w = e.nativeEvent.layout.width;
               if (w > 0 && Math.abs(w - boardWidth) > 0.5) setBoardWidth(w);
             }}>
             {boardWidth > 0 ? (
-              <PuzzleBoard
-                history={history}
-                width={boardWidth}
-                ink={palette.ink}
-                muted={palette.muted}
-                cover={cover}
-                variant="full"
-                onPressPiece={
+              <Pressable
+                accessibilityRole={onOpenDetail ? 'button' : undefined}
+                accessibilityLabel={
+                  onOpenDetail ? t('history.puzzle.openDetail') : undefined
+                }
+                disabled={!onOpenDetail}
+                onPress={
                   onOpenDetail
                     ? () => {
                         void Haptics.selectionAsync();
                         onOpenDetail(history.id);
                       }
                     : undefined
-                }
-              />
-            ) : (
-              <View style={{ height: 120 }} />
-            )}
+                }>
+                <PuzzleBoard
+                  history={history}
+                  width={boardWidth}
+                  ink={palette.ink}
+                  muted={palette.muted}
+                  cover={cover}
+                  variant="full"
+                  onPaint={() => {
+                    const handle = InteractionManager.runAfterInteractions(() => {
+                      setTimeout(() => setBoardReady(true), 160);
+                    });
+                    void handle;
+                  }}
+                />
+              </Pressable>
+            ) : null}
+            {showSkeleton ? (
+              <View pointerEvents="none" style={styles.skeletonOverlay}>
+                <PuzzleBoardSkeleton isDark={isDark} />
+              </View>
+            ) : null}
           </View>
         </PostItCardShell>
       </Animated.View>
@@ -196,18 +235,23 @@ function PuzzleExpandablePostItComponent({
           showDeleteControl
             ? `${history.title}, ${t('history.puzzle.deleteCta')}`
             : `${history.title}, ${t('history.puzzle.progress', {
-                completed,
+                completed:
+                  history.status === 'completed' && completed <= 0
+                    ? targetCount
+                    : completed,
                 total: targetCount,
               })}`
         }
         onPressIn={() => {
           press.value = withTiming(1, { duration: 80 });
+          prefetchFullImage();
         }}
         onPressOut={() => {
           press.value = withTiming(0, { duration: 100 });
         }}
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          prefetchFullImage();
           onToggle();
         }}>
         <View
@@ -264,12 +308,13 @@ function PuzzleExpandablePostItComponent({
                   { color: isDark ? 'rgba(255,255,255,0.7)' : '#444' },
                 ]}
                 numberOfLines={1}>
-                {history.status === 'completed'
-                  ? t('history.puzzle.albumItemMeta', { count: targetCount })
-                  : t('history.puzzle.progress', {
-                      completed,
-                      total: targetCount,
-                    })}
+                {t('history.puzzle.progress', {
+                  completed:
+                    history.status === 'completed' && completed <= 0
+                      ? targetCount
+                      : completed,
+                  total: targetCount,
+                })}
               </ThemedText>
             </View>
           </View>
@@ -397,6 +442,14 @@ const styles = StyleSheet.create({
   expandedWrap: {
     width: '100%',
     marginBottom: 8,
+  },
+  expandedBoardHost: {
+    position: 'relative',
+    width: '100%',
+  },
+  skeletonOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 4,
   },
   cardBleed: {
     paddingHorizontal: 0,

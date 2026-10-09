@@ -244,7 +244,6 @@ export function DayPlanStatisticsPage({ embedded = false }: DayPlanStatisticsPag
       ? t('history.empty.weekBody')
       : t('history.empty.monthBody');
   const atmosphereVariant = period === 'week' ? 'historyWeek' : 'historyMonth';
-
   const body = (
     <>
       <View style={styles.foreground}>

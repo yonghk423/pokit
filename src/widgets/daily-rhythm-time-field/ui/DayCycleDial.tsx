@@ -20,14 +20,18 @@ import {
 import {
   RETRO_BORDER_WIDTH,
   RetroFlatColors,
-  SOLID_SHADOW_OFFSET,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { formatDateKeyCompact, formatHhmmClock, useTranslation } from '@shared/lib/i18n';
+import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DialHandleBadge } from './DialHandleBadge';
 
-import { DayBalanceOcean } from '../lib/dayBalanceOceanPalette';
+import {
+  DAY_BALANCE_SOFT_SHADOW_OFFSET,
+  DayBalanceOcean,
+  dayBalanceSoftShadow,
+} from '../lib/dayBalanceOceanPalette';
 import {
   CYCLE_MINUTES,
   DAY_MINUTES,
@@ -49,7 +53,8 @@ import {
   type DialHandleKind,
 } from '../lib/dayCycleDialMath';
 
-const DIAL_BACKDROP = require('../../../../assets/main.webp') as ImageSourcePropType;
+/** 그림자 피스 — 다이얼 원 안쪽 면 */
+const DIAL_BACKDROP = require('../../../../assets/puzzle/peace-shadow.webp') as ImageSourcePropType;
 
 export type DayCycleDialProps = {
   startHhmm: string;
@@ -73,8 +78,8 @@ const COMMIT_SNAP_STEP = 5;
 const DIAL_CONTENT_INSET = 28;
 
 function clampDialSize(containerW: number): number {
-  // solid shadow가 우측으로 나가므로 여유만 두고 최대한 크게
-  return Math.min(Math.max(containerW - SOLID_SHADOW_OFFSET - 2, 280), 420);
+  // soft solid shadow가 우측으로 나가므로 여유만 두고 최대한 크게
+  return Math.min(Math.max(containerW - DAY_BALANCE_SOFT_SHADOW_OFFSET - 2, 280), 420);
 }
 
 function parseStartToCycle(hhmm: string): number {
@@ -231,25 +236,26 @@ export function DayCycleDial({
   const activePos =
     activeHandle === 'end' ? endPos : activeHandle === 'wake' ? wakePos : startPos;
 
-  /** Ocean — Sky 트랙 / Blue Green 활동 / Deep Space 수면 / Amber 해·달 */
+  /** Ocean — Pastel Rose 활동 / Deep Space 수면 / Amber 해·달 · 다이얼 면 `#F2FCFF` */
   const colors = {
     dialStroke: isDark ? tone.border : DayBalanceOcean.deepSpace,
-    dialTrack: isDark ? tone.surfaceAlt : DayBalanceOcean.sky,
-    activityFill: DayBalanceOcean.blueGreen,
-    sleepFill: isDark ? '#011824' : DayBalanceOcean.deepSpace,
+    dialTrack: isDark ? tone.surfaceAlt : '#F2FCFF',
+    activityFill: DayBalanceOcean.pastelRose,
+    sleepFill: '#111111',
     restFill: 'transparent',
     startHandle: isDark ? DayBalanceOcean.blueGreen : DayBalanceOcean.sky,
     startHandleIcon: DayBalanceOcean.amber,
     endHandle: isDark ? '#011824' : DayBalanceOcean.deepSpace,
     endHandleIcon: DayBalanceOcean.amber,
-    centerBg: isDark ? 'rgba(2, 48, 71, 0.58)' : 'rgba(255, 255, 255, 0.62)',
+    /** 배경 사진이 비치도록 반투명 — 텍스트 가독용 스크림 */
+    centerBg: isDark ? 'rgba(45, 47, 68, 0.55)' : 'rgba(242, 252, 255, 0.62)',
     /** Sky 트랙 위 시·날짜·AM/PM은 블랙으로 대비 */
     ink: isDark ? tone.text : '#000000',
     muted: isDark ? tone.textMuted : '#000000',
     sleepLabel: isDark ? tone.text : '#FFFFFF',
     restLabel: isDark ? tone.textMuted : tone.textMuted,
     sleepAccent: DayBalanceOcean.blueGreen,
-    shadow: DayBalanceOcean.deepSpace,
+    shadow: dayBalanceSoftShadow(isDark),
     summaryBg: isDark ? tone.surfaceAlt : '#FFFFFF',
   };
 
@@ -590,19 +596,19 @@ export function DayCycleDial({
         end: endLabel,
       });
 
-  const dialBox = size + SOLID_SHADOW_OFFSET;
+  const dialBox = size + DAY_BALANCE_SOFT_SHADOW_OFFSET;
 
   return (
     <View style={styles.root} onLayout={onRootLayout}>
-      <View style={styles.headerRow}>
-        <View style={styles.titleRow}>
-          <ThemedText style={[styles.title, { color: colors.ink }, cityPopFont('800')]}>
-            {t('dayCycleDial.title')}
-          </ThemedText>
-        </View>
-      </View>
-
       <View style={[styles.dialShell, { width: dialBox, height: dialBox }]}>
+        <View pointerEvents="none" style={styles.titleTapeOverlay}>
+          <ScrapTapeLabel
+            text={t('dayCycleDial.title')}
+            isDark={isDark}
+            rotateDeg={-1.5}
+            style={styles.titleTape}
+          />
+        </View>
         <View
           pointerEvents="none"
           style={[
@@ -612,8 +618,8 @@ export function DayCycleDial({
               width: size,
               height: size,
               transform: [
-                { translateX: SOLID_SHADOW_OFFSET },
-                { translateY: SOLID_SHADOW_OFFSET },
+                { translateX: DAY_BALANCE_SOFT_SHADOW_OFFSET },
+                { translateY: DAY_BALANCE_SOFT_SHADOW_OFFSET },
               ],
             },
           ]}
@@ -645,10 +651,10 @@ export function DayCycleDial({
             ]}>
             <Image
               source={DIAL_BACKDROP}
-              style={[styles.dialInnerArt, { opacity: isDark ? 0.4 : 0.55 }]}
+              style={[styles.dialInnerArt, { opacity: isDark ? 0.45 : 0.88 }]}
               contentFit="cover"
               cachePolicy="memory-disk"
-              recyclingKey="day-cycle-dial-inner"
+              recyclingKey="day-cycle-dial-peace-shadow"
               transition={0}
               accessibilityElementsHidden
             />
@@ -863,7 +869,14 @@ export function DayCycleDial({
         </View>
       </View>
 
-      <View style={[styles.summaryShell, { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET }]}>
+      <View
+        style={[
+          styles.summaryShell,
+          {
+            marginRight: DAY_BALANCE_SOFT_SHADOW_OFFSET,
+            marginBottom: DAY_BALANCE_SOFT_SHADOW_OFFSET,
+          },
+        ]}>
         <View
           pointerEvents="none"
           style={[
@@ -871,8 +884,8 @@ export function DayCycleDial({
             {
               backgroundColor: colors.shadow,
               transform: [
-                { translateX: SOLID_SHADOW_OFFSET },
-                { translateY: SOLID_SHADOW_OFFSET },
+                { translateX: DAY_BALANCE_SOFT_SHADOW_OFFSET },
+                { translateY: DAY_BALANCE_SOFT_SHADOW_OFFSET },
               ],
             },
           ]}
@@ -901,21 +914,17 @@ const styles = StyleSheet.create({
   root: {
     width: '100%',
     alignItems: 'center',
-    gap: 8,
   },
-  headerRow: {
-    width: '100%',
-    gap: 6,
+  titleTapeOverlay: {
+    position: 'absolute',
+    top: 14,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    alignItems: 'center',
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  title: {
-    fontSize: 17,
-    letterSpacing: -0.35,
+  titleTape: {
+    maxWidth: 180,
   },
   dialShell: {
     position: 'relative',

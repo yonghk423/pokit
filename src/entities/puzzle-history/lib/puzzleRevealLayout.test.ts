@@ -49,4 +49,21 @@ describe('buildPuzzleRevealLayout (post-it collage)', () => {
     const all = [...layout.seeds, ...layout.units];
     expect(all.every((t) => t.fill === 'image')).toBe(true);
   });
+
+  it('keeps photo windows close to frame so completed collage matches the source', () => {
+    const layout = buildPuzzleRevealLayout(50);
+    const all = [...layout.seeds, ...layout.units];
+    let sumDx = 0;
+    let sumDy = 0;
+    for (const p of all) {
+      sumDx += Math.abs(p.imgX - p.x);
+      sumDy += Math.abs(p.imgY - p.y);
+      expect(Math.abs(p.imgX - p.x)).toBeLessThan(0.02);
+      expect(Math.abs(p.imgY - p.y)).toBeLessThan(0.02);
+      expect(Math.abs(p.imgW - p.w)).toBeLessThan(0.03);
+      expect(Math.abs(p.imgH - p.h)).toBeLessThan(0.03);
+    }
+    expect(sumDx / all.length).toBeLessThan(0.01);
+    expect(sumDy / all.length).toBeLessThan(0.01);
+  });
 });

@@ -16,15 +16,16 @@ import type { DevMockSeedModule } from '../types';
 
 export const PUZZLE_MOCK_ID_PREFIX = 'ph_dev_mock_' as const;
 
-const ASSET_BIKE = require('../../../../../../assets/routine/bike.webp');
-const ASSET_KITTY = require('../../../../../../assets/routine/kitty.jpg');
-const ASSET_FLOWERS = require('../../../../../../assets/routine/flowers.webp');
-const ASSET_PLANTS = require('../../../../../../assets/routine/plants.webp');
-const ASSET_READING = require('../../../../../../assets/routine/reading.webp');
-const ASSET_COFFEE = require('../../../../../../assets/routine/coffee.webp');
-const ASSET_JOURNAL = require('../../../../../../assets/routine/journal.webp');
-const ASSET_TEA = require('../../../../../../assets/routine/tea.webp');
-const ASSET_SWIM = require('../../../../../../assets/routine/swim.webp');
+/** `assets/puzzle/*.webp` 9장 — 콜라주·스플래시와 동일 세트 */
+const ASSET_BASKETBALL = require('../../../../../../assets/puzzle/basketball.webp');
+const ASSET_HANDS_HEART = require('../../../../../../assets/puzzle/hands-heart.webp');
+const ASSET_DESK_STRETCH = require('../../../../../../assets/puzzle/desk-stretch.webp');
+const ASSET_LAKE_JUMP = require('../../../../../../assets/puzzle/lake-jump.webp');
+  const ASSET_MEAL_PREP = require('../../../../../../assets/puzzle/meal-prep.webp');
+const ASSET_GOLDEN_RIVER_RUNNER = require('../../../../../../assets/puzzle/golden-river-runner.webp');
+const ASSET_OPEN_BOOK = require('../../../../../../assets/puzzle/open-book.webp');
+const ASSET_PEACE_SHADOW = require('../../../../../../assets/puzzle/peace-shadow.webp');
+const ASSET_ROCKY_SHORE = require('../../../../../../assets/puzzle/rocky-shore.webp');
 
 type PuzzleSeedSpec = {
   idSuffix: string;
@@ -65,154 +66,91 @@ function buildPieces(
 }
 
 /**
- * 스크린샷·데모용 Puzzle 세트.
- * - 진행 중 여러 개 (포스트잇 리스트 UI 확인용)
- * - Album용 완료본
+ * Dev 전용 Puzzle 목업 — 현재 `assets/puzzle` webp 9장 전부 완료(앨범).
+ * 순서·에셋은 collage/스플래시 세트와 맞춘다.
  */
 function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
   return [
     {
-      idSuffix: 'active_10_kitty',
-      targetCount: 10,
-      completedCount: 4,
-      status: 'active',
-      asset: ASSET_KITTY,
-      linkedCategoryKeys: ['stretch'],
-      title: {
-        ko: '야옹이랑 놀아주기',
-        en: 'Play with kitty',
-        ja: 'にゃんこと遊ぶ',
-      },
-    },
-    {
-      idSuffix: 'active_20',
-      targetCount: 20,
-      completedCount: 8,
-      status: 'active',
-      asset: ASSET_BIKE,
-      linkedCategoryKeys: ['reading', 'stretch'],
-      title: {
-        ko: '나의 20회',
-        en: 'My 20×',
-        ja: 'わたしの20回',
-      },
-    },
-    {
-      idSuffix: 'active_10_flowers',
-      targetCount: 10,
-      completedCount: 3,
-      status: 'active',
-      asset: ASSET_FLOWERS,
-      linkedCategoryKeys: ['stretch'],
-      title: {
-        ko: '꽃 산책',
-        en: 'Flower walk',
-        ja: '花の散歩',
-      },
-    },
-    {
-      idSuffix: 'active_50_plants',
-      targetCount: 50,
-      completedCount: 12,
-      status: 'active',
-      asset: ASSET_PLANTS,
-      linkedCategoryKeys: ['reading', 'work'],
-      title: {
-        ko: '초록 루틴',
-        en: 'Green routine',
-        ja: 'グリーンルーチン',
-      },
-    },
-    {
-      idSuffix: 'album_10_walk',
+      idSuffix: 'album_10_basketball',
       targetCount: 10,
       completedCount: 10,
       status: 'completed',
-      asset: ASSET_FLOWERS,
+      asset: ASSET_BASKETBALL,
       linkedCategoryKeys: ['stretch'],
-      title: {
-        ko: '가을 산책',
-        en: 'Autumn walk',
-        ja: '秋の散歩',
-      },
+      title: { ko: '한 슛', en: 'One shot', ja: 'ワンショット' },
     },
     {
-      idSuffix: 'album_20_jeju',
+      idSuffix: 'album_20_hands_heart',
       targetCount: 20,
       completedCount: 20,
       status: 'completed',
-      asset: ASSET_PLANTS,
-      linkedCategoryKeys: ['reading'],
-      title: {
-        ko: '제주 여행',
-        en: 'Jeju trip',
-        ja: '済州旅行',
-      },
+      asset: ASSET_HANDS_HEART,
+      linkedCategoryKeys: ['stretch'],
+      title: { ko: '하트 실루엣', en: 'Hands heart', ja: 'ハートの影' },
     },
     {
-      idSuffix: 'album_50_spring',
+      idSuffix: 'album_50_desk',
       targetCount: 50,
       completedCount: 50,
       status: 'completed',
-      asset: ASSET_READING,
-      linkedCategoryKeys: ['reading'],
-      title: {
-        ko: '봄 독서',
-        en: 'Spring reading',
-        ja: '春の読書',
-      },
+      asset: ASSET_DESK_STRETCH,
+      linkedCategoryKeys: ['work'],
+      title: { ko: '책상 스트레칭', en: 'Desk stretch', ja: 'デスクストレッチ' },
     },
     {
-      idSuffix: 'album_100_oct',
+      idSuffix: 'album_100_lake',
       targetCount: 100,
       completedCount: 100,
       status: 'completed',
-      asset: ASSET_JOURNAL,
-      linkedCategoryKeys: ['reading', 'work'],
-      title: {
-        ko: '나의 100회',
-        en: 'My 100×',
-        ja: 'わたしの100回',
-      },
+      asset: ASSET_LAKE_JUMP,
+      linkedCategoryKeys: ['stretch'],
+      title: { ko: '호수 점프', en: 'Lake jump', ja: '湖へジャンプ' },
     },
     {
-      idSuffix: 'album_10_coffee',
+      idSuffix: 'album_10_meal',
       targetCount: 10,
       completedCount: 10,
       status: 'completed',
-      asset: ASSET_COFFEE,
+      asset: ASSET_MEAL_PREP,
       linkedCategoryKeys: ['work'],
-      title: {
-        ko: '주말 카페',
-        en: 'Weekend café',
-        ja: '週末カフェ',
-      },
+      title: { ko: '식탁 준비', en: 'Meal prep', ja: '食事の準備' },
     },
     {
-      idSuffix: 'album_20_tea',
+      idSuffix: 'album_20_golden_river_runner',
       targetCount: 20,
       completedCount: 20,
       status: 'completed',
-      asset: ASSET_TEA,
-      linkedCategoryKeys: ['reading'],
-      title: {
-        ko: '차 한 잔의 기록',
-        en: 'Tea journal',
-        ja: 'お茶の記録',
-      },
+      asset: ASSET_GOLDEN_RIVER_RUNNER,
+      linkedCategoryKeys: ['stretch', 'reading'],
+      title: { ko: '황금 강변', en: 'Golden river run', ja: '黄金の河辺' },
     },
     {
-      idSuffix: 'album_10_swim',
+      idSuffix: 'album_50_open_book',
+      targetCount: 50,
+      completedCount: 50,
+      status: 'completed',
+      asset: ASSET_OPEN_BOOK,
+      linkedCategoryKeys: ['reading'],
+      title: { ko: '펼친 책', en: 'Open book', ja: '開いた本' },
+    },
+    {
+      idSuffix: 'album_100_peace',
+      targetCount: 100,
+      completedCount: 100,
+      status: 'completed',
+      asset: ASSET_PEACE_SHADOW,
+      linkedCategoryKeys: ['work'],
+      title: { ko: '그림자 브이', en: 'Peace shadow', ja: '影のピース' },
+    },
+    {
+      idSuffix: 'album_10_rocky',
       targetCount: 10,
       completedCount: 10,
       status: 'completed',
-      asset: ASSET_SWIM,
+      asset: ASSET_ROCKY_SHORE,
       linkedCategoryKeys: ['stretch'],
-      title: {
-        ko: '수영 10회',
-        en: 'Swim 10×',
-        ja: 'スイム10回',
-      },
+      title: { ko: '반짝이는 해안', en: 'Rocky shore glow', ja: 'きらめく岸辺' },
     },
   ];
 }
@@ -261,12 +199,15 @@ export function seedPuzzleHistoryMockData(now = new Date()): {
   const prev = loadPuzzleHistoryState();
   const kept = prev.histories.filter((h) => !h.id.startsWith(PUZZLE_MOCK_ID_PREFIX));
   const histories = [...kept, ...mockHistories];
-  const active = mockHistories.find((h) => h.status === 'active') ?? null;
+  const active =
+    mockHistories.find((h) => h.status === 'active') ??
+    kept.find((h) => h.status === 'active') ??
+    null;
 
   savePuzzleHistoryState({
     schemaVersion: 2,
     histories,
-    activeHistoryId: active?.id ?? prev.activeHistoryId,
+    activeHistoryId: active?.id ?? null,
   });
 
   const activeCount = mockHistories.filter((h) => h.status === 'active').length;
@@ -297,7 +238,7 @@ export function clearPuzzleHistoryMockData(): void {
 
 export const puzzleHistoryMockSeed: DevMockSeedModule = {
   id: 'puzzle-history',
-  version: 6,
+  version: 18,
   async seed() {
     return seedPuzzleHistoryMockData();
   },

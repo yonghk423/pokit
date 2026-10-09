@@ -162,14 +162,19 @@ function normalizeHistory(raw: Record<string, unknown> | null | undefined): Puzz
     legacyCompleted,
   );
 
+  const statusHint: PuzzleHistoryStatusRow =
+    raw.status === 'completed' ? 'completed' : 'active';
+  /** 완료 상태면 조각·횟수를 목표까지 채운 것으로 본다 (목업·레거시 불일치 보정) */
+  const fillHint =
+    statusHint === 'completed' ? Math.max(completedHint, targetCount) : completedHint;
   const pieces = buildPieces(
     targetCount,
-    raw.pieces ?? raw.dailyRecords,
-    completedHint,
+    statusHint === 'completed' ? undefined : raw.pieces ?? raw.dailyRecords,
+    fillHint,
   );
   const completedCount = pieces.filter((p) => p.completed).length;
   const status: PuzzleHistoryStatusRow =
-    completedCount >= targetCount ? 'completed' : raw.status === 'completed' ? 'completed' : 'active';
+    completedCount >= targetCount ? 'completed' : statusHint;
 
   return {
     id: raw.id.trim(),
