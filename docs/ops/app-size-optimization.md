@@ -51,7 +51,7 @@
 | 파일 | 이유 |
 |------|------|
 | `assets/pokit5.png` | 앱 아이콘 / 알림 아이콘 / favicon (`app.json`) |
-| `assets/splash-routines-9.png` | `expo-splash-screen` 네이티브 스플래시 |
+| `assets/splash-routines-9.webp` | `expo-splash-screen` 네이티브 스플래시 (콜라주와 동일) |
 
 남은 `assets` 용량의 대부분은 위 두 PNG (~3.7MB).
 
@@ -63,8 +63,7 @@
 
 ## 다음에 할 수 있는 것 (아직 안 함)
 
-1. **`splash-routines-9.png` WebP 전환** — Expo splash 플러그인 WebP 호환 확인 후
-2. **해상도 축소** — UI에 맞게 768 이하 등 (추가 절감)
+1. **해상도 축소** — UI에 맞게 768 이하 등 (추가 절감)
 3. **폰트 선택 로드** — `@expo-google-fonts` 6종·다수 weight를 시작 시 전부 로드 중
 4. **네이티브 의존성** — Firebase 등 (IPA 쪽, dist와 별개)
 

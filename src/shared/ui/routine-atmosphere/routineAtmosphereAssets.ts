@@ -15,7 +15,7 @@ export const routineAtmosphereAssets = {
   lakeJump: require('../../../../assets/unsplash-routine/lake-jump.webp') as ImageSourcePropType,
   mealPrep: require('../../../../assets/unsplash-routine/meal-prep.webp') as ImageSourcePropType,
   morningBrunch: require('../../../../assets/unsplash-routine/morning-brunch.webp') as ImageSourcePropType,
-  goldenRiverRunner: require('../../../../assets/unsplash-routine/golden-river-runner.webp') as ImageSourcePropType,
+  garageKettlebell: require('../../../../assets/unsplash-routine/garage-kettlebell.webp') as ImageSourcePropType,
   openBook: require('../../../../assets/unsplash-routine/open-book.webp') as ImageSourcePropType,
   peaceShadow: require('../../../../assets/unsplash-routine/peace-shadow.webp') as ImageSourcePropType,
   rockClimb: require('../../../../assets/unsplash-routine/rock-climb.webp') as ImageSourcePropType,

@@ -7,7 +7,11 @@
 export { AnalyticsScreenTracker } from './AnalyticsScreenTracker';
 export { AppStatusBar } from './AppStatusBar';
 export { RandomSplashOverlay } from './RandomSplashOverlay';
-export { SPLASH_BACKGROUND_COLOR, SPLASH_IMAGE_SOURCES } from './splashAssets';
+export {
+  SPLASH_BACKGROUND_COLOR,
+  SPLASH_COLLAGE_SOURCE,
+  SPLASH_IMAGE_SOURCES,
+} from './splashAssets';
 export { resetAppStatusBarCache, syncAppStatusBar } from '@shared/lib/status-bar/appStatusBar';
 export { useAppBootstrap } from './useAppBootstrap';
 export { useAnalyticsScreenViews } from './useAnalyticsScreenViews';

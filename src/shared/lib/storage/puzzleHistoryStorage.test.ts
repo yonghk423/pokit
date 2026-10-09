@@ -72,6 +72,70 @@ describe('puzzleHistoryStorage', () => {
     expect(loaded.histories[0]?.pieces).toHaveLength(10);
   });
 
+  it('keeps piece completedAt for completed histories (date list)', () => {
+    savePuzzleHistoryState({
+      schemaVersion: 2,
+      activeHistoryId: null,
+      histories: [
+        {
+          id: 'h-done',
+          title: 'done',
+          imageUri: 'file:///a.jpg',
+          targetCount: 10,
+          totalPieces: 10,
+          completedCount: 10,
+          status: 'completed',
+          createdAt: '2026-09-20T12:00:00.000Z',
+          completedAt: '2026-09-29T12:00:00.000Z',
+          completionBaseline: 0,
+          pieces: Array.from({ length: 10 }, (_, i) => ({
+            puzzleIndex: i,
+            completed: true,
+            completedAt: `2026-09-${String(20 + i).padStart(2, '0')}T12:00:00.000Z`,
+          })),
+        },
+      ],
+    });
+    const loaded = loadPuzzleHistoryState();
+    const pieces = loaded.histories[0]?.pieces ?? [];
+    expect(pieces).toHaveLength(10);
+    expect(pieces.every((p) => p.completed && Boolean(p.completedAt))).toBe(true);
+    expect(pieces[0]?.completedAt?.startsWith('2026-09-20')).toBe(true);
+    expect(pieces[9]?.completedAt?.startsWith('2026-09-29')).toBe(true);
+  });
+
+  it('backfills completedAt when completed pieces lack dates', () => {
+    localStorageClient.setJson(StorageKeys.puzzleHistory, {
+      v: 1,
+      state: {
+        schemaVersion: 2,
+        activeHistoryId: null,
+        histories: [
+          {
+            id: 'h-nodate',
+            title: 'nodate',
+            imageUri: 'file:///a.jpg',
+            targetCount: 10,
+            totalPieces: 10,
+            completedCount: 10,
+            status: 'completed',
+            createdAt: '2026-09-30T12:00:00.000Z',
+            completedAt: '2026-10-09T12:00:00.000Z',
+            pieces: Array.from({ length: 10 }, (_, i) => ({
+              puzzleIndex: i,
+              completed: true,
+            })),
+          },
+        ],
+      },
+    });
+    const loaded = loadPuzzleHistoryState();
+    const pieces = loaded.histories[0]?.pieces ?? [];
+    expect(pieces).toHaveLength(10);
+    expect(pieces.every((p) => Boolean(p.completedAt))).toBe(true);
+    expect(pieces[9]?.completedAt?.startsWith('2026-10-09')).toBe(true);
+  });
+
   it('drops corrupted histories without crashing', () => {
     localStorageClient.setJson(StorageKeys.puzzleHistory, {
       v: 1,

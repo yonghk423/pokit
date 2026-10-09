@@ -1,7 +1,7 @@
 import { Image } from 'react-native';
 
-import { getAppLocale } from '@shared/lib/i18n/model/localeStore';
 import type { AppLocale } from '@shared/lib/i18n/model/locale';
+import { getAppLocale } from '@shared/lib/i18n/model/localeStore';
 
 import {
   clearPuzzleHistoryStorage,
@@ -21,8 +21,8 @@ const ASSET_BASKETBALL = require('../../../../../../assets/puzzle/basketball.web
 const ASSET_HANDS_HEART = require('../../../../../../assets/puzzle/hands-heart.webp');
 const ASSET_DESK_STRETCH = require('../../../../../../assets/puzzle/desk-stretch.webp');
 const ASSET_LAKE_JUMP = require('../../../../../../assets/puzzle/lake-jump.webp');
-  const ASSET_MEAL_PREP = require('../../../../../../assets/puzzle/meal-prep.webp');
-const ASSET_GOLDEN_RIVER_RUNNER = require('../../../../../../assets/puzzle/golden-river-runner.webp');
+const ASSET_MEAL_PREP = require('../../../../../../assets/puzzle/meal-prep.webp');
+const ASSET_GARAGE_KETTLEBELL = require('../../../../../../assets/puzzle/garage-kettlebell.webp');
 const ASSET_OPEN_BOOK = require('../../../../../../assets/puzzle/open-book.webp');
 const ASSET_PEACE_SHADOW = require('../../../../../../assets/puzzle/peace-shadow.webp');
 const ASSET_ROCKY_SHORE = require('../../../../../../assets/puzzle/rocky-shore.webp');
@@ -47,10 +47,17 @@ function resolveAssetUri(assetModule: number, fallbackName: string): string {
   return `file:///pokit-mock-puzzle/${fallbackName}.webp`;
 }
 
+function shiftDaysIso(base: Date, dayOffset: number): string {
+  const d = new Date(base.getTime());
+  d.setDate(d.getDate() + dayOffset);
+  return d.toISOString();
+}
+
 function buildPieces(
   targetCount: PuzzleHistoryTargetRow,
   completedCount: number,
-  completedAt: string,
+  /** 마지막(가장 최근) 조각 완료 시각 — 이전 조각은 하루씩 앞당김 */
+  lastCompletedAt: Date,
 ): PuzzlePieceRow[] {
   const capped = Math.max(0, Math.min(targetCount, completedCount));
   const rows: PuzzlePieceRow[] = [];
@@ -59,7 +66,9 @@ function buildPieces(
     rows.push({
       puzzleIndex: i,
       completed,
-      completedAt: completed ? completedAt : undefined,
+      completedAt: completed
+        ? shiftDaysIso(lastCompletedAt, i - (capped - 1))
+        : undefined,
     });
   }
   return rows;
@@ -117,13 +126,13 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       title: { ko: '식탁 준비', en: 'Meal prep', ja: '食事の準備' },
     },
     {
-      idSuffix: 'album_20_golden_river_runner',
+      idSuffix: 'album_20_garage_kettlebell',
       targetCount: 20,
       completedCount: 20,
       status: 'completed',
-      asset: ASSET_GOLDEN_RIVER_RUNNER,
+      asset: ASSET_GARAGE_KETTLEBELL,
       linkedCategoryKeys: ['stretch', 'reading'],
-      title: { ko: '황금 강변', en: 'Golden river run', ja: '黄金の河辺' },
+      title: { ko: '차고 케틀벨', en: 'Garage kettlebell', ja: 'ガレージのケトルベル' },
     },
     {
       idSuffix: 'album_50_open_book',
@@ -158,13 +167,16 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
 function buildHistoryRow(
   spec: PuzzleSeedSpec,
   locale: AppLocale,
-  nowIso: string,
+  now: Date,
 ): PuzzleHistoryRow {
-  const pieces = buildPieces(spec.targetCount, spec.completedCount, nowIso);
+  const pieces = buildPieces(spec.targetCount, spec.completedCount, now);
   const completedCount = pieces.filter((r) => r.completed).length;
   const status =
     completedCount >= spec.targetCount ? 'completed' : spec.status === 'completed' ? 'completed' : 'active';
   const imageUri = resolveAssetUri(spec.asset, spec.idSuffix);
+  const firstPieceAt = pieces.find((r) => r.completed)?.completedAt;
+  const lastPieceAt = [...pieces].reverse().find((r) => r.completed)?.completedAt;
+  const nowIso = now.toISOString();
 
   return {
     id: `${PUZZLE_MOCK_ID_PREFIX}${spec.idSuffix}`,
@@ -181,8 +193,8 @@ function buildHistoryRow(
     completionBaselineByCategory: Object.fromEntries(
       spec.linkedCategoryKeys.map((key) => [key, 0]),
     ),
-    createdAt: nowIso,
-    completedAt: status === 'completed' ? nowIso : undefined,
+    createdAt: firstPieceAt ?? nowIso,
+    completedAt: status === 'completed' ? lastPieceAt ?? nowIso : undefined,
   };
 }
 
@@ -192,9 +204,8 @@ export function seedPuzzleHistoryMockData(now = new Date()): {
   puzzleActive: number;
 } {
   const locale = getAppLocale();
-  const nowIso = now.toISOString();
   const specs = buildPuzzleSeedSpecs();
-  const mockHistories = specs.map((spec) => buildHistoryRow(spec, locale, nowIso));
+  const mockHistories = specs.map((spec) => buildHistoryRow(spec, locale, now));
 
   const prev = loadPuzzleHistoryState();
   const kept = prev.histories.filter((h) => !h.id.startsWith(PUZZLE_MOCK_ID_PREFIX));
@@ -238,7 +249,7 @@ export function clearPuzzleHistoryMockData(): void {
 
 export const puzzleHistoryMockSeed: DevMockSeedModule = {
   id: 'puzzle-history',
-  version: 18,
+  version: 20,
   async seed() {
     return seedPuzzleHistoryMockData();
   },

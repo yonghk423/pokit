@@ -83,10 +83,23 @@ function normalizePiece(raw: Partial<PuzzlePieceRow> | null | undefined): Puzzle
   };
 }
 
+/** dateKey(YYYY-MM-DD) 또는 ISO → 로컬 noon 기준 N일 이동 후 ISO */
+function shiftCompletedAt(baseIso: string, dayOffset: number): string {
+  const trimmed = baseIso.trim();
+  const base = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
+    ? new Date(`${trimmed}T12:00:00`)
+    : new Date(trimmed);
+  if (Number.isNaN(base.getTime())) return baseIso;
+  base.setDate(base.getDate() + dayOffset);
+  return base.toISOString();
+}
+
 function buildPieces(
   targetCount: PuzzleHistoryTargetRow,
   rawPieces: unknown,
   completedHint: number,
+  /** 조각에 completedAt이 없을 때 — 최근 완료일·생성일 기준으로 날짜별 보정 */
+  fallbackCompletedAt?: string,
 ): PuzzlePieceRow[] {
   const fromRaw = Array.isArray(rawPieces)
     ? rawPieces
@@ -95,14 +108,21 @@ function buildPieces(
         .sort((a, b) => a.puzzleIndex - b.puzzleIndex)
     : [];
 
+  const cappedHint = Math.max(0, Math.min(targetCount, Math.floor(completedHint)));
   const pieces: PuzzlePieceRow[] = [];
   for (let i = 0; i < targetCount; i += 1) {
     const existing = fromRaw.find((p) => p.puzzleIndex === i);
-    const completed = existing?.completed ?? i < completedHint;
+    const completed = existing?.completed ?? i < cappedHint;
+    let completedAt = existing?.completedAt;
+    if (completed && !completedAt && fallbackCompletedAt) {
+      /** 마지막 조각이 fallback 날짜, 그 이전은 하루씩 앞섬 */
+      const lastIndex = Math.max(0, cappedHint - 1);
+      completedAt = shiftCompletedAt(fallbackCompletedAt, i - lastIndex);
+    }
     pieces.push({
       puzzleIndex: i,
       completed,
-      completedAt: existing?.completedAt,
+      completedAt: completed ? completedAt : undefined,
     });
   }
   return pieces;
@@ -167,10 +187,15 @@ function normalizeHistory(raw: Record<string, unknown> | null | undefined): Puzz
   /** 완료 상태면 조각·횟수를 목표까지 채운 것으로 본다 (목업·레거시 불일치 보정) */
   const fillHint =
     statusHint === 'completed' ? Math.max(completedHint, targetCount) : completedHint;
+  const createdAt =
+    typeof raw.createdAt === 'string' ? raw.createdAt : new Date().toISOString();
+  const historyCompletedAt =
+    typeof raw.completedAt === 'string' ? raw.completedAt : undefined;
   const pieces = buildPieces(
     targetCount,
-    statusHint === 'completed' ? undefined : raw.pieces ?? raw.dailyRecords,
+    raw.pieces ?? raw.dailyRecords,
     fillHint,
+    historyCompletedAt ?? createdAt,
   );
   const completedCount = pieces.filter((p) => p.completed).length;
   const status: PuzzleHistoryStatusRow =
@@ -181,9 +206,7 @@ function normalizeHistory(raw: Record<string, unknown> | null | undefined): Puzz
     title:
       typeof raw.title === 'string' && raw.title.trim()
         ? raw.title.trim()
-        : typeof raw.createdAt === 'string'
-          ? raw.createdAt.slice(0, 10)
-          : 'Puzzle',
+        : createdAt.slice(0, 10),
     imageUri,
     thumbnailUri:
       typeof raw.thumbnailUri === 'string' && raw.thumbnailUri.trim()
@@ -198,8 +221,8 @@ function normalizeHistory(raw: Record<string, unknown> | null | undefined): Puzz
       linkedCategoryKeys && linkedCategoryKeys.length > 0 ? linkedCategoryKeys : undefined,
     completionBaseline: Math.max(0, Math.floor(Number(raw.completionBaseline) || 0)),
     completionBaselineByCategory,
-    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date().toISOString(),
-    completedAt: typeof raw.completedAt === 'string' ? raw.completedAt : undefined,
+    createdAt,
+    completedAt: historyCompletedAt,
   };
 }
 

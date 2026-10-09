@@ -37,7 +37,7 @@ describe('puzzleHistoryMockSeed', () => {
         '책상 스트레칭',
         '호수 점프',
         '식탁 준비',
-        '황금 강변',
+        '차고 케틀벨',
         '펼친 책',
         '그림자 브이',
         '반짝이는 해안',
@@ -55,6 +55,18 @@ describe('puzzleHistoryMockSeed', () => {
     for (const history of state.histories) {
       expect(history.pieces).toHaveLength(history.targetCount);
       expect(history.pieces.every((r) => r.completed)).toBe(true);
+    }
+  });
+
+  it('assigns a completedAt date to every opened piece for the day list', () => {
+    seedPuzzleHistoryMockData(new Date('2026-10-09T12:00:00.000Z'));
+    const state = loadPuzzleHistoryState();
+    for (const history of state.histories) {
+      const opened = history.pieces.filter((r) => r.completed);
+      expect(opened.every((r) => typeof r.completedAt === 'string')).toBe(true);
+      if (opened.length >= 2) {
+        expect(opened[0]!.completedAt! < opened[opened.length - 1]!.completedAt!).toBe(true);
+      }
     }
   });
 
