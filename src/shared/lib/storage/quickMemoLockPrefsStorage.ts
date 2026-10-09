@@ -2,11 +2,11 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 /** 잠금화면 메모 본문 글자 크기(pt) — 기본 28 */
-export type QuickMemoFontSizePt = 24 | 28 | 32 | 36;
+export type QuickMemoFontSizePt = 18 | 20 | 22 | 24 | 28 | 32 | 36;
 
-/** 위→아래: 큰 글자 → 작은 글자. 최소 24 */
+/** 위→아래: 큰 글자 → 작은 글자. 최소 18 */
 export const QUICK_MEMO_FONT_SIZE_OPTIONS: readonly QuickMemoFontSizePt[] = [
-  36, 32, 28, 24,
+  36, 32, 28, 24, 22, 20, 18,
 ];
 
 export const DEFAULT_QUICK_MEMO_FONT_SIZE_PT: QuickMemoFontSizePt = 28;

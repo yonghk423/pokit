@@ -660,9 +660,12 @@ struct PokitLiveActivityWidget: Widget {
           DynamicIslandExpandedRegion(.bottom) {
             VStack(alignment: .leading, spacing: 6) {
               Text(q.bodyText)
-                .font(.caption.weight(.semibold))
-                .lineLimit(5)
-                .minimumScaleFactor(0.8)
+                .font(.system(
+                  size: QuickMemoModeLiveActivityView.resolvedFontSize(q.fontSizePt),
+                  weight: .semibold
+                ))
+                .lineLimit(3)
+                .minimumScaleFactor(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             }

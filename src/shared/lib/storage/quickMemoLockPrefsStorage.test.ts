@@ -29,6 +29,9 @@ describe('quickMemoLockPrefsStorage', () => {
   it('rejects invalid font sizes', () => {
     expect(isQuickMemoFontSizePt(28)).toBe(true);
     expect(isQuickMemoFontSizePt(24)).toBe(true);
-    expect(isQuickMemoFontSizePt(20)).toBe(false);
+    expect(isQuickMemoFontSizePt(22)).toBe(true);
+    expect(isQuickMemoFontSizePt(20)).toBe(true);
+    expect(isQuickMemoFontSizePt(18)).toBe(true);
+    expect(isQuickMemoFontSizePt(16)).toBe(false);
   });
 });

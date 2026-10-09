@@ -67,10 +67,10 @@ enum QuickMemoModeLiveActivityView {
         .font(.system(size: bodySize, weight: .semibold))
         .foregroundStyle(ink)
         .lineSpacing(1)
-        .lineLimit(8)
-        .minimumScaleFactor(0.45)
+        .lineLimit(bodyLineLimit(bodySize))
+        .minimumScaleFactor(1)
         .multilineTextAlignment(.leading)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
 
       if showCalendar {
         miniCalendar(dateKey: q.calendarDateKey, ink: ink)
@@ -79,11 +79,28 @@ enum QuickMemoModeLiveActivityView {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
-  private static func resolvedFontSize(_ value: Double?) -> CGFloat {
-    let allowed: Set<CGFloat> = [24, 28, 32, 36]
-    guard let value else { return defaultFontSize }
-    let pt = CGFloat(value)
-    return allowed.contains(pt) ? pt : defaultFontSize
+  /// 고른 pt → 잠금화면 pt. 없는 값을 기본 28로 되돌리면 18이 20보다 커 보인다.
+  private static let lockScreenSizeSteps: [(choice: Int, rendered: CGFloat)] = [
+    (18, 12), (20, 14), (22, 16), (24, 18), (28, 20), (32, 22), (36, 24),
+  ]
+
+  static func resolvedFontSize(_ value: Double?) -> CGFloat {
+    let chosen = Int((value ?? Double(defaultFontSize)).rounded())
+    if let exact = lockScreenSizeSteps.first(where: { $0.choice == chosen }) {
+      return exact.rendered
+    }
+    if chosen <= lockScreenSizeSteps[0].choice {
+      return lockScreenSizeSteps[0].rendered
+    }
+    return lockScreenSizeSteps.first(where: { $0.choice == Int(defaultFontSize) })?.rendered ?? 20
+  }
+
+  /// 슬롯 높이에 8줄을 억지로 넣으면 시스템이 글자를 줄여 32와 20이 같아 보인다.
+  /// 고른 pt는 유지하고, 들어가는 줄 수만 크기에 맞춘다.
+  private static func bodyLineLimit(_ size: CGFloat) -> Int {
+    let line = size * 1.25 + 1
+    let fitted = Int((150 / line).rounded(.down))
+    return min(8, max(2, fitted))
   }
 
   @ViewBuilder
