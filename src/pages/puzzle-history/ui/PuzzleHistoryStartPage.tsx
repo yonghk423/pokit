@@ -13,11 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  categoryReminderLabelKo,
-  resolvePriorityRoutineCategoryKey,
-  useDayPlanDraftStore,
-} from '@entities/day-plan';
+import { categoryReminderLabelKo, useDayPlanDraftStore } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import {
   PUZZLE_HISTORY_TARGETS,
@@ -39,35 +35,12 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { ThemedView } from '@shared/ui/themed-view';
 
+import { collectTodayInProgressRoutineKeys } from './collectTodayInProgressRoutineKeys';
+
 const PUZZLE_TITLE_MAX_LEN = 24;
 
 /** 루틴 → 사진 → 목표 횟수 → 미리보기 */
 type Step = 'routines' | 'photo' | 'target' | 'preview';
-
-/**
- * 오늘 탭 담기에 있고 아직 완료하지 않은 루틴만.
- * (카탈로그 전체가 아니라 「지금 진행 중」인 항목)
- */
-function collectTodayInProgressRoutineKeys(
-  priorityCategoryOrder: readonly string[],
-  completedFocusCategoryKeys: readonly string[],
-): string[] {
-  /** 담기 완료 체크 — 정확 키만 (구간 키 `category@slot`은 부분 완료로 둠) */
-  const completedExact = new Set(
-    completedFocusCategoryKeys.map((k) => k.trim()).filter(Boolean),
-  );
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of priorityCategoryOrder) {
-    const trimmed = raw.trim();
-    const key = resolvePriorityRoutineCategoryKey(trimmed);
-    if (!key || seen.has(key)) continue;
-    if (completedExact.has(trimmed) || completedExact.has(key)) continue;
-    seen.add(key);
-    out.push(key);
-  }
-  return out;
-}
 
 export function PuzzleHistoryStartPage() {
   const { t } = useTranslation();

@@ -122,10 +122,6 @@ import {
   AnnouncementHomeNudge,
   useAnnouncementHomeNudge,
 } from '@features/announcement-home-nudge';
-import {
-  AppUpdateAvailablePostItNudge,
-  useAppUpdateAvailable,
-} from '@features/app-update-available';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
@@ -493,13 +489,9 @@ export function PriorityBasedPlanSection({
   const isDark = colorScheme === 'dark';
   const hideDailyQuote = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
-  const hideAppUpdateNudge = useDayPlanChromeSettingsStore((s) => s.settings.hideAppUpdateNudge);
-  const updateAvailable = useAppUpdateAvailable(true);
   const announcementHome = useAnnouncementHomeNudge();
-  const showUpdateNudge = !hideAppUpdateNudge && Boolean(updateAvailable.notice);
-  const showAnnouncementNudge =
-    !showUpdateNudge && Boolean(announcementHome.notice);
-  const showHomeNudge = showUpdateNudge || showAnnouncementNudge;
+  const showAnnouncementNudge = Boolean(announcementHome.notice);
+  const showHomeNudge = showAnnouncementNudge;
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -3476,14 +3468,7 @@ export function PriorityBasedPlanSection({
                               },
                             ]}>
                             {!hideMainQuoteLayout && isMainDay ? (
-                              showUpdateNudge ? (
-                                <AppUpdateAvailablePostItNudge
-                                  onUpdatePress={() => {
-                                    void updateAvailable.openStore();
-                                  }}
-                                  onDismiss={updateAvailable.dismissLater}
-                                />
-                              ) : showAnnouncementNudge && announcementHome.notice ? (
+                              showAnnouncementNudge && announcementHome.notice ? (
                                 <AnnouncementHomeNudge
                                   announcement={announcementHome.notice}
                                   onDismiss={announcementHome.dismiss}

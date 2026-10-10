@@ -66,6 +66,39 @@ export function sumCompletionBaselineByCategory(
   return sum;
 }
 
+/**
+ * 진행 중 퍼즐에 루틴을 더한다. 이미 있는 키는 유지하고, 빼지는 않는다.
+ * 새로 붙인 루틴의 baseline은 붙인 시점 누적이라, 그 이전 완료는 조각에 안 들어간다.
+ */
+export function appendLinkedRoutines(
+  history: PuzzleHistory,
+  keys: Iterable<string>,
+  baselineForNew: Record<string, number> | undefined,
+): PuzzleHistory {
+  if (history.status !== 'active') return history;
+  const existing = normalizeLinkedCategoryKeys(history.linkedCategoryKeys);
+  const existingSet = new Set(existing);
+  const incoming = normalizeLinkedCategoryKeys(keys).filter((key) => !existingSet.has(key));
+  if (incoming.length === 0) return history;
+
+  const linkedCategoryKeys = [...existing, ...incoming];
+  const prevBase = history.completionBaselineByCategory ?? {};
+  const merged: Record<string, number> = { ...prevBase };
+  for (const key of incoming) {
+    merged[key] = Math.max(0, Math.floor(Number(baselineForNew?.[key]) || 0));
+  }
+  const completionBaselineByCategory = normalizeCompletionBaselineByCategory(
+    linkedCategoryKeys,
+    merged,
+  );
+  return {
+    ...history,
+    linkedCategoryKeys,
+    completionBaselineByCategory,
+    completionBaseline: sumCompletionBaselineByCategory(completionBaselineByCategory),
+  };
+}
+
 export function countCompletedPieces(pieces: PuzzlePieceRecord[]): number {
   let n = 0;
   for (const row of pieces) {

@@ -20,13 +20,13 @@ describe('puzzleHistoryMockSeed', () => {
   it('seeds a full album of completed puzzles', async () => {
     const result = await puzzleHistoryMockSeed.seed();
 
-    expect(result.puzzleHistories).toBe(9);
+    expect(result.puzzleHistories).toBe(10);
     expect(result.puzzleActive).toBe(0);
-    expect(result.puzzleAlbum).toBe(9);
+    expect(result.puzzleAlbum).toBe(10);
 
     const state = loadPuzzleHistoryState();
     expect(state.activeHistoryId).toBeNull();
-    expect(state.histories).toHaveLength(9);
+    expect(state.histories).toHaveLength(10);
     expect(state.histories.every((h) => h.status === 'completed')).toBe(true);
     expect(state.histories.every((h) => h.completedCount === h.totalPieces)).toBe(true);
     const titles = state.histories.map((h) => h.title);
@@ -41,6 +41,7 @@ describe('puzzleHistoryMockSeed', () => {
         '펼친 책',
         '그림자 브이',
         '반짝이는 해안',
+        '환한 웃음',
       ]),
     );
     expect(state.histories.some((h) => h.targetCount === 100)).toBe(true);

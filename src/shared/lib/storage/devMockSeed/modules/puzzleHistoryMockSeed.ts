@@ -16,7 +16,7 @@ import type { DevMockSeedModule } from '../types';
 
 export const PUZZLE_MOCK_ID_PREFIX = 'ph_dev_mock_' as const;
 
-/** `assets/puzzle/*.webp` 9장 — 콜라주·스플래시와 동일 세트 */
+/** `assets/puzzle` 앨범 목업. 콜라주·스플래시는 기존 9장 세트를 유지한다. */
 const ASSET_BASKETBALL = require('../../../../../../assets/puzzle/basketball.webp');
 const ASSET_HANDS_HEART = require('../../../../../../assets/puzzle/hands-heart.webp');
 const ASSET_DESK_STRETCH = require('../../../../../../assets/puzzle/desk-stretch.webp');
@@ -26,6 +26,7 @@ const ASSET_GARAGE_KETTLEBELL = require('../../../../../../assets/puzzle/garage-
 const ASSET_OPEN_BOOK = require('../../../../../../assets/puzzle/open-book.webp');
 const ASSET_PEACE_SHADOW = require('../../../../../../assets/puzzle/peace-shadow.webp');
 const ASSET_ROCKY_SHORE = require('../../../../../../assets/puzzle/rocky-shore.webp');
+const ASSET_HAPPY = require('../../../../../../assets/puzzle/happy.webp');
 
 type PuzzleSeedSpec = {
   idSuffix: string;
@@ -75,8 +76,8 @@ function buildPieces(
 }
 
 /**
- * Dev 전용 Puzzle 목업 — 현재 `assets/puzzle` webp 9장 전부 완료(앨범).
- * 순서·에셋은 collage/스플래시 세트와 맞춘다.
+ * Dev 전용 Puzzle 목업 — 앨범용 webp를 전부 완료 상태로 넣는다.
+ * 콜라주·스플래시 9장 구성은 바꾸지 않는다.
  */
 function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
   return [
@@ -104,7 +105,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 50,
       status: 'completed',
       asset: ASSET_DESK_STRETCH,
-      linkedCategoryKeys: ['work'],
+      linkedCategoryKeys: ['reading', 'work'],
       title: { ko: '책상 스트레칭', en: 'Desk stretch', ja: 'デスクストレッチ' },
     },
     {
@@ -113,7 +114,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 100,
       status: 'completed',
       asset: ASSET_LAKE_JUMP,
-      linkedCategoryKeys: ['stretch'],
+      linkedCategoryKeys: ['reading', 'work', 'water'],
       title: { ko: '호수 점프', en: 'Lake jump', ja: '湖へジャンプ' },
     },
     {
@@ -140,7 +141,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 50,
       status: 'completed',
       asset: ASSET_OPEN_BOOK,
-      linkedCategoryKeys: ['reading'],
+      linkedCategoryKeys: ['reading', 'work', 'water'],
       title: { ko: '펼친 책', en: 'Open book', ja: '開いた本' },
     },
     {
@@ -149,7 +150,7 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
       completedCount: 100,
       status: 'completed',
       asset: ASSET_PEACE_SHADOW,
-      linkedCategoryKeys: ['work'],
+      linkedCategoryKeys: ['reading', 'work', 'water', 'fasting', 'healthIntake'],
       title: { ko: '그림자 브이', en: 'Peace shadow', ja: '影のピース' },
     },
     {
@@ -171,6 +172,15 @@ function buildPuzzleSeedSpecs(): PuzzleSeedSpec[] {
         'sampleMeditation',
       ],
       title: { ko: '반짝이는 해안', en: 'Rocky shore glow', ja: 'きらめく岸辺' },
+    },
+    {
+      idSuffix: 'album_20_happy',
+      targetCount: 20,
+      completedCount: 20,
+      status: 'completed',
+      asset: ASSET_HAPPY,
+      linkedCategoryKeys: ['reading', 'work', 'water', 'fasting', 'healthIntake'],
+      title: { ko: '환한 웃음', en: 'Bright laugh', ja: '明るい笑い' },
     },
   ];
 }
@@ -260,7 +270,7 @@ export function clearPuzzleHistoryMockData(): void {
 
 export const puzzleHistoryMockSeed: DevMockSeedModule = {
   id: 'puzzle-history',
-  version: 22,
+  version: 25,
   async seed() {
     return seedPuzzleHistoryMockData();
   },

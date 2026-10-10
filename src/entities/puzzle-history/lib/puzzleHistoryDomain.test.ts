@@ -1,4 +1,5 @@
 import {
+  appendLinkedRoutines,
   applyCompletedPieceCount,
   buildPiecesForTarget,
   createPuzzleHistoryInput,
@@ -37,6 +38,27 @@ describe('puzzleHistoryDomain (completion count)', () => {
     });
     expect(h.completionBaselineByCategory).toEqual({ reading: 4, stretch: 1 });
     expect(h.completionBaseline).toBe(5);
+  });
+
+  it('appends routines without dropping ones already linked', () => {
+    const h = createPuzzleHistoryInput({
+      id: 'add',
+      title: 't',
+      imageUri: 'file:///a.jpg',
+      targetCount: 10,
+      linkedCategoryKeys: ['reading'],
+      completionBaselineByCategory: { reading: 3 },
+    });
+    const next = appendLinkedRoutines(h, ['reading', 'work', 'water'], {
+      reading: 99,
+      work: 4,
+      water: 1,
+    });
+    expect(next.linkedCategoryKeys).toEqual(['reading', 'work', 'water']);
+    expect(next.completionBaselineByCategory).toEqual({ reading: 3, work: 4, water: 1 });
+    expect(next.completionBaseline).toBe(8);
+    const done = { ...h, status: 'completed' as const };
+    expect(appendLinkedRoutines(done, ['work'], { work: 1 })).toBe(done);
   });
 
   it('applies sticky completion counts', () => {

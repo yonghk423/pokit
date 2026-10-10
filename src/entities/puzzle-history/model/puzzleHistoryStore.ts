@@ -6,6 +6,7 @@ import {
 } from '@shared/lib/storage/puzzleHistoryStorage';
 
 import {
+  appendLinkedRoutines,
   applyCompletedPieceCount,
   createPuzzleHistoryInput,
 } from '../lib/puzzleHistoryDomain';
@@ -68,6 +69,13 @@ export type PuzzleHistoryStoreState = {
     historyId: string,
     imageUri: string,
     thumbnailUri?: string,
+  ) => void;
+
+  /** 진행 중 퍼즐에 루틴을 더한다. 이미 연결된 루틴은 빼지 않는다. */
+  addLinkedRoutines: (
+    historyId: string,
+    keys: string[],
+    baselineForNew?: Record<string, number>,
   ) => void;
 
   /** @deprecated replaceHistoryImage */
@@ -189,6 +197,22 @@ export const usePuzzleHistoryStore = create<PuzzleHistoryStoreState>((set, get) 
         thumbnailUri: thumbnailUri?.trim() || h.thumbnailUri,
       };
     });
+    const next = {
+      histories,
+      activeHistoryId: pickFocusedActiveId(histories, get().activeHistoryId),
+    };
+    set(next);
+    persist(next);
+  },
+
+  addLinkedRoutines: (historyId, keys, baselineForNew) => {
+    const id = historyId.trim();
+    if (!id || keys.length === 0) return;
+    const current = get().histories.find((h) => h.id === id);
+    if (!current) return;
+    const updated = appendLinkedRoutines(current, keys, baselineForNew);
+    if (updated === current) return;
+    const histories = get().histories.map((h) => (h.id === id ? updated : h));
     const next = {
       histories,
       activeHistoryId: pickFocusedActiveId(histories, get().activeHistoryId),

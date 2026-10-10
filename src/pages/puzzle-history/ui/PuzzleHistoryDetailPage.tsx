@@ -5,10 +5,11 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { categoryReminderLabelKo } from '@entities/day-plan';
+import { categoryReminderLabelKo, useDayPlanDraftStore } from '@entities/day-plan';
 import { historyDateKeyToday, useHistoryStore } from '@entities/history';
 import { usePuzzleHistoryStore } from '@entities/puzzle-history';
 import {
+  countCompletionsByCategory,
   linkedRoutineContributionCounts,
   linkedRoutineCountsByDate,
   syncPuzzleHistoryFromDailyStats,
@@ -24,6 +25,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { PuzzleBoard } from '@widgets/puzzle-history-board';
 
+import { collectTodayInProgressRoutineKeys } from './collectTodayInProgressRoutineKeys';
 import { PuzzleOpenedDaysCalendar } from './PuzzleOpenedDaysCalendar';
 import { PuzzleRenameSheet } from './PuzzleRenameSheet';
 
@@ -58,11 +60,20 @@ const PREVIEW_TEN = [
   'sampleMeditation',
 ] as const;
 
+const PREVIEW_TWO = ['reading', 'work'] as const;
+const PREVIEW_THREE = ['reading', 'work', 'water'] as const;
+
 /** 목업에서 루틴 개수별 달력을 바로 보게 하는 미리보기. 저장값과 별개다. */
 const MOCK_ROUTINE_PREVIEW: Record<string, readonly string[]> = {
-  ph_dev_mock_album_10_basketball: ['reading', 'work'],
-  ph_dev_mock_album_10_meal: ['reading', 'work', 'water'],
+  ph_dev_mock_album_10_basketball: PREVIEW_TWO,
+  ph_dev_mock_album_20_garage_kettlebell: PREVIEW_TWO,
+  ph_dev_mock_album_50_desk: PREVIEW_TWO,
+  ph_dev_mock_album_10_meal: PREVIEW_THREE,
+  ph_dev_mock_album_100_lake: PREVIEW_THREE,
+  ph_dev_mock_album_50_open_book: PREVIEW_THREE,
   ph_dev_mock_album_20_hands_heart: PREVIEW_FIVE,
+  ph_dev_mock_album_100_peace: PREVIEW_FIVE,
+  ph_dev_mock_album_20_happy: PREVIEW_FIVE,
   ph_dev_mock_album_10_rocky: PREVIEW_TEN,
 };
 
@@ -128,20 +139,27 @@ export function PuzzleHistoryDetailPage() {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const params = useLocalSearchParams<{ id?: string }>();
 
-  const { hydrate, histories, removeHistory, renameHistory } = usePuzzleHistoryStore(
-    useShallow((s) => ({
-      hydrate: s.hydrate,
-      histories: s.histories,
-      removeHistory: s.removeHistory,
-      renameHistory: s.renameHistory,
-    })),
-  );
+  const { hydrate, histories, removeHistory, renameHistory, addLinkedRoutines } =
+    usePuzzleHistoryStore(
+      useShallow((s) => ({
+        hydrate: s.hydrate,
+        histories: s.histories,
+        removeHistory: s.removeHistory,
+        renameHistory: s.renameHistory,
+        addLinkedRoutines: s.addLinkedRoutines,
+      })),
+    );
+  const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
+  const priorityCategoryOrder = useDayPlanDraftStore((s) => s.priorityCategoryOrder);
+  const completedFocusCategoryKeys = useDayPlanDraftStore((s) => s.completedFocusCategoryKeys);
   const historyHydrate = useHistoryStore((s) => s.hydrate);
   const dailyStatsByDate = useHistoryStore((s) => s.dailyStatsByDate);
 
   const [boardSize, setBoardSize] = useState(0);
   const [imageBroken, setImageBroken] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [pendingKeys, setPendingKeys] = useState<string[]>([]);
 
   useEffect(() => {
     hydrate();
@@ -149,10 +167,20 @@ export function PuzzleHistoryDetailPage() {
     syncPuzzleHistoryFromDailyStats();
   }, [hydrate, historyHydrate]);
 
+  const inProgressKeys = useMemo(() => {
+    void categoryLabelEpoch;
+    return collectTodayInProgressRoutineKeys(priorityCategoryOrder, completedFocusCategoryKeys);
+  }, [categoryLabelEpoch, completedFocusCategoryKeys, priorityCategoryOrder]);
+
   const history = useMemo(() => {
     const id = typeof params.id === 'string' ? params.id : '';
     return histories.find((h) => h.id === id) ?? null;
   }, [histories, params.id]);
+
+  const addableKeys = useMemo(() => {
+    const linked = new Set(history?.linkedCategoryKeys ?? []);
+    return inProgressKeys.filter((key) => !linked.has(key));
+  }, [history?.linkedCategoryKeys, inProgressKeys]);
 
   useEffect(() => {
     let cancelled = false;
@@ -240,7 +268,7 @@ export function PuzzleHistoryDetailPage() {
         }
       }
     }
-    if (MOCK_ROUTINE_PREVIEW[history.id]) {
+    if (history.id.startsWith('ph_dev_mock_')) {
       contributions = linkedKeys
         .map((categoryKey) => {
           let count = 0;
@@ -480,7 +508,7 @@ export function PuzzleHistoryDetailPage() {
           </ThemedText>
         ) : null}
 
-        {contributions.length > 0 ? (
+        {contributions.length > 0 || history.status === 'active' ? (
           <View style={styles.sectionBlock}>
             <ThemedText style={[styles.listTitle, { color: c.text }]}>
               {t('history.puzzle.linkedRoutinesTitle')}
@@ -495,6 +523,84 @@ export function PuzzleHistoryDetailPage() {
                 })}
               </ThemedText>
             ))}
+            {history.status === 'active' ? (
+              <View style={styles.addBlock}>
+                <BrutalConfirmButton
+                  align="stretch"
+                  compact
+                  label={t('history.puzzle.addLinkedRoutine')}
+                  accessibilityLabel={t('history.puzzle.addLinkedRoutine')}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    setAddOpen((open) => !open);
+                    setPendingKeys([]);
+                  }}
+                />
+                {addOpen ? (
+                  <View style={styles.addPanel}>
+                    {addableKeys.length === 0 ? (
+                      <ThemedText style={[styles.infoMuted, { color: c.textMuted }]}>
+                        {t('history.puzzle.addLinkedRoutineEmpty')}
+                      </ThemedText>
+                    ) : (
+                      addableKeys.map((key) => {
+                        const selected = pendingKeys.includes(key);
+                        return (
+                          <Pressable
+                            key={key}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: selected }}
+                            accessibilityLabel={categoryReminderLabelKo(key)}
+                            onPress={() => {
+                              void Haptics.selectionAsync();
+                              setPendingKeys((prev) =>
+                                prev.includes(key)
+                                  ? prev.filter((row) => row !== key)
+                                  : [...prev, key],
+                              );
+                            }}
+                            style={[
+                              styles.addRow,
+                              {
+                                backgroundColor: selected ? mint : c.surfaceAlt,
+                                borderColor: selected ? c.text : 'transparent',
+                              },
+                            ]}>
+                            <ThemedText
+                              style={[styles.addRowLabel, { color: c.text }]}
+                              numberOfLines={2}>
+                              {categoryReminderLabelKo(key)}
+                            </ThemedText>
+                            <ThemedText style={[styles.addRowMark, { color: c.text }]}>
+                              {selected ? '✓' : ''}
+                            </ThemedText>
+                          </Pressable>
+                        );
+                      })
+                    )}
+                    {pendingKeys.length > 0 ? (
+                      <BrutalConfirmButton
+                        align="stretch"
+                        label={t('history.puzzle.addLinkedRoutineConfirm')}
+                        onPress={() => {
+                          const baselines = countCompletionsByCategory(
+                            pendingKeys,
+                            dailyStatsByDate,
+                          );
+                          addLinkedRoutines(history.id, pendingKeys, baselines);
+                          syncPuzzleHistoryFromDailyStats();
+                          setPendingKeys([]);
+                          setAddOpen(false);
+                          void Haptics.notificationAsync(
+                            Haptics.NotificationFeedbackType.Success,
+                          );
+                        }}
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -619,6 +725,19 @@ const styles = StyleSheet.create({
   infoMuted: { fontSize: 13, fontWeight: '600', lineHeight: 18 },
   completeBanner: { fontSize: 15, fontWeight: '700', lineHeight: 22, textAlign: 'center' },
   sectionBlock: { gap: 4, marginTop: 4 },
+  addBlock: { marginTop: 10, gap: 8 },
+  addPanel: { gap: 8 },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+  },
+  addRowLabel: { flex: 1, fontSize: 14, fontWeight: '700' },
+  addRowMark: { fontSize: 16, fontWeight: '800', width: 18, textAlign: 'center' },
   listTitle: { fontSize: 15, fontWeight: '800', marginBottom: 4 },
   dayLine: { fontSize: 13, lineHeight: 19 },
   empty: { padding: 24, fontSize: 14 },

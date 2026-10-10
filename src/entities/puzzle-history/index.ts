@@ -1,4 +1,5 @@
 export {
+  appendLinkedRoutines,
   applyCompletedDateKeys,
   applyCompletedPieceCount,
   buildDailyRecordsForDuration,
