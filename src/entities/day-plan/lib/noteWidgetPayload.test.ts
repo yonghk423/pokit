@@ -27,4 +27,16 @@ describe('toNoteWidgetPages', () => {
     ]);
     expect(rows.map((row) => row.preview)).toEqual(['첫번째', '두번째', '세번째']);
   });
+
+  it('keeps a long note past the old 40-character cut so the widget can fill', () => {
+    const body =
+      '아침에 산뜻하게 시작했고, 오후에 운동까지 끝냈다. 저녁엔 노트만 정리하면 충분하다.';
+    const rows = toNoteWidgetPages([
+      createWorkStudyNotePage({
+        createdDateKey: '2026-10-04',
+        blocks: [{ id: 'b1', kind: 'paragraph', text: body }],
+      }),
+    ]);
+    expect(rows[0]?.preview).toBe(body);
+  });
 });

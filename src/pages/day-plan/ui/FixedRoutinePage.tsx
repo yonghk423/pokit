@@ -2840,7 +2840,7 @@ export function FixedRoutinePage({
                   ))}
                 </View>
 
-                {canManageCustomGroups && customSets.length === 0 ? (
+                {canManageCustomGroups && visibleSets.length === 0 ? (
                   <ThemedText style={[styles.sectionEmpty, { color: muted }]}>
                     {t('fixedRoutine.noCustomGroups')}
                   </ThemedText>

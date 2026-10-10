@@ -5,6 +5,7 @@ import { normalizeWorkDetailConfig } from './goalCategorySessionConfig';
 import {
   resolveWorkStudyNotePageLabel,
   resolveWorkStudyNotePagePreview,
+  workStudyPageBlocksToPlainText,
   type WorkStudyNotePage,
 } from './workStudyDocument';
 import { resolveWidgetPostItAppearance } from './widgetPostItAppearance';
@@ -36,10 +37,13 @@ function sortNotePagesForWidget(pages: WorkStudyNotePage[]): WorkStudyNotePage[]
   });
 }
 
+/** 홈 위젯 면이 다 차도 남을 만큼만 남긴다. 칸이 비는데 40자에서 자르지 않는다. */
+const NOTE_WIDGET_PREVIEW_LIMIT = 800;
+
 function clipPreview(preview: string): string {
-  const compact = preview.replace(/\s+/g, ' ').trim();
-  if (compact.length <= 40) return compact;
-  return `${compact.slice(0, 40).trim()}…`;
+  const compact = preview.replace(/\n{3,}/g, '\n\n').trim();
+  if (compact.length <= NOTE_WIDGET_PREVIEW_LIMIT) return compact;
+  return `${compact.slice(0, NOTE_WIDGET_PREVIEW_LIMIT).trimEnd()}…`;
 }
 
 /** 위젯 고르기용 — 앱 목록과 같이 날짜 제목, 같은 날은 · 2 · 3 */
@@ -54,7 +58,9 @@ export function toNoteWidgetPages(pages: WorkStudyNotePage[]): NoteWidgetPage[] 
     return {
       id: page.id,
       title: count > 1 ? `${base} · ${count}` : base,
-      preview: clipPreview(resolveWorkStudyNotePagePreview(page)),
+      preview: clipPreview(
+        workStudyPageBlocksToPlainText(page.blocks) || resolveWorkStudyNotePagePreview(page),
+      ),
       createdDateKey: typeof page.createdDateKey === 'string' ? page.createdDateKey : '',
     };
   });

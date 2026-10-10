@@ -1249,7 +1249,7 @@ private struct NoteWidgetEntryView: View {
     let model = entry.model
     let isSmall = family == .systemSmall
     let _ = DayPlanWidgetPalette.apply(faceHex: model.faceHex, inkHex: model.inkHex, mutedHex: model.mutedHex)
-    return DayPlanPostItChrome {
+    return DayPlanPostItChrome(topPadding: isSmall ? 4 : 6) {
       if let page = model.page {
         VStack(alignment: .leading, spacing: isSmall ? 5 : 8) {
           HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -1271,15 +1271,18 @@ private struct NoteWidgetEntryView: View {
 
           if !page.preview.isEmpty {
             Text(page.preview)
-              .font(.system(size: isSmall ? 12 : 13, weight: .semibold))
+              .font(.system(size: isSmall ? 13 : 15, weight: .semibold))
               .foregroundStyle(DayPlanWidgetPalette.muted)
-              .lineLimit(isSmall ? 4 : 5)
+              .lineSpacing(2)
+              .lineLimit(isSmall ? 14 : 18)
+              .multilineTextAlignment(.leading)
+              .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
           } else {
             Text("메모를 입력해 주세요")
               .font(.system(size: 12, weight: .semibold))
               .foregroundStyle(DayPlanWidgetPalette.muted)
+            Spacer(minLength: 0)
           }
-          Spacer(minLength: 0)
         }
       } else {
         Text(model.emptyMessage)

@@ -574,8 +574,11 @@ extension View {
 struct DayPlanPostItChrome<Content: View>: View {
   @Environment(\.widgetFamily) private var family
   private let content: Content
+  /// nil이면 공통 상단 여백. 노트처럼 본문을 더 쓰고 싶을 때만 더 작게 넘긴다.
+  private let topPadding: CGFloat?
 
-  init(@ViewBuilder content: () -> Content) {
+  init(topPadding: CGFloat? = nil, @ViewBuilder content: () -> Content) {
+    self.topPadding = topPadding
     self.content = content()
   }
 
@@ -585,7 +588,7 @@ struct DayPlanPostItChrome<Content: View>: View {
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .padding(.horizontal, isSmall ? 12 : 14)
       // 타이틀이 위 모서리에 붙지 않도록 상단 여백을 넉넉히
-      .padding(.top, isSmall ? 22 : 24)
+      .padding(.top, topPadding ?? (isSmall ? 22 : 24))
       .padding(.bottom, isSmall ? 12 : 14)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
