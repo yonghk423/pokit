@@ -76,6 +76,8 @@ export const StorageKeys = {
   routineCatalogGroupCollapsed: 'pokit:routine-catalog-group-collapsed',
   /** 읽은 공지 id 목록 */
   announcementReadIds: 'pokit:announcement-read-ids',
+  /** 앱 평가 창 — 첫 실행 시각과 요청 여부 */
+  appReviewPrompt: 'pokit:app-review-prompt',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];
@@ -124,4 +126,5 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   myRoutineGroupCollapsed: 'lockflow:my-routine-group-collapsed',
   routineCatalogGroupCollapsed: 'lockflow:routine-catalog-group-collapsed',
   announcementReadIds: 'lockflow:announcement-read-ids',
+  appReviewPrompt: 'lockflow:app-review-prompt',
 };

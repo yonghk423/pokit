@@ -43,6 +43,7 @@ import {
 } from '@shared/lib/notifications';
 import { logAppOpen } from '@shared/lib/analytics';
 import { initCrashlytics } from '@shared/lib/crashlytics';
+import { requestAppReviewIfDue } from '@shared/lib/support';
 
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useAppLocaleStore } from '@shared/lib/i18n';
@@ -148,6 +149,14 @@ export function useAppBootstrap() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+    const timer = setTimeout(() => {
+      void requestAppReviewIfDue();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isReady]);
 
   useEffect(() => {
     if (!isReady) return;

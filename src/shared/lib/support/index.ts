@@ -1,4 +1,5 @@
 export { openAppStoreWriteReview } from './openAppStoreReview';
+export { requestAppReviewIfDue } from './requestAppReviewIfDue';
 export { openSupportMailComposer } from './openSupportMail';
 export { shareAppWithFriends } from './shareApp';
 export {

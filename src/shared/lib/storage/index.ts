@@ -80,6 +80,8 @@ export {
   markWelcomeIntroSeen,
   markWelcomeIntroSeenAndFlush,
 } from './welcomeIntroStorage';
+export { loadAppReviewPrompt, saveAppReviewPrompt } from './appReviewPromptStorage';
+export type { AppReviewPromptRow } from './appReviewPromptStorage';
 export {
   clearPokitWeekTourSeeded,
   hasPokitWeekTourProgress,
