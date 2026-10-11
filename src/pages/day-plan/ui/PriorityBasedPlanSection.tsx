@@ -4159,7 +4159,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.05,
   },
   priorityMainEmptyHint: {
-    borderWidth: 2,
+    /** 타임라인 헤더·노트 카드와 같은 가는 실선 */
+    borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 10,

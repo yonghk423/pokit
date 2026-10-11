@@ -417,7 +417,8 @@ function MeasurementTemplateView({
     : t('customFlowTemplate.measurePresetHintLive');
 
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const chipShadow = 2;
+  /** 루틴 탭 액션 버튼(`ACTION_SHADOW`)과 같은 1px 솔리드 음영 */
+  const chipShadow = 1;
 
   const commitValue = (raw: number) => {
     if (!hasMetric || !Number.isFinite(raw)) return;
@@ -457,7 +458,7 @@ function MeasurementTemplateView({
             {MEASUREMENT_METRIC_PRESETS.map((preset) => {
               const selected =
                 cfg.metricLabel === preset.metricLabel && cfg.unit === preset.unit;
-              const shadow = selected ? 3 : chipShadow;
+              const shadow = chipShadow;
               return (
                 <View
                   key={preset.id}
@@ -2918,13 +2919,26 @@ const styles = StyleSheet.create({
   },
   checklistAddInput: {
     flex: 1,
+    minWidth: 0,
     fontSize: 13,
-    lineHeight: 18,
     fontWeight: '500',
-    paddingVertical: 2,
-    paddingHorizontal: 0,
     margin: 0,
+    paddingHorizontal: 0,
     borderWidth: 0,
+    ...Platform.select({
+      ios: {
+        // 한 줄 TextInput에 lineHeight를 주면 iOS가 글리프를 그 높이로 자른다.
+        // 영문은 베이스라인 쪽에 있어서, 치는 동안만 글이 반쯤 잘리고 추가 후에야 보인다.
+        paddingTop: 0,
+        paddingBottom: 0,
+        minHeight: 22,
+      },
+      default: {
+        lineHeight: 18,
+        paddingVertical: 2,
+        textAlignVertical: 'center',
+      },
+    }),
   },
   checklistAddConfirm: {
     fontSize: 12,

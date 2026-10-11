@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 
 import {
   formatMinutesToHHmm,
@@ -968,11 +968,24 @@ const s = StyleSheet.create({
   },
   addInput: {
     flex: 1,
+    minWidth: 0,
     fontSize: 13,
-    lineHeight: 18,
-    paddingVertical: 2,
-    paddingHorizontal: 0,
     margin: 0,
+    paddingHorizontal: 0,
+    ...Platform.select({
+      ios: {
+        // 한 줄 TextInput에 lineHeight를 주면 iOS가 글리프를 그 높이로 자른다.
+        // 영문은 베이스라인 쪽에 있어서, 치는 동안만 글이 반쯤 잘리고 추가 후에야 보인다.
+        paddingTop: 0,
+        paddingBottom: 0,
+        minHeight: 22,
+      },
+      default: {
+        lineHeight: 18,
+        paddingVertical: 2,
+        textAlignVertical: 'center',
+      },
+    }),
   },
   addConfirm: {
     fontSize: 12,
