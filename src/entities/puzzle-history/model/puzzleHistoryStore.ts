@@ -5,6 +5,7 @@ import {
   savePuzzleHistoryState,
 } from '@shared/lib/storage/puzzleHistoryStorage';
 
+import { sanitizePuzzleInkStrokes, type PuzzleInkStroke } from '../lib/puzzleInk';
 import {
   appendLinkedRoutines,
   applyCompletedPieceCount,
@@ -70,6 +71,9 @@ export type PuzzleHistoryStoreState = {
     imageUri: string,
     thumbnailUri?: string,
   ) => void;
+
+  /** 완성 사진 위 손글씨. 빈 배열이면 지운다. */
+  setHistoryInk: (historyId: string, strokes: readonly PuzzleInkStroke[]) => void;
 
   /** 진행 중 퍼즐에 루틴을 더한다. 이미 연결된 루틴은 빼지 않는다. */
   addLinkedRoutines: (
@@ -195,12 +199,31 @@ export const usePuzzleHistoryStore = create<PuzzleHistoryStoreState>((set, get) 
         ...h,
         imageUri: trimmed,
         thumbnailUri: thumbnailUri?.trim() || h.thumbnailUri,
+        inkStrokes: h.imageUri === trimmed ? h.inkStrokes : undefined,
       };
     });
     const next = {
       histories,
       activeHistoryId: pickFocusedActiveId(histories, get().activeHistoryId),
     };
+    set(next);
+    persist(next);
+  },
+
+  setHistoryInk: (historyId, strokes) => {
+    const id = historyId.trim();
+    if (!id) return;
+    const nextInk = sanitizePuzzleInkStrokes(strokes);
+    let changed = false;
+    const histories = get().histories.map((h) => {
+      if (h.id !== id) return h;
+      const prev = h.inkStrokes ?? [];
+      if (JSON.stringify(prev) === JSON.stringify(nextInk)) return h;
+      changed = true;
+      return { ...h, inkStrokes: nextInk.length > 0 ? nextInk : undefined };
+    });
+    if (!changed) return;
+    const next = { histories, activeHistoryId: get().activeHistoryId };
     set(next);
     persist(next);
   },

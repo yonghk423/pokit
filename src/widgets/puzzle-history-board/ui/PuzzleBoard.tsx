@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -24,6 +24,8 @@ import {
 import { useTranslation } from '@shared/lib/i18n';
 import { resolvePuzzleBoardImageUri } from '@shared/lib/media/pickPuzzleHistoryImage';
 import { ThemedText } from '@shared/ui/themed-text';
+
+import { PuzzleInkSvg } from './PuzzleInkSvg';
 
 const REVEAL_MS = 480;
 /**
@@ -50,6 +52,8 @@ type PuzzleBoardProps = {
   onPressPiece?: (puzzleIndex: number, completed: boolean) => void;
   highlightPuzzleIndex?: number | null;
   imageBroken?: boolean;
+  /** false면 손글씨 획은 그리지 않는다. 상세 화면은 별도 레이어가 그린다. */
+  showInk?: boolean;
   onPieceRevealed?: (puzzleIndex: number) => void;
   onJustCompleted?: () => void;
   /** 첫 페인트 직후(디코드 대기 전) — 스켈레톤 오버레이 해제 타이밍용 */
@@ -315,6 +319,7 @@ function PuzzleBoardComponent({
   onPressPiece,
   highlightPuzzleIndex = null,
   imageBroken = false,
+  showInk = true,
   onPieceRevealed,
   onJustCompleted,
   onPaint,
@@ -486,6 +491,9 @@ function PuzzleBoardComponent({
             lite
           />
         ))}
+        {showInk && history.inkStrokes && history.inkStrokes.length > 0 ? (
+          <PuzzleInkSvg width={boardW} height={boardH} strokes={history.inkStrokes} />
+        ) : null}
       </View>
     );
   }
@@ -514,13 +522,13 @@ function PuzzleBoardComponent({
               onAnimDone={
                 puzzleIndex >= 0
                   ? () => {
-                      setAnimatingIndices((prev) => {
-                        if (!prev.has(puzzleIndex)) return prev;
-                        const next = new Set(prev);
-                        next.delete(puzzleIndex);
-                        return next;
-                      });
-                    }
+                    setAnimatingIndices((prev) => {
+                      if (!prev.has(puzzleIndex)) return prev;
+                      const next = new Set(prev);
+                      next.delete(puzzleIndex);
+                      return next;
+                    });
+                  }
                   : undefined
               }
             />
@@ -540,26 +548,29 @@ function PuzzleBoardComponent({
 
       {onPressPiece
         ? layout.units.map((unit) => {
-            const record = pieces.find((r) => r.puzzleIndex === unit.puzzleIndex);
-            const completed = Boolean(record?.completed);
-            const pieceLabel = String(unit.puzzleIndex + 1);
-            const a11yLabel = completed
-              ? t('history.puzzle.a11yPieceDone', { date: pieceLabel })
-              : t('history.puzzle.a11yPiecePending', { date: pieceLabel });
+          const record = pieces.find((r) => r.puzzleIndex === unit.puzzleIndex);
+          const completed = Boolean(record?.completed);
+          const pieceLabel = String(unit.puzzleIndex + 1);
+          const a11yLabel = completed
+            ? t('history.puzzle.a11yPieceDone', { date: pieceLabel })
+            : t('history.puzzle.a11yPiecePending', { date: pieceLabel });
 
-            return (
-              <MemoHitCell
-                key={`hit-${unit.puzzleIndex}`}
-                unit={unit}
-                boardW={boardW}
-                boardH={boardH}
-                a11yLabel={a11yLabel}
-                highlight={highlightPuzzleIndex === unit.puzzleIndex}
-                onPress={() => onPressPiece(unit.puzzleIndex, completed)}
-              />
-            );
-          })
+          return (
+            <MemoHitCell
+              key={`hit-${unit.puzzleIndex}`}
+              unit={unit}
+              boardW={boardW}
+              boardH={boardH}
+              a11yLabel={a11yLabel}
+              highlight={highlightPuzzleIndex === unit.puzzleIndex}
+              onPress={() => onPressPiece(unit.puzzleIndex, completed)}
+            />
+          );
+        })
         : null}
+      {showInk && history.inkStrokes && history.inkStrokes.length > 0 ? (
+        <PuzzleInkSvg width={boardW} height={boardH} strokes={history.inkStrokes} />
+      ) : null}
     </Animated.View>
   );
 }
@@ -572,6 +583,7 @@ function boardPropsEqual(a: PuzzleBoardProps, b: PuzzleBoardProps): boolean {
     a.muted === b.muted &&
     a.cover === b.cover &&
     a.imageBroken === b.imageBroken &&
+    a.showInk === b.showInk &&
     a.highlightPuzzleIndex === b.highlightPuzzleIndex &&
     a.history.id === b.history.id &&
     a.history.status === b.history.status &&
@@ -579,6 +591,7 @@ function boardPropsEqual(a: PuzzleBoardProps, b: PuzzleBoardProps): boolean {
     a.history.thumbnailUri === b.history.thumbnailUri &&
     a.history.completedCount === b.history.completedCount &&
     a.history.targetCount === b.history.targetCount &&
+    a.history.inkStrokes === b.history.inkStrokes &&
     a.onPressPiece === b.onPressPiece
   );
 }

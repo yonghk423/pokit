@@ -1,13 +1,27 @@
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import { categoryReminderLabelKo, useDayPlanDraftStore } from '@entities/day-plan';
 import { historyDateKeyToday, useHistoryStore } from '@entities/history';
-import { usePuzzleHistoryStore } from '@entities/puzzle-history';
+import {
+  isPuzzleHistoryTarget,
+  PUZZLE_INK_COLORS,
+  sanitizePuzzleInkStrokes,
+  usePuzzleHistoryStore,
+  type PuzzleInkColor,
+} from '@entities/puzzle-history';
 import {
   countCompletionsByCategory,
   linkedRoutineContributionCounts,
@@ -16,7 +30,7 @@ import {
 } from '@features/puzzle-history-sync';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { formatDateKeyDisplay, useTranslation } from '@shared/lib/i18n';
+import { formatDateKeyDisplay, useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { puzzleHistoryImageExists } from '@shared/lib/media/pickPuzzleHistoryImage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button/BrutalConfirmButton';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -25,7 +39,10 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import { PuzzleBoard } from '@widgets/puzzle-history-board';
 
+import { shareLocalImageFile } from '../lib/shareCompletedPuzzleImage';
 import { collectTodayInProgressRoutineKeys } from './collectTodayInProgressRoutineKeys';
+import { PuzzleCollageExporter, type CollageExportRequest } from './PuzzleCollageExporter';
+import { PuzzleHandwritingLayer } from './PuzzleHandwritingLayer';
 import { PuzzleOpenedDaysCalendar } from './PuzzleOpenedDaysCalendar';
 import { PuzzleRenameSheet } from './PuzzleRenameSheet';
 
@@ -34,6 +51,29 @@ const BOARD_FACE = '#F5F4F2';
 const BOARD_SHELL_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
 const BOARD_SHELL_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 const BOARD_SHELL_SHADOW_OFFSET = 1;
+const INK_SWATCH_SIZE = 28;
+const INK_SWATCH_GAP = 8;
+const INK_PALETTE_WIDTH =
+  PUZZLE_INK_COLORS.length * INK_SWATCH_SIZE +
+  (PUZZLE_INK_COLORS.length - 1) * INK_SWATCH_GAP;
+
+const INK_COLOR_LABEL: Record<(typeof PUZZLE_INK_COLORS)[number], I18nKey> = {
+  '#1A1A1A': 'history.puzzle.handwriteInkBlack',
+  '#FFFFFF': 'history.puzzle.handwriteInkWhite',
+  '#E15A5A': 'history.puzzle.handwriteInkRed',
+  '#F0C14A': 'history.puzzle.handwriteInkYellow',
+  '#3E7FD6': 'history.puzzle.handwriteInkBlue',
+  '#2F8F8C': 'history.puzzle.handwriteInkMint',
+  '#E48BB4': 'history.puzzle.handwriteInkPink',
+};
+
+function inkFaceIsLight(hex: string): boolean {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return r * 0.299 + g * 0.587 + b * 0.114 > 160;
+}
 
 function isoToLocalDateKey(iso: string | undefined): string | null {
   if (!iso) return null;
@@ -139,7 +179,7 @@ export function PuzzleHistoryDetailPage() {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const params = useLocalSearchParams<{ id?: string }>();
 
-  const { hydrate, histories, removeHistory, renameHistory, addLinkedRoutines } =
+  const { hydrate, histories, removeHistory, renameHistory, addLinkedRoutines, setHistoryInk } =
     usePuzzleHistoryStore(
       useShallow((s) => ({
         hydrate: s.hydrate,
@@ -147,6 +187,7 @@ export function PuzzleHistoryDetailPage() {
         removeHistory: s.removeHistory,
         renameHistory: s.renameHistory,
         addLinkedRoutines: s.addLinkedRoutines,
+        setHistoryInk: s.setHistoryInk,
       })),
     );
   const categoryLabelEpoch = useDayPlanDraftStore((s) => s.categoryLabelEpoch);
@@ -156,10 +197,18 @@ export function PuzzleHistoryDetailPage() {
   const dailyStatsByDate = useHistoryStore((s) => s.dailyStatsByDate);
 
   const [boardSize, setBoardSize] = useState(0);
+  const [boardHeight, setBoardHeight] = useState(0);
+  const [writing, setWriting] = useState(false);
+  const [inkColor, setInkColor] = useState<PuzzleInkColor>('#FFFFFF');
+  const inkReveal = useSharedValue(0);
   const [imageBroken, setImageBroken] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [pendingKeys, setPendingKeys] = useState<string[]>([]);
+  const sharingRef = useRef(false);
+  const collageWaiter = useRef<((fileUri: string | null) => void) | null>(null);
+  const [exportingCollage, setExportingCollage] = useState(false);
+  const [collageJob, setCollageJob] = useState<CollageExportRequest | null>(null);
 
   useEffect(() => {
     hydrate();
@@ -195,6 +244,29 @@ export function PuzzleHistoryDetailPage() {
       cancelled = true;
     };
   }, [history?.imageUri]);
+
+  useEffect(() => {
+    setWriting(false);
+  }, [history?.id]);
+
+  useEffect(() => {
+    inkReveal.value = withTiming(writing ? 1 : 0, {
+      duration: writing ? 240 : 160,
+      easing: writing ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+    });
+  }, [inkReveal, writing]);
+
+  const inkColorsStyle = useAnimatedStyle(() => ({
+    opacity: inkReveal.value,
+    width: inkReveal.value * INK_PALETTE_WIDTH,
+    transform: [{ translateX: (1 - inkReveal.value) * -8 }],
+  }));
+  const inkHintStyle = useAnimatedStyle(() => ({
+    opacity: inkReveal.value,
+    height: inkReveal.value * 22,
+    marginTop: inkReveal.value * 6,
+    transform: [{ translateY: (1 - inkReveal.value) * -4 }],
+  }));
 
   const detailMeta = useMemo(() => {
     if (!history) return null;
@@ -241,10 +313,10 @@ export function PuzzleHistoryDetailPage() {
     let routinesByDate = history.id.startsWith('ph_dev_mock_')
       ? mockRoutineCountsByDate(linkedKeys, openedPieces)
       : linkedRoutineCountsByDate({
-          linkedCategoryKeys: linkedKeys,
-          dateKeys: pieceDateKeys,
-          dailyStatsByDate,
-        });
+        linkedCategoryKeys: linkedKeys,
+        dateKeys: pieceDateKeys,
+        dailyStatsByDate,
+      });
     const hasDayStats = Object.keys(routinesByDate).length > 0;
     if (!hasDayStats && linkedKeys.length > 0) {
       const filled: typeof routinesByDate = {};
@@ -339,6 +411,55 @@ export function PuzzleHistoryDetailPage() {
     contributions,
     labeledRoutinesByDate,
   } = detailMeta;
+  const canSharePhoto = history.status === 'completed' && !imageBroken;
+
+  const exportCollage = () => {
+    if (!canSharePhoto || sharingRef.current || exportingCollage) return;
+    const target = history.targetCount ?? history.duration ?? 0;
+    if (!isPuzzleHistoryTarget(target)) return;
+    const pieces = history.pieces ?? history.dailyRecords ?? [];
+    sharingRef.current = true;
+    setExportingCollage(true);
+    void Haptics.selectionAsync();
+    const request: CollageExportRequest = {
+      id: `${history.id}-${Date.now()}`,
+      imageUri: history.imageUri,
+      title: history.title,
+      targetCount: target,
+      completedPuzzleIndices: pieces
+        .filter((piece) => piece.completed)
+        .map((piece) => piece.puzzleIndex),
+      ink: sanitizePuzzleInkStrokes(
+        usePuzzleHistoryStore.getState().histories.find((row) => row.id === history.id)?.inkStrokes,
+      ),
+    };
+    void new Promise<string | null>((resolve) => {
+      collageWaiter.current = resolve;
+      setCollageJob(request);
+    })
+      .then(async (fileUri) => {
+        if (!fileUri) {
+          Alert.alert(
+            t('history.puzzle.exportCollageFailedTitle'),
+            t('history.puzzle.exportCollageFailedBody'),
+          );
+          return;
+        }
+        const result = await shareLocalImageFile(fileUri);
+        if (result === 'failed') {
+          Alert.alert(
+            t('history.puzzle.exportCollageFailedTitle'),
+            t('history.puzzle.exportCollageFailedBody'),
+          );
+        }
+      })
+      .finally(() => {
+        collageWaiter.current = null;
+        sharingRef.current = false;
+        setExportingCollage(false);
+        setCollageJob(null);
+      });
+  };
 
   return (
     <ThemedView style={[styles.root, { backgroundColor: c.bg, paddingTop: insets.top }]}>
@@ -355,6 +476,7 @@ export function PuzzleHistoryDetailPage() {
           style={styles.backBtn}>
           <IconSymbol name="chevron.left" size={18} color={c.text} />
         </Pressable>
+        {canSharePhoto ? <View style={styles.backBtn} /> : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${history.title}, ${t('history.puzzle.renameA11y')}`}
@@ -380,6 +502,16 @@ export function PuzzleHistoryDetailPage() {
             })}
           </ThemedText>
         </Pressable>
+        {canSharePhoto ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('history.puzzle.exportCollageA11y')}
+            hitSlop={10}
+            onPress={exportCollage}
+            style={styles.backBtn}>
+            <IconSymbol name="square.and.arrow.up" size={18} color={c.text} />
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('history.puzzle.deleteCta')}
@@ -406,6 +538,7 @@ export function PuzzleHistoryDetailPage() {
       </View>
 
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: Math.max(insets.bottom, 16) + 24 },
@@ -422,9 +555,12 @@ export function PuzzleHistoryDetailPage() {
             showTape={false}
             contentStyle={styles.boardBleed}>
             <View
+              style={styles.boardHit}
               onLayout={(e) => {
                 const w = e.nativeEvent.layout.width;
+                const h = e.nativeEvent.layout.height;
                 if (w > 0 && Math.abs(w - boardSize) > 0.5) setBoardSize(w);
+                if (h > 160 && Math.abs(h - boardHeight) > 0.5) setBoardHeight(h);
               }}>
               {boardSize > 0 ? (
                 <PuzzleBoard
@@ -434,13 +570,163 @@ export function PuzzleHistoryDetailPage() {
                   muted={c.textMuted}
                   cover={cover}
                   imageBroken={imageBroken}
+                  showInk={!canSharePhoto}
                 />
               ) : (
                 <View style={{ height: 120 }} />
               )}
+              {canSharePhoto && boardSize > 0 && boardHeight > 160 ? (
+                <PuzzleHandwritingLayer
+                  width={boardSize}
+                  height={boardHeight}
+                  strokes={history.inkStrokes ?? []}
+                  color={inkColor}
+                  enabled={writing}
+                  onCommitStroke={(stroke) => {
+                    const current =
+                      usePuzzleHistoryStore
+                        .getState()
+                        .histories.find((row) => row.id === history.id)?.inkStrokes ?? [];
+                    setHistoryInk(history.id, [...current, stroke]);
+                  }}
+                />
+              ) : null}
             </View>
           </PostItCardShell>
         </View>
+
+        {canSharePhoto && boardHeight > 160 ? (
+          <Animated.View
+            entering={FadeInDown.duration(320).easing(Easing.out(Easing.cubic))}
+            style={styles.inkBlock}>
+            <View style={styles.inkRow}>
+              <View style={styles.saveTapeHost}>
+                <View pointerEvents="none" style={styles.saveTapeWrap}>
+                  <View
+                    style={[
+                      styles.saveTape,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255,255,255,0.34)'
+                          : 'rgba(255,255,255,0.82)',
+                      },
+                    ]}
+                  />
+                </View>
+                <BrutalConfirmButton
+                  align="end"
+                  compact
+                  label={
+                    writing ? t('history.puzzle.handwriteDone') : t('history.puzzle.handwrite')
+                  }
+                  accessibilityLabel={
+                    writing
+                      ? t('history.puzzle.handwriteDoneA11y')
+                      : t('history.puzzle.handwriteA11y')
+                  }
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    setWriting((on) => !on);
+                  }}
+                  style={styles.shareBtn}
+                />
+              </View>
+              <Animated.View
+                pointerEvents={writing ? 'auto' : 'none'}
+                style={[styles.inkColors, inkColorsStyle]}>
+                {PUZZLE_INK_COLORS.map((color) => {
+                  const selected = inkColor === color;
+                  return (
+                    <Pressable
+                      key={color}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={t(INK_COLOR_LABEL[color])}
+                      onPress={() => {
+                        void Haptics.selectionAsync();
+                        setInkColor(color);
+                      }}
+                      style={[
+                        styles.inkSwatch,
+                        {
+                          backgroundColor: color,
+                          borderColor: selected
+                            ? inkFaceIsLight(color)
+                              ? isDark
+                                ? 'rgba(255,255,255,0.78)'
+                                : 'rgba(0,0,0,0.62)'
+                              : isDark
+                                ? 'rgba(255,255,255,0.78)'
+                                : '#FFFFFF'
+                            : isDark
+                              ? 'rgba(255,255,255,0.2)'
+                              : 'rgba(0,0,0,0.14)',
+                          borderWidth: selected ? 1 : StyleSheet.hairlineWidth,
+                        },
+                      ]}
+                    />
+                  );
+                })}
+              </Animated.View>
+              {(history.inkStrokes?.length ?? 0) > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('history.puzzle.handwriteUndo')}
+                  onPress={() => {
+                    const current =
+                      usePuzzleHistoryStore
+                        .getState()
+                        .histories.find((row) => row.id === history.id)?.inkStrokes ?? [];
+                    if (current.length === 0) return;
+                    void Haptics.selectionAsync();
+                    setHistoryInk(history.id, current.slice(0, -1));
+                  }}
+                  style={styles.inkTextBtn}>
+                  <ThemedText style={[styles.inkText, { color: c.text }]}>
+                    {t('history.puzzle.handwriteUndo')}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+              {(history.inkStrokes?.length ?? 0) > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('history.puzzle.handwriteClear')}
+                  onPress={() => {
+                    Alert.alert(
+                      t('history.puzzle.handwriteClearTitle'),
+                      t('history.puzzle.handwriteClearBody'),
+                      [
+                        { text: t('common.cancel'), style: 'cancel' },
+                        {
+                          text: t('history.puzzle.handwriteClear'),
+                          style: 'destructive',
+                          onPress: () => {
+                            void Haptics.notificationAsync(
+                              Haptics.NotificationFeedbackType.Success,
+                            );
+                            setHistoryInk(history.id, []);
+                            setWriting(false);
+                          },
+                        },
+                      ],
+                    );
+                  }}
+                  style={styles.inkTextBtn}>
+                  <ThemedText style={[styles.inkText, { color: c.text }]}>
+                    {t('history.puzzle.handwriteClear')}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
+            <Animated.View
+              pointerEvents={writing ? 'auto' : 'none'}
+              style={[styles.inkHintWrap, inkHintStyle]}>
+              <ThemedText style={[styles.inkHint, { color: c.textMuted }]}>
+                {t('history.puzzle.handwriteHint')}
+              </ThemedText>
+            </Animated.View>
+          </Animated.View>
+        ) : null}
 
         <View style={styles.infoBlock}>
           <View style={styles.infoRow}>
@@ -503,9 +789,44 @@ export function PuzzleHistoryDetailPage() {
         </View>
 
         {history.status === 'completed' ? (
-          <ThemedText style={[styles.completeBanner, { color: c.text }]}>
-            {t('history.puzzle.completedBanner', { count: targetCount })}
-          </ThemedText>
+          <View style={styles.completeRow}>
+            <ThemedText
+              style={[
+                styles.completeBanner,
+                { color: c.text },
+                canSharePhoto ? styles.completeBannerBeside : null,
+              ]}>
+              {t('history.puzzle.completedBanner', { count: targetCount })}
+            </ThemedText>
+            {canSharePhoto ? (
+              <View style={styles.saveTapeHost}>
+                <View pointerEvents="none" style={styles.saveTapeWrap}>
+                  <View
+                    style={[
+                      styles.saveTape,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255,255,255,0.34)'
+                          : 'rgba(255,255,255,0.82)',
+                      },
+                    ]}
+                  />
+                </View>
+                <BrutalConfirmButton
+                  align="end"
+                  compact
+                  label={
+                    exportingCollage
+                      ? t('history.puzzle.exportCollageBusy')
+                      : t('history.puzzle.exportCollage')
+                  }
+                  accessibilityLabel={t('history.puzzle.exportCollageA11y')}
+                  onPress={exportCollage}
+                  style={styles.shareBtn}
+                />
+              </View>
+            ) : null}
+          </View>
         ) : null}
 
         {contributions.length > 0 || history.status === 'active' ? (
@@ -670,12 +991,19 @@ export function PuzzleHistoryDetailPage() {
           setRenameOpen(false);
         }}
       />
+      <PuzzleCollageExporter
+        request={collageJob}
+        onResult={(fileUri) => {
+          collageWaiter.current?.(fileUri);
+        }}
+      />
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  scroll: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -697,6 +1025,25 @@ const styles = StyleSheet.create({
   /** 메인 퍼즐 탭 WALL_PAD(16)와 동일 — 보드 폭이 펼친 포스트잇과 맞도록 */
   content: { paddingHorizontal: 16, paddingTop: 4, gap: 12 },
   boardWrap: { alignSelf: 'stretch', marginVertical: 8 },
+  boardHit: { position: 'relative' },
+  inkBlock: { marginTop: 16 },
+  inkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  inkColors: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: INK_SWATCH_GAP,
+    overflow: 'hidden',
+  },
+  inkSwatch: { width: INK_SWATCH_SIZE, height: INK_SWATCH_SIZE },
+  inkTextBtn: { paddingVertical: 8, paddingHorizontal: 2 },
+  inkText: { fontSize: 13, fontWeight: '700' },
+  inkHintWrap: { overflow: 'hidden' },
+  inkHint: { fontSize: 13, fontWeight: '600', lineHeight: 18 },
   boardBleed: {
     paddingHorizontal: 0,
     paddingVertical: 0,
@@ -723,7 +1070,31 @@ const styles = StyleSheet.create({
   },
   infoLine: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
   infoMuted: { fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  completeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   completeBanner: { fontSize: 15, fontWeight: '700', lineHeight: 22, textAlign: 'center' },
+  completeBannerBeside: { flex: 1, textAlign: 'left' },
+  shareBtn: { flexShrink: 0 },
+  saveTapeHost: {
+    flexShrink: 0,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  saveTapeWrap: {
+    position: 'absolute',
+    top: -2,
+    left: -8,
+    zIndex: 4,
+  },
+  saveTape: {
+    width: 32,
+    height: 9,
+    borderRadius: 1,
+    transform: [{ rotate: '-20deg' }],
+  },
   sectionBlock: { gap: 4, marginTop: 4 },
   addBlock: { marginTop: 10, gap: 8 },
   addPanel: { gap: 8 },

@@ -33,6 +33,16 @@ export type PuzzleHistoryRow = {
   completionBaselineByCategory?: Record<string, number>;
   createdAt: string;
   completedAt?: string;
+  inkStrokes?: PuzzleInkStrokeRow[];
+};
+
+const INK_COLORS = ['#1A1A1A', '#FFFFFF', '#E15A5A', '#F0C14A', '#3E7FD6', '#2F8F8C', '#E48BB4'] as const;
+const INK_MAX_STROKES = 48;
+const INK_MAX_POINTS = 160;
+
+type PuzzleInkStrokeRow = {
+  color: (typeof INK_COLORS)[number];
+  points: { x: number; y: number }[];
 };
 
 export type PuzzleHistoryStateRow = {
@@ -103,9 +113,9 @@ function buildPieces(
 ): PuzzlePieceRow[] {
   const fromRaw = Array.isArray(rawPieces)
     ? rawPieces
-        .map((r) => normalizePiece(r as Partial<PuzzlePieceRow>))
-        .filter((r): r is PuzzlePieceRow => r != null)
-        .sort((a, b) => a.puzzleIndex - b.puzzleIndex)
+      .map((r) => normalizePiece(r as Partial<PuzzlePieceRow>))
+      .filter((r): r is PuzzlePieceRow => r != null)
+      .sort((a, b) => a.puzzleIndex - b.puzzleIndex)
     : [];
 
   const cappedHint = Math.max(0, Math.min(targetCount, Math.floor(completedHint)));
@@ -128,6 +138,39 @@ function buildPieces(
   return pieces;
 }
 
+function isInkColor(value: unknown): value is (typeof INK_COLORS)[number] {
+  return typeof value === 'string' && (INK_COLORS as readonly string[]).includes(value);
+}
+
+function normalizeInkStrokes(raw: unknown): PuzzleInkStrokeRow[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const source = raw.length > INK_MAX_STROKES ? raw.slice(-INK_MAX_STROKES) : raw;
+  const strokes: PuzzleInkStrokeRow[] = [];
+  for (const item of source) {
+    if (!item || typeof item !== 'object') continue;
+    const color = (item as { color?: unknown }).color;
+    if (!isInkColor(color)) continue;
+    const pointsRaw = (item as { points?: unknown }).points;
+    if (!Array.isArray(pointsRaw)) continue;
+    const points: { x: number; y: number }[] = [];
+    const pointSource =
+      pointsRaw.length > INK_MAX_POINTS ? pointsRaw.slice(0, INK_MAX_POINTS) : pointsRaw;
+    for (const point of pointSource) {
+      if (!point || typeof point !== 'object') continue;
+      const x = Number((point as { x?: unknown }).x);
+      const y = Number((point as { y?: unknown }).y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      points.push({
+        x: Math.min(1, Math.max(0, x)),
+        y: Math.min(1, Math.max(0, y)),
+      });
+    }
+    if (points.length === 0) continue;
+    strokes.push({ color, points });
+  }
+  return strokes.length > 0 ? strokes : undefined;
+}
+
 function normalizeHistory(raw: Record<string, unknown> | null | undefined): PuzzleHistoryRow | null {
   if (!raw || typeof raw.id !== 'string' || !raw.id.trim()) return null;
   if (!isStatus(raw.status)) return null;
@@ -146,13 +189,13 @@ function normalizeHistory(raw: Record<string, unknown> | null | undefined): Puzz
 
   const linkedCategoryKeys = Array.isArray(raw.linkedCategoryKeys)
     ? [
-        ...new Set(
-          raw.linkedCategoryKeys
-            .filter((k): k is string => typeof k === 'string')
-            .map((k) => k.trim())
-            .filter(Boolean),
-        ),
-      ]
+      ...new Set(
+        raw.linkedCategoryKeys
+          .filter((k): k is string => typeof k === 'string')
+          .map((k) => k.trim())
+          .filter(Boolean),
+      ),
+    ]
     : undefined;
 
   let completionBaselineByCategory: Record<string, number> | undefined;
@@ -223,6 +266,7 @@ function normalizeHistory(raw: Record<string, unknown> | null | undefined): Puzz
     completionBaselineByCategory,
     createdAt,
     completedAt: historyCompletedAt,
+    inkStrokes: normalizeInkStrokes(raw.inkStrokes),
   };
 }
 

@@ -1,3 +1,5 @@
+import type { PuzzleInkStroke } from '../lib/puzzleInk';
+
 export const PUZZLE_HISTORY_TARGETS = [1, 10, 20, 50, 100] as const;
 
 export type PuzzleHistoryTarget = (typeof PUZZLE_HISTORY_TARGETS)[number];
@@ -51,6 +53,8 @@ export type PuzzleHistory = {
   completionBaselineByCategory?: Record<string, number>;
   createdAt: string;
   completedAt?: string;
+  /** 완성 사진 위에 손가락으로 쓴 획. 보드 크기 대비 좌표. */
+  inkStrokes?: PuzzleInkStroke[];
 
   /** @deprecated targetCount */
   duration?: PuzzleHistoryTarget;

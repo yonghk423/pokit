@@ -149,4 +149,43 @@ describe('puzzleHistoryStorage', () => {
     expect(loaded.histories).toEqual([]);
     expect(loaded.activeHistoryId).toBeNull();
   });
+
+  it('round-trips handwriting and drops unknown ink colors', () => {
+    savePuzzleHistoryState({
+      schemaVersion: 2,
+      activeHistoryId: null,
+      histories: [
+        {
+          id: 'h1',
+          title: 'ink',
+          imageUri: 'file:///a.jpg',
+          targetCount: 10,
+          totalPieces: 10,
+          completedCount: 10,
+          status: 'completed',
+          createdAt: '2026-10-08T00:00:00.000Z',
+          completedAt: '2026-10-09T00:00:00.000Z',
+          completionBaseline: 0,
+          inkStrokes: [
+            { color: '#FFFFFF', points: [{ x: 0.2, y: 0.4 }, { x: 1.2, y: -1 }] },
+            { color: '#FF00AA', points: [{ x: 0.5, y: 0.5 }] },
+          ],
+          pieces: Array.from({ length: 10 }, (_, i) => ({
+            puzzleIndex: i,
+            completed: true,
+          })),
+        },
+      ],
+    });
+    const loaded = loadPuzzleHistoryState();
+    expect(loaded.histories[0]?.inkStrokes).toEqual([
+      {
+        color: '#FFFFFF',
+        points: [
+          { x: 0.2, y: 0.4 },
+          { x: 1, y: 0 },
+        ],
+      },
+    ]);
+  });
 });
