@@ -7,8 +7,6 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import { announcementBodyPreview } from '../lib/pickHomeNudgeAnnouncement';
-
 type Props = {
   announcement: Announcement;
   onUpdatePress: () => void;
@@ -17,12 +15,12 @@ type Props = {
 
 /**
  * Supabase 공지(important/force) — 「오늘의 한 줄」 슬롯용 새소식 안내.
+ * 변경 항목은 설정 → 새소식에만 두고, 여기에는 제목만 보여 준다.
  */
 export function AnnouncementHomeNudge({ announcement, onUpdatePress, onDismiss }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const preview = announcementBodyPreview(announcement.body);
 
   return (
     <View style={styles.wrap} accessibilityRole="summary">
@@ -41,15 +39,6 @@ export function AnnouncementHomeNudge({ announcement, onUpdatePress, onDismiss }
         numberOfLines={2}>
         {announcement.title}
       </ThemedText>
-      {preview ? (
-        <ThemedText
-          style={[styles.body, { color: tone.textMuted }, cityPopFont('600')]}
-          lightColor={tone.textMuted}
-          darkColor={tone.textMuted}
-          numberOfLines={2}>
-          {preview}
-        </ThemedText>
-      ) : null}
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
@@ -122,11 +111,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     lineHeight: 18,
-    letterSpacing: -0.2,
-  },
-  body: {
-    fontSize: 12,
-    lineHeight: 17,
     letterSpacing: -0.2,
   },
   actions: {
