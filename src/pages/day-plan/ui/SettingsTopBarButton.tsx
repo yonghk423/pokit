@@ -1,10 +1,10 @@
-import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { fetchAnnouncements, type AnnouncementLocale } from '@entities/announcement';
+import { useAnnouncementRefreshWhileVisible } from '@features/announcement-home-nudge';
 import { useDayPlanChromeSettingsStore } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -96,28 +96,21 @@ export function SettingsTopBarButton({ c: _c }: Props) {
   const face = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const border = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!showTopAnnouncementsButton) {
-        setHasUnreadAnnouncements(false);
-        return;
-      }
-      let cancelled = false;
-      void (async () => {
-        const result = await fetchAnnouncements(locale as AnnouncementLocale);
-        if (cancelled) return;
-        if (!result.ok) {
-          setHasUnreadAnnouncements(false);
-          return;
-        }
-        const readIds = new Set(loadAnnouncementReadIds());
-        setHasUnreadAnnouncements(result.items.some((item) => !readIds.has(item.id)));
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [showTopAnnouncementsButton, locale]),
-  );
+  const refreshUnread = useCallback(async () => {
+    if (!showTopAnnouncementsButton) {
+      setHasUnreadAnnouncements(false);
+      return;
+    }
+    const result = await fetchAnnouncements(locale as AnnouncementLocale);
+    if (!result.ok) {
+      setHasUnreadAnnouncements(false);
+      return;
+    }
+    const readIds = new Set(loadAnnouncementReadIds());
+    setHasUnreadAnnouncements(result.items.some((item) => !readIds.has(item.id)));
+  }, [locale, showTopAnnouncementsButton]);
+
+  useAnnouncementRefreshWhileVisible(refreshUnread);
 
   return (
     <View style={styles.row}>

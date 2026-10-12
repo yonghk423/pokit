@@ -1,4 +1,3 @@
-import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 
@@ -15,6 +14,7 @@ import {
 import { getAppStoreListingUrl } from '@shared/lib/support';
 
 import { pickHomeNudgeAnnouncement } from '../lib/pickHomeNudgeAnnouncement';
+import { useAnnouncementRefreshWhileVisible } from './useAnnouncementRefreshWhileVisible';
 
 export function useAnnouncementHomeNudge() {
   const locale = useAppLocaleStore((s) => s.locale) as AnnouncementLocale;
@@ -34,11 +34,7 @@ export function useAnnouncementHomeNudge() {
     setNotice(pickHomeNudgeAnnouncement(result.items, readIds));
   }, [locale]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
-  );
+  useAnnouncementRefreshWhileVisible(refresh);
 
   const dismiss = useCallback(() => {
     fetchGenRef.current += 1;

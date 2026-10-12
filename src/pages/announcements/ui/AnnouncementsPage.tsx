@@ -258,14 +258,6 @@ export function AnnouncementsPage() {
                       index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: rowBorder } : null,
                     ]}>
                     <View style={styles.rowLeft}>
-                      <RowIcon
-                        color={iconColor}
-                        boxBg={iconBoxBg}
-                        border={iconBorder}
-                        shadow={iconShadow}
-                        ringColor={cardFace}
-                        showBadge={unread}
-                      />
                       <View style={styles.rowText}>
                         <ThemedText style={[styles.rowTitle, { color: rf.text }]} numberOfLines={2}>
                           {item.title}
