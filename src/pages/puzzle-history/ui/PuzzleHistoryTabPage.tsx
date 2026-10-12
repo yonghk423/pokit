@@ -1,12 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
   InteractionManager,
   Pressable,
   StyleSheet,
+  TextInput,
   useWindowDimensions,
   View,
   type ListRenderItem,
@@ -187,6 +188,11 @@ export function PuzzleHistoryTabPage() {
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [titleQuery, setTitleQuery] = useState('');
+  const searchInputRef = useRef<TextInput>(null);
+  const searchReveal = useSharedValue(0);
+  const searchRowWidth = useSharedValue(0);
 
   const historyHydrate = useHistoryStore((s) => s.hydrate);
   const reloadFromStorage = useHistoryStore((s) => s.reloadFromStorage);
@@ -268,9 +274,54 @@ export function PuzzleHistoryTabPage() {
     return [...actives, ...completed];
   }, [histories]);
 
+  const titleQueryNormalized = titleQuery.trim().toLocaleLowerCase();
+  const filteredHistories = useMemo(() => {
+    if (!titleQueryNormalized) return wallHistories;
+    return wallHistories.filter((history) =>
+      history.title.toLocaleLowerCase().includes(titleQueryNormalized),
+    );
+  }, [titleQueryNormalized, wallHistories]);
+
+  const closeTitleSearch = useCallback(() => {
+    setSearchOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const opening = searchOpen && expandedId == null;
+    searchReveal.value = withTiming(opening ? 1 : 0, {
+      duration: opening ? 260 : 180,
+      easing: Easing.out(Easing.cubic),
+    });
+    if (!opening) {
+      searchInputRef.current?.blur();
+      return;
+    }
+    const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 140);
+    return () => clearTimeout(focusTimer);
+  }, [expandedId, searchOpen, searchReveal]);
+
+  useEffect(() => {
+    if (searchOpen) return;
+    const clearTimer = setTimeout(() => setTitleQuery(''), 200);
+    return () => clearTimeout(clearTimer);
+  }, [searchOpen]);
+
+  const stackIconStyle = useAnimatedStyle(() => ({
+    opacity: 1 - searchReveal.value,
+  }));
+
+  const searchFieldStyle = useAnimatedStyle(() => ({
+    width: searchRowWidth.value * searchReveal.value,
+    opacity: searchReveal.value,
+  }));
+
   useEffect(() => {
     if (wallHistories.length === 0 && deleteMode) clearDeleteSelection();
   }, [clearDeleteSelection, deleteMode, wallHistories.length]);
+
+  useEffect(() => {
+    if (wallHistories.length === 0 && searchOpen) closeTitleSearch();
+  }, [closeTitleSearch, searchOpen, wallHistories.length]);
 
   useEffect(() => {
     if (!deleteMode) return;
@@ -290,10 +341,8 @@ export function PuzzleHistoryTabPage() {
   const expanded = wallHistories.find((h) => h.id === expandedId) ?? null;
   const renameTarget = wallHistories.find((h) => h.id === renameTargetId) ?? null;
   const wallItems = expanded
-    ? wallHistories.filter((h) => h.id !== expandedId)
-    : wallHistories;
-
-  /** 첫 화면에 보이는 칸 수(대략 2행) — 그 외는 FlatList가 스크롤 시 마운트 */
+    ? filteredHistories.filter((h) => h.id !== expandedId)
+    : filteredHistories;
   const initialWallCount = cols * 2;
 
   useEffect(() => {
@@ -394,7 +443,16 @@ export function PuzzleHistoryTabPage() {
     if (wallHistories.length === 0) {
       return <PuzzleHistoryHomeCard palette={palette} isDark={isDark} />;
     }
-    if (!expanded) return <View style={styles.listHeaderSpacer} />;
+    if (!expanded) {
+      if (titleQueryNormalized && filteredHistories.length === 0) {
+        return (
+          <ThemedText style={[styles.searchEmpty, { color: palette.muted }]}>
+            {t('history.puzzle.searchEmpty')}
+          </ThemedText>
+        );
+      }
+      return <View style={styles.listHeaderSpacer} />;
+    }
     return (
       <View style={styles.expandedSlot}>
         <PuzzleExpandablePostIt
@@ -408,7 +466,18 @@ export function PuzzleHistoryTabPage() {
         />
       </View>
     );
-  }, [expanded, isDark, isHydrated, openDetail, palette, tileSize, wallHistories.length]);
+  }, [
+    expanded,
+    filteredHistories.length,
+    isDark,
+    isHydrated,
+    openDetail,
+    palette,
+    t,
+    tileSize,
+    titleQueryNormalized,
+    wallHistories.length,
+  ]);
 
   const listFooter = useMemo(() => {
     if (!isHydrated) {
@@ -480,22 +549,41 @@ export function PuzzleHistoryTabPage() {
               </Pressable>
             ) : (
               <View
-                accessible
-                accessibilityRole="header"
-                accessibilityLabel={t('tabs.puzzle')}
-                style={styles.titleIconWrap}>
-                <IconSymbol
-                  name="rectangle.stack"
-                  size={22}
-                  color={palette.ink}
-                />
+                style={styles.headerSearchHost}
+                onLayout={(event) => {
+                  searchRowWidth.value = event.nativeEvent.layout.width;
+                }}>
+                <Animated.View
+                  pointerEvents={searchOpen ? 'none' : 'auto'}
+                  accessible
+                  accessibilityRole="header"
+                  accessibilityLabel={t('tabs.puzzle')}
+                  style={[styles.titleIconWrap, stackIconStyle]}>
+                  <IconSymbol name="rectangle.stack" size={22} color={palette.ink} />
+                </Animated.View>
+                <Animated.View
+                  pointerEvents={searchOpen ? 'auto' : 'none'}
+                  style={[styles.headerSearchClip, searchFieldStyle]}>
+                  <TextInput
+                    ref={searchInputRef}
+                    value={titleQuery}
+                    onChangeText={setTitleQuery}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    returnKeyType="search"
+                    placeholder={t('history.puzzle.searchPlaceholder')}
+                    placeholderTextColor={palette.muted}
+                    accessibilityLabel={t('history.puzzle.searchA11y')}
+                    style={[styles.headerSearchInput, { color: palette.ink }]}
+                  />
+                </Animated.View>
               </View>
             )}
           </View>
           <View style={styles.headerActions}>
             {expanded ? (
               <HeaderIconButton
-                name="magnifyingglass"
+                name="info.circle"
                 accessibilityLabel={t('history.puzzle.openDetail')}
                 face={isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF'}
                 shadow={isDark ? ICON_SOFT_SHADOW_DARK : ICON_SOFT_SHADOW_LIGHT}
@@ -503,6 +591,26 @@ export function PuzzleHistoryTabPage() {
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   openDetail(expanded.id);
+                }}
+              />
+            ) : wallHistories.length > 0 ? (
+              <HeaderIconButton
+                name={searchOpen ? 'xmark' : 'magnifyingglass'}
+                accessibilityLabel={
+                  searchOpen
+                    ? t('history.puzzle.searchCloseA11y')
+                    : t('history.puzzle.searchA11y')
+                }
+                face={isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF'}
+                shadow={isDark ? ICON_SOFT_SHADOW_DARK : ICON_SOFT_SHADOW_LIGHT}
+                iconColor="#000000"
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (searchOpen) {
+                    closeTitleSearch();
+                    return;
+                  }
+                  setSearchOpen(true);
                 }}
               />
             ) : null}
@@ -585,6 +693,8 @@ export function PuzzleHistoryTabPage() {
           updateCellsBatchingPeriod={50}
           /** 삭제 체크박스가 absolute로 카드 밖으로 나가 clip 되지 않게 */
           removeClippedSubviews={!deleteMode}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         />
       </View>
@@ -628,10 +738,41 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   titleIconWrap: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerSearchHost: {
+    flex: 1,
+    minWidth: 0,
+    height: 28,
+    justifyContent: 'center',
+  },
+  headerSearchClip: {
+    alignSelf: 'flex-end',
+    height: 28,
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  headerSearchInput: {
+    width: '100%',
+    height: 28,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  searchEmpty: {
+    paddingVertical: 28,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   headerMeta: {
     flex: 1,
