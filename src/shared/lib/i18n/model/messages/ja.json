@@ -1692,6 +1692,7 @@
   "customFlowTemplate.reset": "リセット",
   "customFlowTemplate.resetTodayRecord": "今日のログをリセット",
   "customFlowTemplate.saveMemoA11y": "メモを保存",
+  "customFlowTemplate.deleteMemoA11y": "メモを削除",
   "customFlowTemplate.saveRecord": "ログを保存",
   "customFlowTemplate.saveRecordA11y": "ログを保存",
   "customFlowTemplate.secondaryStep": "補助",

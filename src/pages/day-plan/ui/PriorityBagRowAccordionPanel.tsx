@@ -65,6 +65,8 @@ type Props = {
   muted: string;
   /** 포스트잇 면 divider — 설정 팔레트 outline 에 전달 */
   line?: string;
+  /** 포스트잇 면색. 메모 입력칸이 이 색을 그대로 쓰게 한다. */
+  surface?: string;
   isDark: boolean;
 };
 
@@ -159,7 +161,7 @@ function asGoalDetailCategoryKey(key: string): GoalDetailCategoryKey {
   return key as GoalDetailCategoryKey;
 }
 
-function noteSurfaceColors(ink: string, muted: string, line?: string) {
+function noteSurfaceColors(ink: string, muted: string, line?: string, surface?: string) {
   const usesLightInk =
     ink === POST_IT_LIGHT_INK ||
     ink.toLowerCase() === '#ffffff' ||
@@ -168,6 +170,7 @@ function noteSurfaceColors(ink: string, muted: string, line?: string) {
     onSurface: ink,
     onVariant: muted,
     outline: line,
+    surface,
     usesLightInk,
   };
 }
@@ -201,6 +204,7 @@ export function PriorityBagRowAccordionPanel({
   ink,
   muted,
   line,
+  surface,
 }: Props) {
   const { t, locale } = useTranslation();
   const isDark = useColorScheme() === 'dark';
@@ -688,7 +692,7 @@ export function PriorityBagRowAccordionPanel({
         ) : (
           <UiSurfacePresentationProvider
             value="note"
-            noteColors={noteSurfaceColors(ink, muted, line)}>
+            noteColors={noteSurfaceColors(ink, muted, line, surface)}>
             <ChecklistAccordionSummary
               value={summaryDraft}
               onChangeValue={handleSummaryChange}
@@ -856,7 +860,7 @@ export function PriorityBagRowAccordionPanel({
     <View style={s.root}>
       <UiSurfacePresentationProvider
         value="note"
-        noteColors={noteSurfaceColors(ink, muted, line)}>
+        noteColors={noteSurfaceColors(ink, muted, line, surface)}>
         <Settings
           rhythmTitle={label}
           categoryKey={goalKey}

@@ -104,6 +104,7 @@ import {
   loadPokitWeekTourFirstTipSeen,
   loadSpineDefaultBlockMinutes,
   resolveCurrentMealSlotFromSchedule,
+  resolvePostItFaceColor,
   resolvePostItInkHex,
   resolvePostItInkMuted,
   saveGoalDetailCategoryConfig,
@@ -3555,6 +3556,11 @@ export function PriorityBasedPlanSection({
                                           endMinutes={rowSchedule.endMinutes}
                                           ink={rowPanelInk}
                                           muted={rowPanelMuted}
+                                          surface={
+                                            rowFaceId
+                                              ? resolvePostItFaceColor(rowFaceId, isDark)
+                                              : undefined
+                                          }
                                           isDark={isDark}
                                         />
                                       ) : null

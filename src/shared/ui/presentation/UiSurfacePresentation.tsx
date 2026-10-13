@@ -8,6 +8,8 @@ export type NoteSurfaceColors = {
   onVariant: string;
   outline?: string;
   outlineVariant?: string;
+  /** 포스트잇 면색. 입력칸이 기본 배경으로 면을 가리지 않게 쓴다. */
+  surface?: string;
   /** true면 화이트 잉크 면 — 트랙·칩 반투명도 밝은 계열 */
   usesLightInk?: boolean;
 };

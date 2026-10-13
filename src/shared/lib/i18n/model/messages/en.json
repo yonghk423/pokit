@@ -1695,6 +1695,7 @@
   "customFlowTemplate.reset": "Reset",
   "customFlowTemplate.resetTodayRecord": "Reset today’s log",
   "customFlowTemplate.saveMemoA11y": "Save memo",
+  "customFlowTemplate.deleteMemoA11y": "Delete memo",
   "customFlowTemplate.saveRecord": "Save log",
   "customFlowTemplate.saveRecordA11y": "Save log",
   "customFlowTemplate.secondaryStep": "Secondary",

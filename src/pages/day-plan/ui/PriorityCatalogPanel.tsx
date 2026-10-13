@@ -1277,6 +1277,7 @@ function CatalogListRow({
                   ink={rowInk}
                   muted={rowMuted}
                   line={rowLine}
+                  surface={rowFaceBg}
                   isDark={isDark}
                 />
                 {/* 요약이 탭을 붙잡지 못할 때만 폴백 (오늘 탭 DefaultPriorityOrderRow 와 동일) */}

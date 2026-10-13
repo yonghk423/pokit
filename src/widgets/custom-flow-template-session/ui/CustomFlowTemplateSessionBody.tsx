@@ -9,6 +9,7 @@ import {
   addReminderScheduleItem,
   applyHabitDoneToggle,
   applyJournalSave,
+  applyMemoDelete,
   applyMemoSave,
   applyMeasurementSave,
   applyMeasurementMetricPreset,
@@ -48,7 +49,7 @@ import {
   loadDismissedCounterPresetIds,
 } from '@shared/lib/storage';
 import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
-import { useUiSurfacePresentation } from '@shared/ui/presentation';
+import { useNoteSurfaceColors, useUiSurfacePresentation } from '@shared/ui/presentation';
 import {
   COMPLETION_CHECKED_COLOR_DARK,
   COMPLETION_CHECKED_COLOR_LIGHT,
@@ -797,23 +798,27 @@ function MemoTemplateView({
   const { t } = useTranslation();
   const { ink, muted, line, surface } = theme;
   const isNote = useUiSurfacePresentation() === 'note';
+  const noteFace = useNoteSurfaceColors()?.surface;
   const noteRule = resolveNoteRuleColor(line, ink);
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const [draft, setDraft] = useState(cfg.lastEntry ?? '');
+  const [draft, setDraft] = useState('');
   const recent = cfg.recentEntries.slice(0, 5);
   const draftLen = draft.trim().length;
   const hasDraft = draftLen > 0;
   const memoPlaceholder = previewMode ? t('customFlowTemplate.memoPlaceholder') : '';
 
-  useEffect(() => {
-    setDraft(cfg.lastEntry ?? '');
-  }, [cfg.lastEntry]);
-
   const handleSave = () => {
+    if (!hasDraft) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     emit(applyMemoSave(cfg, draft));
+    setDraft('');
+  };
+
+  const handleDelete = (index: number) => {
+    void Haptics.selectionAsync();
+    emit(applyMemoDelete(cfg, index));
   };
 
   return (
@@ -839,7 +844,7 @@ function MemoTemplateView({
               {
                 color: ink,
                 borderColor: isNote ? noteRule : line,
-                backgroundColor: isNote ? 'transparent' : surface,
+                backgroundColor: isNote ? (noteFace ?? 'transparent') : surface,
               },
             ]}
           />
@@ -904,6 +909,14 @@ function MemoTemplateView({
                 <ThemedText style={[styles.memoEntryText, { color: ink }]}>
                   {entry.text}
                 </ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('customFlowTemplate.deleteMemoA11y')}
+                  hitSlop={8}
+                  onPress={() => handleDelete(idx)}
+                  style={styles.memoEntryDeleteHit}>
+                  <ThemedText style={[styles.memoEntryDeleteMark, { color: muted }]}>×</ThemedText>
+                </Pressable>
               </View>
             ))
           )}
@@ -2487,6 +2500,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     letterSpacing: -0.1,
     minWidth: 0,
+  },
+  memoEntryDeleteHit: {
+    paddingHorizontal: 4,
+    paddingVertical: 0,
+  },
+  memoEntryDeleteMark: {
+    fontSize: 16,
+    lineHeight: 18,
+    fontWeight: '400',
   },
   entryRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 4 },
   entryMeta: { flexDirection: 'row', gap: 8, alignItems: 'center' },

@@ -119,7 +119,7 @@ export {
   addReminderScheduleItem, applyCounterDelta,
   applyCounterFillRemaining,
   applyHabitDoneToggle,
-  applyJournalSave, applyMeasurementSave, applyMemoSave, buildHabitWeekDots,
+  applyJournalSave, applyMeasurementSave, applyMemoDelete, applyMemoSave, buildHabitWeekDots,
   ensureCounterDayBoundary,
   focusElapsedMinFromSession,
   formatMeasurementDelta,

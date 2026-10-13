@@ -225,6 +225,20 @@ export function applyMemoSave(
   };
 }
 
+/** 최근 메모 한 건을 지운다. 가장 최근 글이 lastEntry로 남는다. */
+export function applyMemoDelete(
+  cfg: MemoDetailDataConfig,
+  index: number,
+): MemoDetailDataConfig {
+  if (!Number.isInteger(index) || index < 0 || index >= cfg.recentEntries.length) return cfg;
+  const recentEntries = cfg.recentEntries.filter((_, i) => i !== index);
+  return {
+    ...cfg,
+    recentEntries,
+    lastEntry: recentEntries[0]?.text ?? '',
+  };
+}
+
 export const JOURNAL_MOOD_OPTIONS = ['최고', '좋음', '보통', '별로', '힘듦'] as const;
 
 export function toggleReminderTimeDone(

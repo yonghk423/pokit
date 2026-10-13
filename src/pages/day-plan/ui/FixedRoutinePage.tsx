@@ -895,6 +895,7 @@ function FlowItemCard({
               ink={ink}
               muted={muted}
               line={line}
+              surface={sectionBg}
               isDark={isDark}
             />
           </View>

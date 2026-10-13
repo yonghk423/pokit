@@ -1928,6 +1928,7 @@
   "customFlowTemplate.emptyDraft": "비어 있음",
   "customFlowTemplate.memoPlaceholder": "예: 장보기 목록, 약속 시간, 오늘 할 일",
   "customFlowTemplate.saveMemoA11y": "메모 저장",
+  "customFlowTemplate.deleteMemoA11y": "메모 삭제",
   "customFlowTemplate.recentMemos": "최근 메모",
   "customFlowTemplate.recentMemosHint": "저장하면 최근 메모가 여기에 쌓여요.",
   "customFlowTemplate.allAbstainDone": "모든 금지를 지켰어요!",
