@@ -901,7 +901,7 @@ function MemoTemplateView({
                     </ThemedText>
                   </View>
                 </View>
-                <ThemedText style={[styles.memoEntryText, { color: ink }]} numberOfLines={3}>
+                <ThemedText style={[styles.memoEntryText, { color: ink }]}>
                   {entry.text}
                 </ThemedText>
               </View>
