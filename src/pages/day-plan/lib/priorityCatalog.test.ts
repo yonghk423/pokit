@@ -11,6 +11,7 @@ import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import {
   buildAddablePriorityCatalogSections,
   buildPriorityCatalogRows,
+  flattenAddablePriorityCatalogItems,
   sortAddablePriorityCatalogRows,
 } from './priorityCatalog';
 
@@ -66,9 +67,7 @@ describe('priorityCatalog', () => {
     expect(healthSection?.title).toBeTruthy();
     expect(healthSection?.items.some((i) => i.key === 'customFlow:user-c')).toBe(true);
     expect(healthSection?.items.some((i) => i.key === 'water')).toBe(false);
-
-    const productivitySection = sections.find((s) => s.groupKey === 'productivity');
-    expect(productivitySection).toBeTruthy();
+    expect(sections.find((s) => s.groupKey === 'productivity')).toBeUndefined();
   });
 
   it('places user-created routine groups first in the add modal', () => {
@@ -104,6 +103,37 @@ describe('priorityCatalog', () => {
       '요가',
       '카디오 & 러닝',
     ]);
+  });
+
+  it('flattens add-modal rows by name without system group headers', () => {
+    const group = createCustomCatalogGroup('주말 운동');
+    expect(group).not.toBeNull();
+    if (!group) return;
+
+    appendCustomFlowCatalogEntry({
+      id: 'customFlow:weekend-yoga',
+      groupKey: group.key,
+    });
+    saveGoalDetailCategoryConfig('customFlow:weekend-yoga', {
+      displayName: '요가',
+      checklist: [],
+    });
+
+    const sections = buildAddablePriorityCatalogSections({
+      excludedKeys: new Set(),
+      customFlowEntries: listAllCustomFlowCatalogEntries(),
+      customGroups: listCustomCatalogGroups(),
+    });
+    const flat = flattenAddablePriorityCatalogItems(sections, 'ko');
+
+    expect(flat.some((item) => item.label === '건강 루틴' || item.label === '생산성을 높이는 도구')).toBe(
+      false,
+    );
+    expect(flat.map((item) => item.label)).toEqual(
+      [...flat.map((item) => item.label)].sort((a, b) => a.localeCompare(b, 'ko')),
+    );
+    expect(flat.some((item) => item.key === 'customFlow:weekend-yoga')).toBe(true);
+    expect(new Set(flat.map((item) => item.key)).size).toBe(flat.length);
   });
 
   it('dedupes catalog rows by key', () => {

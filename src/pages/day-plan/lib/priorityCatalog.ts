@@ -118,7 +118,11 @@ function buildRoutineTabCatalogPickerItems(
   });
 }
 
-/** 루틴 탭과 동일한 상위 그룹 구조 — 나만의 루틴 항목 추가 모달용 */
+/**
+ * 추가 가능한 루틴 목록.
+ * 예전 시스템 그룹(건강 루틴·생산성을 높이는 도구)은 데이터 소속만 남기고,
+ * 항목 추가 UI는 `flattenAddablePriorityCatalogItems`로 헤더 없이 보여 준다.
+ */
 export function buildAddablePriorityCatalogSections(input: {
   excludedKeys: ReadonlySet<string>;
   customFlowEntries: CustomFlowCatalogEntry[];
@@ -161,6 +165,24 @@ export function buildAddablePriorityCatalogSections(input: {
       const bRank = userCreatedGroupKeys.has(b.groupKey) ? 0 : 1;
       return aRank - bRank;
     });
+}
+
+/** 항목 추가·일정 선택 — 카테고리 헤더 없이 이름순 평면 목록 */
+export function flattenAddablePriorityCatalogItems(
+  sections: readonly AddablePriorityCatalogSection[],
+  locale = 'ko',
+): PriorityCatalogRow[] {
+  const seen = new Set<string>();
+  const out: PriorityCatalogRow[] = [];
+  for (const section of sections) {
+    for (const item of section.items) {
+      if (seen.has(item.key)) continue;
+      seen.add(item.key);
+      out.push(item);
+    }
+  }
+  out.sort((a, b) => a.label.localeCompare(b.label, locale));
+  return out;
 }
 
 /** @deprecated 항목 추가 모달은 `buildAddablePriorityCatalogSections` 사용 */

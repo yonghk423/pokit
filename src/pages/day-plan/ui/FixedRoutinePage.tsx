@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
+  TextInput,
   UIManager,
   useWindowDimensions,
   View,
@@ -116,6 +117,7 @@ import { resolveFixedRoutineItemIconColor } from '../lib/fixedRoutineItemAppeara
 import {
   buildAddablePriorityCatalogSections,
   buildPriorityCatalogRows,
+  flattenAddablePriorityCatalogItems,
   type AddablePriorityCatalogSection,
   type PriorityCatalogRow,
 } from '../lib/priorityCatalog';
@@ -983,9 +985,13 @@ function AddItemModal({
   onClose,
   onConfirm,
 }: AddItemModalProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const flatItems = useMemo(
+    () => flattenAddablePriorityCatalogItems(sections, locale),
+    [locale, sections],
+  );
 
   useEffect(() => {
     if (visible) setSelectedKeys(new Set());
@@ -1023,47 +1029,42 @@ function AddItemModal({
           style={styles.modalScroll}
           contentContainerStyle={{ paddingBottom: 12, paddingHorizontal: 20, gap: 2 }}
           keyboardShouldPersistTaps="handled">
-          {sections.map((section) => (
-            <View key={section.groupKey}>
-              <ThemedText style={[styles.modalSectionTitle, { color: muted }]}>{section.title}</ThemedText>
-              {section.items.map((cat) => {
-                const selected = selectedKeys.has(cat.key);
-                return (
-                  <Pressable
-                    key={cat.key}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    accessibilityLabel={t('fixedRoutine.selectItemA11y', { label: cat.label, state: selected ? t('common.selected') : t('common.select') })}
-                    onPress={() => toggleSelection(cat.key)}
-                    style={({ pressed }) => [
-                      styles.modalPickRow,
-                      {
-                        borderBottomColor: line,
-                        backgroundColor: selected
-                          ? isDark
-                            ? 'rgba(255,255,255,0.08)'
-                            : 'rgba(0,0,0,0.04)'
-                          : 'transparent',
-                      },
-                      pressed && { opacity: 0.72 },
-                    ]}>
-                    <IconSymbol
-                      name={resolveCategoryCatalogIcon(cat.key) as any}
-                      size={18}
-                      color={activeIconColorByCategory(cat.key)}
-                    />
-                    <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
-                    <IconSymbol
-                      name={selected ? 'checkmark.circle.fill' : 'circle'}
-                      size={18}
-                      color={selected ? ink : muted}
-                    />
-                  </Pressable>
-                );
-              })}
-            </View>
-          ))}
-          {sections.length === 0 ? (
+          {flatItems.map((cat) => {
+            const selected = selectedKeys.has(cat.key);
+            return (
+              <Pressable
+                key={cat.key}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={t('fixedRoutine.selectItemA11y', { label: cat.label, state: selected ? t('common.selected') : t('common.select') })}
+                onPress={() => toggleSelection(cat.key)}
+                style={({ pressed }) => [
+                  styles.modalPickRow,
+                  {
+                    borderBottomColor: line,
+                    backgroundColor: selected
+                      ? isDark
+                        ? 'rgba(255,255,255,0.08)'
+                        : 'rgba(0,0,0,0.04)'
+                      : 'transparent',
+                  },
+                  pressed && { opacity: 0.72 },
+                ]}>
+                <IconSymbol
+                  name={resolveCategoryCatalogIcon(cat.key) as any}
+                  size={18}
+                  color={activeIconColorByCategory(cat.key)}
+                />
+                <ThemedText style={[styles.modalRowLabel, { color: ink }]}>{cat.label}</ThemedText>
+                <IconSymbol
+                  name={selected ? 'checkmark.circle.fill' : 'circle'}
+                  size={18}
+                  color={selected ? ink : muted}
+                />
+              </Pressable>
+            );
+          })}
+          {flatItems.length === 0 ? (
             <ThemedText style={[styles.modalEmpty, { color: muted }]}>
               {t('fixedRoutine.modalEmpty')}
             </ThemedText>
@@ -1805,6 +1806,233 @@ type FixedRoutinePageProps = {
   historyContent?: ReactNode;
 };
 
+type RoutineSetCreateCardProps = {
+  isAddingGroup: boolean;
+  newGroupName: string;
+  onChangeName: (value: string) => void;
+  onOpen: () => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+  isDark: boolean;
+  faceColor: string;
+  shadowColor: string;
+  ink: string;
+  muted: string;
+  line: string;
+  plusRest: string;
+};
+
+/** 루틴 세트 추가 — 칩 높이에서 입력 카드로 이어져 펼쳐짐 */
+function RoutineSetCreateCard({
+  isAddingGroup,
+  newGroupName,
+  onChangeName,
+  onOpen,
+  onCancel,
+  onSubmit,
+  isDark,
+  faceColor,
+  shadowColor,
+  ink,
+  muted,
+  line,
+  plusRest,
+}: RoutineSetCreateCardProps) {
+  const { t } = useTranslation();
+  const inputRef = useRef<TextInput>(null);
+  const reveal = useSharedValue(0);
+  const isOpen = useSharedValue(0);
+  const triggerHeight = useSharedValue(0);
+  const formHeight = useSharedValue(0);
+  const [triggerReady, setTriggerReady] = useState(false);
+  const [formMounted, setFormMounted] = useState(false);
+
+  useEffect(() => {
+    if (isAddingGroup) {
+      setFormMounted(true);
+      isOpen.value = 1;
+      if (formHeight.value > 0) {
+        reveal.value = withTiming(1, {
+          duration: ACCORDION_OPEN_MS,
+          easing: ACCORDION_EASING,
+        });
+      }
+      const focusTimer = setTimeout(() => inputRef.current?.focus(), 180);
+      return () => clearTimeout(focusTimer);
+    }
+    isOpen.value = 0;
+    inputRef.current?.blur();
+    reveal.value = withTiming(
+      0,
+      { duration: ACCORDION_CLOSE_MS, easing: ACCORDION_EASING },
+      (finished) => {
+        if (finished && isOpen.value === 0) runOnJS(setFormMounted)(false);
+      },
+    );
+    return undefined;
+  }, [formHeight, isAddingGroup, isOpen, reveal]);
+
+  const onTriggerLayout = useCallback(
+    (height: number) => {
+      if (height <= 0) return;
+      triggerHeight.value = height;
+      setTriggerReady(true);
+    },
+    [triggerHeight],
+  );
+
+  const onFormLayout = useCallback(
+    (height: number) => {
+      if (height <= 0) return;
+      formHeight.value = height;
+      if (isOpen.value !== 1 || reveal.value >= 1) return;
+      reveal.value = withTiming(1, {
+        duration: ACCORDION_OPEN_MS,
+        easing: ACCORDION_EASING,
+      });
+    },
+    [formHeight, isOpen, reveal],
+  );
+
+  const shellStyle = useAnimatedStyle(() => {
+    const from = triggerHeight.value;
+    const to = formHeight.value > 0 ? formHeight.value : from;
+    return {
+      height: from + (to - from) * reveal.value,
+      overflow: 'hidden' as const,
+    };
+  });
+
+  const triggerFade = useAnimatedStyle(() => ({
+    opacity: 1 - reveal.value,
+  }));
+
+  const formFade = useAnimatedStyle(() => ({
+    opacity: reveal.value,
+    transform: [{ translateY: (1 - reveal.value) * -8 }],
+  }));
+
+  const trigger = (
+    <View
+      onLayout={(e) => onTriggerLayout(e.nativeEvent.layout.height)}
+      style={styles.addGroupRevealMeasure}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('fixedRoutine.addGroupA11y')}
+      accessibilityState={{ disabled: isAddingGroup }}
+      disabled={isAddingGroup}
+      onPress={onOpen}
+      style={styles.addGroupTriggerHit}>
+      <PostItCardShell
+        compact
+        isDark={isDark}
+        faceColor={faceColor}
+        shadowColor={shadowColor}
+        shadowOffset={ACTION_SHADOW}
+        style={[styles.addGroupTriggerOuter, styles.addGroupRevealCard]}
+        contentStyle={styles.addGroupTrigger}>
+        <View style={styles.addGroupTriggerMain}>
+          <ThemedText
+            style={[styles.addGroupTriggerLabel, { color: ink, flexShrink: 1 }]}
+            numberOfLines={2}>
+            {t('fixedRoutine.addGroup')}
+          </ThemedText>
+          <View
+            style={[
+              styles.addGroupPlusShell,
+              { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
+            ]}
+            pointerEvents="none">
+            <View
+              style={[
+                styles.addGroupPlusShadow,
+                {
+                  backgroundColor: shadowColor,
+                  transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
+                },
+              ]}
+            />
+            <View style={[styles.addGroupPlusFace, { backgroundColor: plusRest }]}>
+              <IconSymbol name="plus" size={13} color={ink} />
+            </View>
+          </View>
+        </View>
+      </PostItCardShell>
+    </Pressable>
+    </View>
+  );
+
+  const form = (
+    <View
+      onLayout={(e) => onFormLayout(e.nativeEvent.layout.height)}
+      style={styles.addGroupRevealMeasure}>
+      <PostItCardShell
+        compact
+        isDark={isDark}
+        faceColor={faceColor}
+        shadowColor={shadowColor}
+        shadowOffset={ACTION_SHADOW}
+        style={[styles.addGroupCardOuter, styles.addGroupRevealCard]}
+        contentStyle={styles.addGroupCard}>
+        <ThemedText style={[styles.addGroupCaption, { color: muted }]}>
+          {t('fixedRoutine.addGroupA11y')}
+        </ThemedText>
+        <ThemedTextInput
+          ref={inputRef}
+          value={newGroupName}
+          onChangeText={onChangeName}
+          maxLength={24}
+          placeholder={t('fixedRoutine.newGroupPlaceholder')}
+          placeholderTextColor={muted}
+          style={[styles.addGroupInput, { color: ink, borderBottomColor: line }]}
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
+          accessibilityLabel={t('fixedRoutine.newGroupPlaceholder')}
+        />
+        <View style={styles.addGroupActions}>
+          <BrutalConfirmButton
+            label={t('common.cancel')}
+            accessibilityLabel={t('common.cancel')}
+            fill={isDark ? 'rgba(255,255,255,0.16)' : '#FFFFFF'}
+            labelColor={ink}
+            shadowColor={shadowColor}
+            shadowOffset={ACTION_SHADOW}
+            onPress={onCancel}
+          />
+          <BrutalConfirmButton
+            label={t('common.add')}
+            accessibilityLabel={t('fixedRoutine.addGroupA11y')}
+            shadowColor={shadowColor}
+            shadowOffset={ACTION_SHADOW}
+            onPress={onSubmit}
+          />
+        </View>
+      </PostItCardShell>
+    </View>
+  );
+
+  if (!triggerReady) {
+    return trigger;
+  }
+
+  return (
+    <Reanimated.View style={[styles.addGroupRevealShell, shellStyle]} pointerEvents="box-none">
+      <Reanimated.View
+        style={[styles.addGroupRevealLayer, triggerFade]}
+        pointerEvents="box-none">
+        {trigger}
+      </Reanimated.View>
+      {formMounted ? (
+        <Reanimated.View
+          style={[styles.addGroupRevealLayer, formFade]}
+          pointerEvents={isAddingGroup ? 'auto' : 'none'}>
+          {form}
+        </Reanimated.View>
+      ) : null}
+    </Reanimated.View>
+  );
+}
+
 export function FixedRoutinePage({
   embeddedPresetOnly = false,
   embeddedCustomOnly = false,
@@ -2370,6 +2598,7 @@ export function FixedRoutinePage({
   );
 
   const submitNewGroup = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const trimmed = newGroupName.trim();
     if (!trimmed) {
       setIsAddingGroup(false);
@@ -2379,7 +2608,6 @@ export function FixedRoutinePage({
     addSet(trimmed);
     setNewGroupName('');
     setIsAddingGroup(false);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nextSets = useFixedFlowSetsStore.getState().sets;
     const created = nextSets[nextSets.length - 1];
     if (created) {
@@ -2546,105 +2774,28 @@ export function FixedRoutinePage({
           </View>
         ) : null}
         {!isHistoryMode && canManageCustomGroups ? (
-          isAddingGroup ? (
-            <PostItCardShell
-              compact
-              isDark={isDark}
-              faceColor={addGroupFace}
-              shadowColor={addGroupActionShadow}
-              shadowOffset={ACTION_SHADOW}
-              style={styles.addGroupCardOuter}
-              contentStyle={styles.addGroupCard}>
-              <ThemedText style={[styles.addGroupCaption, { color: addGroupMuted }]}>
-                {t('fixedRoutine.addGroupA11y')}
-              </ThemedText>
-              <ThemedTextInput
-                value={newGroupName}
-                onChangeText={setNewGroupName}
-                autoFocus
-                maxLength={24}
-                placeholder={t('fixedRoutine.newGroupPlaceholder')}
-                placeholderTextColor={addGroupMuted}
-                style={[
-                  styles.addGroupInput,
-                  { color: addGroupInk, borderBottomColor: addGroupLine },
-                ]}
-                returnKeyType="done"
-                onSubmitEditing={submitNewGroup}
-                accessibilityLabel={t('fixedRoutine.newGroupPlaceholder')}
-              />
-              <View style={styles.addGroupActions}>
-                <BrutalConfirmButton
-                  label={t('common.cancel')}
-                  accessibilityLabel={t('common.cancel')}
-                  fill={isDark ? 'rgba(255,255,255,0.16)' : '#FFFFFF'}
-                  labelColor={addGroupInk}
-                  shadowColor={isDark ? tone.solidShadow : tone.border}
-                  onPress={() => {
-                    setIsAddingGroup(false);
-                    setNewGroupName('');
-                  }}
-                />
-                <BrutalConfirmButton
-                  label={t('common.add')}
-                  accessibilityLabel={t('fixedRoutine.addGroupA11y')}
-                  onPress={submitNewGroup}
-                />
-              </View>
-            </PostItCardShell>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.addGroupA11y')}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setIsAddingGroup(true);
-              }}
-              style={styles.addGroupTriggerHit}>
-              <PostItCardShell
-                compact
-                isDark={isDark}
-                faceColor={addGroupFace}
-                shadowColor={addGroupActionShadow}
-                shadowOffset={ACTION_SHADOW}
-                style={styles.addGroupTriggerOuter}
-                contentStyle={styles.addGroupTrigger}>
-                <View style={styles.addGroupTriggerMain}>
-                  <ThemedText
-                    style={[styles.addGroupTriggerLabel, { color: addGroupInk, flexShrink: 1 }]}
-                    numberOfLines={2}>
-                    {t('fixedRoutine.addGroup')}
-                  </ThemedText>
-                  <View
-                    style={[
-                      styles.addGroupPlusShell,
-                      { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
-                    ]}
-                    pointerEvents="none">
-                    <View
-                      style={[
-                        styles.addGroupPlusShadow,
-                        {
-                          backgroundColor: addGroupActionShadow,
-                          transform: [
-                            { translateX: ACTION_SHADOW },
-                            { translateY: ACTION_SHADOW },
-                          ],
-                        },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.addGroupPlusFace,
-                        { backgroundColor: addGroupPlusRest },
-                      ]}>
-                      <IconSymbol name="plus" size={13} color={addGroupInk} />
-                    </View>
-                  </View>
-                </View>
-              </PostItCardShell>
-            </Pressable>
-          )
+          <RoutineSetCreateCard
+            isAddingGroup={isAddingGroup}
+            newGroupName={newGroupName}
+            onChangeName={setNewGroupName}
+            onOpen={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setIsAddingGroup(true);
+            }}
+            onCancel={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsAddingGroup(false);
+              setNewGroupName('');
+            }}
+            onSubmit={submitNewGroup}
+            isDark={isDark}
+            faceColor={addGroupFace}
+            shadowColor={addGroupActionShadow}
+            ink={addGroupInk}
+            muted={addGroupMuted}
+            line={addGroupLine}
+            plusRest={addGroupPlusRest}
+          />
         ) : !isHistoryMode &&
           activeSection !== 'catalog' &&
           activeSection !== 'templates' &&
@@ -3221,6 +3372,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
   },
+  addGroupRevealShell: {
+    alignSelf: 'stretch',
+    maxWidth: 320,
+    marginBottom: 4,
+  },
+  addGroupRevealLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+  },
+  addGroupRevealCard: {
+    marginBottom: 0,
+  },
+  addGroupRevealMeasure: {
+    paddingRight: ACTION_SHADOW,
+    paddingBottom: ACTION_SHADOW,
+  },
   addGroupCardOuter: {
     alignSelf: 'stretch',
     maxWidth: 320,
@@ -3514,13 +3683,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingVertical: 12,
-  },
-  modalSectionTitle: {
-    marginTop: 8,
-    marginBottom: 2,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.15,
   },
   modalPickRow: {
     flexDirection: 'row',

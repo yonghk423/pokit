@@ -44,7 +44,10 @@ import {
   buildCalendarMonthGrid,
   toMonthStart,
 } from '../lib/buildCalendarMonthGrid';
-import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
+import {
+  buildAddablePriorityCatalogSections,
+  flattenAddablePriorityCatalogItems,
+} from '../lib/priorityCatalog';
 
 const CHECK_EASE = Easing.bezier(0.22, 1, 0.36, 1);
 const CHECK_ANIM_MS = 280;
@@ -161,21 +164,20 @@ export function ScheduledRoutineCalendarSheet({
     [visible],
   );
 
-  const sections = useMemo(
-    () =>
-      buildAddablePriorityCatalogSections({
-        excludedKeys: new Set(),
-        customFlowEntries,
-        customGroups,
-      })
-        .filter((section) => section.groupKey !== BUILTIN_TUTORIAL_GROUP_KEY)
-        .map((section) => ({
-          ...section,
-          items: section.items.filter((item) => !isPokitWeekTourFlowId(item.key)),
-        }))
-        .filter((section) => section.items.length > 0),
-    [customFlowEntries, customGroups],
-  );
+  const catalogItems = useMemo(() => {
+    const sections = buildAddablePriorityCatalogSections({
+      excludedKeys: new Set(),
+      customFlowEntries,
+      customGroups,
+    })
+      .filter((section) => section.groupKey !== BUILTIN_TUTORIAL_GROUP_KEY)
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => !isPokitWeekTourFlowId(item.key)),
+      }))
+      .filter((section) => section.items.length > 0);
+    return flattenAddablePriorityCatalogItems(sections, locale);
+  }, [customFlowEntries, customGroups, locale]);
 
   useEffect(() => {
     if (!visible) return;
@@ -379,30 +381,23 @@ export function ScheduledRoutineCalendarSheet({
                 : ''}
             </ThemedText>
 
-            {sections.length === 0 ? (
+            {catalogItems.length === 0 ? (
               <ThemedText style={[styles.empty, { color: muted }]}>
                 {t('dayPlan.scheduledRoutine.emptyCatalog')}
               </ThemedText>
             ) : (
-              sections.map((section) => (
-                <View key={section.groupKey} style={styles.section}>
-                  <ThemedText style={[styles.sectionTitle, { color: muted }]}>
-                    {section.title}
-                  </ThemedText>
-                  {section.items.map((item) => (
-                    <ScheduledRoutinePickRow
-                      key={item.key}
-                      categoryKey={item.key}
-                      label={item.label}
-                      icon={item.icon}
-                      selected={draftSet.has(item.key)}
-                      isDark={isDark}
-                      ink={ink}
-                      line={line}
-                      onToggle={() => toggleKey(item.key)}
-                    />
-                  ))}
-                </View>
+              catalogItems.map((item) => (
+                <ScheduledRoutinePickRow
+                  key={item.key}
+                  categoryKey={item.key}
+                  label={item.label}
+                  icon={item.icon}
+                  selected={draftSet.has(item.key)}
+                  isDark={isDark}
+                  ink={ink}
+                  line={line}
+                  onToggle={() => toggleKey(item.key)}
+                />
               ))
             )}
           </ScrollView>
@@ -567,16 +562,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     paddingVertical: 12,
-  },
-  section: {
-    gap: 0,
-  },
-  sectionTitle: {
-    marginTop: 8,
-    marginBottom: 2,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.15,
   },
   rowWrap: {
     borderBottomWidth: StyleSheet.hairlineWidth,

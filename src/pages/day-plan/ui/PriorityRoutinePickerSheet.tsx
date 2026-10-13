@@ -38,7 +38,10 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
-import { type AddablePriorityCatalogSection } from '../lib/priorityCatalog';
+import {
+  flattenAddablePriorityCatalogItems,
+  type AddablePriorityCatalogSection,
+} from '../lib/priorityCatalog';
 
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 
@@ -157,19 +160,11 @@ export function PriorityRoutinePickerSheet({
   const [defaultBlockMinutes, setDefaultBlockMinutes] = useState(() => loadSpineDefaultBlockMinutes());
 
   const spineTimeEnabled = spineGapAdd != null;
-  /** 구 카테고리(건강/일상/금지…) 헤더 없이 섹션 순서만 유지한 평면 목록 */
-  const flatItems = useMemo(() => {
-    const seen = new Set<string>();
-    const out: AddablePriorityCatalogSection['items'] = [];
-    for (const section of sections) {
-      for (const item of section.items) {
-        if (seen.has(item.key)) continue;
-        seen.add(item.key);
-        out.push(item);
-      }
-    }
-    return out;
-  }, [sections]);
+  /** 구 카테고리(건강 루틴·생산성 도구) 헤더 없이 이름순 평면 목록 */
+  const flatItems = useMemo(
+    () => flattenAddablePriorityCatalogItems(sections, locale),
+    [locale, sections],
+  );
   const baseDateKey = useMemo(() => getLocalDateKey(), []);
   const baseDateLabel = useMemo(() => formatDateKeyCompact(baseDateKey, locale), [baseDateKey, locale]);
   const nextDateLabel = useMemo(

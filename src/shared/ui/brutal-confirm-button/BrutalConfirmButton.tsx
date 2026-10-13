@@ -29,6 +29,8 @@ export type BrutalConfirmButtonProps = {
   border?: string;
   /** 있으면 solid shadow. 생략 시 연한 검정(라이트) / 연한 민트(다크) */
   shadowColor?: string;
+  /** solid shadow 오프셋. 생략 시 compact는 1, 그 외는 SOLID_SHADOW_OFFSET */
+  shadowOffset?: number;
   disabled?: boolean;
   /** 스크롤 영역에서도 탭이 쉽게 취소되지 않도록 유지할 거리 */
   pressRetentionOffset?: Insets | number;
@@ -70,6 +72,7 @@ export function BrutalConfirmButton({
   labelColor,
   border: _border,
   shadowColor,
+  shadowOffset: shadowOffsetProp,
   disabled = false,
   pressRetentionOffset,
   align = 'end',
@@ -89,7 +92,7 @@ export function BrutalConfirmButton({
   const stretch = align === 'stretch';
   const showShadow = Boolean(resolvedShadow);
   /** compact도 액션 버튼과 동일 offset 1 */
-  const shadowOffset = compact ? 1 : SOLID_SHADOW_OFFSET;
+  const shadowOffset = shadowOffsetProp ?? (compact ? 1 : SOLID_SHADOW_OFFSET);
 
   return (
     <View
