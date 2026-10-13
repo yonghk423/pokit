@@ -23,6 +23,8 @@ export type CollageExportRequest = {
   targetCount: PuzzleHistoryTarget;
   completedPuzzleIndices: number[];
   ink: PuzzleInkStroke[];
+  /** 화면 보드와 같은 시작 배치 */
+  layoutSalt?: number;
 };
 
 type Props = {
@@ -181,6 +183,7 @@ export function PuzzleCollageExporter({ request, onResult }: Props) {
       const tiles = listCompletedCollageTiles(
         current.targetCount,
         current.completedPuzzleIndices,
+        current.layoutSalt ?? 0,
       );
       const payload = JSON.stringify({
         id: current.id,

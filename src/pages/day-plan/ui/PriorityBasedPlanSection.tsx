@@ -113,7 +113,6 @@ import {
 } from '@shared/lib/storage';
 import { useAppClockEpoch } from '@shared/lib/time/appClock';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
-import { COMPLETION_TOGGLE_ANIM_MS } from '@shared/ui/completion-radio-button';
 import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -174,25 +173,6 @@ function resolveCatalogGroupKeyForPersist(raw: string): string {
   if (listCustomCatalogGroups().some((g) => g.key === t)) return t;
   if (isCustomCatalogGroupKey(t)) return t;
   return DEFAULT_CUSTOM_FLOW_GROUP_KEY;
-}
-
-function partitionDisplayWithDeferredBottom<T>(
-  items: T[],
-  resolveKey: (item: T) => string,
-  isDone: (item: T) => boolean,
-  deferredKeys: ReadonlySet<string>,
-): T[] {
-  const active: T[] = [];
-  const done: T[] = [];
-  for (const item of items) {
-    const key = resolveKey(item);
-    if (!isDone(item) || deferredKeys.has(key)) {
-      active.push(item);
-    } else {
-      done.push(item);
-    }
-  }
-  return [...active, ...done];
 }
 
 import { useDayPlanDraftStore } from '@entities/day-plan';
@@ -763,10 +743,6 @@ export function PriorityBasedPlanSection({
   const [lastAddedCategoryKey, setLastAddedCategoryKey] = useState<string | null>(null);
   /** 순서 드래그 직후에만 Reanimated layout 전환 — 드래그 중 state 변경 시 제스처가 끊김 */
   const [priorityRowLayoutAnim, setPriorityRowLayoutAnim] = useState(false);
-  const [deferredBottomReorderKeys, setDeferredBottomReorderKeys] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const deferredReorderTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const priorityTimelineScrollRef = useRef<ScrollView>(null);
   const priorityTimelineScrollOffsetRef = useRef(0);
   const todoKeyboardHeightRef = useRef(0);
@@ -888,54 +864,6 @@ export function PriorityBasedPlanSection({
   }, [layoutMode]);
 
   useEffect(() => {
-    const timers = deferredReorderTimersRef.current;
-    return () => {
-      for (const timer of timers.values()) {
-        clearTimeout(timer);
-      }
-      timers.clear();
-    };
-  }, []);
-
-  const scheduleDeferredMoveToBottom = useCallback((itemKey: string) => {
-    const existing = deferredReorderTimersRef.current.get(itemKey);
-    if (existing) clearTimeout(existing);
-
-    setDeferredBottomReorderKeys((prev) => {
-      const next = new Set(prev);
-      next.add(itemKey);
-      return next;
-    });
-
-    const timer = setTimeout(() => {
-      deferredReorderTimersRef.current.delete(itemKey);
-      setDeferredBottomReorderKeys((prev) => {
-        const next = new Set(prev);
-        next.delete(itemKey);
-        return next;
-      });
-      setPriorityRowLayoutAnim(true);
-    }, COMPLETION_TOGGLE_ANIM_MS);
-
-    deferredReorderTimersRef.current.set(itemKey, timer);
-  }, []);
-
-  const releaseDeferredMoveToBottom = useCallback((itemKey: string) => {
-    const existing = deferredReorderTimersRef.current.get(itemKey);
-    if (existing) {
-      clearTimeout(existing);
-      deferredReorderTimersRef.current.delete(itemKey);
-    }
-    setDeferredBottomReorderKeys((prev) => {
-      if (!prev.has(itemKey)) return prev;
-      const next = new Set(prev);
-      next.delete(itemKey);
-      return next;
-    });
-    setPriorityRowLayoutAnim(true);
-  }, []);
-
-  useEffect(() => {
     if (spineDragActive) {
       setPriorityTimelineScrollEnabled(false);
       return;
@@ -977,7 +905,7 @@ export function PriorityBasedPlanSection({
   );
 
   /**
-   * 미완료는 위·완료는 아래. 각 그룹 안에서는 설정한 시작 시각 오름차순
+   * 시작 시각 오름차순. 완료해도 자리는 바꾸지 않는다.
    * (미설정은 그 그룹의 뒤).
    */
   const orderedSelectedItemsForDisplay = useMemo(() => {
@@ -990,25 +918,9 @@ export function PriorityBasedPlanSection({
         priorityEnd,
         storedStartTimes: routineStartTimesByKey,
       });
-    const partitioned = partitionDisplayWithDeferredBottom(
-      selectedItems,
-      (cat) => cat.key,
-      (cat) => isPriorityRowCompleted(cat.key),
-      deferredBottomReorderKeys,
-    );
-    let split = 0;
-    for (const item of partitioned) {
-      if (isPriorityRowCompleted(item.key) && !deferredBottomReorderKeys.has(item.key)) break;
-      split += 1;
-    }
-    return [
-      ...sortByExplicitSpineStartTime(partitioned.slice(0, split), (cat) => cat.key, resolveSchedule),
-      ...sortByExplicitSpineStartTime(partitioned.slice(split), (cat) => cat.key, resolveSchedule),
-    ];
+    return sortByExplicitSpineStartTime(selectedItems, (cat) => cat.key, resolveSchedule);
   }, [
-    deferredBottomReorderKeys,
     selectedItems,
-    isPriorityRowCompleted,
     planBlocks,
     fixedFlowSets,
     priorityStart,
@@ -1049,25 +961,9 @@ export function PriorityBasedPlanSection({
         priorityEnd,
         storedStartTimes: routineStartTimesByKey,
       });
-    const partitioned = partitionDisplayWithDeferredBottom(
-      sectionsCatalogItems,
-      (cat) => cat.key,
-      (cat) => isPriorityRowCompleted(cat.key),
-      deferredBottomReorderKeys,
-    );
-    let split = 0;
-    for (const item of partitioned) {
-      if (isPriorityRowCompleted(item.key) && !deferredBottomReorderKeys.has(item.key)) break;
-      split += 1;
-    }
-    return [
-      ...sortByExplicitSpineStartTime(partitioned.slice(0, split), (cat) => cat.key, resolveSchedule),
-      ...sortByExplicitSpineStartTime(partitioned.slice(split), (cat) => cat.key, resolveSchedule),
-    ];
+    return sortByExplicitSpineStartTime(sectionsCatalogItems, (cat) => cat.key, resolveSchedule);
   }, [
-    deferredBottomReorderKeys,
     sectionsCatalogItems,
-    isPriorityRowCompleted,
     planBlocks,
     fixedFlowSets,
     priorityStart,
@@ -1663,38 +1559,16 @@ export function PriorityBasedPlanSection({
         storedStartTimes: routineStartTimesByKey,
       });
     const mapped = priorityMealSlotSections.map((section) => {
-      const partitioned = partitionDisplayWithDeferredBottom(
-        section.items,
-        (cat) => buildPrioritySectionCompletionKey(cat.key, section.slot),
-        (cat) => isPrioritySectionItemCompleted(cat.key, section.slot),
-        deferredBottomReorderKeys,
-      );
-      let split = 0;
-      for (const item of partitioned) {
-        const completionKey = buildPrioritySectionCompletionKey(item.key, section.slot);
-        if (
-          isPrioritySectionItemCompleted(item.key, section.slot) &&
-          !deferredBottomReorderKeys.has(completionKey)
-        ) {
-          break;
-        }
-        split += 1;
-      }
       return {
         ...section,
-        items: [
-          ...sortByExplicitSpineStartTime(partitioned.slice(0, split), (cat) => cat.key, resolveSchedule),
-          ...sortByExplicitSpineStartTime(partitioned.slice(split), (cat) => cat.key, resolveSchedule),
-        ],
+        items: sortByExplicitSpineStartTime(section.items, (cat) => cat.key, resolveSchedule),
       };
     });
     // 달력 다중일(explicit)과 시계 자정 넘김은 별개 — 구간 표시는 HH:mm 창만 따른다.
     const spansNextDay = isOvernightHhmmRange(priorityStart, priorityEnd);
     return clampMealSlotSectionsToWindow(mapped, priorityStart, priorityEnd, spansNextDay);
   }, [
-    deferredBottomReorderKeys,
     fixedFlowSets,
-    isPrioritySectionItemCompleted,
     planBlocks,
     priorityMealSlotSections,
     priorityStart,
@@ -1860,18 +1734,14 @@ export function PriorityBasedPlanSection({
   const handleTogglePriorityRowComplete = useCallback(
     (categoryKey: string) => {
       if (isPriorityRowCompleted(categoryKey)) {
-        releaseDeferredMoveToBottom(categoryKey);
         undoPriorityRowCompletion(categoryKey);
         return;
       }
-      scheduleDeferredMoveToBottom(categoryKey);
       addFocusCategoryCompleted(categoryKey);
     },
     [
       addFocusCategoryCompleted,
       isPriorityRowCompleted,
-      releaseDeferredMoveToBottom,
-      scheduleDeferredMoveToBottom,
       undoPriorityRowCompletion,
     ],
   );
@@ -1880,18 +1750,14 @@ export function PriorityBasedPlanSection({
     (categoryKey: string, slot: DayMealSlot) => {
       const itemKey = buildPrioritySectionCompletionKey(categoryKey, slot);
       if (isPrioritySectionItemCompleted(categoryKey, slot)) {
-        releaseDeferredMoveToBottom(itemKey);
         undoPrioritySectionItemCompletion(categoryKey, slot);
         return;
       }
-      scheduleDeferredMoveToBottom(itemKey);
       addFocusCategoryCompleted(itemKey);
     },
     [
       addFocusCategoryCompleted,
       isPrioritySectionItemCompleted,
-      releaseDeferredMoveToBottom,
-      scheduleDeferredMoveToBottom,
       undoPrioritySectionItemCompletion,
     ],
   );

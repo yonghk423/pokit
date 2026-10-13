@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -15,6 +15,7 @@ import Animated, {
 
 import {
   buildPuzzleRevealLayout,
+  puzzleLayoutSalt,
   listUnseenCompletedPuzzleIndices,
   markPuzzleRevealSeen,
   type PuzzleHistory,
@@ -91,10 +92,12 @@ function TilePhoto({
   recyclingKey,
   priority,
   decodeEdge,
+  onError,
 }: TileLayoutProps & {
   priority?: 'low' | 'normal' | 'high';
-  /** expo-image 디코드 힌트(표시 보드 긴 변). 벽 lite는 작게 */
+  /** 벽 썸네일만. 펼침 원본에는 주면 안 된다 — 파일 크기와 다른 정사각 힌트가 빈 비트맵이 된다. */
   decodeEdge?: number;
+  onError?: () => void;
 }) {
   if (tile.fill === 'solid') {
     return (
@@ -128,6 +131,7 @@ function TilePhoto({
         recyclingKey={`${recyclingKey}:${tile.key}:${edge ?? 'f'}`}
         transition={0}
         priority={priority}
+        onError={onError}
       />
     </View>
   );
@@ -145,7 +149,8 @@ function StaticPostItTile({
   imageUri,
   recyclingKey,
   lite,
-}: TileLayoutProps & { lite?: boolean }) {
+  onImageError,
+}: TileLayoutProps & { lite?: boolean; onImageError?: () => void }) {
   const frame = tileFrame(tile, boardW, boardH);
   return (
     <View
@@ -176,8 +181,9 @@ function StaticPostItTile({
             boardH={boardH}
             imageUri={imageUri}
             recyclingKey={recyclingKey}
-            priority={lite ? 'low' : 'high'}
-            decodeEdge={Math.max(boardW, boardH)}
+            priority={lite ? 'low' : 'normal'}
+            decodeEdge={lite ? Math.max(boardW, boardH) : undefined}
+            onError={onImageError}
           />
         </View>
       </View>
@@ -195,7 +201,8 @@ function AnimatedPostItTile({
   imageUri,
   recyclingKey,
   onAnimDone,
-}: TileLayoutProps & { onAnimDone?: () => void }) {
+  onImageError,
+}: TileLayoutProps & { onAnimDone?: () => void; onImageError?: () => void }) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -245,8 +252,8 @@ function AnimatedPostItTile({
             boardH={boardH}
             imageUri={imageUri}
             recyclingKey={recyclingKey}
-            priority="high"
-            decodeEdge={Math.max(boardW, boardH)}
+            priority="normal"
+            onError={onImageError}
           />
         </View>
       </View>
@@ -327,19 +334,39 @@ function PuzzleBoardComponent({
   const { t } = useTranslation();
   const targetCount = history.targetCount ?? history.duration ?? 10;
   const pieces = history.pieces ?? history.dailyRecords ?? [];
-  const layout = useMemo(() => buildPuzzleRevealLayout(targetCount), [targetCount]);
+  const layoutSalt = useMemo(() => puzzleLayoutSalt(history.id), [history.id]);
+  const layout = useMemo(
+    () => buildPuzzleRevealLayout(targetCount, layoutSalt),
+    [layoutSalt, targetCount],
+  );
   const boardW = width;
   const boardH = width * (layout.viewBoxHeight / layout.viewBoxWidth);
   const isPreview = variant === 'preview';
-  const displayUri = useMemo(
+  const thumbUri = history.thumbnailUri?.trim() ?? '';
+  const fullUri = history.imageUri.trim();
+  const resolvedUri = useMemo(
     () =>
       resolvePuzzleBoardImageUri(
-        history.imageUri,
-        history.thumbnailUri,
+        fullUri,
+        thumbUri || undefined,
         isPreview ? PREVIEW_RESOLVE_WIDTH : boardW,
       ),
-    [boardW, history.imageUri, history.thumbnailUri, isPreview],
+    [boardW, fullUri, isPreview, thumbUri],
   );
+  const [useThumb, setUseThumb] = useState(false);
+
+  useEffect(() => {
+    setUseThumb(false);
+  }, [fullUri, thumbUri]);
+
+  /** 펼친 뒤에는 URI를 갈아타지 않는다. 원본이 실패할 때만 썸네일로 한 번 내려간다. */
+  const displayUri =
+    useThumb && thumbUri.length > 0 && thumbUri !== fullUri ? thumbUri : resolvedUri;
+
+  const onFullImageError = useCallback(() => {
+    if (isPreview || !thumbUri || thumbUri === fullUri || displayUri === thumbUri) return;
+    setUseThumb(true);
+  }, [displayUri, fullUri, isPreview, thumbUri]);
 
   useEffect(() => {
     if (!onPaint || boardW <= 0) return;
@@ -348,7 +375,7 @@ function PuzzleBoardComponent({
     });
     return () => cancelAnimationFrame(id);
   }, [boardW, history.id, onPaint, variant]);
-  const imageRecyclingKey = `${history.id}:${isPreview ? 'p' : 'f'}:${Math.round(boardW)}`;
+  const imageRecyclingKey = `${history.id}:${isPreview ? 'p' : 'f'}:${displayUri}`;
 
   const [animatingIndices, setAnimatingIndices] = useState<ReadonlySet<number>>(
     () => new Set(),
@@ -519,6 +546,7 @@ function PuzzleBoardComponent({
               boardH={boardH}
               imageUri={displayUri}
               recyclingKey={imageRecyclingKey}
+              onImageError={onFullImageError}
               onAnimDone={
                 puzzleIndex >= 0
                   ? () => {
@@ -542,6 +570,7 @@ function PuzzleBoardComponent({
             boardH={boardH}
             imageUri={displayUri}
             recyclingKey={imageRecyclingKey}
+            onImageError={onFullImageError}
           />
         );
       })}

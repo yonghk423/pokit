@@ -24,8 +24,9 @@ export type CollageDrawTile = {
 export function listCompletedCollageTiles(
   targetCount: PuzzleHistoryTarget,
   completedPuzzleIndices: Iterable<number>,
+  layoutSalt = 0,
 ): CollageDrawTile[] {
-  const layout = buildPuzzleRevealLayout(targetCount);
+  const layout = buildPuzzleRevealLayout(targetCount, layoutSalt);
   const completed = new Set(completedPuzzleIndices);
   const tiles: CollageDrawTile[] = [
     ...layout.seeds.map((tile) => ({

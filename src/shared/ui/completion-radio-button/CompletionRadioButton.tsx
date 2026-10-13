@@ -15,6 +15,8 @@ import { useTranslation } from '@shared/lib/i18n';
 export const COMPLETION_TOGGLE_ANIM_MS = 280;
 /** soft 모션 기준 — 토글 후 후속 UI 동기화용 */
 export const COMPLETION_TOGGLE_SOFT_ANIM_MS = 420;
+/** 오늘 목록 완료 — 체크가 다 채워진 뒤에 행을 내리기 위한 길이 */
+export const COMPLETION_TOGGLE_GENTLE_ANIM_MS = 560;
 
 /** 완료 채움 — 라이트/다크 민트 면 (호출부에서 override 가능) */
 export const COMPLETION_CHECKED_COLOR_LIGHT = RetroFlatColors.light.bgMint;
@@ -62,6 +64,13 @@ const MOTION = {
     fillOutMs: 340,
     pressInMs: 140,
     pressOutMs: 200,
+    easing: EASE_SOFT,
+  },
+  gentle: {
+    fillInMs: COMPLETION_TOGGLE_GENTLE_ANIM_MS,
+    fillOutMs: 420,
+    pressInMs: 160,
+    pressOutMs: 240,
     easing: EASE_SOFT,
   },
 } as const;
@@ -179,9 +188,11 @@ export function CompletionRadioButton({
     transform: [{ scale: 0.92 + (1 - fillProgress.value) * 0.08 }],
   }));
 
+  const fillFrom = motion === 'gentle' ? 0.94 : 0.72;
+  const fillGain = motion === 'gentle' ? 0.06 : 0.28;
   const fillAnimatedStyle = useAnimatedStyle(() => ({
     opacity: fillProgress.value,
-    transform: [{ scale: 0.72 + fillProgress.value * 0.28 }],
+    transform: [{ scale: fillFrom + fillProgress.value * fillGain }],
   }));
 
   const handlePress = () => {

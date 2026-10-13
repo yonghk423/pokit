@@ -17,6 +17,7 @@ import { categoryReminderLabelKo, useDayPlanDraftStore } from '@entities/day-pla
 import { historyDateKeyToday, useHistoryStore } from '@entities/history';
 import {
   isPuzzleHistoryTarget,
+  puzzleLayoutSalt,
   PUZZLE_INK_COLORS,
   sanitizePuzzleInkStrokes,
   usePuzzleHistoryStore,
@@ -432,6 +433,7 @@ export function PuzzleHistoryDetailPage() {
       ink: sanitizePuzzleInkStrokes(
         usePuzzleHistoryStore.getState().histories.find((row) => row.id === history.id)?.inkStrokes,
       ),
+      layoutSalt: puzzleLayoutSalt(history.id),
     };
     void new Promise<string | null>((resolve) => {
       collageWaiter.current = resolve;

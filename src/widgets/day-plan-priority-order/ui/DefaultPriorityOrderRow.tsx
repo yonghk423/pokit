@@ -50,8 +50,47 @@ import type { PriorityOrderRowProps } from '../lib/types';
 const MARK_SWATCH = 28;
 const MARK_SHADOW = 2;
 
-/** 완료 버튼 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
 const GRAY_DEFAULT_LIGHT = '#9CA3AF';
+const PEN_STRIKE_MS = 720;
+const PEN_STRIKE_EASE = Easing.bezier(0.16, 0.72, 0.2, 1);
+
+/** 완료 글줄 — 왼쪽에서 펜으로 긋듯 이어진다 */
+function PenStruckBlock({
+  struck,
+  strikeColor,
+  children,
+}: {
+  struck: boolean;
+  strikeColor: string;
+  children: ReactElement;
+}) {
+  const draw = useSharedValue(struck ? 1 : 0);
+  const fade = useSharedValue(struck ? 0.55 : 1);
+
+  useEffect(() => {
+    const duration = struck ? PEN_STRIKE_MS : 320;
+    draw.value = withTiming(struck ? 1 : 0, { duration, easing: PEN_STRIKE_EASE });
+    fade.value = withTiming(struck ? 0.55 : 1, { duration, easing: PEN_STRIKE_EASE });
+  }, [draw, fade, struck]);
+
+  const textStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+  const lineStyle = useAnimatedStyle(() => ({
+    opacity: draw.value * 0.38,
+    transform: [{ scaleX: draw.value }],
+  }));
+
+  return (
+    <View style={styles.penStrikeHost}>
+      <Reanimated.View style={textStyle}>{children}</Reanimated.View>
+      <Reanimated.View
+        pointerEvents="none"
+        style={[styles.penStrikeLine, { backgroundColor: strikeColor }, lineStyle]}
+      />
+    </View>
+  );
+}
+
+/** 완료 버튼 — 집중 시작 전·후 모두 표시(담기 목록에서 완료 표시 가능) */
 /** 설정·펼침 액션 아이콘 — 솔리드 음영과 맞춘 순수 검정 */
 const ACTION_ICON_LIGHT = '#000000';
 const ACTION_ICON_DARK = '#FAFAFA';
@@ -335,26 +374,19 @@ function DefaultPriorityOrderRowInner({
               style={[styles.orderRowTitleHighlight, { backgroundColor: titleHighlight }]}
             />
           ) : null}
-          <ThemedText
-            style={[
-              styles.orderRowRomanTitle,
-              styles.orderRowTitleText,
-              { color: rowInk },
-              isCompleted && styles.orderRowRomanTitleDone,
-            ]}
-            numberOfLines={1}
-            lightColor={rowInk}
-            darkColor={rowInk}>
-            {label}
-          </ThemedText>
+          <PenStruckBlock struck={Boolean(isCompleted)} strikeColor={rowInk}>
+            <ThemedText
+              style={[styles.orderRowRomanTitle, styles.orderRowTitleText, { color: rowInk }]}
+              numberOfLines={1}
+              lightColor={rowInk}
+              darkColor={rowInk}>
+              {label}
+            </ThemedText>
+          </PenStruckBlock>
         </View>
         {summaryHint ? (
           <ThemedText
-            style={[
-              styles.orderRowSummaryHint,
-              { color: rowInkMuted },
-              isCompleted && styles.orderRowRomanTitleDone,
-            ]}
+            style={[styles.orderRowSummaryHint, { color: rowInkMuted }]}
             numberOfLines={2}
             lightColor={rowInkMuted}
             darkColor={rowInkMuted}>
@@ -386,11 +418,7 @@ function DefaultPriorityOrderRowInner({
             />
             {subtitle ? (
               <ThemedText
-                style={[
-                  styles.orderRowRomanSubtitle,
-                  { color: rowInkMuted },
-                  isCompleted && styles.orderRowRomanTitleDone,
-                ]}
+                style={[styles.orderRowRomanSubtitle, { color: rowInkMuted }]}
                 numberOfLines={1}
                 lightColor={rowInkMuted}
                 darkColor={rowInkMuted}>
@@ -408,11 +436,7 @@ function DefaultPriorityOrderRowInner({
           </Pressable>
         ) : subtitle ? (
           <ThemedText
-            style={[
-              styles.orderRowRomanSubtitle,
-              { color: rowInkMuted, marginTop: 2 },
-              isCompleted && styles.orderRowRomanTitleDone,
-            ]}
+            style={[styles.orderRowRomanSubtitle, { color: rowInkMuted, marginTop: 2 }]}
             numberOfLines={1}
             lightColor={rowInkMuted}
             darkColor={rowInkMuted}>
@@ -1011,6 +1035,7 @@ function DefaultPriorityOrderRowInner({
             checked={Boolean(isCompleted)}
             isDark={isDark}
             size={ORDER_ACTION_FACE}
+            motion="gentle"
             checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
             uncheckedColor={isDark ? 'rgba(255,255,255,0.42)' : GRAY_DEFAULT_LIGHT}
             accessibilityLabel={isCompleted ? t('dayPlan.completeCancelA11y', { label }) : t('dayPlan.completeA11y', { label })}

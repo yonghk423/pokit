@@ -133,10 +133,20 @@ export const orderRowStyles = StyleSheet.create({
   subtitleTimeIcon: {
     marginTop: 0.5,
   },
-  orderRowRomanTitleDone: {
-    textDecorationLine: 'line-through',
-    textDecorationStyle: 'solid',
-    opacity: 0.52,
+  penStrikeHost: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    position: 'relative',
+  },
+  penStrikeLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '50%',
+    height: 1.5,
+    marginTop: -0.75,
+    borderRadius: 1,
+    transformOrigin: 'left center',
   },
   orderRowActions: {
     flexDirection: 'row',

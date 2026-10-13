@@ -30,6 +30,7 @@ export {
 export type { PuzzleInkColor, PuzzleInkPoint, PuzzleInkStroke } from './lib/puzzleInk';
 export {
   buildPuzzleRevealLayout,
+  puzzleLayoutSalt,
   PUZZLE_JIGSAW_VIEWBOX,
   PUZZLE_POSTIT_HEIGHT,
   PUZZLE_POSTIT_WIDTH,

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { Dimensions, InteractionManager, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -129,8 +129,7 @@ function PuzzleExpandablePostItComponent({
 }: Props) {
   const { t } = useTranslation();
   const estimatedW = Math.max(120, Dimensions.get('window').width - EXPAND_H_INSET);
-  const [boardWidth, setBoardWidth] = useState(estimatedW);
-  const [boardReady, setBoardReady] = useState(false);
+  const [boardWidth, setBoardWidth] = useState(0);
   const press = useSharedValue(0);
   const cover = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const noteFace = isDark ? WALL_NOTE_DARK : WALL_NOTE;
@@ -156,14 +155,10 @@ function PuzzleExpandablePostItComponent({
   }, [estimatedW, history.imageUri, history.thumbnailUri]);
 
   useEffect(() => {
-    if (!expanded) {
-      setBoardReady(false);
-      setBoardWidth(estimatedW);
-    }
-  }, [estimatedW, expanded]);
+    if (!expanded) setBoardWidth(0);
+  }, [expanded]);
 
   if (expanded) {
-    const showSkeleton = !boardReady;
     return (
       <Animated.View entering={expandIn} exiting={expandOut} style={styles.expandedWrap}>
         <PostItCardShell
@@ -177,7 +172,8 @@ function PuzzleExpandablePostItComponent({
             style={styles.expandedBoardHost}
             onLayout={(e) => {
               const w = e.nativeEvent.layout.width;
-              if (w > 0 && Math.abs(w - boardWidth) > 0.5) setBoardWidth(w);
+              if (w <= 0) return;
+              setBoardWidth((prev) => (prev > 0 ? prev : w));
             }}>
             {boardWidth > 0 ? (
               <Pressable
@@ -201,20 +197,11 @@ function PuzzleExpandablePostItComponent({
                   muted={palette.muted}
                   cover={cover}
                   variant="full"
-                  onPaint={() => {
-                    const handle = InteractionManager.runAfterInteractions(() => {
-                      setTimeout(() => setBoardReady(true), 160);
-                    });
-                    void handle;
-                  }}
                 />
               </Pressable>
-            ) : null}
-            {showSkeleton ? (
-              <View pointerEvents="none" style={styles.skeletonOverlay}>
-                <PuzzleBoardSkeleton isDark={isDark} />
-              </View>
-            ) : null}
+            ) : (
+              <PuzzleBoardSkeleton isDark={isDark} />
+            )}
           </View>
         </PostItCardShell>
       </Animated.View>
@@ -446,10 +433,6 @@ const styles = StyleSheet.create({
   expandedBoardHost: {
     position: 'relative',
     width: '100%',
-  },
-  skeletonOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 4,
   },
   cardBleed: {
     paddingHorizontal: 0,

@@ -123,11 +123,25 @@ function rand(salt: number): number {
 }
 
 /**
+ * 퍼즐 id → 레이아웃 솔트.
+ * 같은 퍼즐은 항상 같은 배치, 다른 퍼즐은 다른 시작 조각.
+ */
+export function puzzleLayoutSalt(historyId: string): number {
+  let hash = 2166136261;
+  const id = historyId.trim();
+  for (let i = 0; i < id.length; i += 1) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+/**
  * 레퍼런스처럼 겹치는 큰 포스트잇 몇 장으로 시작.
  * 가장자리까지 덮어 완성 시 원본 구도가 보드에 다 채워지게 한다.
  * 이후 큰 장을 갈라 목표 장수까지 채운다.
  */
-function initialCollageTiles(): RawTile[] {
+function initialCollageTiles(layoutSalt: number): RawTile[] {
   /** seedScore: 가장자리 높음 · 가운데(c/d/f) 낮음 — 초기엔 테두리만 붙게 */
   const base: Array<Omit<RawTile, 'imgX' | 'imgY' | 'imgW' | 'imgH' | 'rotate'>> = [
     { id: 'a', x: -0.03, y: -0.03, w: 0.52, h: 0.36, z: 2, fill: 'image', seedScore: 10 },
@@ -145,10 +159,11 @@ function initialCollageTiles(): RawTile[] {
   ];
 
   return base.map((t, i) => {
-    /** 손 붙인 느낌 — 최소 위치·기울기 */
-    const jx = (rand(i * 3 + 1) - 0.5) * 0.01;
-    const jy = (rand(i * 3 + 2) - 0.5) * 0.01;
-    const rotate = (rand(i * 3 + 3) - 0.5) * 2.4;
+    /** 손 붙인 느낌 — 퍼즐마다 다르되 소폭만 */
+    const s = layoutSalt * 17 + i * 3;
+    const jx = (rand(s + 1) - 0.5) * 0.016;
+    const jy = (rand(s + 2) - 0.5) * 0.016;
+    const rotate = (rand(s + 3) - 0.5) * 7.2;
     const x = t.x + jx;
     const y = t.y + jy;
     const w = t.w;
@@ -269,8 +284,32 @@ function splitTile(tile: RawTile, salt: number): [RawTile, RawTile] {
   return [top, bottom];
 }
 
-function collectPool(needed: number): RawTile[] {
-  let pool = initialCollageTiles();
+/** 좌우·상하 반전. 사진 창은 프레임과 같이 뒤집혀 완성 구도는 유지된다. */
+function applyBoardVariant(tile: RawTile, variant: number): RawTile {
+  let { x, y, w, h, rotate } = tile;
+  const v = variant & 3;
+  if (v & 1) {
+    x = 1 - x - w;
+    rotate = -rotate;
+  }
+  if (v & 2) {
+    y = 1 - y - h;
+    rotate = -rotate;
+  }
+  return syncImageWindowToFrame({ ...tile, x, y, w, h, rotate });
+}
+
+function clampOnBoard(tile: RawTile): RawTile {
+  let { x, y, w, h } = tile;
+  if (x < -0.045) x = -0.045;
+  if (y < -0.045) y = -0.045;
+  if (x + w > 1.06) x = 1.06 - w;
+  if (y + h > 1.06) y = 1.06 - h;
+  return syncImageWindowToFrame({ ...tile, x, y, w, h });
+}
+
+function collectPool(needed: number, layoutSalt: number): RawTile[] {
+  let pool = initialCollageTiles(layoutSalt);
   let salt = 0;
   while (pool.length < needed) {
     let best = 0;
@@ -295,12 +334,34 @@ function collectPool(needed: number): RawTile[] {
         }
       }
     }
-    const [a, b] = splitTile(pool[best]!, salt + pool.length * 17);
+    const [a, b] = splitTile(pool[best]!, layoutSalt * 1009 + salt + pool.length * 17);
     salt += 1;
     pool = [...pool.slice(0, best), a, b, ...pool.slice(best + 1)];
   }
-  /** 거의 안 줄여 아주 미세한 틈만 */
-  return pool.map((tile) => inflateTile(tile, -0.002));
+  /** 거의 안 줄여 아주 미세한 틈만. 반전은 퍼즐 솔트마다 다르다. */
+  const variant = layoutSalt % 4;
+  return pool.map((tile) => clampOnBoard(applyBoardVariant(inflateTile(tile, -0.002), variant)));
+}
+
+function selectSeedPieces(pool: RawTile[], seedCount: number, layoutSalt: number): RawTile[] {
+  const ranked = [...pool].sort((a, b) => {
+    const edge = edgePriority(b) - edgePriority(a);
+    if (Math.abs(edge) > 0.04) return edge;
+    const center = centerOverlapArea(a) - centerOverlapArea(b);
+    if (Math.abs(center) > 1e-6) return center;
+    if (b.seedScore !== a.seedScore) return b.seedScore - a.seedScore;
+    return areaOf(a) - areaOf(b);
+  });
+  const edgeish = ranked.filter((tile) => centerOverlapArea(tile) <= 0.015);
+  const source = edgeish.length >= seedCount ? edgeish : ranked;
+  const shuffled = [...source];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand(layoutSalt * 97 + i * 13 + 3) * (i + 1));
+    const swap = shuffled[i]!;
+    shuffled[i] = shuffled[j]!;
+    shuffled[j] = swap;
+  }
+  return shuffled.slice(0, seedCount);
 }
 
 /**
@@ -310,15 +371,11 @@ function collectPool(needed: number): RawTile[] {
  */
 export function buildPuzzleRevealLayout(
   targetCount: PuzzleHistoryTarget,
+  layoutSalt = 0,
 ): PuzzleRevealLayout {
   const seedCount = seedCountForTarget(targetCount);
   const needed = seedCount + targetCount;
-  const pool = collectPool(needed);
-
-  /**
-   * 시드: 가장자리·가운데 겹침 적은 장 우선.
-   * progress: 가운데를 메우는 장 → 완성 전에는 중심이 비어 보이게.
-   */
+  const pool = collectPool(needed, layoutSalt);
   const ranked = [...pool].sort((a, b) => {
     const edge = edgePriority(b) - edgePriority(a);
     if (Math.abs(edge) > 0.04) return edge;
@@ -327,9 +384,17 @@ export function buildPuzzleRevealLayout(
     if (b.seedScore !== a.seedScore) return b.seedScore - a.seedScore;
     return areaOf(a) - areaOf(b);
   });
-
-  const seedPieces = ranked.slice(0, seedCount);
-  const progressSorted = [...ranked.slice(seedCount, seedCount + targetCount)].sort(
+  const window = Math.min(ranked.length, needed + Math.min(4, ranked.length - needed));
+  const span = Math.max(0, window - needed);
+  const start = span > 0 ? Math.floor(rand(layoutSalt * 11 + 1) * (span + 1)) : 0;
+  const working = ranked.slice(start, start + needed);
+  const seedPieces = selectSeedPieces(working, seedCount, layoutSalt);
+  const seedIds = new Set(seedPieces.map((tile) => tile.id));
+  /**
+   * progress: 가운데를 메우는 장 → 완성 전에는 중심이 비어 보이게.
+   * 시작 조각(시드)은 솔트마다 가장자리 안에서 다르게 고른다.
+   */
+  const progressSorted = working.filter((tile) => !seedIds.has(tile.id)).sort(
     (a, b) => {
       /** 가운데부터 채워지도록 — 완료할수록 윤곽이 살아남 */
       const center = centerOverlapArea(b) - centerOverlapArea(a);
@@ -397,8 +462,9 @@ export function buildPuzzleRevealLayout(
 export function unitForPuzzleIndex(
   targetCount: PuzzleHistoryTarget,
   puzzleIndex: number,
+  layoutSalt = 0,
 ): PuzzleRevealUnit | null {
-  const layout = buildPuzzleRevealLayout(targetCount);
+  const layout = buildPuzzleRevealLayout(targetCount, layoutSalt);
   return layout.units.find((u) => u.puzzleIndex === puzzleIndex) ?? null;
 }
 
