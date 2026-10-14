@@ -374,6 +374,8 @@ type FlowCardProps = {
   onDelete: () => void;
   markColor?: PriorityMarkColorId | null;
   onSelectMarkColor?: (color: PriorityMarkColorId | null) => void;
+  /** 세트 포스트잇 면색. 펼친 상세 패널 배경 */
+  sectionBg: string;
 };
 
 function FlowItemCard({
@@ -407,6 +409,7 @@ function FlowItemCard({
   onDelete,
   markColor = null,
   onSelectMarkColor,
+  sectionBg,
 }: FlowCardProps) {
   const { t, locale } = useTranslation();
   /** 액션 버튼 면은 흰색이므로 포스트잇 잉크(밝은 색)와 분리 */
@@ -1766,6 +1769,7 @@ function GroupAccordion({
                       ? (color) => onSelectMarkColor(item.categoryKey, color)
                       : undefined
                   }
+                  sectionBg={sectionBg}
                 />
                 </SmoothEnter>
               );
