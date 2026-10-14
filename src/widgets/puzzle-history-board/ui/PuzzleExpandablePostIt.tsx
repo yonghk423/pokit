@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     zIndex: 8,
   },
   noteSolidShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 1,
   },
   noteFace: {

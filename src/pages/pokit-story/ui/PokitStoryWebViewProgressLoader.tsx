@@ -109,10 +109,10 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   trackShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   trackFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
     zIndex: 1,
   },

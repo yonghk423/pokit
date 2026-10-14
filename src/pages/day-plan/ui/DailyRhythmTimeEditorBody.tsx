@@ -985,7 +985,7 @@ const styles = StyleSheet.create({
   onboardDialEnter: { width: '100%', marginTop: 0 },
   shadowShell: { position: 'relative' },
   shadowBlock: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
   },
   shadowFace: {
@@ -1005,12 +1005,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroBannerImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: '100%',
     height: '100%',
   },
   heroBannerScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   heroBannerContent: {
     paddingHorizontal: 18,

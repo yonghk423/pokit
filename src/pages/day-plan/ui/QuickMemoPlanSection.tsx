@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 
 import type { DayPlanQuickMemo } from '@entities/day-plan';
 import { parseQuickMemoChecklist, quickMemoPlainBody } from '@entities/day-plan';
@@ -334,7 +334,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       contentStyle={styles.root}>
       <ColorPaletteAccordion ink={faceInk} isDark={isDark || chromeIsLightInk} defaultExpanded={false}>
         <View style={styles.colorBlock}>
-          <ThemedText style={[styles.colorLabel, { color: faceMuted }]} numberOfLines={1}>
+          <ThemedText style={[styles.colorLabel, { color: faceInk }]} numberOfLines={1}>
             {t('dayPlan.quickMemoFaceColorLabel')}
           </ThemedText>
           <PostItFaceColorChips
@@ -345,7 +345,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
             compact
             collapsible={false}
           />
-          <ThemedText style={[styles.colorLabel, { color: faceMuted }]} numberOfLines={1}>
+          <ThemedText style={[styles.colorLabel, { color: faceInk }]} numberOfLines={1}>
             {t('dayPlan.quickMemoInkColorLabel')}
           </ThemedText>
           <PostItInkColorChips
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     height: 16,
   },
   fabIconLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

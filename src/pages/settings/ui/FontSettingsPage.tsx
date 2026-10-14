@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   cardShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   sizeCard: {
     flex: 1,

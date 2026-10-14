@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   chromeShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   iconBox: {

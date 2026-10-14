@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   dim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   rowSelectedFill: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   rowForeground: {
     zIndex: 1,

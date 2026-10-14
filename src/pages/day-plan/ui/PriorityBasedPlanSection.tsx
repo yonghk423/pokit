@@ -1,5 +1,5 @@
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -4056,7 +4056,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   timeModalDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   timeModalCardShell: {
@@ -4068,7 +4068,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   timeModalCardShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   timeModalCard: {
@@ -4122,7 +4122,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   timeModalResetShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     transform: [{ translateX: 1 }, { translateY: 1 }],
   },
@@ -4201,7 +4201,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   dateModalDimTouch: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   dateModalSheet: {
     width: '100%',

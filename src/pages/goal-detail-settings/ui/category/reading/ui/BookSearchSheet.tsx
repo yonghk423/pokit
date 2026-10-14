@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   searchRowShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   searchRow: {
     flexDirection: 'row',
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   searchSubmitShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   searchSubmitBtn: {
     minWidth: 72,
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   btnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   primaryBtnFace: {

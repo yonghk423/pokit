@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   shadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   iconHit: {

@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   timePillShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   timePill: {

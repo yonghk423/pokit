@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   postItSolidShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   postItFace: {
     flex: 1,
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   },
   /** 헤어라인 흰 테두리 — 포스트잇 종이 가장자리 */
   photoInset: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     top: StyleSheet.hairlineWidth,
     right: StyleSheet.hairlineWidth,
     bottom: StyleSheet.hairlineWidth,
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   photoWindow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
   },
   solidFace: {

@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   shadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: RETRO_RADIUS,
   },
   face: {

@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   deleteUnderlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#DC2626',
     alignItems: 'flex-start',
     justifyContent: 'center',
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   settingsBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderRadius: 0,
   },

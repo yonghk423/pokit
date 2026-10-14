@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   shadowBlock: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
   },
   shadowFace: {

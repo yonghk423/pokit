@@ -236,12 +236,12 @@ const styles = StyleSheet.create({
     height: 12,
   },
   glyphChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.18)',
     transform: [{ translateX: 1.5 }, { translateY: 1.5 }],
   },
   glyphChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   root: {
     width: '100%',
@@ -280,11 +280,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   swatchShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   swatchFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     zIndex: 1,
   },

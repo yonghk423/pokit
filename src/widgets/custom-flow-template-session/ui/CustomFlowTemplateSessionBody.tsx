@@ -230,7 +230,7 @@ function ReminderBrutalShell({
       <View
         pointerEvents="none"
         style={[
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           {
             backgroundColor: shadowColor,
             borderWidth: 0,
@@ -2188,7 +2188,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   measureChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   counterValueRow: {
@@ -2478,7 +2478,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   memoEntryDateShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   memoEntryDateChip: {
@@ -2707,7 +2707,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   reminderActionShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   reminderStatusChip: {
@@ -2895,7 +2895,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   checkBoxShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   checkBox: {

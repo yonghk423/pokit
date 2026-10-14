@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   shadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderRadius: 0,
   },

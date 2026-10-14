@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   pillShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   pill: {

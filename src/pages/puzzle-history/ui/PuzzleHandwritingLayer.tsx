@@ -134,7 +134,7 @@ export function PuzzleHandwritingLayer({
 
 const styles = StyleSheet.create({
   pad: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 4,
   },
 });

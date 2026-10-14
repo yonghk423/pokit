@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   chipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   chip: {

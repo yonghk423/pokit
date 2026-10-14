@@ -157,11 +157,11 @@ const styles = StyleSheet.create({
     height: 12,
   },
   glyphChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.18)',
     transform: [{ translateX: 1.5 }, { translateY: 1.5 }],
   },
   glyphChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });

@@ -192,7 +192,7 @@ export function PuzzleRenameSheet({
 const styles = StyleSheet.create({
   kavRoot: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
   sheet: {

@@ -109,11 +109,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   swatchShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   swatchFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     zIndex: 1,
     alignItems: 'center',

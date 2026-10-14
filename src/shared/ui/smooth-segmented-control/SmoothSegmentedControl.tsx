@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   shadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: RETRO_RADIUS,
   },
   track: {

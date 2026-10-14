@@ -2564,7 +2564,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   flatSearchAddShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: RETRO_RADIUS,
   },
   flatSearchAddFace: {
@@ -2664,11 +2664,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   catalogImportanceChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
   },
   catalogImportanceChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2714,7 +2714,7 @@ const styles = StyleSheet.create({
     height: 36,
   },
   catalogIconBoxShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   catalogIconBox: {
@@ -2774,7 +2774,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   brutalBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
   },

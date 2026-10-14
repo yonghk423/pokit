@@ -956,7 +956,7 @@ export function ReadingBookDetailSheet({
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.35)' },
   sheet: {
     borderTopWidth: 2,
     borderLeftWidth: 2,
@@ -965,7 +965,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   celebrateLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 20,
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   chipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   statusChip: {

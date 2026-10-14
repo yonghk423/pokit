@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   closeShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   closeBtn: {
     paddingVertical: 8,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   stageShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   stage: {
     flex: 1,
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   stepChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   stepChip: {
     minWidth: 40,
@@ -478,16 +478,16 @@ const styles = StyleSheet.create({
   },
   stepChipText: { fontSize: 14, letterSpacing: 0.6 },
   photo: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: '100%',
     height: '100%',
   },
   stageSkeleton: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   skeletonFill: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   skeletonBlocks: {
     flex: 1,
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   copyCardShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   copyCard: {
     borderWidth: 0,
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   ctaShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   cta: {
     borderWidth: 0,

@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   metaChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   metaChipFace: {
     flexDirection: 'row',
@@ -375,10 +375,10 @@ const styles = StyleSheet.create({
     marginBottom: CityPopSpacing.xs,
   },
   successIconShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   successIconFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

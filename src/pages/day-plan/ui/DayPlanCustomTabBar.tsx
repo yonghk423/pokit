@@ -1,7 +1,7 @@
 import {
   BottomTabBarHeightCallbackContext,
   type BottomTabBarProps,
-} from '@react-navigation/bottom-tabs';
+} from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useContext, useEffect, useMemo } from 'react';
 import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   shadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   container: {

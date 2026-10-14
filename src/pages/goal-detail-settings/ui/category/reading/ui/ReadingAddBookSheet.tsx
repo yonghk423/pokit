@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.38)',
   },
   sheet: {
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   edgeShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   inputRow: {
     flexDirection: 'row',

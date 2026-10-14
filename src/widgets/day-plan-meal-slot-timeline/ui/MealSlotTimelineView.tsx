@@ -1042,7 +1042,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   cardShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: CARD_BORDER,
     borderRadius: CARD_RADIUS,
   },
@@ -1063,7 +1063,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   routineIconBadgeShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderRadius: 0,
   },
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   reorderPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.03)',
   },
   checkboxLabel: {

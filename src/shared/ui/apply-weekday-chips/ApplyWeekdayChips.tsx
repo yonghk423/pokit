@@ -140,11 +140,11 @@ const styles = StyleSheet.create({
     marginBottom: SHADOW,
   },
   chipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 8,
   },
   chipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

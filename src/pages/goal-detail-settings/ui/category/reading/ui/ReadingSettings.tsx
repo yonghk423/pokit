@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerIconShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   headerIconBtn: {
@@ -995,7 +995,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   listRowShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   listRowFace: {

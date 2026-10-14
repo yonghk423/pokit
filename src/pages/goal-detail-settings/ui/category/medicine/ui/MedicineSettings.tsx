@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     marginBottom: SOLID_SHADOW_OFFSET,
   },
   doseActionShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
   },
   doseActionBtn: {
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     marginBottom: SOLID_SHADOW_OFFSET,
   },
   slotChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
   },
   slotChip: {
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
     marginBottom: SOLID_SHADOW_OFFSET,
   },
   slotStatusShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
   },
   slotStatusWrap: {

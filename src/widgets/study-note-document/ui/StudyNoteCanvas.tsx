@@ -14,7 +14,7 @@ import {
   type NativeSyntheticEvent,
   type TextInputSelectionChangeEventData,
 } from 'react-native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 
 import {
   createWorkStudyNotePage,
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   listLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 20,
   },
   toolbarFloat: {
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     height: 16,
   },
   fabIconLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,4 +1,4 @@
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from 'expo-router';
 import { createElement, memo, useEffect, useRef, useState, type ComponentType } from 'react';
 import { InteractionManager } from 'react-native';
 

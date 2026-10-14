@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tocRowShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   tocRow: {
     flexDirection: 'row',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   frameShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   frame: {
     flex: 1,
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   navBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   navBtn: {
     minHeight: 52,

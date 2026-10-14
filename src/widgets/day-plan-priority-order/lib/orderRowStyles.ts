@@ -60,7 +60,7 @@ export const orderRowStyles = StyleSheet.create({
     flexShrink: 0,
   },
   orderIconBoxShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderRadius: 0,
   },
@@ -158,7 +158,7 @@ export const orderRowStyles = StyleSheet.create({
     position: 'relative',
   },
   orderBrutalBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
     borderRadius: 0,
   },
@@ -266,12 +266,12 @@ export const orderRowStyles = StyleSheet.create({
     height: 12,
   },
   colorSectionGlyphChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.18)',
     transform: [{ translateX: 1.5 }, { translateY: 1.5 }],
   },
   colorSectionGlyphChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   colorSectionTitle: {
     flex: 1,
@@ -313,7 +313,7 @@ export const orderRowStyles = StyleSheet.create({
     position: 'relative',
   },
   importanceMarkChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   importanceMarkChipFace: {

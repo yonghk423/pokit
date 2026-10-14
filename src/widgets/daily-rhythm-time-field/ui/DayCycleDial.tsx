@@ -972,7 +972,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   summaryShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   summaryFace: {
     paddingHorizontal: 12,

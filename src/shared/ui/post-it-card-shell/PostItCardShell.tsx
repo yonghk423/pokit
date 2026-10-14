@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     left: 6,
   },
   solidShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     zIndex: 0,
   },

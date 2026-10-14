@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   solidShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   previewCard: {
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   iconChip: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     borderWidth: 0,
     alignItems: 'center',
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   colorSwatch: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     borderWidth: 0,
     alignItems: 'center',

@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   periodNavShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
     borderRadius: 0,
   },
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   periodLabelShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
     borderRadius: 0,
   },

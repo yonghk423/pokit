@@ -3285,11 +3285,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   setTitleMarkChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
   },
   setTitleMarkChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -3451,7 +3451,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   addGroupPlusShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   addGroupPlusFace: {
     width: 26,
@@ -3503,11 +3503,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   flowImportanceChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
   },
   flowImportanceChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -3579,12 +3579,12 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   flowDetailChevronShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     transform: [{ translateX: ACTION_SHADOW }, { translateY: ACTION_SHADOW }],
   },
   flowDetailChevronFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
@@ -3603,7 +3603,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   brutalBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
     borderRadius: 0,
   },
@@ -3621,7 +3621,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   flowIconBoxShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
     borderRadius: 0,
   },

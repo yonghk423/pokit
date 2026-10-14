@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   trashShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   trashBtn: {
@@ -1118,7 +1118,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   fieldShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   quickAddRow: {
@@ -1162,7 +1162,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   quickAddBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   quickAddBtn: {
@@ -1263,7 +1263,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   itemActionShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   itemActionBtn: {
@@ -1323,7 +1323,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   subAddBtnShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   subAddBtn: {
@@ -1339,7 +1339,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   markTriggerShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   markTriggerFace: {
@@ -1365,11 +1365,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   markChipShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: MARK_CHIP_RADIUS,
   },
   markChipFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: MARK_CHIP_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',

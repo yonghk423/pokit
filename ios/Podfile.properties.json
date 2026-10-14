@@ -4,5 +4,6 @@
   "newArchEnabled": "true",
   "ios.buildReactNativeFromSource": "true",
   "ios.useFrameworks": "static",
-  "ios.forceStaticLinking": "[]"
+  "ios.forceStaticLinking": "[]",
+  "ios.deploymentTarget": "16.4"
 }

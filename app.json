@@ -2,7 +2,7 @@
   "expo": {
     "name": "POKIT",
     "slug": "pokit",
-    "version": "1.9.14",
+    "version": "1.9.15",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "scheme": "pokit",
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "105",
+      "buildNumber": "106",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -29,12 +29,23 @@
           "ko",
           "ja"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration",
+                "UISceneDelegateClassName": "SceneDelegate"
+              }
+            ]
+          }
+        }
       }
     },
     "android": {
-      "version": "1.9.14",
-      "versionCode": 105,
+      "version": "1.9.15",
+      "versionCode": 106,
       "adaptiveIcon": {
         "backgroundColor": "#CED2EC",
         "foregroundImage": "./assets/app-icon.png"
@@ -100,11 +111,17 @@
         {
           "ios": {
             "useFrameworks": "static",
+            "deploymentTarget": "16.4",
             "forceStaticLinking": []
           }
         }
       ],
-      "@react-native-firebase/crashlytics"
+      "@react-native-firebase/crashlytics",
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

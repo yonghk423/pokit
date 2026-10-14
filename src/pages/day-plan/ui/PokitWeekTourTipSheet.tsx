@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   targetIconShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   targetIconBox: {
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   closeShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   secondaryBtn: {

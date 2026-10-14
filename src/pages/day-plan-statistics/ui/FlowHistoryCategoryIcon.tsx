@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   shadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 0,
     borderRadius: 0,
   },

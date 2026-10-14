@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   pillShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   pill: {

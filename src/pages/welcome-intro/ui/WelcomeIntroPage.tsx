@@ -228,12 +228,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8C4B8',
   },
   bgImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: '100%',
     height: '100%',
   },
   bgScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(245, 242, 235, 0.28)',
   },
   column: {

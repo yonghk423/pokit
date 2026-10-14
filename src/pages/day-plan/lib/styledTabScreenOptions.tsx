@@ -1,4 +1,4 @@
-import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
+import type { BottomTabNavigationOptions } from 'expo-router/js-tabs';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 

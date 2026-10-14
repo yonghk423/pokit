@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   basicsShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
     zIndex: 0,
   },
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   inputShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 0,
   },
   input: {
