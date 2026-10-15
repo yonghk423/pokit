@@ -235,6 +235,7 @@ export function PuzzleCollageExporter({ request, onResult }: Props) {
     <View pointerEvents="none" style={styles.host}>
       <WebView
         ref={webRef}
+        autoManageStatusBarEnabled={false}
         originWhitelist={['*']}
         source={{ html: EXPORT_HTML }}
         onLoadEnd={() => {

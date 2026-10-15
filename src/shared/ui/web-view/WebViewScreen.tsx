@@ -141,6 +141,7 @@ export function WebViewScreen({
         ) : (
           <WebView
             ref={webViewRef}
+            autoManageStatusBarEnabled={false}
             source={{ uri }}
             style={[styles.webView, { backgroundColor }]}
             originWhitelist={['https://*', 'http://*']}

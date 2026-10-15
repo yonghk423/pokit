@@ -5,7 +5,7 @@
  */
 
 export { AnalyticsScreenTracker } from './AnalyticsScreenTracker';
-export { AppStatusBar } from './AppStatusBar';
+export { resolveStatusBarStyle } from './AppStatusBar';
 export { RandomSplashOverlay } from './RandomSplashOverlay';
 export {
   SPLASH_BACKGROUND_COLOR,

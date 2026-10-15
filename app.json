@@ -30,6 +30,7 @@
           "ja"
         ],
         "ITSAppUsesNonExemptEncryption": false,
+        "UIViewControllerBasedStatusBarAppearance": true,
         "UIApplicationSceneManifest": {
           "UIApplicationSupportsMultipleScenes": false,
           "UISceneConfigurations": {
