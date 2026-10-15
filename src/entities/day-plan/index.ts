@@ -130,6 +130,7 @@ export {
   measurementRecordedToday,
   minutesUntilReminder,
   reminderProgress, removeReminderScheduleItem, resetCounterCount, resolveNextReminderTime,
+  setReminderItemAlarmEnabled,
   toggleReminderTimeDone,
   updateReminderItemLabel,
   updateReminderItemTime

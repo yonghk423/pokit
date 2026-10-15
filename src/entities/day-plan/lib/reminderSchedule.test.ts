@@ -10,8 +10,8 @@ describe('reminderSchedule', () => {
   it('normalizes reminder items with labels from legacy times', () => {
     const items = normalizeReminderScheduleItems(undefined, ['18:00', '09:00'], 5);
     expect(items).toEqual([
-      { time: '09:00', label: '' },
-      { time: '18:00', label: '' },
+      { time: '09:00', label: '', enabled: true },
+      { time: '18:00', label: '', enabled: true },
     ]);
   });
 

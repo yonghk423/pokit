@@ -18,8 +18,8 @@ describe('reminder schedule mutations', () => {
 
     const added = addReminderScheduleItem(labeled, '12:00', '점심 약');
     expect(added?.reminderItems).toEqual([
-      { time: '09:00', label: '아침 약' },
-      { time: '12:00', label: '점심 약' },
+      { time: '09:00', label: '아침 약', enabled: false },
+      { time: '12:00', label: '점심 약', enabled: true },
     ]);
   });
 
@@ -58,7 +58,7 @@ describe('reminder schedule mutations', () => {
       normalizeReminderDetailConfig({ templateKey: 'reminder', reminderItems: [{ time: '09:00', label: '유지' }] }),
       '09:00',
     );
-    expect(empty.reminderItems).toEqual([{ time: '09:00', label: '' }]);
+    expect(empty.reminderItems).toEqual([{ time: '09:00', label: '', enabled: false }]);
   });
 
   it('rejects duplicate time on add', () => {
@@ -77,8 +77,8 @@ describe('reminder schedule mutations', () => {
     });
     const updated = updateReminderItemTime(base, '09:00', '8:30');
     expect(updated?.reminderItems).toEqual([
-      { time: '08:30', label: '아침' },
-      { time: '18:00', label: '저녁' },
+      { time: '08:30', label: '아침', enabled: true },
+      { time: '18:00', label: '저녁', enabled: true },
     ]);
     expect(updated?.completedTimes).toEqual(['08:30']);
   });

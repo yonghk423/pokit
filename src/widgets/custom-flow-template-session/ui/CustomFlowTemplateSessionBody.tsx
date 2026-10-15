@@ -35,6 +35,7 @@ import {
   resolveNextReminderTime,
   resolveReminderItemTitle,
   roundMeasurementValue,
+  setReminderItemAlarmEnabled,
   suggestNextReminderTime,
   toggleReminderTimeDone,
   updateReminderItemLabel,
@@ -56,6 +57,7 @@ import {
   completionCheckIconColor,
 } from '@shared/ui/completion-radio-button';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -1511,6 +1513,45 @@ function CounterTemplateView({
   );
 }
 
+function ReminderContentField({
+  value,
+  onChangeText,
+  ink,
+  muted,
+  line,
+  faceWhite,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  ink: string;
+  muted: string;
+  line: string;
+  faceWhite: string;
+}) {
+  const { t } = useTranslation();
+  const isNote = useUiSurfacePresentation() === 'note';
+  return (
+    <View style={styles.reminderContentField}>
+      <ThemedText style={[styles.reminderContentLabel, { color: muted }]}>
+        {t('customFlowTemplate.reminderContentLabel')}
+      </ThemedText>
+      <ThemedTextInput
+        value={value}
+        onChangeText={onChangeText}
+        accessibilityLabel={t('customFlowTemplate.reminderContentLabel')}
+        style={[
+          isNote ? styles.reminderContentInputNote : styles.reminderContentInput,
+          {
+            color: ink,
+            borderColor: line,
+            backgroundColor: isNote ? 'transparent' : faceWhite,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
 function ReminderTemplateView({
   cfg,
   emit,
@@ -1531,18 +1572,22 @@ function ReminderTemplateView({
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const reminderItems = cfg.reminderItems ?? [];
   const completedTimes = cfg.completedTimes ?? [];
+  const ringingItems = reminderItems.filter((item) => item.enabled !== false);
   const { done, total } = reminderProgress({
     ...cfg,
     reminderItems,
     reminderTimes: cfg.reminderTimes ?? reminderItems.map((item) => item.time),
     completedTimes,
   });
-  const nextTime = resolveNextReminderTime({
-    ...cfg,
-    reminderItems,
-    reminderTimes: cfg.reminderTimes ?? reminderItems.map((item) => item.time),
-    completedTimes,
-  });
+  const nextTime =
+    ringingItems.length === 0
+      ? null
+      : resolveNextReminderTime({
+          ...cfg,
+          reminderItems: ringingItems,
+          reminderTimes: ringingItems.map((item) => item.time),
+          completedTimes,
+        });
   const nextItem = nextTime ? findReminderScheduleItem(reminderItems, nextTime) : undefined;
   const minsLeft = nextTime ? minutesUntilReminder(nextTime) : 0;
   const countdown = nextTime ? formatReminderCountdown(minsLeft, nextTime) : '';
@@ -1592,7 +1637,9 @@ function ReminderTemplateView({
 
   const shadowInk = isDark ? tone.solidShadow : tone.text;
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
-  const chipShadow = 2;
+  /** 노트 면은 구분선만, 카드 면은 다른 액션과 같은 1px 음영 */
+  const chipShadow = isNote ? 0 : 1;
+  const chipBorderWidth = isNote ? StyleSheet.hairlineWidth : 0;
 
   return (
     <View style={[styles.root, styles.reminderRoot, isNote && styles.rootNote, isNote && styles.reminderRootNote]}>
@@ -1601,6 +1648,7 @@ function ReminderTemplateView({
           borderColor={line}
           shadowColor={shadowInk}
           backgroundColor={surface}
+          shadowSize={1}
           style={styles.reminderProgressShell}>
           <View style={[styles.reminderProgressInner, isNote && styles.reminderProgressInnerNote]}>
             <View style={styles.reminderProgressTop}>
@@ -1620,6 +1668,15 @@ function ReminderTemplateView({
                   <ThemedText style={[styles.reminderNextMeta, { color: muted }]}>
                     {formatHhmmClock(nextTime, locale)}
                     {countdown ? ` · ${countdown}` : ''}
+                  </ThemedText>
+                </View>
+              ) : ringingItems.length === 0 ? (
+                <View style={styles.reminderNextBlock}>
+                  <ThemedText style={[styles.reminderNextKicker, { color: ink }]}>
+                    {t('customFlowTemplate.nextReminder')}
+                  </ThemedText>
+                  <ThemedText style={[styles.reminderNextTitle, { color: muted }]} numberOfLines={2}>
+                    {t('customFlowTemplate.reminderAlarmsOff')}
                   </ThemedText>
                 </View>
               ) : (
@@ -1660,12 +1717,12 @@ function ReminderTemplateView({
         ) : null}
         {reminderItems.map((item) => {
           const checked = completedTimes.includes(item.time);
-          const isNext = allowScheduleCompletion && nextTime === item.time && !checked;
-          const statusLabel = checked ? t('customFlowTemplate.statusComplete') : isNext ? t('customFlowTemplate.statusNext') : t('customFlowTemplate.statusScheduled');
-          /** 반투명 면 + 솔리드 섀도 = 칩이 검게 보이므로 불투명 면만 사용 */
-          const statusBg = checked || isNext ? tone.primaryContainer : faceWhite;
-          const statusFg = checked || isNext ? ink : muted;
+          const alarmOn = item.enabled !== false;
+          const isNext = allowScheduleCompletion && alarmOn && nextTime === item.time && !checked;
           const cardShadow = shadowInk;
+          const alarmStateLabel = alarmOn
+            ? t('customFlowTemplate.reminderAlarmOn')
+            : t('customFlowTemplate.reminderAlarmOff');
 
           return (
             <ReminderBrutalShell ink={ink}
@@ -1673,61 +1730,43 @@ function ReminderTemplateView({
               borderColor={line}
               shadowColor={cardShadow}
               backgroundColor={surface}
+              shadowSize={chipShadow}
               noteDivider="row">
               <View style={[styles.reminderEditRow, isNote && styles.reminderEditRowNote]}>
                 <View style={styles.reminderEditToolbar}>
-                  {allowScheduleCompletion ? (
-                    <View
-                      style={[
-                        styles.reminderStatusShell,
-                        { marginRight: chipShadow, marginBottom: chipShadow },
-                      ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.reminderActionShadow,
-                          {
-                            backgroundColor: shadowInk,
-                            transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
-                          },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.reminderStatusChip,
-                          { backgroundColor: statusBg },
-                        ]}>
-                        <IconSymbol name="bell.fill" size={14} color={statusFg} />
-                        <ThemedText style={[styles.reminderStatusChipText, { color: statusFg }]}>
-                          {statusLabel}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.reminderBellWrap}>
-                      <IconSymbol name="bell.fill" size={14} color={muted} />
-                    </View>
-                  )}
-                  <View style={styles.reminderEditActions}>
+                  <View style={styles.reminderContentSlot}>
+                    <ReminderContentField
+                      value={item.label}
+                      onChangeText={(value) => emit(updateReminderItemLabel(cfg, item.time, value))}
+                      ink={ink}
+                      muted={muted}
+                      line={line}
+                      faceWhite={faceWhite}
+                    />
+                  </View>
+                  <View style={styles.reminderSideCol}>
+                  <View style={[styles.reminderEditActions, styles.reminderEditActionsInCol]}>
                     {allowScheduleCompletion ? (
                       <View
                         style={[
                           styles.reminderDoneShell,
-                          { marginRight: chipShadow, marginBottom: chipShadow },
+                          chipShadow > 0 && { marginRight: chipShadow, marginBottom: chipShadow },
                         ]}>
-                        <View
-                          pointerEvents="none"
-                          style={[
-                            styles.reminderActionShadow,
-                            {
-                              backgroundColor: shadowInk,
-                              transform: [
-                                { translateX: chipShadow },
-                                { translateY: chipShadow },
-                              ],
-                            },
-                          ]}
-                        />
+                        {chipShadow > 0 ? (
+                          <View
+                            pointerEvents="none"
+                            style={[
+                              styles.reminderActionShadow,
+                              {
+                                backgroundColor: shadowInk,
+                                transform: [
+                                  { translateX: chipShadow },
+                                  { translateY: chipShadow },
+                                ],
+                              },
+                            ]}
+                          />
+                        ) : null}
                         <Pressable
                           accessibilityRole="checkbox"
                           accessibilityState={{ checked }}
@@ -1740,7 +1779,9 @@ function ReminderTemplateView({
                             styles.reminderDoneBtn,
                             {
                               backgroundColor: checked ? tone.primaryContainer : faceWhite,
-                              opacity: pressed ? 0.88 : 1,
+                              borderWidth: chipBorderWidth,
+                              borderColor: line,
+                              transform: pressed ? [{ translateY: 1 }] : undefined,
                             },
                           ]}>
                           {checked ? (
@@ -1761,21 +1802,23 @@ function ReminderTemplateView({
                     <View
                       style={[
                         styles.reminderDeleteShell,
-                        { marginRight: chipShadow, marginBottom: chipShadow },
+                        chipShadow > 0 && { marginRight: chipShadow, marginBottom: chipShadow },
                       ]}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.reminderActionShadow,
-                          {
-                            backgroundColor: shadowInk,
-                            transform: [
-                              { translateX: chipShadow },
-                              { translateY: chipShadow },
-                            ],
-                          },
-                        ]}
-                      />
+                      {chipShadow > 0 ? (
+                        <View
+                          pointerEvents="none"
+                          style={[
+                            styles.reminderActionShadow,
+                            {
+                              backgroundColor: shadowInk,
+                              transform: [
+                                { translateX: chipShadow },
+                                { translateY: chipShadow },
+                              ],
+                            },
+                          ]}
+                        />
+                      ) : null}
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={t('customFlowTemplate.deleteReminderA11y')}
@@ -1784,12 +1827,30 @@ function ReminderTemplateView({
                           styles.reminderDeleteBtn,
                           {
                             backgroundColor: faceWhite,
-                            opacity: pressed ? 0.88 : 1,
+                            borderWidth: chipBorderWidth,
+                            borderColor: line,
+                            transform: pressed ? [{ translateY: 1 }] : undefined,
                           },
                         ]}>
                         <IconSymbol name="trash" size={13} color={muted} />
                       </Pressable>
                     </View>
+                  </View>
+                  <View style={styles.reminderAlarmUnderDone}>
+                    <OutlinedSwitch
+                      accessibilityLabel={t('customFlowTemplate.reminderAlarmA11y', {
+                        state: alarmStateLabel,
+                      })}
+                      value={alarmOn}
+                      onValueChange={(next) => {
+                        void Haptics.selectionAsync();
+                        emit(setReminderItemAlarmEnabled(cfg, item.time, next));
+                      }}
+                    />
+                    <ThemedText style={[styles.reminderAlarmState, { color: alarmOn ? ink : muted }]}>
+                      {alarmStateLabel}
+                    </ThemedText>
+                  </View>
                   </View>
                 </View>
 
@@ -1814,22 +1875,7 @@ function ReminderTemplateView({
                     line={line}
                     surface={faceWhite}
                     fullWidth
-                    emphasizeColor={isNext ? ink : undefined}
-                  />
-                  <ThemedTextInput
-                    value={item.label}
-                    onChangeText={(value) => emit(updateReminderItemLabel(cfg, item.time, value))}
-                    placeholder={t('customFlowTemplate.reminderLabelPlaceholder')}
-                    placeholderTextColor={muted}
-                    style={[
-                      styles.reminderLabelInput,
-                      isNote && styles.reminderLabelInputNote,
-                      {
-                        color: ink,
-                        backgroundColor: isNote ? 'transparent' : faceWhite,
-                        fontWeight: isNext ? '800' : '600',
-                      },
-                    ]}
+                    emphasizeColor={!alarmOn ? muted : isNext ? ink : undefined}
                   />
                 </View>
               </View>
@@ -1843,6 +1889,7 @@ function ReminderTemplateView({
         borderColor={line}
         shadowColor={shadowInk}
         backgroundColor={surface}
+        shadowSize={1}
         noteDivider={isNote ? 'none' : 'section'}>
         <View style={[styles.reminderAddInner, isNote && styles.reminderAddInnerNote]}>
           <ThemedText style={[styles.reminderSectionTitle, { color: muted }]}>{t('customFlowTemplate.addReminder')}</ThemedText>
@@ -1866,19 +1913,16 @@ function ReminderTemplateView({
             fullWidth
             commitOnChange
           />
-          <ThemedTextInput
+          <ReminderContentField
             value={draftLabel}
             onChangeText={(value) => {
               setDraftLabel(value);
               setAddError(null);
             }}
-            placeholder={t('customFlowTemplate.reminderExamplePlaceholder')}
-            placeholderTextColor={muted}
-            style={[
-              styles.reminderLabelInput,
-              isNote && styles.reminderLabelInputNote,
-              { color: ink, backgroundColor: isNote ? 'transparent' : faceWhite },
-            ]}
+            ink={ink}
+            muted={muted}
+            line={line}
+            faceWhite={faceWhite}
           />
           {addError ? (
             <ThemedText style={[styles.sub, { color: tone.danger }]}>{addError}</ThemedText>
@@ -2692,10 +2736,27 @@ const styles = StyleSheet.create({
   },
   reminderEditToolbar: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 8,
     minHeight: 30,
+  },
+  reminderContentSlot: {
+    flex: 1,
+    minWidth: 0,
+  },
+  reminderSideCol: {
+    alignItems: 'flex-start',
+    gap: 6,
+    flexShrink: 0,
+  },
+  reminderEditActionsInCol: {
+    marginLeft: 0,
+  },
+  reminderAlarmUnderDone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   reminderStatusShell: {
     position: 'relative',
@@ -2729,7 +2790,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reminderEditMain: { gap: 6, minWidth: 0 },
+  reminderEditMain: { gap: 8, minWidth: 0 },
+  reminderAlarmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  reminderAlarmState: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  reminderContentField: {
+    gap: 4,
+  },
+  reminderContentLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  reminderContentInput: {
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 40,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reminderContentInputNote: {
+    minHeight: 36,
+    paddingHorizontal: 0,
+    paddingTop: 2,
+    paddingBottom: 8,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   reminderLabelInput: {
     borderWidth: 0,
     minHeight: 40,

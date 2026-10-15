@@ -264,6 +264,17 @@ function withReminderItems(
   });
 }
 
+export function setReminderItemAlarmEnabled(
+  cfg: ReminderDetailDataConfig,
+  time: string,
+  enabled: boolean,
+): ReminderDetailDataConfig {
+  const items = cfg.reminderItems.map((item) =>
+    item.time === time ? { ...item, enabled } : item,
+  );
+  return withReminderItems(cfg, items);
+}
+
 export function updateReminderItemLabel(
   cfg: ReminderDetailDataConfig,
   time: string,
@@ -304,7 +315,7 @@ export function addReminderScheduleItem(
   if (cfg.reminderItems.some((item) => item.time === time)) return null;
   const items = sortReminderScheduleItems([
     ...cfg.reminderItems,
-    { time, label: normalizeReminderLabel(labelRaw) },
+    { time, label: normalizeReminderLabel(labelRaw), enabled: true },
   ]);
   return withReminderItems(cfg, items);
 }

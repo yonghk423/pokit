@@ -29,6 +29,21 @@ describe('persistReminderTemplateNotificationRule', () => {
     });
   });
 
+  it('skips alarms the user turned off', async () => {
+    await persistReminderTemplateNotificationRule('customFlow:test-reminder', {
+      templateKey: 'reminder',
+      reminderItems: [
+        { time: '09:00', label: '아침', enabled: true },
+        { time: '18:00', label: '저녁', enabled: false },
+      ],
+    });
+
+    expect(persistSingleCategoryReminderRule).toHaveBeenCalledWith('customFlow:test-reminder', {
+      enabled: true,
+      times: ['09:00'],
+    });
+  });
+
   it('disables OS reminders for default-only placeholder config', async () => {
     await persistReminderTemplateNotificationRule('customFlow:test-reminder', {
       templateKey: 'reminder',

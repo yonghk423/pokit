@@ -21,7 +21,10 @@ import {
   useScheduledRoutinePlanStore,
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
-import { syncCategoryReminderNotifications } from '@features/category-reminder-notifications';
+import {
+  reconcileReminderTemplateNotificationRules,
+  syncCategoryReminderNotifications,
+} from '@features/category-reminder-notifications';
 import {
   syncIncompleteRoutineReminderNotifications,
   syncMedicineReminderNotifications,
@@ -170,6 +173,7 @@ export function useAppBootstrap() {
         reminderHhmm: endAlarm.reminderHhmm,
         reminderNextDay: endAlarm.reminderNextDay,
       });
+      reconcileReminderTemplateNotificationRules();
       await syncCategoryReminderNotifications();
       await syncMedicineReminderNotifications();
       await syncRoutineStartNotifications();

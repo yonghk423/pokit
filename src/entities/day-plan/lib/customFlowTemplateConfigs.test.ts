@@ -51,6 +51,20 @@ describe('customFlowTemplateConfigs', () => {
       reminderTimes: ['9:30', 'invalid', '18:00'],
     });
     expect(cfg.reminderTimes).toEqual(['09:30', '18:00']);
+    expect(cfg.reminderItems.every((item) => item.enabled)).toBe(true);
+  });
+
+  it('keeps the empty 09:00 placeholder alarm off until the user enables it', () => {
+    const cfg = normalizeReminderDetailConfig({
+      templateKey: 'reminder',
+      reminderItems: [{ time: '09:00', label: '' }],
+    });
+    expect(cfg.reminderItems).toEqual([{ time: '09:00', label: '', enabled: false }]);
+    const turnedOn = normalizeReminderDetailConfig({
+      templateKey: 'reminder',
+      reminderItems: [{ time: '09:00', label: '', enabled: true }],
+    });
+    expect(turnedOn.reminderItems[0]?.enabled).toBe(true);
   });
 
   it('prefers block reminder schedule over category merge', () => {
@@ -70,7 +84,7 @@ describe('customFlowTemplateConfigs', () => {
       },
       { templateKey: 'reminder' },
     );
-    expect(merged.reminderItems).toEqual([{ time: '09:00', label: '아침' }]);
+    expect(merged.reminderItems).toEqual([{ time: '09:00', label: '아침', enabled: true }]);
     expect(merged.completedTimes).toEqual([]);
   });
 

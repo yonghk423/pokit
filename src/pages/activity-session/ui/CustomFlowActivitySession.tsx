@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import {
   type CustomFlowCategoryKey,
   type DayPlanBlock,
 } from '@entities/day-plan';
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { RoutineTemplatePreviewBody } from '@pages/goal-detail-settings/ui/RoutineTemplatePreviewBody';
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { RetroFlatColors } from '@shared/config/retroFlat';
@@ -78,10 +79,18 @@ export function CustomFlowActivitySession({
   const templateKey = useMemo(() => resolveCustomFlowTemplateKey(rawConfig), [rawConfig]);
   const appearance = useMemo(() => readSessionAppearance(rawConfig), [rawConfig]);
   const [config, setConfig] = useState(() => normalizeCustomFlowDetailConfig(templateKey, rawConfig));
+  const reminderNotifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setConfig(normalizeCustomFlowDetailConfig(templateKey, rawConfig));
   }, [rawConfig, templateKey]);
+
+  useEffect(
+    () => () => {
+      if (reminderNotifyTimerRef.current) clearTimeout(reminderNotifyTimerRef.current);
+    },
+    [],
+  );
 
   const persist = useCallback(
     (next: unknown) => {
@@ -93,6 +102,13 @@ export function CustomFlowActivitySession({
       setConfig(normalized);
       saveGoalDetailCategoryConfig(categoryKey, withTemplate);
       saveGoalDetailBlockConfig(block.id, withTemplate);
+      if (templateKey === 'reminder') {
+        if (reminderNotifyTimerRef.current) clearTimeout(reminderNotifyTimerRef.current);
+        reminderNotifyTimerRef.current = setTimeout(() => {
+          reminderNotifyTimerRef.current = null;
+          void persistReminderTemplateNotificationRule(categoryKey, normalized);
+        }, 450);
+      }
       onPersist();
     },
     [block.id, categoryKey, onPersist, templateKey],

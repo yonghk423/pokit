@@ -72,7 +72,7 @@ describe('reminderPresetSamples', () => {
     const base = normalizeReminderDetailConfig({ templateKey: 'reminder' });
     const preset = REMINDER_SCHEDULE_PRESETS[0]!;
     const next = applyReminderSchedulePreset(base, preset, { includeDemoProgress: true });
-    expect(next.reminderItems).toEqual(preset.items);
+    expect(next.reminderItems).toEqual(preset.items.map((item) => ({ ...item, enabled: true })));
     expect(next.completedTimes).toEqual(['09:00']);
   });
 
@@ -82,7 +82,7 @@ describe('reminderPresetSamples', () => {
       templateSeed: { templateKey: 'reminder', reminderItems: items, completedTimes: ['10:00'] },
     });
     const cfg = normalizeReminderDetailConfig(created);
-    expect(cfg.reminderItems).toEqual(items);
+    expect(cfg.reminderItems).toEqual(items.map((item) => ({ ...item, enabled: true })));
     expect(cfg.completedTimes).toEqual([]);
     expect(pickReminderSettingsForCreate({ reminderItems: [{ time: '09:00', label: '' }] })).toBeNull();
   });

@@ -13,7 +13,7 @@ import {
 } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { syncMedicineReminderNotifications } from '@features/day-plan-notifications';
-import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -38,6 +38,10 @@ import {
 } from './medicineConfig';
 
 const PRIMARY = 'rgb(0, 0, 0)';
+/** 루틴 탭 액션과 동일 — offset 1 + 옅은 반투명 */
+const CHIP_SHADOW = 1;
+const SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
+const SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 
 const SLOT_GRID: {
   key: 'morning' | 'lunch' | 'dinner';
@@ -151,6 +155,7 @@ export function MedicineSettings({
   embedded = false,
   intakeMode = false,
   hideTitleField = false,
+  previewMode = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -162,6 +167,8 @@ export function MedicineSettings({
   /** 건강을 위한 섭취 — 약·영양제 등 포괄 문구 */
   intakeMode?: boolean;
   hideTitleField?: boolean;
+  /** 루틴 템플릿 체험 — 권한 요청·오늘 일정 추가·OS 알림 예약 없음 */
+  previewMode?: boolean;
 }) {
   const { t } = useTranslation();
   const scheme = useColorScheme();
@@ -297,6 +304,7 @@ export function MedicineSettings({
   const handleSlotNotifyChange = (slotKey: 'morning' | 'lunch' | 'dinner', enabled: boolean) => {
     const next = setSlotNotify(draft, slotKey, enabled);
     setDraft(next);
+    if (previewMode) return;
     const key = categoryKey.trim();
     const overlayRaw = reminderOverlayRaw(next);
     void (async () => {
@@ -346,9 +354,8 @@ export function MedicineSettings({
               const on = slotOn(draft, slot.key);
               const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
               const bg = on ? tone.bgMint : isDark ? tone.surfaceAlt : '#FFFFFF';
-              const borderCol = tone.border;
               const fg = on ? (isDark ? tone.text : tone.tertiary) : tone.text;
-              const shadowInk = isDark ? tone.solidShadow : '#000000';
+              const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
               return (
                 <View key={slot.key} style={styles.slotChipShell}>
                   <View
@@ -361,10 +368,7 @@ export function MedicineSettings({
                     accessibilityLabel={copy.slotToggleA11y(t(slot.labelKey), on)}
                     android_ripple={{ color: 'rgba(0,0,0,0.12)' }}
                     onPress={() => handleSlotEnabledChange(slot.key, !on)}
-                    style={[
-                      styles.slotChip,
-                      { backgroundColor: bg, borderColor: borderCol },
-                    ]}>
+                    style={[styles.slotChip, { backgroundColor: bg }]}>
                     <ThemedText style={[styles.slotChipText, { color: fg }]}>
                       {t(slot.labelKey)}
                     </ThemedText>
@@ -400,10 +404,10 @@ export function MedicineSettings({
             pointerEvents="none"
             style={[
               styles.slotStatusShadow,
-              { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+              { backgroundColor: isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT },
             ]}
           />
-        <View style={[styles.slotStatusWrap, { borderColor: '#000000', backgroundColor: c.surfaceLowest }]}>
+        <View style={[styles.slotStatusWrap, { backgroundColor: c.surfaceLowest }]}>
           {enabledSlots.map((slot, index) => {
             const isDone = index < draft.takenCount;
             const isCurrent = index === draft.takenCount;
@@ -567,7 +571,7 @@ export function MedicineSettings({
                     pointerEvents="none"
                     style={[
                       styles.doseActionShadow,
-                      { backgroundColor: isDark ? RetroFlatColors.dark.solidShadow : '#000000' },
+                      { backgroundColor: isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT },
                     ]}
                   />
                   <Pressable
@@ -657,12 +661,12 @@ const styles = StyleSheet.create({
   },
   doseActionBtnCompact: {
     alignSelf: 'flex-end',
-    marginRight: SOLID_SHADOW_OFFSET,
-    marginBottom: SOLID_SHADOW_OFFSET,
+    marginRight: CHIP_SHADOW,
+    marginBottom: CHIP_SHADOW,
   },
   doseActionShadow: {
     ...StyleSheet.absoluteFill,
-    transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
+    transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
   },
   doseActionBtn: {
     minHeight: 32,
@@ -705,12 +709,12 @@ const styles = StyleSheet.create({
   },
   slotChipShell: {
     flex: 1,
-    marginRight: SOLID_SHADOW_OFFSET,
-    marginBottom: SOLID_SHADOW_OFFSET,
+    marginRight: CHIP_SHADOW,
+    marginBottom: CHIP_SHADOW,
   },
   slotChipShadow: {
     ...StyleSheet.absoluteFill,
-    transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
+    transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
   },
   slotChip: {
     minHeight: 36,
@@ -719,7 +723,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 0,
+    zIndex: 1,
   },
   slotChipText: { fontSize: 12, fontWeight: '400', letterSpacing: -0.2 },
   medicineTimePickerRow: {
@@ -739,16 +744,17 @@ const styles = StyleSheet.create({
   },
   doseResetBtnText: { fontSize: 13, fontWeight: '400' },
   slotStatusShell: {
-    marginRight: SOLID_SHADOW_OFFSET,
-    marginBottom: SOLID_SHADOW_OFFSET,
+    marginRight: CHIP_SHADOW,
+    marginBottom: CHIP_SHADOW,
   },
   slotStatusShadow: {
     ...StyleSheet.absoluteFill,
-    transform: [{ translateX: SOLID_SHADOW_OFFSET }, { translateY: SOLID_SHADOW_OFFSET }],
+    transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
   },
   slotStatusWrap: {
-    borderWidth: 1,
+    borderWidth: 0,
     overflow: 'hidden',
+    zIndex: 1,
   },
   slotStatusRow: {
     flexDirection: 'row',

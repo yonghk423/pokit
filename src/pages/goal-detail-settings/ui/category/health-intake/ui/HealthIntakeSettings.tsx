@@ -33,6 +33,7 @@ export function HealthIntakeSettings({
   allowRename = true,
   renameLockedReason = null,
   hideTitleField = false,
+  previewMode = false,
 }: {
   rhythmTitle: string;
   categoryKey?: GoalDetailCategoryKey;
@@ -41,6 +42,8 @@ export function HealthIntakeSettings({
   allowRename?: boolean;
   renameLockedReason?: 'running' | 'today' | null;
   hideTitleField?: boolean;
+  /** 루틴 템플릿 체험 — 알림 스위치가 실제 예약·권한 창을 열지 않음 */
+  previewMode?: boolean;
 }) {
   const c = useGoalDetailSettingsPalette(false);
   const titleFallback = useMemo(
@@ -115,6 +118,7 @@ export function HealthIntakeSettings({
         onChangeDataConfig={(next) => setMedicine(normalizeMedicineDetailConfig(next))}
         allowRename={false}
         renameLockedReason={renameLockedReason}
+        previewMode={previewMode}
       />
     </View>
   );

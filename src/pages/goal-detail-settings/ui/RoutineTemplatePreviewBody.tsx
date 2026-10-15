@@ -37,6 +37,7 @@ export function RoutineTemplatePreviewBody({
         dataConfig={config}
         onChangeDataConfig={onChange}
         hideTitleField
+        previewMode={previewMode}
       />
     );
   }

@@ -13,6 +13,7 @@ import {
   useGoalDetailSettingsStore,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
+import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import {
   isMedicineReminderCategory,
   syncMedicineReminderNotifications,
@@ -221,6 +222,7 @@ export function PriorityBagRowAccordionPanel({
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reminderNotifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isWeekTour = isPokitWeekTourFlowId(categoryKey);
 
   const goalDetailRevision = useGoalDetailSettingsStore((s) => s.revision);
@@ -257,8 +259,27 @@ export function PriorityBagRowAccordionPanel({
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
       }
+      if (reminderNotifyTimerRef.current) {
+        clearTimeout(reminderNotifyTimerRef.current);
+      }
     };
   }, []);
+
+  /**
+   * 오늘 탭에서 바꾼 알림 시각을 OS 예약에 맞춘다.
+   * 설정 화면만 규칙을 저장하면, 여기 시각과 다른 때에 울린다.
+   */
+  useEffect(() => {
+    if (resolveCustomFlowTemplateKey(rawConfig) !== 'reminder') return;
+    if (reminderNotifyTimerRef.current) clearTimeout(reminderNotifyTimerRef.current);
+    reminderNotifyTimerRef.current = setTimeout(() => {
+      reminderNotifyTimerRef.current = null;
+      void persistReminderTemplateNotificationRule(categoryKey, rawConfig);
+    }, 450);
+    return () => {
+      if (reminderNotifyTimerRef.current) clearTimeout(reminderNotifyTimerRef.current);
+    };
+  }, [categoryKey, rawConfig]);
 
   /**
    * 오늘 탭에서 실제로 떠날 때만 팁을 닫는다.

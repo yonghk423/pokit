@@ -4,6 +4,11 @@ import { parseHHmmToMinutes } from './parseTime';
 export type ReminderScheduleItem = {
   time: string;
   label: string;
+  /**
+   * false면 목록에는 남기고 OS 알림은 울리지 않는다.
+   * 없으면 정규화 시 채운다. 기본 자리표시(09:00·이름 없음)만 꺼짐.
+   */
+  enabled?: boolean;
 };
 
 export type ReminderSchedulePreset = {
@@ -121,6 +126,7 @@ export function normalizeReminderScheduleItems(
   maxItems: number,
 ): ReminderScheduleItem[] {
   const labelByTime = new Map<string, string>();
+  const enabledByTime = new Map<string, boolean>();
 
   if (Array.isArray(rawItems)) {
     for (const row of rawItems) {
@@ -129,6 +135,7 @@ export function normalizeReminderScheduleItems(
       const time = normalizeReminderTime(record.time);
       if (!time) continue;
       labelByTime.set(time, normalizeReminderLabel(record.label));
+      if (typeof record.enabled === 'boolean') enabledByTime.set(time, record.enabled);
     }
   }
 
@@ -138,12 +145,20 @@ export function normalizeReminderScheduleItems(
       : legacyTimes.map((time) => normalizeReminderTime(time)).filter((time): time is string => Boolean(time));
 
   const uniqueTimes = [...new Set(times)].slice(0, maxItems);
-  if (uniqueTimes.length === 0) return [{ time: '09:00', label: '' }];
+  if (uniqueTimes.length === 0) return [{ time: '09:00', label: '', enabled: false }];
+
+  /** 예전 기본값(09:00·이름 없음)은 알림을 켜지 않았다. 명시적 enabled가 있으면 그걸 따른다. */
+  const legacyPlaceholderOff =
+    uniqueTimes.length === 1 &&
+    uniqueTimes[0] === '09:00' &&
+    !(labelByTime.get('09:00') ?? '').trim() &&
+    !enabledByTime.has('09:00');
 
   return sortReminderScheduleItems(
     uniqueTimes.map((time) => ({
       time,
       label: labelByTime.get(time) ?? '',
+      enabled: enabledByTime.has(time) ? enabledByTime.get(time)! : !legacyPlaceholderOff,
     })),
   );
 }
@@ -182,6 +197,7 @@ export function mergeReminderScheduleItems(
     map.set(item.time, {
       time: item.time,
       label: existing.label.length >= item.label.length ? existing.label : item.label,
+      enabled: typeof existing.enabled === 'boolean' ? existing.enabled : item.enabled,
     });
   }
   return sortReminderScheduleItems([...map.values()]);

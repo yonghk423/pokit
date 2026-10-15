@@ -6,11 +6,12 @@ import { formatHhmmClock, useTranslation } from '@shared/lib/i18n';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-const PILL_SHADOW = 2;
+const PILL_SHADOW = 1;
 const DEFAULT_DRAFT = '09:00';
 
 type Props = {
@@ -55,6 +56,7 @@ export function ReminderTimePickerPill({
   commitOnChange = false,
 }: Props) {
   const { t, locale } = useTranslation();
+  const isNote = useUiSurfacePresentation() === 'note';
   const resolvedPlaceholder = placeholder ?? t('timePicker.placeholder');
   const resolvedA11y = accessibilityLabel ?? t('timePicker.reminderA11y');
   const scheme = useColorScheme();
@@ -80,7 +82,7 @@ export function ReminderTimePickerPill({
   const iconColor = emphasizeColor ?? muted;
   const shadowInk = isDark ? tone.solidShadow : '#000000';
   const faceBg = surface === 'transparent' ? (isDark ? tone.surfaceAlt : '#FFFFFF') : surface;
-  const pillShadow = expanded ? 0 : PILL_SHADOW;
+  const pillShadow = expanded || isNote ? 0 : PILL_SHADOW;
 
   return (
     <View style={[styles.root, fullWidth && styles.rootFull]}>
@@ -114,7 +116,11 @@ export function ReminderTimePickerPill({
             style={[
               styles.pill,
               fullWidth && styles.pillFull,
-              { backgroundColor: faceBg },
+              {
+                backgroundColor: faceBg,
+                borderWidth: isNote ? StyleSheet.hairlineWidth : 0,
+                borderColor: line,
+              },
             ]}>
             <View style={styles.pillLeft}>
               <IconSymbol name="clock" size={15} color={iconColor} />

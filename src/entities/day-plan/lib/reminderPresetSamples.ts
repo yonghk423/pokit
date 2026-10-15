@@ -27,10 +27,12 @@ export function applyReminderSchedulePreset(
 
 export function pickReminderSettingsForCreate(raw: unknown): Record<string, unknown> | null {
   const cfg = normalizeReminderDetailConfig(raw);
+  const only = cfg.reminderItems[0];
   const isDefaultOnly =
     cfg.reminderItems.length === 1 &&
-    cfg.reminderItems[0]?.time === '09:00' &&
-    !cfg.reminderItems[0]?.label.trim();
+    only?.time === '09:00' &&
+    !only.label.trim() &&
+    only.enabled === false;
   if (isDefaultOnly) return null;
   return {
     reminderItems: cfg.reminderItems,
