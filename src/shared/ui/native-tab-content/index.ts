@@ -1,0 +1,1 @@
+export { NativeTabContent } from './NativeTabContent';

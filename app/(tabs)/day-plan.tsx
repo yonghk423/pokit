@@ -1,3 +1,4 @@
+import { NativeTabContent } from '@shared/ui/native-tab-content';
 import { DayPlanPage, DayPlanTabScreenShell } from '@pages/day-plan';
 import { RoutineInlineSettingsPanel } from '@pages/goal-detail-settings';
 import { freezeHeavyTabScreen } from '@shared/ui/freeze-heavy-tab-screen';
@@ -21,8 +22,10 @@ function renderRoutineInlineSettings(
 
 export default function DayPlanTabScreen() {
   return (
-    <DayPlanTabScreenShell>
-      <FrozenDayPlanPage renderRoutineInlineSettings={renderRoutineInlineSettings} />
-    </DayPlanTabScreenShell>
+    <NativeTabContent>
+      <DayPlanTabScreenShell>
+        <FrozenDayPlanPage renderRoutineInlineSettings={renderRoutineInlineSettings} />
+      </DayPlanTabScreenShell>
+    </NativeTabContent>
   );
 }
