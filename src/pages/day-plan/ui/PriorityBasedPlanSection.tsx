@@ -12,7 +12,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   UIManager,
   useWindowDimensions,
   View,
@@ -165,7 +164,7 @@ import {
 } from './PriorityRoutinePickerSheet';
 import { ScheduledRoutineCalendarSheet } from './ScheduledRoutineCalendarSheet';
 import { SpineBlockEditSheet, type SpineBlockEditDraft } from './SpineBlockEditSheet';
-import { TodoListPlanSection } from './TodoListPlanSection';
+import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
 function resolveCatalogGroupKeyForPersist(raw: string): string {
   const t = typeof raw === 'string' ? raw.trim() : '';
@@ -178,7 +177,6 @@ function resolveCatalogGroupKeyForPersist(raw: string): string {
 
 import { useDayPlanDraftStore } from '@entities/day-plan';
 import type { CustomCatalogGroup, CustomFlowCatalogEntry } from '@shared/lib/storage';
-import { DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './DayPlanCustomTabBar';
 
 /** 타임라인 내부 스크롤 하단 — 리스트와 카드 둥근 하단 사이 최소만 */
 const TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM = 8;
@@ -410,12 +408,6 @@ type Props = {
   layoutMode: DayPlanLayoutMode;
   onSelectLayoutMode: (mode: DayPlanLayoutMode) => void;
   visibleLayoutModes?: readonly DayPlanLayoutMode[];
-  /** true면 헤더는 유지하고 본문만 투두 리스트로 표시 */
-  showTodoList?: boolean;
-  /** 헤더 목록 아이콘 — 투두에서 담기 목록으로 복귀 */
-  onExitTodoList?: () => void;
-  /** 헤더 레이아웃 탭 옆 투두 아이콘 — 탭하면 todoList 모드로 전환 */
-  onPressTodoList?: () => void;
   /**
    * 하루 주기 온보딩 직후 증가 — 집중 시간 칩 1회 강조를 다시 시도한다.
    * (섹션이 이미 마운트된 채 게이트만 닫히는 경우)
@@ -452,9 +444,6 @@ export function PriorityBasedPlanSection({
   layoutMode,
   onSelectLayoutMode,
   visibleLayoutModes,
-  showTodoList = false,
-  onExitTodoList,
-  onPressTodoList,
   windowChipGuideNonce = 0,
   listPaintActive = true,
 }: Props) {
@@ -745,9 +734,6 @@ export function PriorityBasedPlanSection({
   /** 순서 드래그 직후에만 Reanimated layout 전환 — 드래그 중 state 변경 시 제스처가 끊김 */
   const [priorityRowLayoutAnim, setPriorityRowLayoutAnim] = useState(false);
   const priorityTimelineScrollRef = useRef<ScrollView>(null);
-  const priorityTimelineScrollOffsetRef = useRef(0);
-  const todoKeyboardHeightRef = useRef(0);
-  const [todoKeyboardPad, setTodoKeyboardPad] = useState(0);
   const priorityReorderDragActiveRef = useRef(false);
   const [mealSlotScheduleSheetOpen, setMealSlotScheduleSheetOpen] = useState(false);
   const [mealSlotScheduleFocusSlot, setMealSlotScheduleFocusSlot] = useState<DayMealSlot | null>(
@@ -1040,33 +1026,6 @@ export function PriorityBasedPlanSection({
     setMealSlotScheduleFocusSlot(slot ?? null);
     setMealSlotScheduleSheetOpen(true);
   }, []);
-
-  const handleHeaderLayoutModeSelect = useCallback(
-    (mode: DayPlanLayoutMode) => {
-      if (showTodoList && mode === 'bag') {
-        onExitTodoList?.();
-        return;
-      }
-      onSelectLayoutMode(mode);
-    },
-    [onExitTodoList, onSelectLayoutMode, showTodoList],
-  );
-
-  const headerSuffixTabs = useMemo(
-    () =>
-      onPressTodoList
-        ? [
-          {
-            key: 'todo',
-            icon: 'checklist',
-            active: showTodoList,
-            onPress: onPressTodoList,
-            accessibilityLabel: t('dayPlan.todoListA11y'),
-          },
-        ]
-        : [],
-    [onPressTodoList, showTodoList, t],
-  );
 
   const alertSpineBlockSaveError = useCallback(
     (action: 'add' | 'update', reason: string) => {
@@ -2281,49 +2240,6 @@ export function PriorityBasedPlanSection({
     return Math.max(240, cappedHeight);
   }, [windowHeight, insets.top, insets.bottom, bottomTabBarHeight]);
 
-  const ensureTodoFieldVisible = useCallback((windowY: number, height: number) => {
-    const kb = todoKeyboardHeightRef.current;
-    if (kb <= 0) return;
-    if (!Number.isFinite(windowY) || !Number.isFinite(height)) return;
-    const keyboardTop = windowHeight - kb;
-    const overlap = windowY + height - keyboardTop + 24;
-    if (overlap <= 0) return;
-    priorityTimelineScrollRef.current?.scrollTo({
-      y: Math.max(0, priorityTimelineScrollOffsetRef.current + overlap),
-      animated: true,
-    });
-  }, [windowHeight]);
-
-  useEffect(() => {
-    if (!showTodoList) {
-      todoKeyboardHeightRef.current = 0;
-      setTodoKeyboardPad(0);
-      return;
-    }
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, (e) => {
-      const kb = e.endCoordinates.height;
-      todoKeyboardHeightRef.current = kb;
-      setTodoKeyboardPad(Math.max(24, kb - bottomTabBarHeight + 28));
-      requestAnimationFrame(() => {
-        const focused = TextInput.State.currentlyFocusedInput?.();
-        if (!focused || typeof focused.measureInWindow !== 'function') return;
-        focused.measureInWindow((_x, y, _w, h) => {
-          ensureTodoFieldVisible(y, h);
-        });
-      });
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      todoKeyboardHeightRef.current = 0;
-      setTodoKeyboardPad(0);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [bottomTabBarHeight, ensureTodoFieldVisible, showTodoList, windowHeight]);
-
   const timelineDateIntro = useMemo(
     () => planDayIntroFromRange(todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd),
     [todayKey, priorityPlanDateKey, priorityPlanDateKeyEnd],
@@ -3138,15 +3054,13 @@ export function PriorityBasedPlanSection({
                 )}
               </View>
               <View style={styles.priorityTimelineHeaderActions}>
-                {(visibleLayoutModes?.length ?? 3) > 0 || headerSuffixTabs.length > 0 ? (
+                {(visibleLayoutModes?.length ?? 3) > 0 ? (
                   <DayPlanLayoutModeTabs
                     mode={layoutMode}
-                    onSelectMode={handleHeaderLayoutModeSelect}
+                    onSelectMode={onSelectLayoutMode}
                     c={c}
                     isDark={isDark}
                     visibleModes={visibleLayoutModes}
-                    layoutTabActive={!showTodoList}
-                    suffixTabs={headerSuffixTabs}
                   />
                 ) : null}
               </View>
@@ -3159,33 +3073,13 @@ export function PriorityBasedPlanSection({
               style={styles.priorityTimelineScroll}
               contentContainerStyle={[
                 styles.priorityTimelineScrollContent,
-                showTodoList && styles.priorityTimelineScrollContentTodo,
                 {
-                  paddingBottom: showTodoList
-                    ? Math.max(TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM, todoKeyboardPad)
-                    : TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM,
+                  paddingBottom: TIMELINE_SCROLL_CONTENT_PADDING_BOTTOM,
                 },
               ]}
               keyboardShouldPersistTaps="handled"
-              keyboardDismissMode={showTodoList ? 'interactive' : 'none'}
-              onScroll={
-                showTodoList
-                  ? (e) => {
-                    priorityTimelineScrollOffsetRef.current = e.nativeEvent.contentOffset.y;
-                  }
-                  : undefined
-              }
-              scrollEventThrottle={showTodoList ? 16 : undefined}>
-              {showTodoList ? (
-                <View style={styles.todoListBody}>
-                  <TodoListPlanSection
-                    c={c}
-                    isDark={isDark}
-                    embedded
-                    onFieldFocus={ensureTodoFieldVisible}
-                  />
-                </View>
-              ) : layoutMode === 'sections' ? (
+              scrollEventThrottle={16}>
+              {layoutMode === 'sections' ? (
                 <MealSlotTimelineView
                   sections={mealSlotTimelineSections}
                   palette={spineTimelinePalette}
@@ -3836,11 +3730,6 @@ const styles = StyleSheet.create({
     paddingTop: 2,
     marginLeft: 4,
   },
-  todoListBody: {
-    paddingHorizontal: 8,
-    paddingTop: 4,
-    paddingBottom: 4,
-  },
   priorityTimelineScroll: {
     flex: 1,
     minHeight: 0,
@@ -3850,10 +3739,6 @@ const styles = StyleSheet.create({
   priorityTimelineScrollContent: {
     paddingHorizontal: 12,
     gap: 4,
-  },
-  /** 투두 리스트 — 스크롤 좌우 패딩 제거해 카드가 가로를 최대한 쓰게 함 */
-  priorityTimelineScrollContentTodo: {
-    paddingHorizontal: 0,
   },
   /** 날짜 행 아래에 우선순위 리스트를 두기 위한 세로 래퍼 */
   priorityTimelineDayColumn: {

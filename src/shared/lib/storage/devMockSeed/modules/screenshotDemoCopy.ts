@@ -9,7 +9,6 @@ export type ScreenshotDemoCopy = {
   quickMemoMarker: (typeof SCREENSHOT_QUICK_MEMO_MARKERS)[number];
   quickMemoLines: [string, string, string];
   spineFallbackLabel: string;
-  todos: Array<{ what: string; who: string }>;
   reading: {
     displayName: string;
     bookTitle: string;
@@ -51,16 +50,6 @@ const KO: ScreenshotDemoCopy = {
     '저녁 — 체중 기록하고 내일 루틴 확인',
   ],
   spineFallbackLabel: '루틴',
-  todos: [
-    { what: '오전 미팅 자료 정리', who: '나' },
-    { what: '장보기 · 저녁 재료', who: '나' },
-    { what: '친구에게 회신 보내기', who: '나' },
-    { what: '주간 리뷰 초안 쓰기', who: '나' },
-    { what: '세탁물 개기', who: '나' },
-    { what: '약 저녁분 챙기기', who: '나' },
-    { what: '내일 가방 미리 싸기', who: '나' },
-    { what: '책상 위 정리', who: '나' },
-  ],
   reading: {
     displayName: '독서',
     bookTitle: '데미안',
@@ -127,16 +116,6 @@ const EN: ScreenshotDemoCopy = {
     'Evening — log weight and check tomorrow’s routines',
   ],
   spineFallbackLabel: 'Routine',
-  todos: [
-    { what: 'Prep morning meeting notes', who: 'Me' },
-    { what: 'Grocery run · dinner ingredients', who: 'Me' },
-    { what: 'Reply to a friend', who: 'Me' },
-    { what: 'Draft the weekly review', who: 'Me' },
-    { what: 'Fold the laundry', who: 'Me' },
-    { what: 'Take evening meds', who: 'Me' },
-    { what: 'Pack tomorrow’s bag', who: 'Me' },
-    { what: 'Clear the desk', who: 'Me' },
-  ],
   reading: {
     displayName: 'Reading',
     bookTitle: 'Demian',
@@ -203,16 +182,6 @@ const JA: ScreenshotDemoCopy = {
     '夜 — 体重を記録し、明日のルーチンを確認',
   ],
   spineFallbackLabel: 'ルーチン',
-  todos: [
-    { what: '午前ミーティング資料を整理', who: '自分' },
-    { what: '買い物 · 夕食の材料', who: '自分' },
-    { what: '友人に返信する', who: '自分' },
-    { what: '週間レビューの下書き', who: '自分' },
-    { what: '洗濯物をたたむ', who: '自分' },
-    { what: '夜の薬を用意', who: '自分' },
-    { what: '明日のバッグを準備', who: '自分' },
-    { what: 'デスク周りを片づける', who: '自分' },
-  ],
   reading: {
     displayName: '読書',
     bookTitle: 'デミアン',

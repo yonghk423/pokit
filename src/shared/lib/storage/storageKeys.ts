@@ -32,8 +32,6 @@ export const StorageKeys = {
   pokitWeekTourPuzzleNudgeSeen: 'pokit:pokit-week-tour-puzzle-nudge-seen',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
-  /** 투두 리스트 모드 — 날짜별 할 일 표 */
-  dayPlanTodos: 'pokit:day-plan-todos',
   /** 위클리·먼슬리 목표 텍스트(주 시작일·연-월 키) */
   horizonGoals: 'pokit:horizon-goals',
   /** 위클리·먼슬리 기간 완료 기록(통계 목록) */
@@ -105,7 +103,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   pokitWeekTourWidgetNudgeSeen: 'lockflow:pokit-week-tour-widget-nudge-seen',
   pokitWeekTourPuzzleNudgeSeen: 'lockflow:pokit-week-tour-puzzle-nudge-seen',
   dayPlanDraft: 'lockflow:day-plan-draft',
-  dayPlanTodos: 'lockflow:day-plan-todos',
   horizonGoals: 'lockflow:horizon-goals',
   horizonCompletions: 'lockflow:horizon-completions',
   horizonWeeklyDayMemos: 'lockflow:horizon-weekly-day-memos',

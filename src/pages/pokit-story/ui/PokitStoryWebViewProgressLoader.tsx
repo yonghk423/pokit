@@ -33,7 +33,9 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
         },
       ]}>
       <View style={styles.center}>
-        <ThemedText style={[styles.brand, { color: c.text }]}>POKIT</ThemedText>
+        <ThemedText style={[styles.brand, { color: c.text }]}>
+          {t('settings.shareApp.shareTitle')}
+        </ThemedText>
         <ThemedText
           style={[styles.caption, { color: c.textMuted }]}
           lightColor={c.textMuted}

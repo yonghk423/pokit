@@ -20,7 +20,6 @@ import { markDailyRhythmOnboardingCompleted } from '../../dailyRhythmOnboardingS
 import { loadDayPlanDraft, saveDayPlanDraft } from '../../dayPlanDraftStorage';
 import { saveDayPlanLayoutModeVisibility } from '../../dayPlanLayoutModeVisibility';
 import { loadDayPlan, saveDayPlan } from '../../dayPlanStorage';
-import { loadDayPlanTodos, saveDayPlanTodos } from '../../dayPlanTodoStorage';
 import type { DayMealSlot } from '../../dayMealSlotScheduleStorage';
 import {
   loadFixedFlowSetsState,
@@ -82,7 +81,6 @@ const SCREENSHOT_NOTE_PAGE_IDS = [
   'wsp-screenshot-demo-02',
 ] as const;
 
-const SCREENSHOT_TODO_ID_PREFIX = 'todo-screenshot-';
 const SCREENSHOT_SPINE_ID_PREFIX = 'dpb-screenshot-spine-';
 
 /** 데일리 고정 루틴 — 스크린샷용 다항목 (기본은 단식 1개) */
@@ -335,88 +333,6 @@ function seedSpineTimeline(today: string): void {
   });
 }
 
-function seedTodos(today: string): void {
-  const copy = getScreenshotDemoCopy(getAppLocale());
-  const schedules = [
-    {
-      priority: 'high' as const,
-      startMinutes: 9 * 60 + 30,
-      endMinutes: 10 * 60 + 30,
-      inProgress: true,
-      isDone: false,
-    },
-    {
-      priority: 'medium' as const,
-      startMinutes: 12 * 60,
-      endMinutes: 12 * 60 + 40,
-      inProgress: false,
-      isDone: false,
-    },
-    {
-      priority: 'low' as const,
-      startMinutes: 15 * 60,
-      endMinutes: 15 * 60 + 20,
-      inProgress: false,
-      isDone: false,
-    },
-    {
-      priority: 'high' as const,
-      startMinutes: 16 * 60 + 30,
-      endMinutes: 17 * 60,
-      inProgress: false,
-      isDone: false,
-    },
-    {
-      priority: 'medium' as const,
-      startMinutes: 18 * 60,
-      endMinutes: 18 * 60 + 40,
-      inProgress: false,
-      isDone: false,
-    },
-    {
-      priority: 'low' as const,
-      startMinutes: 19 * 60 + 10,
-      endMinutes: 19 * 60 + 30,
-      inProgress: false,
-      isDone: false,
-    },
-    {
-      priority: 'high' as const,
-      startMinutes: 20 * 60,
-      endMinutes: 21 * 60,
-      inProgress: false,
-      isDone: false,
-    },
-    {
-      priority: 'medium' as const,
-      startMinutes: 21 * 60 + 10,
-      endMinutes: 21 * 60 + 40,
-      inProgress: false,
-      isDone: false,
-    },
-  ];
-  const prev = loadDayPlanTodos();
-  saveDayPlanTodos({
-    todosByDate: {
-      ...(prev?.todosByDate ?? {}),
-      [today]: copy.todos.map((todo, index) => {
-        const schedule = schedules[index] ?? schedules[schedules.length - 1]!;
-        return {
-          id: `${SCREENSHOT_TODO_ID_PREFIX}${String(index + 1).padStart(2, '0')}`,
-          what: todo.what,
-          who: todo.who,
-          priority: schedule.priority,
-          startMinutes: schedule.startMinutes,
-          endMinutes: schedule.endMinutes,
-          inProgress: schedule.inProgress,
-          isDone: schedule.isDone,
-          order: index,
-        };
-      }),
-    },
-  });
-}
-
 function seedReadingLibrary(): void {
   const now = Date.now();
   const copy = getScreenshotDemoCopy(getAppLocale()).reading;
@@ -578,17 +494,6 @@ function seedDayNotes(today: string): void {
     },
   });
   appendGoalDetailCommittedCategoryKeys(['work']);
-}
-
-function clearScreenshotTodos(): void {
-  const prev = loadDayPlanTodos();
-  if (!prev?.todosByDate) return;
-  const next: typeof prev.todosByDate = {};
-  for (const [dateKey, items] of Object.entries(prev.todosByDate)) {
-    const kept = (items ?? []).filter((item) => !item.id.startsWith(SCREENSHOT_TODO_ID_PREFIX));
-    if (kept.length > 0) next[dateKey] = kept;
-  }
-  saveDayPlanTodos({ todosByDate: next });
 }
 
 function clearDayPlanDraftDemo(): void {
@@ -922,7 +827,6 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     seedScreenshotExtraRoutines();
     seedDayPlanDraft(today);
     seedSpineTimeline(today);
-    seedTodos(today);
     seedReadingLibrary();
     seedHealthIntakeDetail();
     seedFastingDetail();
@@ -931,7 +835,6 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
     const puzzlePartial = seedPuzzleHistoryMockData();
     return {
       screenshotRoutines: buildPriorityCategoryOrder().length,
-      screenshotTodos: getScreenshotDemoCopy(getAppLocale()).todos.length,
       screenshotBooks: SCREENSHOT_READING_BOOK_IDS.length,
       screenshotNotes: SCREENSHOT_NOTE_PAGE_IDS.length,
       ...puzzlePartial,
@@ -940,7 +843,6 @@ export const screenshotDemoMockSeed: DevMockSeedModule = {
   async clear() {
     clearDayPlanDraftDemo();
     clearScreenshotSpineTimeline();
-    clearScreenshotTodos();
     clearScreenshotReadingLibrary();
     clearScreenshotWorkNote();
     clearScreenshotExtraRoutines();

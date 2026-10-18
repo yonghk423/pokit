@@ -143,8 +143,6 @@ export {
 } from './dayPlanChromeSettings';
 export { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 export type { PersistedDayPlan } from './dayPlanStorage';
-export { loadDayPlanTodos, saveDayPlanTodos } from './dayPlanTodoStorage';
-export type { PersistedDayPlanTodos } from './dayPlanTodoStorage';
 export {
   loadRoutineStartTimes,
   normalizeRoutineStartTimes,
@@ -304,14 +302,12 @@ export {
 } from './horizonWeeklyDayMemosStorage';
 export {
   DEFAULT_POST_IT_FACE_COLOR_ID,
-  DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID,
   DEFAULT_WIDGET_POST_IT_FACE_COLOR_ID,
   POST_IT_FACE_COLOR_PRESETS,
   POST_IT_LIGHT_INK,
   POST_IT_LIGHT_MUTED,
   QUICK_MEMO_POST_IT_KEY,
   ROUTINE_CATALOG_FLAT_POST_IT_KEY,
-  TODO_LIST_POST_IT_KEY,
   colorHexUsesLightInk,
   getPostItFaceColorPreset,
   hexRelativeLuminance,

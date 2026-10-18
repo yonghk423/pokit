@@ -29,14 +29,8 @@ export const POST_IT_FACE_COLOR_PRESETS: readonly PostItFaceColorPreset[] =
 
 export const DEFAULT_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'white';
 
-/** 오늘 탭 투두 리스트 카드 — 기본 면색 (앱 베이지) */
-export const DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'cream';
-
 /** 루틴 탭 플랫 목록 카드 — 기본(상시) 면색 */
 export const ROUTINE_CATALOG_FLAT_POST_IT_KEY = 'routine-catalog:flat';
-
-/** 오늘 탭 투두 리스트 카드 — 면색 */
-export const TODO_LIST_POST_IT_KEY = 'todo-list:today';
 
 /** 잠금화면 메모(포스트잇) Live Activity — 면색 */
 export const QUICK_MEMO_POST_IT_KEY = 'quick-memo:lock';
@@ -46,8 +40,6 @@ export const DEFAULT_WIDGET_POST_IT_FACE_COLOR_ID: PostItFaceColorId = 'yellow';
 
 const ROUTINE_CATALOG_FLAT_FACE_WHITE_MIGRATED_KEY =
   'pokit:routine-catalog-flat-face-white-migrated';
-
-const TODO_LIST_FACE_CREAM_MIGRATED_KEY = 'pokit:todo-list-face-cream-migrated';
 
 export const POST_IT_LIGHT_INK = '#FFFFFF';
 export const POST_IT_LIGHT_MUTED = 'rgba(255,255,255,0.72)';
@@ -163,9 +155,9 @@ function normalizeByGroup(raw: unknown): PostItFaceColorByGroup {
 export function loadPostItFaceColorByGroup(): PostItFaceColorByGroup {
   const raw = localStorageClient.getJson<unknown>(StorageKeys.postItFaceColor);
   if (typeof raw === 'string') {
-    return migrateTodoListFaceToCream(migrateRoutineCatalogFlatFaceToWhite({}));
+    return migrateRoutineCatalogFlatFaceToWhite({});
   }
-  return migrateTodoListFaceToCream(migrateRoutineCatalogFlatFaceToWhite(normalizeByGroup(raw)));
+  return migrateRoutineCatalogFlatFaceToWhite(normalizeByGroup(raw));
 }
 
 /** 루틴 목록 상시 면색을 화이트로 맞춘다 (1회) */
@@ -181,26 +173,11 @@ function migrateRoutineCatalogFlatFaceToWhite(
   return next;
 }
 
-/** 투두 리스트 기본 면색을 앱 베이지(cream)로 맞춘다 (1회) */
-function migrateTodoListFaceToCream(map: PostItFaceColorByGroup): PostItFaceColorByGroup {
-  if (localStorageClient.getItemRaw(TODO_LIST_FACE_CREAM_MIGRATED_KEY) === '1') {
-    return map;
-  }
-  const next = {
-    ...map,
-    [TODO_LIST_POST_IT_KEY]: DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID,
-  };
-  localStorageClient.setJson(StorageKeys.postItFaceColor, next);
-  localStorageClient.setItemRaw(TODO_LIST_FACE_CREAM_MIGRATED_KEY, '1');
-  return next;
-}
-
 export function loadPostItFaceColorIdForGroup(groupKey: string): PostItFaceColorId {
   const key = groupKey.trim();
   if (!key) return DEFAULT_POST_IT_FACE_COLOR_ID;
   const map = loadPostItFaceColorByGroup();
   if (map[key] != null) return map[key]!;
-  if (key === TODO_LIST_POST_IT_KEY) return DEFAULT_TODO_LIST_POST_IT_FACE_COLOR_ID;
   return DEFAULT_POST_IT_FACE_COLOR_ID;
 }
 

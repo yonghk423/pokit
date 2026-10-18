@@ -16,7 +16,6 @@ import {
   useDayPlanChromeSettingsStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
-  useDayPlanTodoStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import {
@@ -49,7 +48,6 @@ import {
   saveDayPlan,
   saveDayPlanChromeSettings,
   saveDayPlanLayoutModeVisibility,
-  saveDayPlanTodos,
   saveFixedFlowSetsState,
   saveRoutineCatalogSelectionKeys,
 } from '@shared/lib/storage';
@@ -232,8 +230,6 @@ export function SettingsPage() {
       saveDayPlanLayoutModeVisibility({ ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY });
       saveDayPlanChromeSettings({ ...DEFAULT_DAY_PLAN_CHROME_SETTINGS });
       useDayPlanChromeSettingsStore.getState().hydrate();
-      saveDayPlanTodos({ todosByDate: {} });
-
       useDayPlanStore.setState({
         dateKey: today,
         blocks: [],
@@ -285,12 +281,6 @@ export function SettingsPage() {
 
       useDayPlanRuntimeStore.getState().stopTicker();
       useDayPlanRuntimeStore.getState().clearRuntime();
-
-      useDayPlanTodoStore.setState({
-        todosByDate: {},
-        activeDateKey: today,
-        isHydrated: true,
-      });
 
       useDayPlanLayoutModeVisibilityStore.setState({
         visibility: { ...DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY },

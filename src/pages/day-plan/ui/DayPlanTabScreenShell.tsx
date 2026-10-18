@@ -15,7 +15,6 @@ import { SettingsTopBarButton } from './SettingsTopBarButton';
 
 const WIDGET_PLAN_MODES: readonly PlanMode[] = [
   'priority',
-  'todoList',
   'reading',
   'quickMemo',
   'dayNote',
@@ -90,7 +89,6 @@ export function DayPlanTabScreenShell({ children }: Props) {
       if (
         (mode === 'quickMemo' ||
           mode === 'dayNote' ||
-          mode === 'todoList' ||
           mode === 'reading') &&
         !isDayPlanTab
       ) {

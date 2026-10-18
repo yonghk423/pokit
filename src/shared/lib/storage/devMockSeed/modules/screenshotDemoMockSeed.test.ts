@@ -9,7 +9,6 @@ import {
 import { ensureDefaultPriorityCatalog } from '../../ensureDefaultPriorityCatalog';
 import { loadDayPlanDraft } from '../../dayPlanDraftStorage';
 import { loadDayPlan } from '../../dayPlanStorage';
-import { loadDayPlanTodos } from '../../dayPlanTodoStorage';
 import { loadFixedFlowSetsState } from '../../fixedFlowSetsStorage';
 import { loadGoalDetailCategoryConfig } from '../../goalDetailSettingsStorage';
 import { listCustomFlowCatalogIds } from '../../customFlowCatalogStorage';
@@ -26,7 +25,6 @@ describe('screenshotDemoMockSeed', () => {
     useAppLocaleStore.setState({ locale: 'ko' });
     localStorageClient.removeItem(StorageKeys.dayPlanDraft);
     localStorageClient.removeItem(StorageKeys.dayPlan);
-    localStorageClient.removeItem(StorageKeys.dayPlanTodos);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
     localStorageClient.removeItem(StorageKeys.dailyRhythmOnboarding);
     localStorageClient.removeItem(StorageKeys.priorityCatalogFixedRoutines);
@@ -38,11 +36,10 @@ describe('screenshotDemoMockSeed', () => {
     ensureDefaultPriorityCatalog();
   });
 
-  it('seeds bag, sections, spine, todos, books, notes, and detail configs', async () => {
+  it('seeds bag, sections, spine, books, notes, and detail configs', async () => {
     const result = await screenshotDemoMockSeed.seed();
 
     expect(result.screenshotRoutines).toBe(18);
-    expect(result.screenshotTodos).toBe(8);
     expect(result.screenshotBooks).toBe(6);
     expect(result.screenshotNotes).toBe(2);
     expect(result.puzzleHistories).toBe(11);
@@ -94,11 +91,6 @@ describe('screenshotDemoMockSeed', () => {
     const spine = (plan?.blocks ?? []).filter((block) => block.blockOrigin === 'spineTimeline');
     expect(spine.length).toBe(18);
     expect(plan?.completedBlockIds ?? []).toEqual([]);
-
-    const todos = loadDayPlanTodos();
-    const todayKeys = Object.keys(todos?.todosByDate ?? {});
-    expect(todayKeys.length).toBe(1);
-    expect(todos?.todosByDate?.[todayKeys[0]!]?.length).toBe(8);
 
     const reading = loadGoalDetailCategoryConfig('reading') as {
       books?: {
@@ -171,10 +163,6 @@ describe('screenshotDemoMockSeed', () => {
     expect(draft?.quickMemoDraft).toContain('·Daily memo');
     expect(draft?.quickMemoDraft).toContain('Morning — 30 pages read');
 
-    const todos = loadDayPlanTodos();
-    const todayKey = Object.keys(todos?.todosByDate ?? {})[0]!;
-    expect(todos?.todosByDate?.[todayKey]?.[0]?.what).toBe('Prep morning meeting notes');
-
     const reading = loadGoalDetailCategoryConfig('reading') as {
       bookTitle?: string;
     } | null;
@@ -218,11 +206,6 @@ describe('screenshotDemoMockSeed', () => {
         (block) => typeof block.id === 'string' && block.id.startsWith('dpb-screenshot-spine-'),
       ),
     ).toBe(false);
-
-    const todos = loadDayPlanTodos();
-    for (const items of Object.values(todos?.todosByDate ?? {})) {
-      expect((items ?? []).every((item) => !item.id.startsWith('todo-screenshot-'))).toBe(true);
-    }
 
     const weekend = loadFixedFlowSetsState().sets.find((set) => set.id === 'set_weekend');
     expect(weekend?.items.map((item) => item.categoryKey)).toEqual([BUILTIN_DAILY_EXERCISE_FLOW_ID]);

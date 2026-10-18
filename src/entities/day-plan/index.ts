@@ -187,15 +187,7 @@ export {
   getFlowCompletionUnitCountForBlock
 } from './lib/flowCompletionUnits';
 export { formatSpineGapCoaching } from './lib/formatSpineGapCoaching';
-export {
-  formatTodoItemShareText,
-  formatTodoListShareText
-} from './lib/formatTodoListShareText';
 export { isSpineBlockActiveAtMinute } from './lib/isSpineBlockActiveAtMinute';
-export {
-  cycleItemPriority, ITEM_PRIORITY_CYCLE,
-  ITEM_PRIORITY_META, normalizeItemPriority
-} from './lib/itemPriority';
 export {
   applyMeasurementMetricPreset,
   pickMeasurementSettingsForCreate
@@ -547,14 +539,13 @@ export {
   useDayPlanChromeSettingsStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
-  useDayPlanTodoStore,
   useFixedFlowSetsStore,
   useRoutineStartTimesStore,
   useScheduledRoutinePlanStore,
 } from './model';
 export { seedRoutineStartTimesFromLegacySources } from './lib/seedRoutineStartTimesFromLegacySources';
 export type { AddBlockResult, PlanMode, UpdateBlockResult } from './model';
-export type { DayPlanBlock, DayPlanQuickMemo, DayPlanTodoItem, DayPlanTodoSubItem, TodoPriority } from './model/types';
+export type { DayPlanBlock, DayPlanQuickMemo } from './model/types';
 export {
   checklistRowsFromQuickMemoTitle,
   createEmptyQuickMemoLine,

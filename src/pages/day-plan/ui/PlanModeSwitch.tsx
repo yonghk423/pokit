@@ -20,8 +20,8 @@ type ModeButton = {
 
 const MODE_BUTTONS: ModeButton[] = [
   { mode: 'priority', icon: 'list.bullet.rectangle', labelKey: 'planMode.daily' },
-  { mode: 'quickMemo', icon: 'note.text', labelKey: 'planMode.quickMemo' },
-  { mode: 'dayNote', icon: 'square.and.pencil', labelKey: 'planMode.dayNote' },
+  { mode: 'quickMemo', icon: 'square.and.pencil', labelKey: 'planMode.quickMemo' },
+  { mode: 'dayNote', icon: 'note.text', labelKey: 'planMode.dayNote' },
   { mode: 'reading', icon: 'book.closed.fill', labelKey: 'planMode.reading' },
 ];
 
@@ -68,18 +68,11 @@ export function PlanModeSwitch({
   const activeFace = isDark ? tone.primaryContainer : tone.bgMint;
   const iconColor = isDark ? ICON_DARK : ICON_LIGHT;
 
-  const hint =
-    description !== undefined
-      ? description
-      : planMode === 'quickMemo'
-        ? t('planMode.quickMemoHint')
-        : planMode === 'dayNote'
-          ? null
-          : planMode === 'reading'
-            ? null
-            : planMode === 'todoList'
-              ? null
-              : null;
+  const hint = description !== undefined
+    ? description
+    : planMode === 'quickMemo'
+      ? t('planMode.quickMemoHint')
+      : null;
 
   const handleSelect = useCallback(
     (mode: PlanMode) => {
@@ -116,7 +109,7 @@ export function PlanModeSwitch({
           <View style={styles.leftButtonGroup}>
             {MODE_BUTTONS.map((btn) => {
               const active =
-                planMode === btn.mode || (btn.mode === 'priority' && planMode === 'todoList');
+                planMode === btn.mode;
               const label = modeLabels[btn.mode];
               return (
                 <Pressable

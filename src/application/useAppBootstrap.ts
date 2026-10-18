@@ -14,7 +14,6 @@ import {
   useDayPlanChromeSettingsStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
-  useDayPlanTodoStore,
   useFixedFlowSetsStore,
   seedRoutineStartTimesFromLegacySources,
   useRoutineStartTimesStore,
@@ -100,7 +99,6 @@ export function useAppBootstrap() {
 
       useDayPlanStore.getState().hydrate();
       useDayPlanDraftStore.getState().hydrate();
-      useDayPlanTodoStore.getState().hydrate();
       useFixedFlowSetsStore.getState().hydrate();
       useRoutineStartTimesStore.getState().hydrate();
       useScheduledRoutinePlanStore.getState().hydrate();

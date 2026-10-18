@@ -4,7 +4,6 @@ import {
   useDayPlanDraftStore,
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanStore,
-  useDayPlanTodoStore,
   useFixedFlowSetsStore,
   useGoalDetailSettingsStore,
 } from '@entities/day-plan';
@@ -60,7 +59,6 @@ function reloadStoresAfterDevMockChange(): void {
   useDayPlanDraftStore.getState().hydrate();
   useDayPlanStore.setState({ isHydrated: false });
   useDayPlanStore.getState().hydrate();
-  useDayPlanTodoStore.getState().hydrate();
   useDayPlanLayoutModeVisibilityStore.getState().hydrate();
   useDayPlanDraftStore.getState().bumpCategoryLabelEpoch();
 }
@@ -110,7 +108,7 @@ export async function runPuzzleHistoryMockSeedWithStoreSync(): Promise<DevMockSe
   return puzzlePartial;
 }
 
-/** 앱스토어 스크린샷용 — 오늘 루틴·투두·도서·노트 + 고달성 히스토리/호라이즌 */
+/** 앱스토어 스크린샷용 — 오늘 루틴·도서·노트 + 고달성 히스토리/호라이즌 */
 export async function runScreenshotDemoSeedWithStoreSync(): Promise<DevMockSeedResult> {
   ensureDefaultPriorityCatalog();
   const screenshotPartial = await screenshotDemoMockSeed.seed();
@@ -141,7 +139,6 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
   if (result.templateDemoRoutines != null) {
     parts.push(`템플릿 체험 루틴 ${result.templateDemoRoutines}개`);
   }
-  if (result.screenshotTodos != null) parts.push(`투두 ${result.screenshotTodos}개`);
   if (result.screenshotBooks != null) parts.push(`도서 ${result.screenshotBooks}권`);
   if (result.screenshotNotes != null) parts.push(`노트 ${result.screenshotNotes}개`);
   if (result.screenshotQuickMemos != null) parts.push(`빠른 메모 ${result.screenshotQuickMemos}개`);
@@ -158,7 +155,7 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
     result.templateDemoRoutines != null
       ? '오늘 탭·책방·노트·빠른 메모·위젯 Edit에서 확인하세요.'
       : result.screenshotRoutines != null
-        ? '데이플랜·투두·서재·노트·나만의 루틴·Puzzle·히스토리에서 확인하세요.'
+        ? '데이플랜·서재·노트·나만의 루틴·Puzzle·히스토리에서 확인하세요.'
         : '통계·Puzzle 탭에서 확인하세요.';
   return `[${locale}] ${parts.join(' · ')}\n${hint}`;
 }

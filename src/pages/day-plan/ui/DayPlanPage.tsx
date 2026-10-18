@@ -34,7 +34,6 @@ import {
   useDayPlanLayoutModeVisibilityStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
-  useDayPlanTodoStore,
   useFixedFlowSetsStore,
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
@@ -349,13 +348,6 @@ export function DayPlanPage({
     () => isPriorityWindowEndedForToday(priorityWindowCtx),
     [priorityWindowCtx],
   );
-
-  const setTodoActiveDateKey = useDayPlanTodoStore((s) => s.setActiveDateKey);
-  const todayKey = useMemo(() => getLocalDateKey(), [clockEpoch]);
-
-  useEffect(() => {
-    setTodoActiveDateKey(todayKey);
-  }, [todayKey, nowTick, setTodoActiveDateKey]);
 
   const { addBlock, quickMemos, removeQuickMemo, completeBlocks } = useDayPlanStore(
     useShallow((s) => ({
@@ -837,10 +829,6 @@ export function DayPlanPage({
       registerPrimaryAction(null, { disabled: true, label: t('planMode.dayNote'), hidden: true });
       return;
     }
-    if (planMode === 'todoList') {
-      registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.addTodo'), hidden: true });
-      return;
-    }
     if (planMode === 'reading') {
       registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.readingSettings'), hidden: true });
       return;
@@ -857,7 +845,7 @@ export function DayPlanPage({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         // dayNote: StudyNoteCanvas가 Keyboard inset → paddingBottom으로 본문을 줄인다.
         // 여기서 avoiding을 켜면 키패드가 노트를 가리거나 이중으로 민다. 끄지 말 것.
-        enabled={planMode !== 'dayNote' && planMode !== 'quickMemo' && planMode !== 'todoList'}
+        enabled={planMode !== 'dayNote' && planMode !== 'quickMemo'}
         keyboardVerticalOffset={0}>
         <View style={[styles.mainColumn, { backgroundColor: shellBg }]}>
           {mountedSurfaces.has('quickMemo') ? (
@@ -944,9 +932,6 @@ export function DayPlanPage({
                 layoutMode={effectiveLayoutMode}
                 onSelectLayoutMode={onSelectLayoutMode}
                 visibleLayoutModes={visibleLayoutModes}
-                showTodoList={planMode === 'todoList'}
-                onPressTodoList={() => setPlanMode('todoList')}
-                onExitTodoList={() => setPlanMode('priority')}
                 windowChipGuideNonce={windowChipGuideNonce}
                 listPaintActive={surface === 'priority'}
               />

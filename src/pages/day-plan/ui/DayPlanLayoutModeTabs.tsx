@@ -79,14 +79,6 @@ function ChromeShadowTab({
 /** 데일리 타임라인 헤더 — 전체 / 시간대별 / 스파인 레이아웃 */
 export type DayPlanLayoutMode = 'bag' | 'sections' | 'spine';
 
-export type DayPlanHeaderSuffixTab = {
-  key: string;
-  icon: string;
-  active: boolean;
-  onPress: () => void;
-  accessibilityLabel: string;
-};
-
 type TabDef = {
   key: DayPlanLayoutMode;
   icon: string;
@@ -141,10 +133,6 @@ type Props = {
    * showLabels 와 함께 쓸 때 루틴 목록 세그먼트와 동일한 톤.
    */
   attached?: boolean;
-  /** false면 목록 등 레이아웃 탭을 비활성 톤으로 — 투두 등 다른 헤더 뷰 선택 시 */
-  layoutTabActive?: boolean;
-  /** 목록 탭 오른쪽 추가 아이콘(투두 등) — 레이아웃 탭과 동일 pill 스타일 */
-  suffixTabs?: readonly DayPlanHeaderSuffixTab[];
 };
 
 /** 오늘·나만의 루틴 — 레이아웃 모드 전환 */
@@ -157,8 +145,6 @@ export function DayPlanLayoutModeTabs({
   allowReselect = false,
   showLabels = false,
   attached = false,
-  layoutTabActive = true,
-  suffixTabs,
 }: Props) {
   const { t } = useTranslation();
   const pill = tabPillColors(isDark);
@@ -166,11 +152,9 @@ export function DayPlanLayoutModeTabs({
   const tabs = TABS.filter((item) => ENABLED_LAYOUT_MODES.includes(item.key)).filter((item) =>
     visibleModes ? visibleModes.includes(item.key) : true,
   );
-  const suffix = suffixTabs ?? [];
-  /** 레이아웃 탭 + 투두(checklist) suffix — 단독 목록 아이콘도 유지 */
   const layoutTabs = tabs;
 
-  if (layoutTabs.length === 0 && suffix.length === 0) return null;
+  if (layoutTabs.length === 0) return null;
 
   if (attached && showLabels) {
     if (layoutTabs.length === 0) return null;
@@ -229,7 +213,7 @@ export function DayPlanLayoutModeTabs({
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {layoutTabs.map((item) => {
-        const active = layoutTabActive && mode === item.key;
+        const active = mode === item.key;
         const label = layoutModeLabel(t, item.key);
         return (
           <ChromeShadowTab
@@ -275,28 +259,6 @@ export function DayPlanLayoutModeTabs({
           </ChromeShadowTab>
         );
       })}
-      {suffix.map((item) => (
-        <ChromeShadowTab
-          key={item.key}
-          active={item.active}
-          activeBg={pill.activeBg}
-          inactiveBg={isDark ? pill.inactiveBg : '#FFFFFF'}
-          shadowColor={chromeShadow}
-          borderColor={chromeBorder}
-          accessibilityLabel={item.accessibilityLabel}
-          accessibilityState={{ selected: item.active }}
-          onPress={() => {
-            if (item.active) return;
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            item.onPress();
-          }}>
-          <IconSymbol
-            name={item.icon as 'checklist'}
-            size={15}
-            color={item.active ? pill.activeIcon : pill.inactiveIcon}
-          />
-        </ChromeShadowTab>
-      ))}
     </View>
   );
 }

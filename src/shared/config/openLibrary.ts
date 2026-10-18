@@ -15,8 +15,8 @@ export function getOpenLibraryContactEmail(): string | null {
 /** Rate limit 완화용 User-Agent — https://openlibrary.org/developers/api */
 export function buildOpenLibraryUserAgent(): string {
   const email = getOpenLibraryContactEmail();
-  if (email) return `POKIT (${email})`;
-  return 'POKIT';
+  if (email) return `YOUR DAY (${email})`;
+  return 'YOUR DAY';
 }
 
 export function openLibraryCoverUrl(coverId: number, size: 'S' | 'M' | 'L' = 'M'): string {

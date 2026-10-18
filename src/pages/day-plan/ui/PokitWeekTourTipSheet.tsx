@@ -50,9 +50,9 @@ const STEP_TARGETS = [
     placeKey: 'tour.pokitWeek.targetPlace.bottomTab',
   },
   {
-    icon: 'checklist',
-    labelKey: 'guideBook.figure.headerTodo',
-    placeKey: 'tour.pokitWeek.targetPlace.todayHeader',
+    icon: 'list.bullet.rectangle',
+    labelKey: 'planMode.daily',
+    placeKey: 'tour.pokitWeek.targetPlace.topMode',
   },
   {
     icon: 'book.closed.fill',
@@ -60,12 +60,12 @@ const STEP_TARGETS = [
     placeKey: 'tour.pokitWeek.targetPlace.topMode',
   },
   {
-    icon: 'note.text',
+    icon: 'square.and.pencil',
     labelKey: 'planMode.quickMemo',
     placeKey: 'tour.pokitWeek.targetPlace.topMode',
   },
   {
-    icon: 'square.and.pencil',
+    icon: 'note.text',
     labelKey: 'planMode.dayNote',
     placeKey: 'tour.pokitWeek.targetPlace.topMode',
   },

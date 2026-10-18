@@ -127,9 +127,9 @@ public enum PokitWidgetL10n {
 
   public static var openNoteIntentDescription: String {
     text(
-      ko: "POKIT 노트 화면을 엽니다.",
-      en: "Opens the POKIT note screen.",
-      ja: "POKITのノート画面を開きます。"
+      ko: "오늘의 주인공 노트 화면을 엽니다.",
+      en: "Opens the YOUR DAY note screen.",
+      ja: "YOUR DAYのノート画面を開きます。"
     )
   }
 

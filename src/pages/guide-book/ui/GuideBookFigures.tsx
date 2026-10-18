@@ -20,15 +20,14 @@ const APP_TABS = [
 /** `PlanModeSwitch` 와 동일 */
 const MODE_BUTTONS = [
   { icon: 'list.bullet.rectangle', labelKey: 'planMode.daily', n: 1 },
-  { icon: 'note.text', labelKey: 'planMode.quickMemo', n: 2 },
-  { icon: 'square.and.pencil', labelKey: 'planMode.dayNote', n: 3 },
+  { icon: 'square.and.pencil', labelKey: 'planMode.quickMemo', n: 2 },
+  { icon: 'note.text', labelKey: 'planMode.dayNote', n: 3 },
   { icon: 'book.closed.fill', labelKey: 'guideBook.figure.reading', n: 4 },
 ] as const;
 
-/** 오늘 탭 헤더 — 목록 + 투두 바로가기 */
+/** 오늘 탭 헤더 — 목록 바로가기 */
 const HEADER_SHORTCUTS = [
   { key: 'bag', icon: 'list.bullet.rectangle', labelKey: 'guideBook.figure.headerList', n: 1 },
-  { key: 'todo', icon: 'checklist', labelKey: 'guideBook.figure.headerTodo', n: 2 },
 ] as const;
 
 type Tone = {
