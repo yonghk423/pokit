@@ -29,7 +29,7 @@ type Props = {
 };
 
 /**
- * `assets/routine` PNG를 오른쪽 여백에서 한 장씩 페이드 인/아웃.
+ * `assets/unsplash-routine` WebP를 오른쪽 여백에서 한 장씩 페이드 인/아웃.
  * 장식용(absolute 오버레이) — 터치/텍스트 레이아웃에 간섭하지 않음.
  */
 export function RoutineMarginSlideshow({
