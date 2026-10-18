@@ -17,7 +17,7 @@
 "widget.note.galleryDescription" = "노트 페이지를 위젯마다 골라 홈 화면에 고정해요.";
 "widget.note.intentDescription" = "홈 화면에 고정할 노트 페이지를 고르세요.";
 "widget.note.pick" = "노트 펼치기";
-"widget.note.openDescription" = "POKIT 노트 화면을 엽니다.";
+"widget.note.openDescription" = "오늘의 주인공 노트 화면을 엽니다.";
 "widget.note.emptyMessage" = "노트 위젯에 보여줄 메모가 없어요";
 
 "widget.today.name" = "오늘 루틴";

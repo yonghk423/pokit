@@ -14,7 +14,7 @@ import {
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { markWelcomeIntroSeenAndFlush } from '@shared/lib/storage';
-import { useTranslation } from '@shared/lib/i18n';
+import { t as brandText, useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
@@ -138,7 +138,7 @@ export function WelcomeIntroPage() {
                   style={[styles.brand, { color: rf.text }, cityPopFont('800')]}
                   lightColor={rf.text}
                   darkColor={rf.text}>
-                  POKIT
+                  {brandText('settings.shareApp.shareTitle')}
                 </ThemedText>
               ) : null}
               <ThemedText

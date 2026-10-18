@@ -1,3 +1,4 @@
+import { useTranslation } from '@shared/lib/i18n';
 import { Pressable, StyleSheet, View, type ViewProps } from 'react-native';
 
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -9,7 +10,8 @@ type Props = ViewProps & {
   onPressBrand?: () => void;
 };
 
-export function TopAppBar({ title = 'POKIT', onPressBrand, style, ...rest }: Props) {
+export function TopAppBar({ title, onPressBrand, style, ...rest }: Props) {
+  const { t } = useTranslation();
   return (
     <ThemedView style={[styles.root, style]} {...rest}>
       <Pressable
@@ -18,7 +20,7 @@ export function TopAppBar({ title = 'POKIT', onPressBrand, style, ...rest }: Pro
         style={styles.brand}>
         <IconSymbol name="lock.open" size={22} color="rgba(0,0,0,0.9)" />
         <ThemedText type="defaultSemiBold" style={styles.brandText}>
-          {title}
+          {title ?? t('settings.shareApp.shareTitle')}
         </ThemedText>
       </Pressable>
 

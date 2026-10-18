@@ -60,11 +60,11 @@ describe('resolveCustomFlowDisplayLabel', () => {
     useAppLocaleStore.setState({ locale: 'en' });
     expect(
       resolveCustomFlowDisplayLabel('customFlow:preset_pokit_week_tour', '포킷 빠르게 둘러보기'),
-    ).toBe('Try POKIT quickly');
+    ).toBe('Try YOUR DAY quickly');
     useAppLocaleStore.setState({ locale: 'ja' });
     expect(
       resolveCustomFlowDisplayLabel('customFlow:preset_pokit_week_tour', '포킷 빠르게 둘러보기'),
-    ).toBe('POKITをさっと見てみる');
+    ).toBe('YOUR DAYをさっと見てみる');
   });
 
   it('keeps user-custom names', () => {

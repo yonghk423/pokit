@@ -18,7 +18,7 @@
 "widget.note.galleryDescription" = "Pick a note page for each widget and pin it to the Home Screen.";
 "widget.note.intentDescription" = "Choose which note page to pin on the Home Screen.";
 "widget.note.pick" = "Open note";
-"widget.note.openDescription" = "Opens the POKIT note screen.";
+"widget.note.openDescription" = "Opens the YOUR DAY note screen.";
 "widget.note.emptyMessage" = "No notes to show on this widget yet";
 
 "widget.today.name" = "Today routines";

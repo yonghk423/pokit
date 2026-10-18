@@ -17,7 +17,7 @@
 "widget.note.galleryDescription" = "ノートのページをウィジェットごとに選び、ホーム画面に固定します。";
 "widget.note.intentDescription" = "ホーム画面に固定するノートのページを選びます。";
 "widget.note.pick" = "ノートを開く";
-"widget.note.openDescription" = "POKITのノート画面を開きます。";
+"widget.note.openDescription" = "YOUR DAYのノート画面を開きます。";
 "widget.note.emptyMessage" = "このウィジェットに表示するメモがありません";
 
 "widget.today.name" = "今日のルーチン";

@@ -15,7 +15,7 @@
       <string>ja</string>
     </array>
     <key>CFBundleDisplayName</key>
-    <string>POKIT</string>
+    <string>YOUR DAY</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>

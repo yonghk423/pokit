@@ -39,7 +39,7 @@ describe('formatTodoListShareText', () => {
       todos: [sample],
       emptyLabel: '비어 있음',
     });
-    expect(text).toContain('POKIT · 9월 10일');
+    expect(text).toContain('오늘의 주인공 · 9월 10일');
     expect(text).toContain('☐ 장보기');
     expect(text).toContain('☑ 우유');
     expect(text).toContain('☐ 계란');

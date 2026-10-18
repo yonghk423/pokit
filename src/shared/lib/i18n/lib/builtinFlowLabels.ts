@@ -11,7 +11,7 @@ const BUILTIN_FLOW_KO = Object.fromEntries([
 
 /** 기본 내장 루틴 — 영어 표시명 (ko는 카탈로그 원문 사용) */
 const BUILTIN_FLOW_EN: Record<string, string> = {
-  'customFlow:preset_pokit_week_tour': 'Try POKIT quickly',
+  'customFlow:preset_pokit_week_tour': 'Try YOUR DAY quickly',
   'customFlow:preset_daily_bed': 'Make the bed',
   'customFlow:preset_daily_clean': 'Quick clean',
   'customFlow:preset_daily_laundry': 'Do laundry',
@@ -42,7 +42,7 @@ const BUILTIN_FLOW_EN: Record<string, string> = {
 };
 
 const BUILTIN_FLOW_JA: Record<string, string> = {
-  'customFlow:preset_pokit_week_tour': 'POKITをさっと見てみる',
+  'customFlow:preset_pokit_week_tour': 'YOUR DAYをさっと見てみる',
   'customFlow:preset_daily_bed': 'ベッドを整える',
   'customFlow:preset_daily_clean': '掃除',
   'customFlow:preset_daily_laundry': '洗濯',

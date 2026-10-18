@@ -38,7 +38,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
 
     expect(listCustomCatalogGroups()).toEqual([
-      { key: BUILTIN_TUTORIAL_GROUP_KEY, label: '포킷 사용해보기' },
+      { key: BUILTIN_TUTORIAL_GROUP_KEY, label: '오늘의 주인공 사용해보기' },
       { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
       { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
     ]);
@@ -50,7 +50,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ]);
 
     const tourCfg = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
-    expect(tourCfg?.displayName).toBe('포킷 빠르게 둘러보기');
+    expect(tourCfg?.displayName).toBe('오늘의 주인공 빠르게 둘러보기');
     expect((tourCfg as { templateKey?: string })?.templateKey).toBe('checklist');
     expect(tourCfg?.checklist).toHaveLength(8);
     expect(tourCfg?.checklist?.map((item) => item.text)).toEqual([

@@ -1,3 +1,4 @@
+import { t as brandText } from '@shared/lib/i18n';
 import type { DayPlanTodoItem } from '../model/types';
 
 /** 단일 할 일(+세부) 본문 — 복사·공유용 */
@@ -26,7 +27,7 @@ export function formatTodoListShareText(params: {
   fallbackTitle?: string;
 }): string {
   const { dateLabel, todos, emptyLabel, fallbackTitle = '—' } = params;
-  const lines: string[] = [`POKIT · ${dateLabel}`];
+  const lines: string[] = [`${brandText('settings.shareApp.shareTitle')} · ${dateLabel}`];
 
   if (todos.length === 0) {
     lines.push(emptyLabel);

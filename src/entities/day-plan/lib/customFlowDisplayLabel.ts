@@ -23,6 +23,10 @@ export function isInternalAutoRoutineLabel(label: string): boolean {
 
 function isBuiltinLocalizedDefaultName(categoryKey: string, displayName: string): boolean {
   if (!displayName) return false;
+  if (
+    categoryKey === 'customFlow:preset_pokit_week_tour' &&
+    ['포킷 빠르게 둘러보기', 'Try POKIT quickly', 'POKITをさっと見てみる'].includes(displayName)
+  ) return true;
   const names = [
     getBuiltinFlowDefaultLabel(categoryKey, 'ko'),
     getBuiltinFlowDefaultLabel(categoryKey, 'en'),

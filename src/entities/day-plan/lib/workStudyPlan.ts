@@ -1,3 +1,4 @@
+import { t as brandText } from '@shared/lib/i18n';
 import type { WorkDetailDataConfig } from './goalCategorySessionConfig';
 import { workStudyDocumentIsEmpty, workStudyDocumentToPlainText } from './workStudyDocument';
 import {
@@ -19,7 +20,7 @@ export function buildWorkStudyShareText(
   options?: { routineTitle?: string },
 ): string {
   const title = config.displayName.trim() || options?.routineTitle?.trim() || '노트';
-  const lines: string[] = [`POKIT · ${title}`, ''];
+  const lines: string[] = [`${brandText('settings.shareApp.shareTitle')} · ${title}`, ''];
 
   if (config.subject.trim()) {
     lines.push(`과목: ${config.subject.trim()}`);

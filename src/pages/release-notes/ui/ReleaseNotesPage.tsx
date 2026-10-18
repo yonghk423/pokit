@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listRecentReleaseNotes } from '@features/app-update-notice';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useAppLocaleStore, useTranslation } from '@shared/lib/i18n';
+import { t as brandText, useAppLocaleStore, useTranslation } from '@shared/lib/i18n';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -74,9 +74,9 @@ export function ReleaseNotesPage() {
                   : null,
               ]}
               accessibilityRole="summary"
-              accessibilityLabel={`POKIT ${item.version}`}>
+              accessibilityLabel={`${brandText('settings.shareApp.shareTitle')} ${item.version}`}>
               <ThemedText style={[styles.versionTitle, { color: rf.text }]}>
-                {`POKIT ${item.version}`}
+                {`${brandText('settings.shareApp.shareTitle')} ${item.version}`}
               </ThemedText>
               <View style={styles.bulletList}>
                 {item.highlights.map((line) => (

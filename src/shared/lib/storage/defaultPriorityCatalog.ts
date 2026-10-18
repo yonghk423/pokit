@@ -94,7 +94,7 @@ export const POKIT_WEEK_TOUR_CHECKLIST_LABELS = [
   '설정에서 레이아웃 바꿔보기',
 ] as const;
 
-export const POKIT_WEEK_TOUR_DISPLAY_NAME = '포킷 빠르게 둘러보기' as const;
+export const POKIT_WEEK_TOUR_DISPLAY_NAME = '오늘의 주인공 빠르게 둘러보기' as const;
 export const POKIT_WEEK_TOUR_SUMMARY =
   '항목을 눌러 버튼을 가리키는 안내를 보고, 「눌러보기」로 바로 이동해요. 하루 안에 한 번에 끝내도 돼요.' as const;
 
@@ -131,7 +131,7 @@ export {
 export const BUILTIN_HEALTH_GROUP_KEY = 'customGroup:preset_health' as const;
 
 /** 신규 설치 시 자동 시드되는 커스텀 그룹 */
-export const BUILTIN_TUTORIAL_GROUP_LABEL = '포킷 사용해보기' as const;
+export const BUILTIN_TUTORIAL_GROUP_LABEL = '오늘의 주인공 사용해보기' as const;
 
 export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [
   { key: BUILTIN_TUTORIAL_GROUP_KEY, label: BUILTIN_TUTORIAL_GROUP_LABEL },

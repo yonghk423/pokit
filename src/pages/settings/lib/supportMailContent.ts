@@ -1,3 +1,4 @@
+import { t as brandText } from '@shared/lib/i18n';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
@@ -8,7 +9,7 @@ export const SUPPORT_EMAIL = 'pokit.app.help@gmail.com';
 
 /** 네이티브 메일 작성 화면 제목 (앱 표시명: POKIT) */
 export function getSupportMailSubject(): string {
-  return '[POKIT 고객센터]';
+  return `[${brandText('settings.shareApp.shareTitle')} 고객센터]`;
 }
 
 /**

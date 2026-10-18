@@ -36,7 +36,7 @@ const mockShare = Share.share as jest.MockedFunction<typeof Share.share>;
 describe('puzzleShareFileBase', () => {
   it('keeps a readable title and drops path characters', () => {
     expect(puzzleShareFileBase('  하트/그림자  ')).toBe('하트 그림자');
-    expect(puzzleShareFileBase('   ')).toBe('POKIT');
+    expect(puzzleShareFileBase('   ')).toBe('오늘의 주인공');
   });
 });
 

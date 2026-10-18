@@ -1,4 +1,4 @@
 /* English — system permission strings & display name */
-"CFBundleDisplayName" = "POKIT";
+"CFBundleDisplayName" = "YOUR DAY";
 "NSPhotoLibraryUsageDescription" = "Photos access is needed to attach images to notes.";
 "NSPhotoLibraryAddUsageDescription" = "Photos access is needed to save images attached to notes.";

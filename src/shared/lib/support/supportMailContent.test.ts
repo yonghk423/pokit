@@ -24,7 +24,7 @@ jest.mock('expo-device', () => ({
 describe('supportMailContent', () => {
   it('exposes support email and subject', () => {
     expect(SUPPORT_EMAIL).toContain('@');
-    expect(getSupportMailSubject()).toContain('POKIT');
+    expect(getSupportMailSubject()).toContain('오늘의 주인공');
   });
 
   it('builds body with device and version lines', () => {

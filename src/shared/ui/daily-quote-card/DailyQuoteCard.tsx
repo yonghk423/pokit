@@ -5,7 +5,7 @@ import { Pressable, Share, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors, cityPopFont } from '@shared/config/retroFlat';
 import { resolveDailyQuote } from '@shared/lib/daily-quote';
-import { useTranslation } from '@shared/lib/i18n';
+import { t as brandText, useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -22,7 +22,7 @@ export function DailyQuoteCard({ dateKey, isDark = false }: Props) {
   const [copied, setCopied] = useState(false);
 
   const shareMessage = useMemo(() => {
-    return `${quote.text}\n— ${quote.author}\n\nPOKIT`;
+    return `${quote.text}\n— ${quote.author}\n\n${brandText('settings.shareApp.shareTitle')}`;
   }, [quote.author, quote.text]);
 
   const handleCopy = useCallback(async () => {

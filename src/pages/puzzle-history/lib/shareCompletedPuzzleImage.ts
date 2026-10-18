@@ -1,3 +1,4 @@
+import { t as brandText } from '@shared/lib/i18n';
 import Constants from 'expo-constants';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import {
@@ -22,7 +23,7 @@ export function puzzleShareFileBase(title: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 40);
-  return cleaned || 'POKIT';
+  return cleaned || brandText('settings.shareApp.shareTitle');
 }
 
 /** `URLWithString` 이 거절하는 공백·비ASCII 를 퍼센트 인코딩한다. */
