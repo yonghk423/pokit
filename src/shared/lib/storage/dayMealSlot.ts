@@ -80,7 +80,7 @@ export function normalizeDayMealSlot(raw: unknown): DayMealSlot | null {
 }
 
 /** 카테고리별 시간대 — 단일 값(레거시) 또는 배열 */
-export type CategoryMealSlotOverride = DayMealSlot | DayMealSlot[];
+export type CategoryMealSlotOverride = DayMealSlot | readonly DayMealSlot[];
 
 export function normalizeCategoryMealSlots(raw: unknown): DayMealSlot[] {
   if (Array.isArray(raw)) {

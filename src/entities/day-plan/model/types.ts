@@ -18,6 +18,8 @@ export type DayPlanBlock = {
   category: string;
   /** 우선순위·사용자 플로우 등 내부 키(`customFlow:…`). 없으면 `category` 문자열로 역추적 */
   categoryKey?: string;
+  /** 기준 날짜가 저장된 블록에만 존재하는 YYYY-MM-DD 값. */
+  planDateKey?: string;
   /**
    * 하루 기준 분 단위 (0 = 00:00, 7:30 = 450).
    * endMinutes > startMinutes 인 구간을 기대합니다.

@@ -12,6 +12,7 @@ import { t, useAppLocaleStore } from '@shared/lib/i18n';
 import { loadAnnouncementReadIds } from '@shared/lib/storage';
 import { openSupportMailComposer } from '@shared/lib/support';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { HeaderIcon } from '@shared/ui/header-icon';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
@@ -66,7 +67,11 @@ function TopBarIconButton({
         ]}
       />
       <View style={[styles.iconHit, { backgroundColor: face, borderColor: border }]}>
-        <IconSymbol name={name} size={18} color={iconColor} />
+        {name === 'gearshape' ? (
+          <HeaderIcon name="settings" />
+        ) : (
+          <IconSymbol name={name} size={18} color={iconColor} />
+        )}
       </View>
       {showBadge ? (
         <View

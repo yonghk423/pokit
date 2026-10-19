@@ -1,6 +1,5 @@
 import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
-import type { ImageSourcePropType } from 'react-native';
 
 /**
  * 하루 일과 온보딩 전용 일러스트.
@@ -8,11 +7,11 @@ import type { ImageSourcePropType } from 'react-native';
  */
 export const dailyRhythmOnboardingAssets = {
   /** 히어로 — 아침 러닝 */
-  hero: require('../../../../assets/onboarding/hero.jpg') as ImageSourcePropType,
+  hero: require('../../../../assets/onboarding/hero.jpg') as number,
   /** 하루 시작 행 — 아침 브런치 */
-  startThumb: require('../../../../assets/unsplash-routine/morning-brunch.webp') as ImageSourcePropType,
+  startThumb: require('../../../../assets/unsplash-routine/morning-brunch.webp') as number,
   /** 하루 마무리 행 — 노을 실루엣 */
-  endThumb: require('../../../../assets/unsplash-routine/sunset-ridge.webp') as ImageSourcePropType,
+  endThumb: require('../../../../assets/unsplash-routine/sunset-ridge.webp') as number,
 } as const;
 
 let prefetchPromise: Promise<void> | null = null;

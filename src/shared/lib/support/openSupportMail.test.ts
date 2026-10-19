@@ -25,7 +25,11 @@ jest.mock('react-native', () => ({
   Share: { share: jest.fn() },
 }));
 
-jest.mock('expo-mail-composer');
+jest.mock('expo-mail-composer', () => ({
+  ...jest.requireActual('expo-mail-composer/build/MailComposer.types'),
+  isAvailableAsync: jest.fn(),
+  composeAsync: jest.fn(),
+}));
 jest.mock('expo-clipboard');
 
 import { openSupportMailComposer } from './openSupportMail';
@@ -44,10 +48,10 @@ describe('openSupportMailComposer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockIsAvailableAsync.mockResolvedValue(true);
-    mockComposeAsync.mockResolvedValue({ status: 'sent' });
+    mockComposeAsync.mockResolvedValue({ status: MailComposer.MailComposerStatus.SENT });
     (Linking.openURL as jest.Mock).mockResolvedValue(undefined);
     (Share.share as jest.Mock).mockResolvedValue({ action: 'sharedAction' });
-    mockSetStringAsync.mockResolvedValue(undefined);
+    mockSetStringAsync.mockResolvedValue(true);
   });
 
   it('falls back to mailto when composer is unavailable', async () => {

@@ -151,7 +151,7 @@ export function collectMedicineReminderSlots(
   }
 
   for (const b of filterDayPlanFlowBlocks(useDayPlanStore.getState().blocks)) {
-    const categoryKey = resolveBlockCategoryKey(b);
+    const categoryKey = resolveBlockCategoryKey(b) ?? '';
     const categoryLabel = b.category.trim();
     const raw =
       loadGoalDetailBlockConfig(b.id) ??

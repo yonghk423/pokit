@@ -8,6 +8,7 @@ import {
 } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVisibility';
 import { ThemedView } from '@shared/ui/themed-view';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -24,7 +25,8 @@ export function PriorityCatalogPage() {
   const c = useMemo(() => palette(isDark), [isDark]);
   void c;
 
-  const planMode = useDayPlanDraftStore((s) => s.planMode);
+  const prioritySpineLayoutEnabled = useDayPlanDraftStore((s) => s.prioritySpineLayoutEnabled);
+  const priorityMealSlotLayoutEnabled = useDayPlanDraftStore((s) => s.priorityMealSlotLayoutEnabled);
   const layoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const {
     fixedRoutineApplyLayoutMode,
@@ -37,10 +39,11 @@ export function PriorityCatalogPage() {
   );
 
   const effectiveCatalogLayoutMode: DayPlanLayoutMode = useMemo(() => {
-    if (planMode === 'spine' && layoutModeVisibility.spine) return 'spine';
-    if (planMode === 'sections' && layoutModeVisibility.sections) return 'sections';
-    return 'bag';
-  }, [layoutModeVisibility.sections, layoutModeVisibility.spine, planMode]);
+    const mode = prioritySpineLayoutEnabled
+      ? 'spine'
+      : priorityMealSlotLayoutEnabled ? 'sections' : 'bag';
+    return coerceDayPlanLayoutMode(mode, layoutModeVisibility);
+  }, [layoutModeVisibility, priorityMealSlotLayoutEnabled, prioritySpineLayoutEnabled]);
 
   useEffect(() => {
     if (fixedRoutineApplyLayoutMode === effectiveCatalogLayoutMode) return;

@@ -21,7 +21,7 @@ import {
 const THEME_OPTIONS = [
   { key: 'light' as AppearanceMode, labelKey: 'settings.appearance.light', descKey: 'settings.appearance.lightDesc', icon: 'sun.max.fill' as const },
   { key: 'dark' as AppearanceMode, labelKey: 'settings.appearance.dark', descKey: 'settings.appearance.darkDesc', icon: 'moon.fill' as const },
-];
+] as const;
 
 /** 설정 → 화면 테마 (라이트 / 다크) */
 export function AppearanceSettingsPage() {

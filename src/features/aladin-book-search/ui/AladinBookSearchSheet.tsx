@@ -154,7 +154,7 @@ export function AladinBookSearchSheet({
           {mode === 'detail' ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('aladin.backToSearchA11y')}
+              accessibilityLabel={t('aladin.backToSearch')}
               onPress={handleBackToSearch}
               hitSlop={10}
               style={styles.headerBackBtn}>
@@ -194,7 +194,7 @@ export function AladinBookSearchSheet({
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={t('aladin.searchA11y')}
+                  accessibilityLabel={t('common.search')}
                   disabled={loading}
                   onPress={() => void runSearch()}
                   style={({ pressed }) => [
@@ -310,7 +310,7 @@ export function AladinBookSearchSheet({
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={t('aladin.viewOnAladinA11y')}
+                    accessibilityLabel={t('aladin.viewOnAladin')}
                     onPress={() => void openAladinProductPage(previewDetail.link)}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
                     <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{t('aladin.viewOnAladin')}</ThemedText>
@@ -318,7 +318,7 @@ export function AladinBookSearchSheet({
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={t('aladin.selectBookA11y')}
+                    accessibilityLabel={t('aladin.selectBook')}
                     disabled={confirming}
                     onPress={() => void handleConfirmSelect()}
                     style={({ pressed }) => [
@@ -340,7 +340,7 @@ export function AladinBookSearchSheet({
                   </ThemedText>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={t('aladin.backToSearchA11y')}
+                    accessibilityLabel={t('aladin.backToSearch')}
                     onPress={handleBackToSearch}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
                     <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{t('aladin.backToSearch')}</ThemedText>

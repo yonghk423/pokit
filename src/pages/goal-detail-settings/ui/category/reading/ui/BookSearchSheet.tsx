@@ -17,6 +17,7 @@ import {
   resolveAladinBookDetail,
   searchAladinBooks,
   type AladinBookDetail,
+  type AladinSearchBookItem,
 } from '@features/aladin-book-search';
 import {
   OpenLibraryAttributionLine,
@@ -61,8 +62,8 @@ type UnifiedBookSearchItem = {
   link: string;
   pubDate: string;
   source: 'aladin' | 'openlibrary';
-  aladinItem?: AladinBookDetail;
-  openLibraryItem?: OpenLibraryBookDetail;
+  aladinItem?: AladinSearchBookItem;
+  openLibraryItem?: OpenLibrarySearchBookItem;
 };
 
 type UnifiedBookSearchDetail = UnifiedBookSearchItem & {
@@ -86,7 +87,7 @@ type Props = {
   onSelect: (selection: BookSearchSelection) => void;
 };
 
-function mapAladinItem(item: AladinBookDetail): UnifiedBookSearchItem {
+function mapAladinItem(item: AladinSearchBookItem): UnifiedBookSearchItem {
   return {
     key: `aladin:${item.itemId}`,
     title: item.title,

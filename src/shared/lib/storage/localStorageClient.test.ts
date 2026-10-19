@@ -37,7 +37,7 @@ describe('localStorageClient (native memory cache)', () => {
   });
 
   it('clearPokitLocalStorage invalidates stale async writes after reset', async () => {
-    let resolveWrite: (() => void) | null = null;
+    let resolveWrite!: () => void;
     const writeGate = new Promise<void>((resolve) => {
       resolveWrite = resolve;
     });
@@ -54,7 +54,7 @@ describe('localStorageClient (native memory cache)', () => {
     });
 
     const clearPromise = clearPokitLocalStorage();
-    resolveWrite?.();
+    resolveWrite();
     await clearPromise;
     await flushLocalStorageClientWrites();
 

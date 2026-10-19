@@ -115,6 +115,7 @@ import { useAppClockEpoch } from '@shared/lib/time/appClock';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { HeaderIcon } from '@shared/ui/header-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
@@ -311,7 +312,7 @@ function PriorityWindowTimeChip({
         accessibilityLabel={t('dayPlan.dayWindowA11y', { line })}
         accessibilityHint={t('dayPlan.dayWindowHint')}
         style={styles.priorityTimelineTimeChipPressable}>
-        <IconSymbol name="clock" size={11} color={muted} />
+        <HeaderIcon name="clock" size={12} />
         <ThemedText
           style={[styles.priorityTimelineSub, styles.priorityTimelineTimeTap, { color: ink }]}
           lightColor={ink}
@@ -2975,7 +2976,7 @@ export function PriorityBasedPlanSection({
                         accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
                         hitSlop={10}
                         style={styles.priorityTimelineCalendarIcon}>
-                        <IconSymbol name="calendar" size={18} color={editorial.muted} />
+                        <HeaderIcon name="calendar" size={20} />
                       </Pressable>
                       <MealSlotScheduleEditButton
                         palette={spineTimelinePalette}
@@ -3026,7 +3027,7 @@ export function PriorityBasedPlanSection({
                         accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
                         hitSlop={10}
                         style={styles.priorityTimelineCalendarIcon}>
-                        <IconSymbol name="calendar" size={18} color={editorial.muted} />
+                        <HeaderIcon name="calendar" size={20} />
                       </Pressable>
                     </View>
                     <View style={styles.priorityTimelineSubRow}>

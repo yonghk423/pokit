@@ -2156,7 +2156,7 @@ export function StudyDocumentEditor({
           if (nextLevel == null) {
             const next = { ...b, kind: b.kind === 'heading' ? 'paragraph' : b.kind };
             delete next.headingLevel;
-            if (next.kind !== 'heading') delete next.accentIndex;
+            delete next.accentIndex;
             return next;
           }
           if (b.kind === 'heading') {

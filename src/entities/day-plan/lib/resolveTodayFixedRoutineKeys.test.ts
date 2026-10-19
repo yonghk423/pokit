@@ -23,7 +23,7 @@ describe('resolveTodayFixedRoutineKeys', () => {
   });
 
   it('keeps weekend applied set only on Saturday/Sunday', () => {
-    const flowSets = {
+    const flowSets: Parameters<typeof resolveTodayFixedRoutineKeys>[0] = {
       activeSetIds: ['set_weekend'],
       activeMealSlotsBySetId: {},
       sets: [

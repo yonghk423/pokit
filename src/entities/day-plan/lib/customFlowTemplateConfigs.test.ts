@@ -84,8 +84,10 @@ describe('customFlowTemplateConfigs', () => {
       },
       { templateKey: 'reminder' },
     );
-    expect(merged.reminderItems).toEqual([{ time: '09:00', label: '아침', enabled: true }]);
-    expect(merged.completedTimes).toEqual([]);
+    expect(merged).toEqual(expect.objectContaining({
+      reminderItems: [{ time: '09:00', label: '아침', enabled: true }],
+      completedTimes: [],
+    }));
   });
 
   it('merges health intake drank and medicine taken from block', () => {

@@ -8,6 +8,7 @@ function weeklyRow(
   return {
     label: partial.categoryKey,
     icon: 'figure.walk',
+    streakDays: 0,
     weekdayDone: Array.from({ length: 7 }, () => false),
     ...partial,
   };

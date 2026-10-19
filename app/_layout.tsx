@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnalyticsScreenTracker } from '@app/AnalyticsScreenTracker';
 import { resolveStatusBarStyle } from '@app/AppStatusBar';
-import { useAppBootstrap, useCityPopFonts } from '@app/index';
+import { LocalizedSplashOverlay, SPLASH_BACKGROUND_COLOR, useAppBootstrap, useCityPopFonts } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { i18n } from '@shared/lib/i18n';
 
@@ -18,7 +18,7 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 const APP_SURFACE_LIGHT = RetroFlatColors.light.bg;
 const APP_SURFACE_DARK = RetroFlatColors.dark.bg;
 
-/** 네이티브 스플래시 최소 표시 시간 */
+/** 언어별 이미지가 보이기 시작한 뒤 최소 표시 시간. */
 const MIN_SPLASH_MS = 1000;
 
 export const unstable_settings = {
@@ -32,7 +32,9 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const splashStartedAtRef = useRef(Date.now());
+  const [splashImageReady, setSplashImageReady] = useState(false);
+  const [splashMinimumElapsed, setSplashMinimumElapsed] = useState(false);
+  const handleSplashReady = useCallback(() => setSplashImageReady(true), []);
 
   const navigationTheme = isDark
     ? {
@@ -57,20 +59,25 @@ export default function RootLayout() {
   const appReady = useAppBootstrap();
   const fontsReady = useCityPopFonts();
   const contentReady = appReady && fontsReady;
+  const showSplash = !contentReady || !splashMinimumElapsed;
 
   useEffect(() => {
-    if (!contentReady) return;
-    const elapsed = Date.now() - splashStartedAtRef.current;
-    const remainMs = Math.max(0, MIN_SPLASH_MS - elapsed);
-    const timer = setTimeout(() => {
-      void SplashScreen.hideAsync().catch(() => {});
-    }, remainMs);
-    return () => clearTimeout(timer);
-  }, [contentReady]);
+    if (!splashImageReady) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void SplashScreen.hideAsync().catch(() => {}).then(() => {
+      if (cancelled) return;
+      timer = setTimeout(() => setSplashMinimumElapsed(true), MIN_SPLASH_MS);
+    });
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, [splashImageReady]);
 
   return (
     <I18nextProvider i18n={i18n}>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: rootBg }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: showSplash ? SPLASH_BACKGROUND_COLOR : rootBg }}>
         <SafeAreaProvider>
           {contentReady ? (
             <ThemeProvider value={navigationTheme}>
@@ -158,6 +165,7 @@ export default function RootLayout() {
               <AnalyticsScreenTracker />
             </ThemeProvider>
           ) : null}
+          {showSplash ? <LocalizedSplashOverlay onReady={handleSplashReady} /> : null}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </I18nextProvider>

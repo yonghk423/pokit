@@ -107,7 +107,7 @@ export function DayPlanPage({
     categoryKey: string,
     theme: { ink: string; muted: string; border: string; isDark: boolean },
   ) => ReactNode;
-} = {}) {
+}) {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

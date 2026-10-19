@@ -42,7 +42,7 @@
 
 | 역할 | Hex (예) | 무드 |
 |------|----------|------|
-| **Main Background** | `#F5F2EB` Warm Beige | 아날로그 종이 질감 |
+| **Main Background** | `#FEFEFF` Soft White | 깨끗하고 가벼운 화면 바탕 |
 | **Primary Accent** | `#356668` Mint / `#2B3A67` Indigo 계열 | 집중·완료·구조 |
 | **Secondary Accent** | `#D4A5A5` Dusty Pink | 삭제·긴급·하이라이트 (절제) |
 | **Sub Accent** | `#A8DADC` / `#A8C3B8` Soft Mint | 루틴·구간·활성 칩 |

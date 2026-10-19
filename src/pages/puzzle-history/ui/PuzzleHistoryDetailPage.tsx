@@ -309,7 +309,7 @@ export function PuzzleHistoryDetailPage() {
       dailyStatsByDate,
     });
     const linkedKeys =
-      MOCK_ROUTINE_PREVIEW[history.id] ?? history.linkedCategoryKeys ?? [];
+      [...(MOCK_ROUTINE_PREVIEW[history.id] ?? history.linkedCategoryKeys ?? [])];
     const pieceDateKeys = openedPieces.flatMap((row) => (row.dateKey ? [row.dateKey] : []));
     let routinesByDate = history.id.startsWith('ph_dev_mock_')
       ? mockRoutineCountsByDate(linkedKeys, openedPieces)

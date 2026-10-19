@@ -21,7 +21,7 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 import { useFlowReviewRoute } from '../model/useFlowReviewRoute';
 
-const BG = '#F5F2EB';
+const BG = '#FEFEFF';
 const SURFACE = '#F4F2FF';
 const SURFACE_LOW = '#E8E2D8';
 const BORDER = '#000000';

@@ -25,6 +25,17 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 import { resolveCategoryCatalogIcon } from '@entities/day-plan';
 
+import type { OtherDetailDataConfig } from '@entities/day-plan/lib/goalCategorySessionConfig';
+
+function loadChecklistConfig(key: string): OtherDetailDataConfig {
+  const raw = loadGoalDetailCategoryConfig(key);
+  expect(raw).toEqual(expect.objectContaining({
+    displayName: expect.any(String),
+    checklist: expect.any(Array),
+  }));
+  return raw as OtherDetailDataConfig;
+}
+
 describe('ensureDefaultPriorityCatalog', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.customCatalogGroups);
@@ -49,7 +60,7 @@ describe('ensureDefaultPriorityCatalog', () => {
       BUILTIN_STRETCHING_FLOW_ID,
     ]);
 
-    const tourCfg = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+    const tourCfg = loadChecklistConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
     expect(tourCfg?.displayName).toBe('오늘의 주인공 빠르게 둘러보기');
     expect((tourCfg as { templateKey?: string })?.templateKey).toBe('checklist');
     expect(tourCfg?.checklist).toHaveLength(8);
@@ -64,7 +75,7 @@ describe('ensureDefaultPriorityCatalog', () => {
       '설정에서 레이아웃 바꿔보기',
     ]);
 
-    const exerciseCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
+    const exerciseCfg = loadChecklistConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
     expect(exerciseCfg?.displayName).toBe('주말 러닝');
     expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('checklist');
 
@@ -77,12 +88,12 @@ describe('ensureDefaultPriorityCatalog', () => {
 
     expect(loadGoalDetailCategoryConfig(BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBeNull();
 
-    const abstainCfg = loadGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID);
+    const abstainCfg = loadChecklistConfig(BUILTIN_ABSTAIN_FLOW_ID);
     expect(abstainCfg?.displayName).toBe('금지');
     expect((abstainCfg as { templateKey?: string })?.templateKey).toBe('abstain');
     expect(abstainCfg?.checklist?.map((item) => item.text)).toEqual([...ABSTAIN_CHECKLIST_LABELS]);
 
-    const stretchingCfg = loadGoalDetailCategoryConfig(BUILTIN_STRETCHING_FLOW_ID);
+    const stretchingCfg = loadChecklistConfig(BUILTIN_STRETCHING_FLOW_ID);
     expect(stretchingCfg?.displayName).toBe('스트레칭');
     expect((stretchingCfg as { icon?: string })?.icon).toBe('figure.flexibility');
     expect((stretchingCfg as { templateKey?: string })?.templateKey).toBe('checklist');
@@ -358,7 +369,7 @@ describe('ensureDefaultPriorityCatalog', () => {
 
     ensureDefaultPriorityCatalog();
 
-    const exerciseCfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
+    const exerciseCfg = loadChecklistConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
     expect(exerciseCfg?.displayName).toBe('주말 러닝');
     expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('checklist');
     expect(exerciseCfg?.checklist).toEqual([

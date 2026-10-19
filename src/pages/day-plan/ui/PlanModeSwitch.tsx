@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { HeaderIcon, type HeaderIconName } from '@shared/ui/header-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { PlanMode } from '../lib/dayPlanEditorShared';
@@ -14,23 +14,21 @@ import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
 type ModeButton = {
   mode: PlanMode;
-  icon: string;
+  icon: HeaderIconName;
   labelKey: 'planMode.daily' | 'planMode.quickMemo' | 'planMode.dayNote' | 'planMode.reading';
 };
 
 const MODE_BUTTONS: ModeButton[] = [
-  { mode: 'priority', icon: 'list.bullet.rectangle', labelKey: 'planMode.daily' },
-  { mode: 'quickMemo', icon: 'square.and.pencil', labelKey: 'planMode.quickMemo' },
-  { mode: 'dayNote', icon: 'note.text', labelKey: 'planMode.dayNote' },
-  { mode: 'reading', icon: 'book.closed.fill', labelKey: 'planMode.reading' },
+  { mode: 'priority', icon: 'daily', labelKey: 'planMode.daily' },
+  { mode: 'quickMemo', icon: 'lock-memo', labelKey: 'planMode.quickMemo' },
+  { mode: 'dayNote', icon: 'note', labelKey: 'planMode.dayNote' },
+  { mode: 'reading', icon: 'reading', labelKey: 'planMode.reading' },
 ];
 
 /** 설정·펼침 액션 버튼과 동일 — 흰 면 · 얇은 검정 테두리 · 솔리드 음영 */
 const SHADOW = 2;
 const FACE = 34;
 const BORDER = 1;
-const ICON_LIGHT = '#000000';
-const ICON_DARK = '#FAFAFA';
 const BORDER_LIGHT = '#000000';
 const BORDER_DARK = 'rgba(255,255,255,0.55)';
 const SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
@@ -66,7 +64,6 @@ export function PlanModeSwitch({
   const border = isDark ? BORDER_DARK : BORDER_LIGHT;
   const inactiveFace = isDark ? tone.surfaceAlt : '#FFFFFF';
   const activeFace = isDark ? tone.primaryContainer : tone.bgMint;
-  const iconColor = isDark ? ICON_DARK : ICON_LIGHT;
 
   const hint = description !== undefined
     ? description
@@ -141,7 +138,7 @@ export function PlanModeSwitch({
                         borderColor: border,
                       },
                     ]}>
-                    <IconSymbol name={btn.icon as 'book.closed.fill'} size={18} color={iconColor} />
+                    <HeaderIcon name={btn.icon} />
                   </View>
                 </Pressable>
               );

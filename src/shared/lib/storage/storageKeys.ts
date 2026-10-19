@@ -118,6 +118,7 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   updateAvailableDismissedVersion: 'lockflow:update-available-dismissed-version',
   postItFaceColor: 'lockflow:post-it-face-color',
   postItInkColor: 'lockflow:post-it-ink-color',
+  quickMemoLockPrefs: 'lockflow:quick-memo-lock-prefs',
   scheduledRoutinePlan: 'lockflow:scheduled-routine-plan',
   pinnedRoutineWidget: 'lockflow:pinned-routine-widget',
   myRoutineGroupCollapsed: 'lockflow:my-routine-group-collapsed',

@@ -7,6 +7,22 @@ import { InteractionManager } from 'react-native';
  * 포커스 복귀는 전환 애니메이션이 끝난 뒤에만 반영해, 빠른 탭 이동이 JS에 막히지 않게 한다.
  */
 export function freezeHeavyTabScreen<P extends object>(Component: ComponentType<P>) {
+  const FrozenInner = memo(
+    function FrozenInner({
+      focused,
+      innerProps,
+      Component,
+    }: FrozenInnerProps<P>) {
+      const propsRef = useRef(innerProps);
+      if (focused) propsRef.current = innerProps;
+      return createElement(Component, focused ? innerProps : propsRef.current);
+    },
+    (prev, next) => {
+      if (!next.focused) return true;
+      return false;
+    },
+  );
+
   function Gate(props: P) {
     const navFocused = useIsFocused();
     const [committed, setCommitted] = useState(navFocused);
@@ -37,19 +53,3 @@ type FrozenInnerProps<P extends object> = {
   innerProps: P;
   Component: ComponentType<P>;
 };
-
-const FrozenInner = memo(
-  function FrozenInner<P extends object>({
-    focused,
-    innerProps,
-    Component,
-  }: FrozenInnerProps<P>) {
-    const propsRef = useRef(innerProps);
-    if (focused) propsRef.current = innerProps;
-    return createElement(Component, focused ? innerProps : propsRef.current);
-  },
-  (prev, next) => {
-    if (!next.focused) return true;
-    return false;
-  },
-);

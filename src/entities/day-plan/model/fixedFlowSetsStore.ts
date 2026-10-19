@@ -55,7 +55,9 @@ function sanitizeActiveMealSlotsBySetId(
   if (!slotsBySetId || typeof slotsBySetId !== 'object') return activeMealSlotsBySetId;
   for (const [setId, slots] of Object.entries(slotsBySetId)) {
     if (!valid.has(setId) || !Array.isArray(slots)) continue;
-    const normalized = [...new Set(slots.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
+    const normalized = [...new Set(
+      slots.map((slot) => normalizeDayMealSlot(slot)).filter((slot): slot is DayMealSlot => slot !== null),
+    )];
     if (normalized.length > 0) activeMealSlotsBySetId[setId] = normalized;
   }
   return activeMealSlotsBySetId;

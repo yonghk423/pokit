@@ -109,7 +109,7 @@ describe('fixedFlowSetsStorage', () => {
   });
 
   it('matches custom weekday selection', () => {
-    const set = {
+    const set: Parameters<typeof isFixedFlowSetMatchedToday>[0] = {
       applyRule: 'weekday' as const,
       applyWeekdays: [1, 2],
     };

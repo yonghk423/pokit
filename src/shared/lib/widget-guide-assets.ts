@@ -11,7 +11,7 @@ export type WidgetGuideImageId = 'intro' | 'edit' | 'bookstore' | 'note' | 'tip'
 export const WIDGET_GUIDE_STAGE_CREAM = '#F3EBDC';
 export const WIDGET_GUIDE_STAGE_CREAM_DARK = '#2A2620';
 
-const koNotebookAssets: Record<WidgetGuideImageId, ImageSourcePropType> = {
+const koNotebookAssets: Record<WidgetGuideImageId, number> = {
   intro: require('../../../assets/widget/tutorial/pokit-widget-notebook-01-intro.webp'),
   edit: require('../../../assets/widget/tutorial/pokit-widget-notebook-02-edit.webp'),
   bookstore: require('../../../assets/widget/tutorial/pokit-widget-notebook-03-bookstore.webp'),
@@ -19,7 +19,7 @@ const koNotebookAssets: Record<WidgetGuideImageId, ImageSourcePropType> = {
   tip: require('../../../assets/widget/tutorial/pokit-widget-notebook-04-tip-turn.webp'),
 };
 
-const enNotebookAssets: Record<WidgetGuideImageId, ImageSourcePropType> = {
+const enNotebookAssets: Record<WidgetGuideImageId, number> = {
   intro: require('../../../assets/widget/tutorial/pokit-widget-notebook-01-intro-en.webp'),
   edit: require('../../../assets/widget/tutorial/pokit-widget-notebook-02-edit-en.webp'),
   bookstore: require('../../../assets/widget/tutorial/pokit-widget-notebook-03-bookstore-en.webp'),
@@ -27,7 +27,7 @@ const enNotebookAssets: Record<WidgetGuideImageId, ImageSourcePropType> = {
   tip: require('../../../assets/widget/tutorial/pokit-widget-notebook-04-tip-en.webp'),
 };
 
-const jaNotebookAssets: Record<WidgetGuideImageId, ImageSourcePropType> = {
+const jaNotebookAssets: Record<WidgetGuideImageId, number> = {
   intro: require('../../../assets/widget/tutorial/pokit-widget-notebook-01-intro-ja.webp'),
   edit: require('../../../assets/widget/tutorial/pokit-widget-notebook-02-edit-ja.webp'),
   bookstore: require('../../../assets/widget/tutorial/pokit-widget-notebook-03-bookstore-ja.webp'),
@@ -37,7 +37,7 @@ const jaNotebookAssets: Record<WidgetGuideImageId, ImageSourcePropType> = {
 
 function notebookAssetsForLocale(
   locale: AppLocale,
-): Record<WidgetGuideImageId, ImageSourcePropType> {
+): Record<WidgetGuideImageId, number> {
   if (locale === 'en') return enNotebookAssets;
   if (locale === 'ja') return jaNotebookAssets;
   return koNotebookAssets;

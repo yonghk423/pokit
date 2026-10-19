@@ -10,7 +10,7 @@ export const PUZZLE_GUIDE_STAGE_CREAM = '#F3EBDC';
 export const PUZZLE_GUIDE_STAGE_CREAM_DARK = '#2A2620';
 
 /** 위젯 설명서와 같은 노트 펼친 에디토리얼 슬라이드 */
-const puzzleGuideAssets: Record<PuzzleGuideImageId, ImageSourcePropType> = {
+const puzzleGuideAssets: Record<PuzzleGuideImageId, number> = {
   wall: require('../../../assets/puzzle-guide/wall.jpg'),
   target: require('../../../assets/puzzle-guide/target.jpg'),
   photo: require('../../../assets/puzzle-guide/photo.jpg'),

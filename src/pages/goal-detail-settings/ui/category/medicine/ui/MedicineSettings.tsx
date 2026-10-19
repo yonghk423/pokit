@@ -535,7 +535,7 @@ export function MedicineSettings({
                   contentInsetLeft={0}
                   ink={c.onSurface}
                   muted={c.onVariant}
-                  line={c.border}
+                  line={c.outline}
                   isDark={isDark}
                   priorityStart={priorityStart}
                   priorityEnd={priorityEnd}

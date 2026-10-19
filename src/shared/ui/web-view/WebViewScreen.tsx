@@ -3,8 +3,6 @@ import { useCallback, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Linking,
-  Platform,
-  RefreshControl,
   StyleSheet,
   View,
   type StyleProp,
@@ -59,7 +57,6 @@ export function WebViewScreen({
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
   const backgroundColor = useThemeColor({}, 'background');
@@ -93,18 +90,8 @@ export function WebViewScreen({
     [allowedHostSuffixes],
   );
 
-  const handleRefresh = useCallback(() => {
-    if (hasError) {
-      handleRetry();
-      return;
-    }
-    setIsRefreshing(true);
-    webViewRef.current?.reload();
-  }, [hasError, handleRetry]);
-
   const handleLoadEnd = useCallback(() => {
     setIsLoading(false);
-    setIsRefreshing(false);
     setHasLoadedOnce(true);
   }, []);
 
@@ -146,11 +133,6 @@ export function WebViewScreen({
             style={[styles.webView, { backgroundColor }]}
             originWhitelist={['https://*', 'http://*']}
             pullToRefreshEnabled={pullToRefreshEnabled}
-            refreshControl={
-              pullToRefreshEnabled && Platform.OS === 'android' ? (
-                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-              ) : undefined
-            }
             onLoadStart={() => {
               setIsLoading(true);
               setHasError(false);

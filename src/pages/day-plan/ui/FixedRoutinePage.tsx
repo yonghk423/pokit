@@ -154,7 +154,7 @@ function layoutModeHint(mode: DayPlanLayoutMode): string {
 }
 
 function sectionHintText(
-  section: 'scheduled' | 'custom' | FixedRoutineSection,
+  section: 'scheduled' | 'custom' | FixedRoutineView,
   layoutMode: DayPlanLayoutMode,
 ): string {
   if (section === 'templates') {
@@ -2044,7 +2044,7 @@ export function FixedRoutinePage({
   controlledLayoutMode,
   hideLayoutModeHeader = false,
   historyContent,
-}: FixedRoutinePageProps = {}) {
+}: FixedRoutinePageProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();

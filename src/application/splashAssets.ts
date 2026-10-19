@@ -1,15 +1,15 @@
 import type { ImageSourcePropType } from 'react-native';
+import type { AppLocale } from '@shared/lib/i18n/model/locale';
 
-/** 네이티브 스플래시와 동일한 배경 — 퍼즐 벽·회백색 (전환 깜빡임 완화) */
-export const SPLASH_BACKGROUND_COLOR = '#F5F4F2';
+/** 네이티브 시작 화면과 언어별 스플래시의 공통 배경. */
+export const SPLASH_BACKGROUND_COLOR = '#FEFEFF';
 
-/**
- * 앱 스플래시 — 9칸 루틴 콜라주 (garage-kettlebell 반영본).
- * `assets/splash-routines-9.webp` ≡ `assets/puzzle/collage.webp`
- */
-export const SPLASH_COLLAGE_SOURCE = require('../../assets/splash-routines-9.webp') as ImageSourcePropType;
+const SPLASH_KO_SOURCE = require('../../assets/icon_header6.png') as ImageSourcePropType;
+const SPLASH_EN_SOURCE = require('../../assets/icon_header6_en.png') as ImageSourcePropType;
 
-/** @deprecated 단일 콜라주 스플래시로 대체 — 호환용 길이 1 배열 */
-export const SPLASH_IMAGE_SOURCES = [SPLASH_COLLAGE_SOURCE] as const;
+export function getSplashImageSource(locale: AppLocale): ImageSourcePropType {
+  return locale === 'ko' ? SPLASH_KO_SOURCE : SPLASH_EN_SOURCE;
+}
 
+export const SPLASH_IMAGE_SOURCES = [SPLASH_KO_SOURCE, SPLASH_EN_SOURCE] as const;
 export type SplashImageSource = (typeof SPLASH_IMAGE_SOURCES)[number];

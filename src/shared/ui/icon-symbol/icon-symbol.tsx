@@ -1,5 +1,5 @@
 import { SymbolView, SymbolViewProps, SymbolWeight } from 'expo-symbols';
-import { StyleProp, ViewStyle } from 'react-native';
+import { StyleProp, ViewStyle, type ColorValue } from 'react-native';
 
 export function IconSymbol({
   name,
@@ -11,7 +11,7 @@ export function IconSymbol({
   /** SF Symbol 이름 — 카탈로그 전량 지원을 위해 string 허용 */
   name: SymbolViewProps['name'] | string;
   size?: number;
-  color: string;
+  color: ColorValue;
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {

@@ -6,6 +6,7 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { HeaderIcon, type HeaderIconName } from '@shared/ui/header-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
@@ -82,6 +83,7 @@ export type DayPlanLayoutMode = 'bag' | 'sections' | 'spine';
 type TabDef = {
   key: DayPlanLayoutMode;
   icon: string;
+  headerIcon?: HeaderIconName;
   labelKey: I18nKey;
   a11yKey: I18nKey;
 };
@@ -90,6 +92,7 @@ const TABS: TabDef[] = [
   {
     key: 'bag',
     icon: 'list.bullet.rectangle',
+    headerIcon: 'list',
     labelKey: 'layoutMode.bag',
     a11yKey: 'layoutMode.a11y.allRoutines',
   },
@@ -102,6 +105,7 @@ const TABS: TabDef[] = [
   {
     key: 'spine',
     icon: 'clock',
+    headerIcon: 'clock',
     labelKey: 'layoutMode.spine',
     a11yKey: 'layoutMode.a11y.spine',
   },
@@ -186,11 +190,15 @@ export function DayPlanLayoutModeTabs({
                 },
                 pressed && { opacity: 0.88 },
               ]}>
-              <IconSymbol
-                name={item.icon as 'sun.horizon.fill'}
-                size={14}
-                color={active ? activeText : inactiveText}
-              />
+              {item.headerIcon ? (
+                <HeaderIcon name={item.headerIcon} size={16} />
+              ) : (
+                <IconSymbol
+                  name={item.icon as 'sun.horizon.fill'}
+                  size={14}
+                  color={active ? activeText : inactiveText}
+                />
+              )}
               <ThemedText
                 style={[
                   styles.attachedLabel,
@@ -240,11 +248,15 @@ export function DayPlanLayoutModeTabs({
                   borderWidth: 0,
                 },
               ]}>
-              <IconSymbol
-                name={item.icon as 'sun.horizon.fill'}
-                size={15}
-                color={active ? pill.activeIcon : pill.inactiveIcon}
-              />
+              {item.headerIcon ? (
+                <HeaderIcon name={item.headerIcon} size={showLabels ? 18 : 22} />
+              ) : (
+                <IconSymbol
+                  name={item.icon as 'sun.horizon.fill'}
+                  size={15}
+                  color={active ? pill.activeIcon : pill.inactiveIcon}
+                />
+              )}
             </View>
             {showLabels ? (
               <ThemedText

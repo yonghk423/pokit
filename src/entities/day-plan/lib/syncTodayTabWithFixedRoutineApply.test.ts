@@ -1,3 +1,5 @@
+import type { DayMealSlot } from '@shared/lib/storage';
+
 import {
   computeSyncTodayTabWithFixedRoutineApply,
   mergeOrderWithAppliedFixedRoutines,
@@ -86,14 +88,13 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
     priorityCategoryOrder: ['water', 'reading', 'healthIntake'],
     priorityMealSlotOverrides: { water: 'morning' as const, reading: 'morning' as const },
     prioritySectionsCategoryOrder: [] as string[],
-    prioritySectionsMealSlots: {} as Record<string, 'morning'>,
+    prioritySectionsMealSlots: {} as Record<string, DayMealSlot[]>,
     priorityStart: '09:00',
     priorityEnd: '22:00',
     planBlocks: [] as import('../model/types').DayPlanBlock[],
-    priorityMealSlotLayoutEnabled: true,
     todayAppliedCategoryKeys: [] as string[],
     activeSetIds: [] as string[],
-    activeMealSlotsBySetId: {} as Record<string, 'morning'>,
+    activeMealSlotsBySetId: {} as Record<string, DayMealSlot[]>,
     scheduledMealSlotLayoutEnabled: false,
     fixedRoutineApplyLayoutMode: 'bag' as const,
     routineCatalogSelectionKeys: [] as string[],
@@ -309,7 +310,6 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       prioritySectionsCategoryOrder: ['healthIntake'],
       prioritySectionsMealSlots: { healthIntake: ['morning'] },
       priorityMealSlotOverrides: {},
-      priorityMealSlotLayoutEnabled: false,
       todayAppliedCategoryKeys: ['healthIntake'],
       fixedFlowSets: [
         {

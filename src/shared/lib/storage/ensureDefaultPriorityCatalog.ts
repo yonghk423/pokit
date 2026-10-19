@@ -272,7 +272,7 @@ function mergeDefaultCustomGroups(): void {
   }
   if (!changed) return;
 
-  const builtinKeys = new Set(DEFAULT_BUILTIN_CUSTOM_GROUPS.map((g) => g.key));
+  const builtinKeys = new Set<string>(DEFAULT_BUILTIN_CUSTOM_GROUPS.map((g) => g.key));
   const merged: CustomCatalogGroup[] = DEFAULT_BUILTIN_CUSTOM_GROUPS.map((g) => ({
     key: g.key,
     label: byKey.get(g.key)?.label ?? g.label,

@@ -29,6 +29,20 @@ export type BagRowSpineSchedule = {
   isSuggested: boolean;
 };
 
+type StoredStartTime = {
+  startMinutes: number;
+  endMinutes: number;
+  endsNextCalendarDay?: boolean;
+};
+
+type StoredStartTimes =
+  | ReadonlyMap<string, StoredStartTime>
+  | Readonly<Record<string, StoredStartTime>>;
+
+function isStoredStartTimeMap(value: StoredStartTimes): value is ReadonlyMap<string, StoredStartTime> {
+  return 'get' in value && typeof value.get === 'function';
+}
+
 const DAY_MINUTES = 24 * 60;
 
 /** 자정 넘김 창의 아침 밴드(다음날 새벽~종료)인지 */
@@ -129,22 +143,14 @@ export function resolveBagItemSpineSchedule(input: {
    * 전역 루틴 시작 시각 저장소(우선).
    * 담기에서 사용자가 저장한 시각 — 앱 재실행 후에도 유지되는 단일 진실원.
    */
-  storedStartTimes?: ReadonlyMap<string, {
-    startMinutes: number;
-    endMinutes: number;
-    endsNextCalendarDay?: boolean;
-  }> | Readonly<Record<string, {
-    startMinutes: number;
-    endMinutes: number;
-    endsNextCalendarDay?: boolean;
-  }>>;
+  storedStartTimes?: StoredStartTimes;
 }): BagRowSpineSchedule {
   const categoryKey = input.categoryKey;
   const baseKey = resolvePriorityRoutineCategoryKey(categoryKey);
 
   const storedRaw = input.storedStartTimes;
   const stored =
-    storedRaw instanceof Map
+    storedRaw && isStoredStartTimeMap(storedRaw)
       ? storedRaw.get(baseKey) ?? storedRaw.get(categoryKey)
       : storedRaw?.[baseKey] ?? storedRaw?.[categoryKey];
   if (

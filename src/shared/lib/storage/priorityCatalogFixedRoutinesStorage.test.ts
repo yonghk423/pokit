@@ -1,3 +1,4 @@
+import { createDefaultFixedFlowSetsState } from './defaultFixedFlowSets';
 import * as fixedFlowSetsStorage from './fixedFlowSetsStorage';
 import { loadFixedFlowSetsState } from './fixedFlowSetsStorage';
 import { localStorageClient } from './localStorageClient';
@@ -68,7 +69,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
   it('skips legacy migration when normalized keys are empty', () => {
     const loadMock = jest
       .spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState')
-      .mockReturnValueOnce({ activeSetIds: [], sets: [] });
+      .mockReturnValueOnce({ ...createDefaultFixedFlowSetsState(), activeSetIds: [], sets: [] });
     localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, {
       categoryKeys: [null, '', '   '],
     });
@@ -83,7 +84,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
     });
     const loadMock = jest
       .spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState')
-      .mockReturnValueOnce({ activeSetIds: [], sets: [] });
+      .mockReturnValueOnce({ ...createDefaultFixedFlowSetsState(), activeSetIds: [], sets: [] });
     const saveMock = jest.spyOn(fixedFlowSetsStorage, 'saveFixedFlowSetsState');
     loadPriorityCatalogFixedRoutineKeys();
     expect(saveMock).toHaveBeenCalledWith({
@@ -106,6 +107,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
 
   it('appends active set when saved id is missing from sets', () => {
     jest.spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState').mockReturnValue({
+      ...createDefaultFixedFlowSetsState(),
       activeSetIds: ['orphan'],
       sets: [{ id: 'set_a', name: '주중', applyRule: 'manual', items: [{ categoryKey: 'reading', enabled: true }] }],
     });
@@ -132,6 +134,7 @@ describe('priorityCatalogFixedRoutinesStorage', () => {
 
   it('preserves multiple active set ids when saving keys', () => {
     jest.spyOn(fixedFlowSetsStorage, 'loadFixedFlowSetsState').mockReturnValue({
+      ...createDefaultFixedFlowSetsState(),
       activeSetIds: ['set_a', 'set_b'],
       sets: [
         { id: 'set_a', name: 'A', applyRule: 'manual', items: [{ categoryKey: 'reading', enabled: true }] },

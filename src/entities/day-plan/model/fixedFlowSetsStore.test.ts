@@ -52,6 +52,7 @@ describe('fixedFlowSetsStore', () => {
 
   it('hydrates and sanitizes catalog keys', () => {
     mockLoad.mockReturnValue({
+      ...createDefaultFixedFlowSetsState(),
       activeSetIds: [],
       sets: [
         {

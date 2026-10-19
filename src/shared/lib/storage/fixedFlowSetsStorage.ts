@@ -360,9 +360,8 @@ function hadRemovedBuiltinPresetSets(raw: unknown): boolean {
   if (!Array.isArray(raw)) return false;
   return raw.some((row) => {
     if (!row || typeof row !== 'object') return false;
-    const id = typeof (row as Record<string, unknown>).id === 'string'
-      ? (row as Record<string, unknown>).id.trim()
-      : '';
+    const rawId = (row as Record<string, unknown>).id;
+    const id = typeof rawId === 'string' ? rawId.trim() : '';
     return (REMOVED_BUILTIN_PRESET_SET_IDS as readonly string[]).includes(id);
   });
 }
@@ -432,7 +431,9 @@ function normalizeActiveMealSlotsBySetId(
   for (const [setId, slotsRaw] of Object.entries(fromRaw as Record<string, unknown>)) {
     if (!validPresetSetIds.has(setId)) continue;
     if (!Array.isArray(slotsRaw)) continue;
-    const nextSlots = [...new Set(slotsRaw.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
+    const nextSlots = [...new Set(
+      slotsRaw.map((slot) => normalizeDayMealSlot(slot)).filter((slot): slot is DayMealSlot => slot !== null),
+    )];
     if (nextSlots.length > 0) out[setId] = nextSlots;
   }
   return out;
@@ -474,7 +475,9 @@ function filterActiveMealSlotsForSets(
   const out: Record<string, DayMealSlot[]> = {};
   for (const [setId, slots] of Object.entries(slotsBySetId)) {
     if (!validPresetSetIds.has(setId) || !Array.isArray(slots)) continue;
-    const nextSlots = [...new Set(slots.map((slot) => normalizeDayMealSlot(slot)).filter(Boolean))];
+    const nextSlots = [...new Set(
+      slots.map((slot) => normalizeDayMealSlot(slot)).filter((slot): slot is DayMealSlot => slot !== null),
+    )];
     if (nextSlots.length > 0) out[setId] = nextSlots;
   }
   return out;
@@ -639,10 +642,8 @@ function hadRetiredExampleCustomSets(raw: unknown): boolean {
   if (!Array.isArray(raw)) return false;
   return raw.some((row) => {
     if (!row || typeof row !== 'object') return false;
-    const id =
-      typeof (row as Record<string, unknown>).id === 'string'
-        ? (row as Record<string, unknown>).id.trim()
-        : '';
+    const rawId = (row as Record<string, unknown>).id;
+    const id = typeof rawId === 'string' ? rawId.trim() : '';
     return (
       (BUILTIN_EXAMPLE_CUSTOM_FLOW_SET_IDS as readonly string[]).includes(id) ||
       id === 'default'
@@ -831,7 +832,10 @@ export function loadFixedFlowSetsState(): FixedFlowSetsState {
   return migratedManual;
 }
 
-export function saveFixedFlowSetsState(next: FixedFlowSetsState): void {
+/** 레거시 호출 입력도 정규화하여 모드별 필드가 완비된 상태로 저장한다. */
+export function saveFixedFlowSetsState(
+  next: Pick<FixedFlowSetsState, 'activeSetIds' | 'sets'> & Partial<FixedFlowSetsState>,
+): void {
   const existing = localStorageClient.getJson<PersistedShape>(StorageKeys.fixedFlowSets);
   const normalized = normalizeFixedFlowSetsState({
     ...next,
@@ -846,7 +850,9 @@ export function saveFixedFlowSetsState(next: FixedFlowSetsState): void {
 }
 
 /** @deprecated 첫 번째 적용 그룹 — 레거시 단일 세트 API용 */
-export function getActiveFixedFlowSet(state: FixedFlowSetsState): FixedFlowSet | null {
+export function getActiveFixedFlowSet(
+  state: Pick<FixedFlowSetsState, 'activeSetIds' | 'sets'>,
+): FixedFlowSet | null {
   for (const set of state.sets) {
     if (state.activeSetIds.includes(set.id)) return set;
   }

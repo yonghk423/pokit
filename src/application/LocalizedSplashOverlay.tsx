@@ -1,17 +1,17 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
-import { SPLASH_BACKGROUND_COLOR, SPLASH_COLLAGE_SOURCE } from './splashAssets';
+import { detectDeviceLanguageTag, resolveAppLocaleFromLanguageTag } from '@shared/lib/i18n/model/locale';
+import { SPLASH_BACKGROUND_COLOR, getSplashImageSource } from './splashAssets';
 
 type Props = {
-  /** 콜라주가 화면에 그려져 네이티브 스플래시를 내려도 안전할 때 호출 */
+  /** 이미지 로딩이 끝나 네이티브 시작 화면을 내려도 될 때 호출. */
   onReady?: () => void;
 };
 
-/**
- * 네이티브 스플래시와 동일하게 9칸 루틴 콜라주를 풀스크린으로 보여 준다.
- */
-export function RandomSplashOverlay({ onReady }: Props) {
+/** 앱과 동일한 기기 언어 판별로 한국어 / 영어 이미지를 선택한다. */
+export function LocalizedSplashOverlay({ onReady }: Props) {
+  const [locale] = useState(() => resolveAppLocaleFromLanguageTag(detectDeviceLanguageTag()));
   const readySent = useRef(false);
 
   const handleLoad = useCallback(() => {
@@ -22,15 +22,14 @@ export function RandomSplashOverlay({ onReady }: Props) {
 
   return (
     <View
-      pointerEvents="none"
       style={[styles.root, { backgroundColor: SPLASH_BACKGROUND_COLOR }]}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
       <Image
-        source={SPLASH_COLLAGE_SOURCE}
+        source={getSplashImageSource(locale)}
         style={styles.image}
         resizeMode="contain"
-        onLoad={handleLoad}
+        onLoadEnd={handleLoad}
       />
     </View>
   );

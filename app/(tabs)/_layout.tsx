@@ -1,5 +1,6 @@
 import React from 'react';
-import { DynamicColorIOS, Platform, StyleSheet, View } from 'react-native';
+import { DynamicColorIOS, Image, Platform, StyleSheet, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Tabs } from 'expo-router';
@@ -14,16 +15,19 @@ import {
   useEffectiveAppFontId,
 } from '@shared/lib/ui-font';
 import { HapticTab } from '@shared/ui/haptic-tab/HapticTab';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 
-const TAB_ICONS: Record<string, string> = {
-  'day-plan': 'calendar',
-  'fixed-routines': 'list.bullet.rectangle',
-  /** 퍼즐 History — 기억/사진 스택 느낌 */
-  'puzzle-history': 'rectangle.stack',
-  /** 주간·월간 통계 History */
-  'day-plan-statistics': 'clock.arrow.circlepath',
-  'pokit-story': 'book',
+const TAB_ICON_SIZE = 26;
+
+function tabIconSource(asset: ImageSourcePropType): ImageSourcePropType {
+  // NativeTabs uses the source's point size rather than an Image style.
+  return { ...Image.resolveAssetSource(asset), width: TAB_ICON_SIZE, height: TAB_ICON_SIZE };
+}
+
+const TAB_ICON_SOURCES: Record<string, ImageSourcePropType> = {
+  'day-plan': tabIconSource(require('../../assets/tab-icons/today.webp')),
+  'fixed-routines': tabIconSource(require('../../assets/tab-icons/routine.webp')),
+  'puzzle-history': tabIconSource(require('../../assets/tab-icons/puzzle.webp')),
+  'pokit-story': tabIconSource(require('../../assets/tab-icons/story.webp')),
 };
 
 /** 탭 라벨 고정 크기 — 글씨 크기 설정(sm/md/lg)과 무관 */
@@ -51,21 +55,25 @@ function IosTabLayout() {
       tintColor={foreground}
       labelStyle={{ fontSize: 10, color: foreground }}
       minimizeBehavior="never">
-      <NativeTabs.Trigger name="day-plan" disableAutomaticContentInsets>
-        <NativeTabs.Trigger.Label>{t('tabs.dayPlan')}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="calendar" />
+      <NativeTabs.Trigger name="day-plan" accessibilityLabel={t('tabs.dayPlan')} disableAutomaticContentInsets>
+        {/* <NativeTabs.Trigger.Label>{t('tabs.dayPlan')}</NativeTabs.Trigger.Label> */}
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['day-plan']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="fixed-routines" disableAutomaticContentInsets>
-        <NativeTabs.Trigger.Label>{t('tabs.routines')}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="list.bullet.rectangle" />
+      <NativeTabs.Trigger name="fixed-routines" accessibilityLabel={t('tabs.routines')} disableAutomaticContentInsets>
+        {/* <NativeTabs.Trigger.Label>{t('tabs.routines')}</NativeTabs.Trigger.Label> */}
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['fixed-routines']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="puzzle-history" disableAutomaticContentInsets>
-        <NativeTabs.Trigger.Label>{t('tabs.puzzle')}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="rectangle.stack" />
+      <NativeTabs.Trigger name="puzzle-history" accessibilityLabel={t('tabs.puzzle')} disableAutomaticContentInsets>
+        {/* <NativeTabs.Trigger.Label>{t('tabs.puzzle')}</NativeTabs.Trigger.Label> */}
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['puzzle-history']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="pokit-story" disableAutomaticContentInsets>
-        <NativeTabs.Trigger.Label>{t('tabs.story')}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="book" />
+      <NativeTabs.Trigger name="pokit-story" accessibilityLabel={t('tabs.story')} disableAutomaticContentInsets>
+        {/* <NativeTabs.Trigger.Label>{t('tabs.story')}</NativeTabs.Trigger.Label> */}
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['pokit-story']} renderingMode="original" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -92,7 +100,8 @@ function FloatingTabLayout() {
           tabBarButton: HapticTab,
           tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',
           tabBarInactiveTintColor: isDark ? '#8E8E93' : '#999999',
-          tabBarLabelPosition: 'below-icon',
+          // tabBarLabelPosition: 'below-icon',
+          tabBarShowLabel: false,
           tabBarActiveBackgroundColor: isDark ? '#38383C' : '#EEEEF0',
           // Reserve the full footprint so lists, memo controls and WebViews stay above the bar.
           tabBarStyle: [
@@ -126,9 +135,11 @@ function FloatingTabLayout() {
             lineHeight: 14,
             ...(tabLabelFontFamily ? { fontFamily: tabLabelFontFamily } : null),
           },
-          tabBarIcon: ({ color }) => {
-            const icon = TAB_ICONS[route.name] ?? 'circle';
-            return <IconSymbol name={icon as any} size={24} color={color as string} />;
+          tabBarIcon: () => {
+            const iconSource = TAB_ICON_SOURCES[route.name];
+            return iconSource ? (
+              <Image source={iconSource} style={styles.tabIcon} resizeMode="contain" />
+            ) : null;
           },
         })}>
         <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
@@ -163,5 +174,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
     paddingVertical: 3,
     overflow: 'hidden',
+  },
+  tabIcon: {
+    width: TAB_ICON_SIZE,
+    height: TAB_ICON_SIZE,
   },
 });

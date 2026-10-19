@@ -1,7 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,10 +16,6 @@ import { markWelcomeIntroSeenAndFlush } from '@shared/lib/storage';
 import { t as brandText, useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import {
-  prefetchWelcomeIntroAssets,
-  WELCOME_INTRO_BACKGROUNDS,
-} from '../lib/welcomeIntroAssets';
 import { getWelcomeIntroSlides } from '../lib/welcomeIntroSlides';
 
 /** 첫 사용자용 짧은 서비스 소개 (5장 슬라이드) */
@@ -33,10 +28,6 @@ export function WelcomeIntroPage() {
   const [index, setIndex] = useState(0);
   const last = index >= slides.length - 1;
   const item = slides[index]!;
-
-  useEffect(() => {
-    void prefetchWelcomeIntroAssets();
-  }, []);
 
   const finish = useCallback(() => {
     void markWelcomeIntroSeenAndFlush().finally(() => {
@@ -81,25 +72,6 @@ export function WelcomeIntroPage() {
 
   return (
     <View style={styles.screen}>
-      {/* 모든 배경을 미리 마운트 — 넘길 때 opacity만 바꿔 디코드 지연을 없앰 */}
-      {WELCOME_INTRO_BACKGROUNDS.map((source, i) => (
-        <Image
-          key={`welcome-bg-${i}`}
-          source={source}
-          style={[
-            styles.bgImage,
-            { opacity: i === index ? 1 : 0 },
-          ]}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          priority="high"
-          transition={0}
-          recyclingKey={`welcome-intro-bg-${i}`}
-          accessibilityIgnoresInvertColors
-        />
-      ))}
-      <View style={styles.bgScrim} pointerEvents="none" />
-
       <View
         style={[
           styles.column,
@@ -225,16 +197,7 @@ export function WelcomeIntroPage() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#E8C4B8',
-  },
-  bgImage: {
-    ...StyleSheet.absoluteFill,
-    width: '100%',
-    height: '100%',
-  },
-  bgScrim: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(245, 242, 235, 0.28)',
+    backgroundColor: RetroFlatColors.light.bg,
   },
   column: {
     flex: 1,

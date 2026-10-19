@@ -8,7 +8,7 @@ import { appFontStyle, getEffectiveAppFontId } from '@shared/lib/ui-font';
  */
 export const RetroFlatColors = {
   light: {
-    bg: '#F5F2EB',
+    bg: '#FEFEFF',
     bgMint: '#A8DADC',
     surface: '#FBF8FF',
     surfaceAlt: '#F4F2FF',
