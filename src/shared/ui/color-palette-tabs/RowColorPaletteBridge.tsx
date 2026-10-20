@@ -122,11 +122,14 @@ export function RowColorPaletteDesk() {
             accessibilityState={{ selected: active.id === tab.id }}
             onPress={() => { void Haptics.selectionAsync(); setActiveId(tab.id); }}
             style={styles.tab}>
+            <View style={styles.tabIconTile}>
             <StationeryCaptionIcon
               kind={tab.id}
               color={tab.choices?.find((choice) => choice.selected)?.color ?? tab.swatch ?? (tab.id === 'face' ? '#FBFAF6' : ink)}
               size={32}
             />
+            {active.id === tab.id ? <View style={styles.activeTabUnderline} /> : null}
+            </View>
           </Pressable>
         ))}
       </View>
@@ -173,5 +176,7 @@ const styles = StyleSheet.create({
   panel: { gap: 14 },
   tabs: { flexDirection: 'row', gap: 8 },
   tab: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  tabIconTile: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
+  activeTabUnderline: { position: 'absolute', bottom: 0, width: 30, height: 1.5, backgroundColor: '#B7C6B9', borderRadius: 1 },
   fallback: { alignSelf: 'stretch', paddingTop: 4 },
 });

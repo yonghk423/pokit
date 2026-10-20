@@ -354,10 +354,8 @@ export function MedicineSettings({
           <View style={styles.slotRow}>
             {SLOT_GRID.map((slot) => {
               const on = slotOn(draft, slot.key);
-              const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-              const bg = on ? (isDark ? '#444444' : '#E6E6E6') : isDark ? tone.surfaceAlt : '#FFFFFF';
-              const fg = on ? (isDark ? tone.text : tone.tertiary) : tone.text;
-              const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
+              const bg = on ? '#C8E5DC' : '#FCFBF7';
+              const fg = '#000000';
               return (
                 <View key={slot.key} style={styles.slotChipShell}>
                   <View
@@ -365,6 +363,7 @@ export function MedicineSettings({
                     style={[styles.slotChipShadow, { backgroundColor: 'transparent' }]}
                   />
                   <Pressable
+                    preserveColor
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={copy.slotToggleA11y(t(slot.labelKey), on)}

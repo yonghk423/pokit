@@ -10,12 +10,12 @@ export const DEFAULT_APP_FONT_ID: AppFontId = 'hiMelody';
 export const APP_FONT_IDS: readonly AppFontId[] = [
   'hiMelody',
   'hanken',
-  'gothicA1',
+  'sebangGothic2',
 ] as const;
 
 export function isAppFontId(value: unknown): value is AppFontId {
   return (
-    value === 'gothicA1' ||
+    value === 'sebangGothic2' ||
     value === 'hiMelody' ||
     value === 'hanken'
   );

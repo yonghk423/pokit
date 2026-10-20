@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, View } from 'react-native';
@@ -225,6 +226,7 @@ export function LayoutSettingsPage() {
                 })}
               />
             </View>
+            {FEATURE_FLAGS.dailyQuote ? (
             <View style={[chrome.item, { borderTopColor: p.border }]}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
@@ -262,6 +264,7 @@ export function LayoutSettingsPage() {
                 })}
               />
             </View>
+            ) : null}
             <View style={[chrome.item, { borderTopColor: p.border }]}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon

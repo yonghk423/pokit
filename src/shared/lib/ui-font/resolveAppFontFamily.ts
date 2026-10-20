@@ -10,12 +10,12 @@ const HANKEN: Record<AppFontWeight, string> = {
   '800': 'HankenGrotesk_800ExtraBold',
 };
 
-const GOTHIC_A1: Record<AppFontWeight, string> = {
-  '400': 'GothicA1_400Regular',
-  '500': 'GothicA1_500Medium',
-  '600': 'GothicA1_600SemiBold',
-  '700': 'GothicA1_700Bold',
-  '800': 'GothicA1_800ExtraBold',
+const SEBANG_GOTHIC_2: Record<AppFontWeight, string> = {
+  '400': 'SebangGothic2_Regular',
+  '500': 'SebangGothic2_Regular',
+  '600': 'SebangGothic2_Bold',
+  '700': 'SebangGothic2_Bold',
+  '800': 'SebangGothic2_Bold',
 };
 
 const HI_MELODY = 'HiMelody_400Regular';
@@ -25,7 +25,7 @@ export function resolveAppFontFamily(
   fontId: AppFontId,
   weight: AppFontWeight = '400',
 ): string | undefined {
-  if (fontId === 'gothicA1') return GOTHIC_A1[weight];
+  if (fontId === 'sebangGothic2') return SEBANG_GOTHIC_2[weight];
   if (fontId === 'hiMelody') return HI_MELODY;
   return HANKEN[weight];
 }

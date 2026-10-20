@@ -23,8 +23,8 @@ const CHART_PAD_Y_TOP = 12;
 const CHART_PAD_Y_BOTTOM = 22;
 const WEEKLY_LABEL_BELOW = 14;
 const ACTUAL_LINE = 'rgb(0, 0, 0)';
-const TARGET_LINE = '#888888';
-const WEEKLY_LINE = '#555555';
+const TARGET_LINE = '#168DB0';
+const WEEKLY_LINE = '#1BA58D';
 
 type Props = {
   weightLogs: FastingWeightLogs;

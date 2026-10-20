@@ -1,3 +1,5 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -225,9 +227,10 @@ export function ScheduledRoutineCalendarSheet({
   const selectedLabel = formatDateKeyCompact(selectedDateKey, locale);
   const selectedCount = draftKeys.length;
   const draftSet = useMemo(() => new Set(draftKeys), [draftKeys]);
-  const chipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const selectedFill = RetroFlatColors.light.bgMint;
-  const selectedInk = RetroFlatColors.light.primary;
+  const pencil = isDark ? '#A3AE9C' : '#9BA491';
+  const chipBg = isDark ? '#405B50' : '#E0EDE5';
+  const selectedFill = isDark ? '#49685A' : '#CEE5DB';
+  const selectedInk = isDark ? '#E3EEE4' : '#4D6B58';
 
   return (
     <Modal
@@ -250,6 +253,7 @@ export function ScheduledRoutineCalendarSheet({
               paddingBottom: Math.max(insets.bottom, 12) + 8,
             },
           ]}>
+          <PaperGrain opacity={0.35} />
           <View
             style={[
               styles.grabber,
@@ -284,6 +288,8 @@ export function ScheduledRoutineCalendarSheet({
                 onPress={() => setMonthCursor((prev) => addMonths(prev, -1))}
                 accessibilityRole="button"
                 accessibilityLabel={t('dayPlan.scheduledRoutine.prevMonthA11y')}>
+                <PaperGrain opacity={0.25} />
+                <HanddrawnFrame color={pencil} />
                 <ThemedText style={[styles.monthNavText, { color: ink }]}>‹</ThemedText>
               </Pressable>
               <ThemedText style={[styles.monthTitle, { color: ink }]} numberOfLines={1}>
@@ -294,11 +300,15 @@ export function ScheduledRoutineCalendarSheet({
                 onPress={() => setMonthCursor((prev) => addMonths(prev, 1))}
                 accessibilityRole="button"
                 accessibilityLabel={t('dayPlan.scheduledRoutine.nextMonthA11y')}>
+                <PaperGrain opacity={0.25} />
+                <HanddrawnFrame color={pencil} />
                 <ThemedText style={[styles.monthNavText, { color: ink }]}>›</ThemedText>
               </Pressable>
             </View>
 
-            <View style={[styles.calendarFrame, { borderColor: line }]}>
+            <View style={[styles.calendarFrame, { backgroundColor: isDark ? '#30362E' : '#FAF9F4' }]}>
+              <PaperGrain opacity={0.3} />
+              <HanddrawnFrame color={pencil} />
               <View style={styles.todayRow}>
                 <Pressable
                   onPress={() => {
@@ -308,6 +318,8 @@ export function ScheduledRoutineCalendarSheet({
                   accessibilityRole="button"
                   accessibilityLabel={t('dayPlan.jumpToToday')}
                   style={[styles.todayBtn, { borderColor: line, backgroundColor: chipBg }]}>
+                  <PaperGrain opacity={0.25} />
+                  <HanddrawnFrame color={pencil} />
                   <ThemedText style={[styles.todayBtnText, { color: ink }]}>
                     {t('dayPlan.today')}
                   </ThemedText>
@@ -345,6 +357,7 @@ export function ScheduledRoutineCalendarSheet({
                             })
                           : formatDateKeyCompact(dateKey, locale)
                       }>
+                      {isSelected ? <HanddrawnFrame color={pencil} /> : null}
                       <ThemedText
                         style={[
                           styles.dayText,
@@ -405,8 +418,11 @@ export function ScheduledRoutineCalendarSheet({
           <BrutalConfirmButton
             label={t('dayPlan.scheduledRoutine.save')}
             onPress={onSave}
-            align="stretch"
+            align="end"
             compact
+            fill={isDark ? '#6E9585' : '#CEE5DB'}
+            labelColor={selectedInk}
+            shadowOffset={0}
             style={styles.saveBtn}
           />
         </View>
@@ -478,7 +494,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 0,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -494,7 +510,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   calendarFrame: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     borderRadius: 0,
     padding: 10,
     gap: 6,
@@ -504,7 +520,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   todayBtn: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -528,7 +544,7 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 0,

@@ -85,7 +85,7 @@ const SHOW_APPEARANCE_SETTINGS = false;
 const SHOW_NOTIFICATION_SETTINGS = true;
 
 function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
-  if (fontId === 'gothicA1') return t('settings.font.gothicA1', locale);
+  if (fontId === 'sebangGothic2') return t('settings.font.sebangGothic2', locale);
   if (fontId === 'hanken') return t('settings.font.hanken', locale);
   return t('settings.font.hiMelody', locale);
 }

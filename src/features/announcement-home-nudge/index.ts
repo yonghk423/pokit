@@ -2,3 +2,5 @@ export { announcementBodyPreview, pickHomeNudgeAnnouncement } from './lib/pickHo
 export { useAnnouncementHomeNudge } from './model/useAnnouncementHomeNudge';
 export { useAnnouncementRefreshWhileVisible } from './model/useAnnouncementRefreshWhileVisible';
 export { AnnouncementHomeNudge } from './ui/AnnouncementHomeNudge';
+
+export { AnnouncementHomeOverlay } from './ui/AnnouncementHomeOverlay';

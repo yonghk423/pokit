@@ -1,12 +1,14 @@
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { PaperControl as Pressable } from '@shared/ui/paper-control';
 import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Keyboard, Platform, StyleSheet, View } from 'react-native';
 
 import {
   applyCounterDelta,
+  setCounterCount,
   applyCounterActivityPreset,
   applyCounterActivitySettings,
   addReminderScheduleItem,
@@ -493,7 +495,7 @@ function MeasurementTemplateView({
                     style={({ pressed }) => [
                       styles.counterChip,
                       {
-                        backgroundColor: selected ? (isDark ? '#858585' : '#B8B8B8') : faceWhite,
+                        backgroundColor: selected ? (isDark ? '#6CACA4' : '#A8DADC') : faceWhite,
                         opacity: pressed ? 0.88 : 1,
                       },
                     ]}>
@@ -616,7 +618,7 @@ function MeasurementTemplateView({
                   styles.reminderProgressFill,
                   {
                     width: `${Math.round(goalRatio * 100)}%`,
-                    backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
+                    backgroundColor: (isDark ? '#6CACA4' : '#A8DADC'),
                   },
                 ]}
               />
@@ -680,7 +682,7 @@ function MeasurementTemplateView({
               goal={cfg.useGoalValue ? cfg.goalValue : undefined}
               accent={ink}
               muted={muted}
-              fillColor={(isDark ? '#858585' : '#B8B8B8')}
+              fillColor={(isDark ? '#6CACA4' : '#A8DADC')}
                 formatValue={(v) => formatMeasurementValue(v, cfg.unit)}
             />
           </View>
@@ -904,9 +906,11 @@ function MemoTemplateView({
                   <View
                     style={[
                       styles.memoEntryDateChip,
-                      { backgroundColor: (isDark ? '#858585' : '#B8B8B8') },
+                      { backgroundColor: '#F4EDD9' },
                     ]}>
-                    <ThemedText style={[styles.memoEntryDateText, { color: tone.text }]}>
+                    <PaperGrain opacity={0.3} />
+                    <HanddrawnFrame color="#B5AA8E" />
+                    <ThemedText style={[styles.memoEntryDateText, { color: '#645B49' }]}>
                       {entry.dateKey ? entry.dateKey.slice(5) : t('common.today')}
                     </ThemedText>
                   </View>
@@ -1111,6 +1115,17 @@ function CounterTemplateView({
   const chartValues = live.history.slice(-7).map((entry) => entry.count);
   const remainingMessage =
     remaining <= 0 ? t('customFlowTemplate.goalReached') : t('customFlowTemplate.remainingToGoal', { count: remaining });
+  const [countDraft, setCountDraft] = useState(() => String(live.currentCount));
+  const validCountDraft = /^\d{1,4}$/.test(countDraft.trim());
+  useEffect(() => {
+    setCountDraft(String(live.currentCount));
+  }, [live.currentCount, live.countDateKey]);
+  const commitCount = () => {
+    if (!validCountDraft) return;
+    emit(setCounterCount(live, Number(countDraft.trim())));
+    Keyboard.dismiss();
+    void Haptics.selectionAsync();
+  };
   const [goalDraft, setGoalDraft] = useState(() => String(live.goalCount));
   const [dismissedPresetIds, setDismissedPresetIds] = useState(
     () => new Set(loadDismissedCounterPresetIds()),
@@ -1166,7 +1181,7 @@ function CounterTemplateView({
           style={[
             styles.counterChip,
             {
-              backgroundColor: selected ? (isDark ? '#858585' : '#B8B8B8') : faceWhite,
+              backgroundColor: selected ? (isDark ? '#6CACA4' : '#A8DADC') : faceWhite,
             },
           ]}>
           <ThemedText
@@ -1347,7 +1362,7 @@ function CounterTemplateView({
                 styles.reminderProgressFill,
                 {
                   width: `${Math.round(ratio * 100)}%`,
-                  backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
+                  backgroundColor: (isDark ? '#6CACA4' : '#A8DADC'),
                 },
               ]}
             />
@@ -1364,7 +1379,7 @@ function CounterTemplateView({
               goal={live.goalCount}
               accent={ink}
               muted={muted}
-              fillColor={(isDark ? '#858585' : '#B8B8B8')}
+              fillColor={(isDark ? '#6CACA4' : '#A8DADC')}
                 formatValue={(v) => String(v)}
             />
           </View>
@@ -1397,7 +1412,7 @@ function CounterTemplateView({
               <View
                 style={[
                   styles.measureStatusChip,
-                  { backgroundColor: (isDark ? '#858585' : '#B8B8B8') },
+                  { backgroundColor: (isDark ? '#6CACA4' : '#A8DADC') },
                 ]}>
                 <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
                   {t('customFlowTemplate.todayGoalFilled')}
@@ -1405,6 +1420,34 @@ function CounterTemplateView({
               </View>
             </View>
           ) : null}
+          <ThemedText style={[styles.counterFieldLabel, { color: muted }]}>
+            {t('customFlowTemplate.countDirectLabel')}
+          </ThemedText>
+          <View style={styles.counterDirectRow}>
+            <View style={[styles.counterDirectInputShell, { backgroundColor: faceWhite }]}>
+              <HanddrawnFrame color={isDark ? '#A3AE9C' : '#929B8B'} />
+              <ThemedTextInput
+                value={countDraft}
+                onChangeText={setCountDraft}
+                accessibilityLabel={t('customFlowTemplate.countDirectLabel')}
+                placeholder={t('customFlowTemplate.countDirectPlaceholder')}
+                placeholderTextColor={muted}
+                keyboardType="number-pad"
+                maxLength={4}
+                onSubmitEditing={commitCount}
+                style={[styles.counterDirectInput, { color: ink }]}
+              />
+            </View>
+            <BrutalConfirmButton
+              compact
+              label={t('common.apply')}
+              disabled={!validCountDraft}
+              fill={isDark ? '#47766B' : '#D5EAE2'}
+              labelColor={isDark ? '#E6EEE5' : '#506A59'}
+              shadowOffset={0}
+              onPress={commitCount}
+            />
+          </View>
           <View style={styles.counterPrimaryRow}>
             <View
               style={[
@@ -1468,7 +1511,7 @@ function CounterTemplateView({
                 style={({ pressed }) => [
                   styles.bigCounterBtn,
                   {
-                    backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
+                    backgroundColor: (isDark ? '#6CACA4' : '#A8DADC'),
                     opacity: pressed ? 0.9 : 1,
                   },
                 ]}>
@@ -2382,6 +2425,9 @@ const styles = StyleSheet.create({
   counterTitle: { fontSize: 15, fontWeight: '700' },
   counterSlash: { fontSize: 24, fontWeight: '700', lineHeight: 32 },
   goalBadge: { fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  counterDirectRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  counterDirectInputShell: { flex: 1 },
+  counterDirectInput: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 8, fontSize: 20, lineHeight: 26 },
   counterPrimaryRow: {
     flexDirection: 'row',
     gap: 6,

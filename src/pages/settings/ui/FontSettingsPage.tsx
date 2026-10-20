@@ -54,9 +54,9 @@ const FONT_OPTIONS: {
     descKey: 'settings.font.hankenDesc',
   },
   {
-    key: 'gothicA1',
-    labelKey: 'settings.font.gothicA1',
-    descKey: 'settings.font.gothicA1Desc',
+    key: 'sebangGothic2',
+    labelKey: 'settings.font.sebangGothic2',
+    descKey: 'settings.font.sebangGothic2Desc',
   },
 ];
 
@@ -291,23 +291,6 @@ export function FontSettingsPage() {
                           : cardFace,
                     },
                   ]}>
-                  <View
-                    style={[
-                      styles.fontIcon,
-                      { backgroundColor: active ? (isDark ? '#1A4E50' : '#A8DADC') : 'transparent' },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.fontIconGlyph,
-                        sampleFamily ? { fontFamily: sampleFamily, fontWeight: sampleWeight } : null,
-                        {
-                          color: rf.text,
-                          fontSize: scaleTypeSize(15, resolveAppFontOpticalScale(opt.key)),
-                        },
-                      ]}>
-                      Aa
-                    </Text>
-                  </View>
                   <View style={styles.fontText}>
                     <Text
                       style={[
@@ -442,17 +425,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     zIndex: 1,
-  },
-  fontIcon: {
-    width: 40,
-    height: 40,
-    borderWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fontIconGlyph: {
-    fontSize: 15,
-    letterSpacing: -0.3,
   },
   fontText: { flex: 1, gap: 2, minWidth: 0 },
   fontPreview: {

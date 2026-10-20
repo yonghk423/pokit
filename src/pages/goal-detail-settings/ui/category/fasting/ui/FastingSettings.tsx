@@ -16,7 +16,9 @@ import {
 } from '@entities/day-plan/lib/weightLog';
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import Svg, { Path } from 'react-native-svg';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 
@@ -66,7 +68,7 @@ function WeightKgStepper({
   minKg,
   maxKg,
   ink,
-  outline,
+  outline: _outline,
   label,
 }: {
   valueKg: number;
@@ -79,6 +81,8 @@ function WeightKgStepper({
   label: string;
 }) {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
+  const pencil = isDark ? '#A3AE9C' : '#98A18F';
   const canDecrease = valueKg > minKg + 1e-9;
   const canIncrease = valueKg < maxKg - 1e-9;
   const stepLabel = formatKg(stepKg);
@@ -106,11 +110,15 @@ function WeightKgStepper({
         style={({ pressed }) => [
           styles.stepBtn,
           {
-            borderColor: outline,
+            backgroundColor: isDark ? '#30372F' : '#F5F6EE',
             opacity: !canDecrease ? 0.35 : pressed ? 0.75 : 1,
           },
         ]}>
-        <IconSymbol name="minus" size={13} color={ink} />
+        <PaperGrain opacity={0.25} />
+        <HanddrawnFrame color={pencil} />
+        <Svg width={15} height={15} viewBox="0 0 20 20" accessible={false}>
+          <Path d="M4 10.2Q10 9.7 16 10" stroke={pencil} strokeWidth={1.3} strokeLinecap="round" fill="none" />
+        </Svg>
       </Pressable>
       <ThemedText style={[styles.stepValue, { color: ink }]}>{formatKg(valueKg)}</ThemedText>
       <Pressable
@@ -123,11 +131,15 @@ function WeightKgStepper({
         style={({ pressed }) => [
           styles.stepBtn,
           {
-            borderColor: outline,
+            backgroundColor: isDark ? '#30372F' : '#F5F6EE',
             opacity: !canIncrease ? 0.35 : pressed ? 0.75 : 1,
           },
         ]}>
-        <IconSymbol name="plus" size={13} color={ink} />
+        <PaperGrain opacity={0.25} />
+        <HanddrawnFrame color={pencil} />
+        <Svg width={15} height={15} viewBox="0 0 20 20" accessible={false}>
+          <Path d="M4 10.2Q10 9.7 16 10M10 4Q9.7 10 10.2 16" stroke={pencil} strokeWidth={1.3} strokeLinecap="round" fill="none" />
+        </Svg>
       </Pressable>
     </View>
   );
@@ -374,7 +386,7 @@ const styles = StyleSheet.create({
   stepBtn: {
     width: 28,
     height: 28,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',

@@ -3,4 +3,6 @@
  */
 export const FEATURE_FLAGS = {
   puzzle: false,
+  /** 오늘의 한 줄은 데이터·설정을 보존한 채 임시로 숨긴다. */
+  dailyQuote: false,
 };

@@ -68,17 +68,30 @@ function syncCounterHistoryForToday(
   };
 }
 
+/** 직접 입력·증감 모두 같은 범위와 오늘 기록을 사용한다. */
+export function setCounterCount(
+  cfg: CounterDetailDataConfig,
+  count: number,
+  todayKey: string = getLocalDateKey(),
+): CounterDetailDataConfig {
+  const base = ensureCounterDayBoundary(cfg, todayKey);
+  if (!Number.isFinite(count)) return base;
+  const next = Math.max(0, Math.min(9999, Math.round(count)));
+  return {
+    ...base,
+    currentCount: next,
+    countDateKey: todayKey,
+    history: upsertCounterHistoryEntry(base.history, { dateKey: todayKey, count: next }),
+  };
+}
+
 export function applyCounterDelta(
   cfg: CounterDetailDataConfig,
   delta: number,
   todayKey: string = getLocalDateKey(),
 ): CounterDetailDataConfig {
   const base = ensureCounterDayBoundary(cfg, todayKey);
-  const next = Math.max(0, Math.min(base.goalCount, base.currentCount + delta));
-  return syncCounterHistoryForToday(
-    { ...base, currentCount: next, countDateKey: todayKey },
-    todayKey,
-  );
+  return setCounterCount(base, base.currentCount + delta, todayKey);
 }
 
 export function applyCounterFillRemaining(
@@ -96,10 +109,7 @@ export function resetCounterCount(
   cfg: CounterDetailDataConfig,
   todayKey: string = getLocalDateKey(),
 ): CounterDetailDataConfig {
-  return syncCounterHistoryForToday(
-    { ...ensureCounterDayBoundary(cfg, todayKey), currentCount: 0, countDateKey: todayKey },
-    todayKey,
-  );
+  return setCounterCount(cfg, 0, todayKey);
 }
 
 export function applyHabitDoneToggle(

@@ -1,3 +1,6 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { RowColorPaletteBridgeProvider, RowColorPaletteFallbackHost } from '@shared/ui/color-palette-tabs';
+import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import { PaperGrain } from '@shared/ui/paper-grain';
@@ -119,7 +122,7 @@ import { HeaderIcon } from '@shared/ui/header-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
-  AnnouncementHomeNudge,
+  AnnouncementHomeOverlay,
   useAnnouncementHomeNudge,
 } from '@features/announcement-home-nudge';
 import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
@@ -156,6 +159,7 @@ import { CatalogRowSpineTimePanel, type CatalogRowSpineTimePanelHandle } from '.
 import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
 import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import { CircularRoutineTimetable } from './CircularRoutineTimetable';
 import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
 import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
 import { PriorityMealSlotSectionHeader } from './PriorityMealSlotSectionHeader';
@@ -245,6 +249,7 @@ function PriorityWindowTimeChip({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
   const scale = useSharedValue(1);
 
   useEffect(() => {
@@ -279,8 +284,14 @@ function PriorityWindowTimeChip({
         accessibilityRole="button"
         accessibilityLabel={t('dayPlan.dayWindowA11y', { line })}
         accessibilityHint={t('dayPlan.dayWindowHint')}
-        style={styles.priorityTimelineTimeChipPressable}>
-        <HeaderIcon name="clock" size={12} />
+        style={({ pressed }) => [
+          styles.priorityTimelineTimeChipPressable,
+          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F3E8' },
+          pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
+        ]}>
+        <PaperGrain opacity={0.2} />
+        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#B2B4A7'} />
+        <HeaderIcon name="clock" size={14} />
         <ThemedText
           style={[styles.priorityTimelineSub, styles.priorityTimelineTimeTap, { color: ink }]}
           lightColor={ink}
@@ -288,6 +299,7 @@ function PriorityWindowTimeChip({
           numberOfLines={2}>
           {line}
         </ThemedText>
+        <IconSymbol name="pencil" size={12} color={isDark ? '#C4C8C0' : '#737B70'} />
       </Pressable>
     </Reanimated.View>
   );
@@ -426,11 +438,11 @@ export function PriorityBasedPlanSection({
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const hideDailyQuote = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
+  const [circularTimetableOpen, setCircularTimetableOpen] = useState(false);
+  const hideDailyQuoteSetting = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
+  const hideDailyQuote = !FEATURE_FLAGS.dailyQuote || hideDailyQuoteSetting;
   const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
   const announcementHome = useAnnouncementHomeNudge();
-  const showAnnouncementNudge = Boolean(announcementHome.notice);
-  const showHomeNudge = showAnnouncementNudge;
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -2482,6 +2494,7 @@ export function PriorityBasedPlanSection({
 
   return (
     <View style={[styles.prioritySectionRoot, { backgroundColor: surfaceBg }]}>
+      <AnnouncementHomeOverlay announcement={announcementHome.notice} onDismiss={announcementHome.dismiss} onUpdatePress={() => { void announcementHome.openStore(); }} />
       <ScheduledRoutineCalendarSheet
         visible={scheduledRoutineSheetOpen}
         isDark={isDark}
@@ -2935,7 +2948,13 @@ export function PriorityBasedPlanSection({
                         accessibilityRole="button"
                         accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
                         hitSlop={10}
-                        style={styles.priorityTimelineCalendarIcon}>
+                        style={({ pressed }) => [
+                          styles.priorityTimelineCalendarIcon,
+                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F3E8' },
+                          pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
+                        ]}>
+                        <PaperGrain opacity={0.2} />
+                        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#B2B4A7'} />
                         <HeaderIcon name="calendar" size={20} />
                       </Pressable>
                       <MealSlotScheduleEditButton
@@ -2982,7 +3001,13 @@ export function PriorityBasedPlanSection({
                         accessibilityRole="button"
                         accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
                         hitSlop={10}
-                        style={styles.priorityTimelineCalendarIcon}>
+                        style={({ pressed }) => [
+                          styles.priorityTimelineCalendarIcon,
+                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F3E8' },
+                          pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
+                        ]}>
+                        <PaperGrain opacity={0.2} />
+                        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#B2B4A7'} />
                         <HeaderIcon name="calendar" size={20} />
                       </Pressable>
                     </View>
@@ -3009,8 +3034,11 @@ export function PriorityBasedPlanSection({
               <View style={styles.priorityTimelineHeaderActions}>
                 {(visibleLayoutModes?.length ?? 3) > 0 ? (
                   <DayPlanLayoutModeTabs
+                    showCircularTimetable
+                    circularActive={circularTimetableOpen}
+                    onSelectCircular={() => setCircularTimetableOpen(true)}
                     mode={layoutMode}
-                    onSelectMode={onSelectLayoutMode}
+                    onSelectMode={(next) => { setCircularTimetableOpen(false); onSelectLayoutMode(next); }}
                     c={c}
                     isDark={isDark}
                     visibleModes={visibleLayoutModes}
@@ -3018,6 +3046,63 @@ export function PriorityBasedPlanSection({
                 ) : null}
               </View>
             </View>
+            {circularTimetableOpen ? (
+              <View style={{ flex: 1, minHeight: 0 }}>
+                {!hideDailyQuote ? (
+                  <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}><DailyQuoteCard dateKey={todayKey} isDark={isDark} /></View>
+                ) : null}
+              <CircularRoutineTimetable
+                ink={editorial.ink}
+                muted={editorial.muted}
+                isDark={isDark}
+                items={orderedSelectedItemsForDisplay.map((cat) => {
+                  const schedule = resolveBagRowSpineSchedule(cat.key);
+                  const faceId = priorityCategoryFaceColor[cat.key] ?? null;
+                  const inkId = priorityCategoryInkColor[cat.key] ?? null;
+                  return {
+                    key: cat.key, label: cat.label, icon: cat.icon,
+                    faceColor: faceId ? resolvePostItFaceColor(faceId, isDark) : undefined,
+                    inkColor: faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : undefined,
+                    completed: isPriorityRowCompleted(cat.key),
+                    startMinutes: schedule.isSuggested ? undefined : schedule.startMinutes,
+                    startsNextDay: schedule.startsNextCalendarDay,
+                    timeLabel: schedule.isSuggested ? undefined : formatMinuteOfDayKo(schedule.startMinutes),
+                  };
+                })}
+                onComplete={(key) => bagRowActions.onToggleComplete(key)}
+                onFinish={(key, label) => bagRowActions.onFinishForToday?.(key, label)}
+                onAdd={openAddRoutineForBag}
+                renderDetail={(item) => {
+                  const schedule = resolveBagRowSpineSchedule(item.key);
+                  const faceId = priorityCategoryFaceColor[item.key] ?? null;
+                  const inkId = priorityCategoryInkColor[item.key] ?? null;
+                  const ink = faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : editorial.ink;
+                  const muted = resolvePostItInkMuted(ink);
+                  const tabs = [
+                    { id: 'face' as const, label: t('dayPlan.colorTab.face'),
+                      choices: deskPaperChoices(faceId, (color) => bagRowActions.onSelectItemFaceColor(item.key, color), isDark),
+                      reset: () => bagRowActions.onSelectItemFaceColor(item.key, null) },
+                    { id: 'ink' as const, label: t('dayPlan.colorTab.ink'),
+                      choices: deskInkChoices(inkId, (color) => bagRowActions.onSelectItemInkColor(item.key, color)),
+                      reset: () => bagRowActions.onSelectItemInkColor(item.key, null) },
+                  ];
+                  return <RowColorPaletteBridgeProvider tabs={tabs} ink={ink} muted={muted} isDark={isDark}>
+                    <PriorityBagRowAccordionPanel
+                    categoryKey={resolvePriorityRoutineCategoryKey(item.key)}
+                    label={item.label}
+                    startMinutes={schedule.isSuggested ? undefined : schedule.startMinutes}
+                    endMinutes={schedule.isSuggested ? undefined : schedule.endMinutes}
+                    ink={ink}
+                    muted={resolvePostItInkMuted(ink)}
+                    surface={faceId ? resolvePostItFaceColor(faceId, isDark) : undefined}
+                    isDark={isDark}
+                  />
+                  <RowColorPaletteFallbackHost />
+                  </RowColorPaletteBridgeProvider>;
+                }}
+              />
+              </View>
+            ) : (
             <ScrollView
               ref={priorityTimelineScrollRef}
               nestedScrollEnabled
@@ -3117,7 +3202,7 @@ export function PriorityBasedPlanSection({
                     return true;
                   });
                   const hideMainQuoteLayout =
-                    isMainDay && hideDailyQuote && !showHomeNudge;
+                    isMainDay && hideDailyQuote;
                   const showMainEmptyHint =
                     isMainDay && bagCount === 0 && !priorityMealSlotLayoutEnabled;
                   const shouldRenderDayRow =
@@ -3182,17 +3267,7 @@ export function PriorityBasedPlanSection({
                               },
                             ]}>
                             {!hideMainQuoteLayout && isMainDay ? (
-                              showAnnouncementNudge && announcementHome.notice ? (
-                                <AnnouncementHomeNudge
-                                  announcement={announcementHome.notice}
-                                  onDismiss={announcementHome.dismiss}
-                                  onUpdatePress={() => {
-                                    void announcementHome.openStore();
-                                  }}
-                                />
-                              ) : (
-                                <DailyQuoteCard dateKey={dk} isDark={isDark} />
-                              )
+                              <DailyQuoteCard dateKey={dk} isDark={isDark} />
                             ) : null}
                             {showMainEmptyHint ? (
                               <View
@@ -3510,6 +3585,7 @@ export function PriorityBasedPlanSection({
                 })
               )}
             </ScrollView>
+            )}
           </View>
         </View>
       </View>
@@ -3651,16 +3727,19 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     maxWidth: '100%',
     paddingHorizontal: 0,
-    paddingVertical: 4,
+    paddingVertical: 0,
     borderWidth: 0,
     marginTop: 1,
   },
   priorityTimelineTimeChipPressable: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     flexShrink: 1,
     maxWidth: '100%',
+    minHeight: 30,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   priorityTimelineTimeChipRow: {
     flexDirection: 'row',
@@ -3670,6 +3749,10 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   priorityTimelineCalendarIcon: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
     marginTop: 1,
     marginLeft: 2,

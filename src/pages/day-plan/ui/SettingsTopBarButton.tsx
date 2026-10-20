@@ -1,3 +1,5 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -16,7 +18,7 @@ import { HeaderIcon } from '@shared/ui/header-icon';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
-const SHADOW = 2;
+const SHADOW = 1;
 const FACE = 34;
 
 type Props = {
@@ -66,7 +68,9 @@ function TopBarIconButton({
           },
         ]}
       />
-      <View style={[styles.iconHit, { backgroundColor: face, borderColor: border }]}>
+      <View style={[styles.iconHit, { backgroundColor: face, borderWidth: 0 }]}>
+        <PaperGrain opacity={0.25} />
+        <HanddrawnFrame color={border} />
         {name === 'gearshape' ? (
           <HeaderIcon name="settings" />
         ) : (
@@ -96,10 +100,10 @@ export function SettingsTopBarButton({ c: _c }: Props) {
   const showTopContactButton = useDayPlanChromeSettingsStore((s) => s.settings.showTopContactButton);
   const [hasUnreadAnnouncements, setHasUnreadAnnouncements] = useState(false);
 
-  const shadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
+  const shadow = isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(65, 78, 58, 0.07)';
   const iconColor = isDark ? '#FAFAFA' : '#000000';
   const face = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
-  const border = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
+  const border = isDark ? '#A3AE9C' : '#929B8B';
 
   const refreshUnread = useCallback(async () => {
     if (!showTopAnnouncementsButton) {

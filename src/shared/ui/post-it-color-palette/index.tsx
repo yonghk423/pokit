@@ -7,8 +7,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import type { PostItFaceColorId } from '@shared/lib/storage';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { PaperGrain } from '@shared/ui/paper-grain';
-import { PigmentGrain } from '@shared/ui/pigment-grain';
+import { SurfaceTexture } from '@shared/ui/surface-texture';
 import { deskPaperChoices, type DeskChoice } from '@shared/ui/stationery-desk/choices';
 
 /** 아이콘 컬러에서 옮긴 정사각 스와치 UI. 폭에 맞춰 열 수를 정한다. */
@@ -47,7 +46,7 @@ export function PostItColorGrid({ choices, onClear, isDark, label, clearLabel, t
         const color = isClear ? (isDark ? '#3A3C52' : '#FFFFFF') : choice.color;
         const selected = isClear ? clearSelected : choice.selected;
         return (
-          <View key={isClear ? 'clear' : choice.id} style={styles.slot}>
+          <View key={`slot-${columnIndex}`} style={styles.slot}>
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected }}
@@ -58,7 +57,7 @@ export function PostItColorGrid({ choices, onClear, isDark, label, clearLabel, t
                 else choice.onSelect();
               }}
               style={({ pressed }) => [styles.swatch, { backgroundColor: color, opacity: pressed ? 0.7 : 1 }]}>
-              {texture === 'pigment' ? <PigmentGrain /> : <PaperGrain opacity={0.4} />}
+              <SurfaceTexture kind={texture} opacity={texture === 'paper' ? 0.4 : 1} />
               {isClear ? <IconSymbol name="xmark" size={14} color={contrastingForeground(color)} /> : null}
               {selected ? <HanddrawnFrame color={contrastingForeground(color)} bold /> : null}
             </Pressable>

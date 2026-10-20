@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * Supabase 공지(important/force) — 「오늘의 한 줄」 슬롯용 새소식 안내.
+ * Supabase 공지(important/force) — 홈 오버레이용 새소식 안내.
  * 변경 항목은 설정 → 새소식에만 두고, 여기에는 제목만 보여 준다.
  */
 export function AnnouncementHomeNudge({ announcement, onUpdatePress, onDismiss }: Props) {

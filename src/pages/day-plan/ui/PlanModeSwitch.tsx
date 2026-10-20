@@ -1,3 +1,6 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
@@ -26,13 +29,13 @@ const MODE_BUTTONS: ModeButton[] = [
 ];
 
 /** 설정·펼침 액션 버튼과 동일 — 흰 면 · 얇은 검정 테두리 · 솔리드 음영 */
-const SHADOW = 2;
+const SHADOW = 1;
 const FACE = 34;
-const BORDER = 1;
-const BORDER_LIGHT = '#000000';
-const BORDER_DARK = 'rgba(255,255,255,0.55)';
-const SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
-const SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
+const BORDER = 0;
+const BORDER_LIGHT = '#929B8B';
+const BORDER_DARK = '#A3AE9C';
+const SHADOW_LIGHT = 'rgba(65, 78, 58, 0.07)';
+const SHADOW_DARK = 'rgba(0, 0, 0, 0.15)';
 
 type Props = {
   planMode: PlanMode;
@@ -138,6 +141,8 @@ export function PlanModeSwitch({
                         borderColor: border,
                       },
                     ]}>
+                    <PaperGrain opacity={0.25} />
+                    <HanddrawnFrame color={border} />
                     <HeaderIcon name={btn.icon} />
                   </View>
                 </Pressable>
@@ -145,6 +150,9 @@ export function PlanModeSwitch({
             })}
           </View>
           {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+          <Svg pointerEvents="none" width="100%" height={4} viewBox="0 0 400 4" preserveAspectRatio="none" style={styles.rule} accessible={false}>
+            <Path d="M0 2.2Q58 1.1 109 2.1T211 1.8T310 2.2T400 1.7" fill="none" stroke={border} strokeWidth={0.65} opacity={0.48} />
+          </Svg>
         </View>
       </View>
       {hint != null && hint !== '' ? (
@@ -170,10 +178,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingVertical: 6,
     paddingHorizontal: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 0,
     /** 상단 모드 아이콘 행 — 과한 세로 여백 없이 터치 영역만 유지 */
     minHeight: 40,
   },
+  rule: { position: 'absolute', left: 0, bottom: 0 },
   rowWithTrailing: {
     justifyContent: 'space-between',
   },

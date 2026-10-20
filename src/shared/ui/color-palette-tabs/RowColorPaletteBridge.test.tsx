@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { RowColorPaletteBridgeProvider, RowColorPaletteDesk } from './RowColorPaletteBridge';
+import { SurfaceTexture } from '@shared/ui/surface-texture';
 import { StationeryCaptionIcon } from '@shared/ui/stationery-desk/StationeryCaptionIcon';
 
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').View }));
@@ -81,7 +82,11 @@ it('switches between paper and ink tabs and preserves selected colors', () => {
     expect(find(label(id)).props.accessibilityState.selected).toBe(true);
     expect(iconColor(id)).toBe('#ff0000');
   }
+  press('face');
+  const paperTexture = tree.root.findAllByType(SurfaceTexture)[0];
   press('ink');
+  expect(tree.root.findAllByType(SurfaceTexture)[0]).toBe(paperTexture);
+  expect(tree.root.findAllByType(SurfaceTexture)[0].props.kind).toBe('paper');
   press('ink dayPlan.quickMemoInkSwatch.black');
   expect(onColor).toHaveBeenLastCalledWith('ink', 'black');
   press('face');

@@ -117,7 +117,7 @@ export type {
 } from './lib/customFlowTemplateConfigs';
 export {
   addReminderScheduleItem, applyCounterDelta,
-  applyCounterFillRemaining,
+  applyCounterFillRemaining, setCounterCount,
   applyHabitDoneToggle,
   applyJournalSave, applyMeasurementSave, applyMemoDelete, applyMemoSave, buildHabitWeekDots,
   ensureCounterDayBoundary,

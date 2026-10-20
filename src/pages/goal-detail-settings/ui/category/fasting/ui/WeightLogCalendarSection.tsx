@@ -1,3 +1,4 @@
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
@@ -178,7 +179,8 @@ export function WeightLogCalendarSection({
           onPress={() => setMonthStart((m) => addMonths(m, -1))}
           hitSlop={8}
           style={styles.navBtn}>
-          <IconSymbol name="chevron.left" size={18} color={palette.onSurface} />
+          <HanddrawnFrame color="#9BA491" />
+          <View style={{ transform: [{ rotate: '90deg' }] }}><RoutineActionIcon name="expand" size={18} color={palette.onSurface} /></View>
         </Pressable>
         <ThemedText style={[styles.monthTitle, { color: palette.onSurface }]}>{monthTitle}</ThemedText>
         <Pressable
@@ -187,7 +189,8 @@ export function WeightLogCalendarSection({
           onPress={() => setMonthStart((m) => addMonths(m, 1))}
           hitSlop={8}
           style={styles.navBtn}>
-          <IconSymbol name="chevron.right" size={18} color={palette.onSurface} />
+          <HanddrawnFrame color="#9BA491" />
+          <View style={{ transform: [{ rotate: '-90deg' }] }}><RoutineActionIcon name="expand" size={18} color={palette.onSurface} /></View>
         </Pressable>
       </View>
 
@@ -283,19 +286,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  navBtn: { padding: 4 },
-  monthTitle: { fontSize: 22, fontWeight: '800' },
+  navBtn: { width: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
+  monthTitle: { fontSize: 17, fontWeight: '600' },
   weekdayRow: { flexDirection: 'row' },
   weekdayLabel: {
     width: '14.2857%',
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: {
     width: '14.2857%',
-    minHeight: 70,
+    minHeight: 54,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -303,7 +306,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     gap: 1,
   },
-  dayLabel: { fontSize: 20, lineHeight: 24 },
-  weightMini: { fontSize: 13, fontWeight: '700', lineHeight: 16 },
+  dayLabel: { fontSize: 17, lineHeight: 22 },
+  weightMini: { fontSize: 12, fontWeight: '700', lineHeight: 16 },
   dayCellMuted: { opacity: 0.35 },
 });

@@ -53,6 +53,9 @@ function IosTabLayout() {
 
   return (
     <NativeTabs
+      backgroundColor="transparent"
+      blurEffect="none"
+      shadowColor="transparent"
       tintColor={foreground}
       labelStyle={{ fontSize: 10, color: foreground }}
       minimizeBehavior="never">
@@ -124,8 +127,8 @@ function FloatingTabLayout() {
                     bottom: bottomSpace,
                     left: Math.max(insets.left, 16),
                     right: Math.max(insets.right, 16),
-                    backgroundColor: isDark ? '#242427' : '#FAFAFC',
-                    borderColor: isDark ? '#46464B' : '#FFFFFF',
+                    backgroundColor: 'transparent',
+                    borderColor: 'transparent',
                   },
                 ]}
               />
@@ -166,9 +169,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0,
     shadowRadius: 14,
-    elevation: 7,
+    elevation: 0,
   },
   tabItem: {
     borderRadius: 27,

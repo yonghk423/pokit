@@ -19,7 +19,6 @@
     "sync-app-icons": "node ./scripts/sync-app-icons.mjs"
   },
   "dependencies": {
-    "@expo-google-fonts/gothic-a1": "^0.4.1",
     "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo-google-fonts/hi-melody": "^0.4.1",
     "@expo/config-plugins": "^57.0.10",

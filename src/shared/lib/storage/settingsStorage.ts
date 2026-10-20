@@ -61,7 +61,7 @@ export type AppearanceMode = 'light' | 'dark';
 
 /** 앱 글씨체 — ko/en/ja 공통 (한글·라틴 위주 디스플레이 폰트) */
 export type AppFontId =
-  | 'gothicA1'
+  | 'sebangGothic2'
   | 'hiMelody'
   | 'hanken';
 
@@ -385,10 +385,11 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
 }
 
 function parseAppFontId(value: unknown): AppFontId {
+  if (value === 'gothicA1') return 'sebangGothic2';
   if (
     value === 'hiMelody' ||
     value === 'hanken' ||
-    value === 'gothicA1'
+    value === 'sebangGothic2'
   ) {
     return value;
   }

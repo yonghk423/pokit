@@ -8,7 +8,7 @@ export const APP_FONT_OPTICAL_SCALE: Record<AppFontId, number> = {
   hiMelody: 1,
   /** Hi Melody의 체감 크기에 맞춰 표시 크기를 보정 */
   hanken: 0.8,
-  gothicA1: 0.84,
+  sebangGothic2: 0.84,
 };
 
 export function resolveAppFontOpticalScale(fontId: AppFontId): number {

@@ -13,13 +13,13 @@ function grayscale(value: unknown, fallback: string) {
 }
 
 /** Paper controls preserve layout, press callbacks, and selected/disabled states. */
-export function PaperControl({ children, style, ...props }: PressableProps) {
+export function PaperControl({ children, style, preserveColor = false, ...props }: PressableProps & { preserveColor?: boolean }) {
   const dark = useColorScheme() === 'dark';
   const decorate = props.accessibilityRole !== 'checkbox';
   return <Pressable {...props} style={state => {
     const base = typeof style === 'function' ? style(state) : style;
     const face = StyleSheet.flatten(base)?.backgroundColor;
-    return [base, decorate && { borderWidth: 0, borderRadius: 0, backgroundColor: grayscale(face, dark ? '#292929' : '#FFFFFF'), shadowOpacity: 0, elevation: 0, overflow: 'hidden' }];
+    return [base, decorate && { borderWidth: 0, borderRadius: 0, backgroundColor: preserveColor ? (face ?? (dark ? '#292929' : '#FFFFFF')) : grayscale(face, dark ? '#292929' : '#FFFFFF'), shadowOpacity: 0, elevation: 0, overflow: 'hidden' }];
   }}>
     {state => <>{decorate ? <><PaperGrain /><HanddrawnFrame color={dark ? '#D5D5D5' : '#454545'} bold={props.accessibilityState?.selected || props.accessibilityState?.checked === true} /></> : null}{typeof children === 'function' ? children(state) : children}</>}
   </Pressable>;

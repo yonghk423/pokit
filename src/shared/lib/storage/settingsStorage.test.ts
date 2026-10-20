@@ -120,8 +120,8 @@ describe('settingsStorage', () => {
 
   it('persists app font id', () => {
     expect(loadAppFontId()).toBe('hiMelody');
-    saveAppFontId('gothicA1');
-    expect(loadAppFontId()).toBe('gothicA1');
+    saveAppFontId('sebangGothic2');
+    expect(loadAppFontId()).toBe('sebangGothic2');
     saveAppFontId('hanken');
     expect(loadAppFontId()).toBe('hanken');
     saveAppFontId('hiMelody');
@@ -131,6 +131,11 @@ describe('settingsStorage', () => {
   it('ignores invalid app font id', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gaegu' });
     expect(loadAppFontId()).toBe('hiMelody');
+  });
+
+  it('replaces the retired Gothic A1 selection with Sebang Gothic 2.0', () => {
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gothicA1' });
+    expect(loadAppFontId()).toBe('sebangGothic2');
   });
 
   it('migrates legacy font ids to hiMelody', () => {
