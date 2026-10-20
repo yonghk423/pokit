@@ -176,7 +176,7 @@ private struct HomeProgressBar: View {
       }
       .frame(height: 5)
 
-      Text(total > 0 ? "\(completed)/\(total) 완료" : "루틴 없음")
+      Text(total > 0 ? "\(completed)/\(total) 완료" : "오늘의 주인공 없음")
         .font(.system(size: 10, weight: .semibold))
         .foregroundStyle(DayPlanWidgetPalette.muted)
         .lineLimit(1)
@@ -284,7 +284,7 @@ extension DayPlanHomeWidgetEntryView {
     return Group {
       if let msg = home.emptyMessage {
         VStack(alignment: .leading, spacing: 4) {
-          Text("오늘 루틴")
+          Text("오늘의 주인공")
             .font(.system(size: 12, weight: .bold))
             .foregroundStyle(DayPlanWidgetPalette.ink)
           Text(msg)
@@ -295,7 +295,7 @@ extension DayPlanHomeWidgetEntryView {
       } else {
         VStack(alignment: .leading, spacing: 6) {
           HomeSectionHeader(
-            title: "오늘 루틴",
+            title: "오늘의 주인공",
             count: home.today.count,
             compact: true
           )
@@ -439,7 +439,7 @@ struct DayPlanHomeWidget: Widget {
   DayPlanWidgetEntry(
     date: Date(),
     lockModel: DayPlanRoutineIconsModel(
-      headerTitle: "오늘 루틴",
+      headerTitle: "오늘의 주인공",
       count: 11,
       iconNames: ["brain", "drop.fill", "figure.run", "book.fill", "moon.fill", "dumbbell.fill", "wind", "pill.fill"],
       emptyMessage: nil
@@ -447,7 +447,7 @@ struct DayPlanHomeWidget: Widget {
     homeModel: DayPlanHomeWidgetModel(
       emptyMessage: nil,
       today: DayPlanRoutineSectionModel(
-        title: "오늘 루틴",
+        title: "오늘의 주인공",
         count: 11,
         iconNames: ["figure.run", "book.fill", "calendar.badge.clock", "person.fill", "person.fill", "tortoise.fill"]
       ),
@@ -479,7 +479,7 @@ struct DayPlanHomeWidget: Widget {
   DayPlanWidgetEntry(
     date: Date(),
     lockModel: DayPlanRoutineIconsModel(
-      headerTitle: "오늘 루틴",
+      headerTitle: "오늘의 주인공",
       count: 11,
       iconNames: ["brain", "drop.fill", "figure.run", "book.fill"],
       emptyMessage: nil
@@ -487,7 +487,7 @@ struct DayPlanHomeWidget: Widget {
     homeModel: DayPlanHomeWidgetModel(
       emptyMessage: nil,
       today: DayPlanRoutineSectionModel(
-        title: "오늘 루틴",
+        title: "오늘의 주인공",
         count: 11,
         iconNames: ["figure.run", "book.fill", "calendar.badge.clock", "person.fill", "person.fill", "tortoise.fill"]
       ),
@@ -518,7 +518,7 @@ struct DayPlanHomeWidget: Widget {
   DayPlanWidgetEntry(
     date: Date(),
     lockModel: DayPlanRoutineIconsModel(
-      headerTitle: "오늘 루틴",
+      headerTitle: "오늘의 주인공",
       count: 7,
       iconNames: ["brain", "drop.fill", "figure.run", "book.fill"],
       emptyMessage: nil
@@ -526,7 +526,7 @@ struct DayPlanHomeWidget: Widget {
     homeModel: DayPlanHomeWidgetModel(
       emptyMessage: nil,
       today: DayPlanRoutineSectionModel(
-        title: "오늘 루틴",
+        title: "오늘의 주인공",
         count: 11,
         iconNames: ["brain", "drop.fill", "figure.run", "moon.fill", "dumbbell.fill", "eye"]
       ),
@@ -557,14 +557,14 @@ struct DayPlanHomeWidget: Widget {
   DayPlanWidgetEntry(
     date: Date(),
     lockModel: DayPlanRoutineIconsModel(
-      headerTitle: "오늘 루틴",
+      headerTitle: "오늘의 주인공",
       count: 0,
       iconNames: [],
       emptyMessage: String(localized: "widget.today.emptyRoutines")
     ),
     homeModel: DayPlanHomeWidgetModel(
       emptyMessage: String(localized: "widget.today.emptyRoutines"),
-      today: DayPlanRoutineSectionModel(title: "오늘 루틴", count: 0, iconNames: []),
+      today: DayPlanRoutineSectionModel(title: "오늘의 주인공", count: 0, iconNames: []),
       completed: DayPlanRoutineSectionModel(title: "완료", count: 0, iconNames: []),
       quickMemos: [],
       routineItems: [],

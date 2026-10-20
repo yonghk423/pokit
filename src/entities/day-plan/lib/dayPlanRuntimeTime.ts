@@ -75,6 +75,9 @@ export function resolveCategoryKeyFromLabel(label: string): string | null {
     t === '루틴 직접 설정' ||
     t === '플로우' ||
     t === '루틴' ||
+    t === '오늘의 주인공' ||
+    t === '오늘의 주인공 만들기' ||
+    t === '오늘의 주인공 직접 설정' ||
     t === '헬스' ||
     t === '운동' ||
     t === '피트니스' ||

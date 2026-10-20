@@ -1,5 +1,6 @@
 export const StorageKeys = {
   settings: 'pokit:settings',
+  routineTabLabels: 'pokit:routine-tab-labels',
   dayPlan: 'pokit:day-plan',
   /** 히스토리 일별 지표(완료 수/카테고리별 달성) */
   historyDailyStats: 'pokit:history-daily-stats',
@@ -86,6 +87,7 @@ export const STORAGE_MIGRATION_FLAG_KEY = 'pokit:storage-migration-v1';
 /** 레거시 AsyncStorage 키 (마이그레이션 전용) */
 export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   settings: 'lockflow:settings',
+  routineTabLabels: 'lockflow:routine-tab-labels',
   dayPlan: 'lockflow:day-plan',
   historyDailyStats: 'lockflow:history-daily-stats',
   historyMeta: 'lockflow:history-meta',

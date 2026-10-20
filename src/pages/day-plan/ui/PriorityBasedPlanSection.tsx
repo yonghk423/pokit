@@ -441,7 +441,6 @@ export function PriorityBasedPlanSection({
   const [circularTimetableOpen, setCircularTimetableOpen] = useState(false);
   const hideDailyQuoteSetting = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideDailyQuote = !FEATURE_FLAGS.dailyQuote || hideDailyQuoteSetting;
-  const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
   const announcementHome = useAnnouncementHomeNudge();
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
@@ -3072,6 +3071,7 @@ export function PriorityBasedPlanSection({
                 onComplete={(key) => bagRowActions.onToggleComplete(key)}
                 onFinish={(key, label) => bagRowActions.onFinishForToday?.(key, label)}
                 onAdd={openAddRoutineForBag}
+                onEditTime={(key, label) => openBagRowTimeModal({ rowKey: key, categoryKey: key, label })}
                 renderDetail={(item) => {
                   const schedule = resolveBagRowSpineSchedule(item.key);
                   const faceId = priorityCategoryFaceColor[item.key] ?? null;
@@ -3464,8 +3464,6 @@ export function PriorityBasedPlanSection({
                                     ink={editorial.ink}
                                     inkMuted={editorial.muted}
                                     line={editorial.line}
-                                    hideCompleteTape={hideCompleteTape}
-                                    successTapeLabel={t('dayPlan.todaySuccessTape')}
                                     allowBagReorder={allowBagReorder}
                                     animateOnMount={lastAddedCategoryKey === cat.key}
                                     expanded={expanded}

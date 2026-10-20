@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
 import { RowColorPaletteBridgeProvider, RowColorPaletteFallbackHost, type RowColorPaletteTab } from '@shared/ui/color-palette-tabs';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
@@ -1751,7 +1752,7 @@ export function FixedRoutinePage({
       ? routeParams.section[0]
       : routeParams.section;
     return raw === 'myRoutines' ||
-      raw === 'templates' ||
+      (FEATURE_FLAGS.routineTemplates && raw === 'templates') ||
       raw === 'catalog' ||
       raw === 'history'
       ? raw
@@ -1839,11 +1840,13 @@ export function FixedRoutinePage({
       : routeParams.section;
     if (
       raw === 'myRoutines' ||
-      raw === 'templates' ||
+      (FEATURE_FLAGS.routineTemplates && raw === 'templates') ||
       raw === 'catalog' ||
       raw === 'history'
     ) {
       setSection(raw);
+    } else if (raw === 'templates') {
+      setSection('catalog');
     }
   }, [routeParams.section]);
 

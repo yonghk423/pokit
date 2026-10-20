@@ -11,6 +11,7 @@ export function isInternalAutoRoutineLabel(label: string): boolean {
   if (!trimmed) return false;
   if (
     trimmed === '루틴' ||
+    trimmed === t('category.routineFallback', 'ko') ||
     trimmed === t('category.routineFallback', 'en') ||
     trimmed === t('category.routineFallback', 'ja')
   ) {

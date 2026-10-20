@@ -16,5 +16,5 @@ export function createCustomFlowCategoryId(): CustomFlowCategoryKey {
 
 /** `displayName` 비어 있을 때 담기·일정에 쓰는 기본 라벨 — 내부 ID는 노출하지 않음 */
 export function defaultCustomFlowPickerLabel(_categoryKey: string): string {
-  return '루틴';
+  return '오늘의 주인공';
 }

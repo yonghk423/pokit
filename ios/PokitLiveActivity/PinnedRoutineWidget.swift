@@ -116,7 +116,7 @@ private struct PinnedRoutineWidgetModel {
   }
 }
 
-private let pinnedRoutineEmptyMessage = "홈 화면에서 위젯을 길게 눌러 루틴을 고르세요"
+private let pinnedRoutineEmptyMessage = "홈 화면에서 위젯을 길게 눌러 오늘의 주인공을 고르세요"
 
 private func pinnedRoutineEmptyModel(
   faceHex: String? = nil,

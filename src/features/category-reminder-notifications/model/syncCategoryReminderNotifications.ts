@@ -146,7 +146,7 @@ async function performCategoryReminderNotificationSync(): Promise<void> {
           weekday,
           hour,
           minute,
-          title: '루틴 알림',
+          title: '오늘의 주인공 알림',
           body,
         });
       }

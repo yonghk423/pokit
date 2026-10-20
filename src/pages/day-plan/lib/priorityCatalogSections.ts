@@ -32,7 +32,7 @@ export {
 import { CATALOG_REMOVED_KEYS, defaultSystemGroupForCatalogKey } from '@entities/day-plan';
 
 const DEFAULT_CUSTOM_GROUP_SUBTITLE_KO =
-  '직접 만든 묶음이에요. 아래에 두고 싶은 루틴을 오른쪽 아래 + 버튼으로 추가할 수 있어요.';
+  '직접 만든 묶음이에요. 아래에 두고 싶은 오늘의 주인공을 오른쪽 아래 + 버튼으로 추가할 수 있어요.';
 
 export function filterCatalogPickerCategories(cats: PickerCategoryItem[]): PickerCategoryItem[] {
   const hidden = new Set(loadHiddenStandardCatalogKeys());

@@ -30,7 +30,7 @@ describe('resolveCustomFlowCategoryLabelKo', () => {
 
   it('falls back to generic label when display name is empty', () => {
     mockLoadGoalDetailCategoryConfig.mockReturnValue({ displayName: '' });
-    expect(resolveCustomFlowCategoryLabelKo(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe('루틴');
+    expect(resolveCustomFlowCategoryLabelKo(`${CUSTOM_FLOW_CATEGORY_PREFIX}abcd1234`)).toBe('오늘의 주인공');
   });
 
   it('localizes builtin Korean default names when locale is en', () => {

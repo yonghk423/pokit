@@ -22,7 +22,7 @@ const KO: HorizonCopy = {
       version: 2,
       blocks: [
         createHorizonBlock('heading1', { text: '섹션제목1', bold: true }),
-        createHorizonBlock('paragraph', { text: '아침 30분 집중 루틴을 지키기', underline: true }),
+        createHorizonBlock('paragraph', { text: '아침 30분 집중 오늘의 주인공을 지키기', underline: true }),
         createHorizonBlock('heading3', { text: '집중 항목' }),
         createHorizonBlock('bullet', { text: '독서 3회 이상' }),
         createHorizonBlock('bullet', { text: '공부 2회', bold: true }),
@@ -34,7 +34,7 @@ const KO: HorizonCopy = {
     {
       version: 2,
       blocks: [
-        createHorizonBlock('heading2', { text: '체력·루틴', bold: true }),
+        createHorizonBlock('heading2', { text: '체력·오늘의 주인공', bold: true }),
         createHorizonBlock('paragraph', { text: '수면 7시간 유지', underline: true }),
         createHorizonBlock('bullet', { text: '물 마시기 알림 5회/일' }),
         createHorizonBlock('bullet', { text: '스트레칭 4회' }),
@@ -66,7 +66,7 @@ const KO: HorizonCopy = {
         createHorizonBlock('numbered', { text: '독서 12권 분량' }),
         createHorizonBlock('numbered', { text: '운동 16회' }),
         createHorizonBlock('numbered', { text: '주 1회 긴 회고' }),
-        createHorizonBlock('checklist', { text: '첫 주 루틴 고정', checked: monthIndex === 0 }),
+        createHorizonBlock('checklist', { text: '첫 주 오늘의 주인공 고정', checked: monthIndex === 0 }),
         createHorizonBlock('checklist', { text: '셋째 주 중간 점검', checked: monthIndex !== 1 }),
       ],
     },

@@ -72,7 +72,7 @@ const registry: Record<Exclude<GoalDetailCategoryKey, CustomFlowCategoryKey>, Go
   },
   other: {
     key: 'other',
-    titleKo: '루틴 직접 설정',
+    titleKo: '오늘의 주인공 직접 설정',
     getInitialDataConfig: getInitialOtherDataConfig,
     Settings: OtherSettings,
   },

@@ -1,6 +1,7 @@
+import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDayPlanLayoutModeVisibilityStore } from '@entities/day-plan';
@@ -108,24 +109,20 @@ export function DayPlanViewSettingsPage() {
                       <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{t(opt.descKey)}</ThemedText>
                     </View>
                   </View>
-                  <Switch
-                    value={enabled}
-                    disabled={disableOff}
-                    onValueChange={(next) => {
+                  <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={enabled}
+                disabled={disableOff}
+                onChange={(next) => {
                       void Haptics.selectionAsync();
                       setModeVisible(opt.key, next);
                     }}
-                    trackColor={{
-                      false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                      true: '#000000',
-                    }}
-                    thumbColor="#FFFFFF"
-                    ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                    accessibilityLabel={t('settings.dayPlanView.a11yToggle', {
+                label={t('settings.dayPlanView.a11yToggle', {
                       label: t(opt.labelKey),
                       action: enabled ? t('settings.dayPlanView.toggleOff') : t('settings.dayPlanView.toggleOn'),
                     })}
-                  />
+              />
                 </View>
               );
             })}

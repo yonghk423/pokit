@@ -37,7 +37,7 @@ enum PriorityModeLiveActivityView {
         let rowTitle = rows[currentIndex].title.trimmingCharacters(in: .whitespacesAndNewlines)
         if !rowTitle.isEmpty { return rowTitle }
       }
-      return fallbackTitle.isEmpty ? "활성 루틴" : fallbackTitle
+      return fallbackTitle.isEmpty ? "활성 오늘의 주인공" : fallbackTitle
     }()
 
     let window = context.state.timeRangeLabel.trimmingCharacters(in: .whitespacesAndNewlines)

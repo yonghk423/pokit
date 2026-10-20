@@ -6,7 +6,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { LayoutAnimation, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   Easing,
   runOnJS,
@@ -45,7 +45,6 @@ import {
   resolvePostItFaceMuted,
   resolvePostItInkHex,
   resolvePostItInkMuted,
-  ROUTINE_CATALOG_FLAT_POST_IT_KEY,
   savePostItFaceColorForGroup,
   setRoutineCatalogGroupCollapsed,
   type CustomCatalogGroup,
@@ -86,9 +85,6 @@ import {
 } from './CatalogRowMealSlotChips';
 import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
-
-/** 루틴 목록(플랫) 포스트잇 면색 저장 키 */
-const FLAT_CATALOG_POST_IT_KEY = ROUTINE_CATALOG_FLAT_POST_IT_KEY;
 
 export type PriorityCatalogEditorial = {
   ink: string;
@@ -281,6 +277,7 @@ function CatalogListRow({
   priorityStart,
   priorityEnd,
   manageOnly = false,
+  initiallyExpanded = false,
   itemFaceColor = null,
   onSelectItemFaceColor,
   itemInkColor = null,
@@ -319,6 +316,7 @@ function CatalogListRow({
   priorityStart?: string;
   priorityEnd?: string;
   manageOnly?: boolean;
+  initiallyExpanded?: boolean;
   markColor?: PriorityMarkColorId | null;
   onSelectMarkColor?: (color: PriorityMarkColorId | null) => void;
   /** 오늘 탭과 공유 — 루틴 메모지 면색 */
@@ -328,8 +326,8 @@ function CatalogListRow({
   onSelectItemInkColor?: (color: PostItInkColorId | null) => void;
 }) {
   const { t } = useTranslation();
-  const [isManageDetailExpanded, setIsManageDetailExpanded] = useState(false);
-  const [manageDetailMounted, setManageDetailMounted] = useState(false);
+  const [isManageDetailExpanded, setIsManageDetailExpanded] = useState(initiallyExpanded);
+  const [manageDetailMounted, setManageDetailMounted] = useState(initiallyExpanded);
   const manageDetailProgress = useSharedValue(0);
   const manageDetailHeight = useSharedValue(0);
   const rowFaceBg =
@@ -1012,7 +1010,7 @@ function renderRows(
   inkColorByKey?: Record<string, PostItInkColorId>,
   onSelectInkColor?: (categoryKey: string, color: PostItInkColorId | null) => void,
 ) {
-  return cats.map((cat) => {
+  const rows = cats.map((cat) => {
     const selected = priorityCategoryOrder.includes(cat.key);
     const slotPickerLocked = isFocusStarted && selected;
     const spineSchedule = spineCatalogOptions?.resolveSpineSchedule(cat.key);
@@ -1115,10 +1113,70 @@ function renderRows(
         priorityStart={spineCatalogOptions?.priorityStart}
         priorityEnd={spineCatalogOptions?.priorityEnd}
         manageOnly={manageOnly}
+        initiallyExpanded={manageOnly}
       />
       </SmoothEnter>
     );
   });
+  if (!manageOnly) return rows;
+  return <CatalogPostItGrid cats={cats} details={rows} editorial={editorial} isDark={isDark}
+    selectedKeys={priorityCategoryOrder} onAdd={onCatalogTap}
+    faceColors={faceColorByKey} inkColors={inkColorByKey}
+    frequencyByKey={frequencyByKey} formatFrequency={formatFrequency} />;
+}
+
+function CatalogPostItGrid({ cats, details, editorial, isDark, selectedKeys, onAdd,
+  faceColors, inkColors, frequencyByKey, formatFrequency }: {
+  cats: PickerCategoryItem[]; details: ReactNode[]; editorial: PriorityCatalogEditorial;
+  isDark: boolean; selectedKeys: string[]; onAdd: (key: string) => void;
+  faceColors?: Record<string, PostItFaceColorId>; inkColors?: Record<string, PostItInkColorId>;
+  frequencyByKey?: Record<string, number>; formatFrequency?: (count: number) => string;
+}) {
+  const { t } = useTranslation();
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  void useGoalDetailSettingsStore((s) => s.revision);
+  const groups = Array.from({ length: Math.ceil(cats.length / 3) }, (_, index) => cats.slice(index * 3, index * 3 + 3));
+  return <View style={{ gap: 18, paddingVertical: 12 }}>
+    {groups.map((group) => {
+      const expandedIndex = cats.findIndex((cat) => cat.key === openKey && group.some((item) => item.key === cat.key));
+      return <View key={group[0].key} style={{ gap: 14 }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'stretch' }}>
+          {group.map((cat) => {
+            const face = faceColors?.[cat.key];
+            const color = face ? resolvePostItFaceColor(face, isDark) : isDark ? '#363930' : '#F6EED6';
+            const ink = resolvePostItInkHex(inkColors?.[cat.key] ?? 'auto', face ?? null, isDark);
+            const label = getPickerCategoryLabel(cat.key) || cat.label;
+            const expanded = openKey === cat.key;
+            const selected = selectedKeys.includes(cat.key);
+            return <View key={cat.key} style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ backgroundColor: color, minHeight: 150, shadowColor: '#000', shadowOpacity: 0.10, shadowRadius: 3, shadowOffset: { width: 1, height: 3 }, elevation: 2 }}>
+                <PaperGrain opacity={0.25} />
+                <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ expanded }}
+                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setOpenKey(expanded ? null : cat.key); }}
+                  style={({ pressed }) => ({ minHeight: 150, padding: 8, paddingBottom: 52, alignItems: 'center', opacity: pressed ? 0.65 : 1 })}>
+                  <IconSymbol name={resolveCategoryCatalogIcon(cat.key)} size={34} color={ink} />
+                  <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>{label}</ThemedText>
+                  <ThemedText numberOfLines={1} style={{ color: ink, opacity: 0.6, fontSize: 9, lineHeight: 14, marginTop: 4 }}>
+                    {formatFrequency?.(lookupCategoryPlannedDayCount(frequencyByKey ?? {}, cat.key))}
+                  </ThemedText>
+                  <View style={{ width: 26, height: 2, marginTop: 5, backgroundColor: expanded ? ink : 'transparent' }} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(selected ? 'catalog.removeFromPriorityA11y' : 'catalog.addToPriorityA11y', { label })}
+                  onPress={() => onAdd(cat.key)} style={{ position: 'absolute', bottom: 0, alignSelf: 'center', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  <IconSymbol name={selected ? 'minus' : 'plus'} size={18} color={ink} />
+                </Pressable>
+              </View>
+            </View>;
+          })}
+          {Array.from({ length: 3 - group.length }, (_, index) => <View key={index} style={{ flex: 1 }} />)}
+        </View>
+        {expandedIndex >= 0 ? <View style={{ backgroundColor: faceColors?.[openKey!] ? resolvePostItFaceColor(faceColors[openKey!], isDark) : isDark ? '#363930' : '#F6EED6', padding: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: editorial.line }}>
+          <PaperGrain opacity={0.25} />
+          {details[expandedIndex]}
+        </View> : null}
+      </View>;
+    })}
+  </View>;
 }
 
 type Props = {
@@ -1715,32 +1773,13 @@ export function PriorityCatalogPanel({
   );
 
   if (manageOnly) {
-    const flatFaceColorId =
-      postItFaceByGroup[FLAT_CATALOG_POST_IT_KEY] ?? DEFAULT_POST_IT_FACE_COLOR_ID;
-    const faceColor = resolvePostItFaceColor(flatFaceColorId, isDark);
-    const faceUsesLightInk = postItFaceUsesLightInk(flatFaceColorId, isDark);
-    const faceInk = resolvePostItFaceInk(flatFaceColorId, editorial.ink, isDark);
-    const faceMuted = resolvePostItFaceMuted(flatFaceColorId, editorial.muted, isDark);
-    const faceEditorial: PriorityCatalogEditorial = {
-      ...editorial,
-      ink: faceInk,
-      muted: faceMuted,
-      line: faceUsesLightInk ? 'rgba(255,255,255,0.22)' : editorial.line,
-      shadow: isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT,
-    };
+    const faceUsesLightInk = false;
+    const faceInk = editorial.ink;
+    const faceMuted = editorial.muted;
+    const faceEditorial = editorial;
     return (
       <View style={styles.root}>
-        <PostItCardShell
-          isDark={isDark}
-          faceColor={faceColor}
-          shadowColor={isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT}
-          shadowOffset={ACTION_SHADOW}
-          borderColor={
-            flatFaceColorId === 'white' && !isDark ? 'rgba(0,0,0,0.16)' : undefined
-          }
-          borderWidth={
-            flatFaceColorId === 'white' && !isDark ? StyleSheet.hairlineWidth : 0
-          }>
+        <View>
           <View style={styles.flatSearchPad}>
             <View style={styles.flatSearchRow}>
               <View style={styles.flatSearchShell}>
@@ -1856,39 +1895,7 @@ export function PriorityCatalogPanel({
               ) : null}
             </View>
           </View>
-          <View style={styles.flatFaceChipsPad}>
-            <ColorPaletteAccordion
-              ink={faceInk}
-              isDark={isDark}
-              shadowColor={
-                faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)
-              }>
-              <PostItFaceColorChips
-                compact
-                collapsible={false}
-                selectedId={flatFaceColorId}
-                isDark={isDark}
-                ink={faceInk}
-                shadowColor={
-                  faceEditorial.shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT)
-                }
-                onSelect={(id) => onSelectPostItFaceColor(FLAT_CATALOG_POST_IT_KEY, id)}
-              />
-            </ColorPaletteAccordion>
-          </View>
-          <View
-            style={[
-              styles.listShell,
-              styles.listShellManage,
-              styles.listShellManageFlat,
-              {
-                borderTopColor: faceUsesLightInk
-                  ? 'rgba(255,255,255,0.22)'
-                  : isDark
-                    ? 'rgba(241,239,255,0.22)'
-                    : 'rgba(24,26,46,0.12)',
-              },
-            ]}>
+          <View style={{ paddingHorizontal: 6, paddingBottom: 8 }}>
             {filteredFlatManageItems.length > 0 ? (
               <>
                 {renderRows(
@@ -1928,7 +1935,7 @@ export function PriorityCatalogPanel({
               </ThemedText>
             )}
           </View>
-        </PostItCardShell>
+        </View>
       </View>
     );
   }

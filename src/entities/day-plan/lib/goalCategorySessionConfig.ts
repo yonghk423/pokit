@@ -498,7 +498,7 @@ export type OtherDetailDataConfig = {
 };
 
 /** 담기·일정 등에서 `other` 키의 기본 표기(사용자가 이름을 비운 경우) */
-export const OTHER_CATEGORY_PICKER_FALLBACK_KO = '루틴 직접 설정';
+export const OTHER_CATEGORY_PICKER_FALLBACK_KO = '오늘의 주인공 직접 설정';
 
 export function getOtherCategoryResolvedDisplayLabel(raw: unknown | null): string {
   const cfg = normalizeOtherDetailConfig(raw ?? getInitialOtherDataConfig());

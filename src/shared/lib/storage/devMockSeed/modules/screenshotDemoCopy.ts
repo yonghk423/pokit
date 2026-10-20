@@ -47,9 +47,9 @@ const KO: ScreenshotDemoCopy = {
   quickMemoLines: [
     '오전 — 독서 30쪽, 물 500ml',
     '오후 — 운동·스트레칭, 노트에 아이디어 정리',
-    '저녁 — 체중 기록하고 내일 루틴 확인',
+    '저녁 — 체중 기록하고 내일 오늘의 주인공 확인',
   ],
-  spineFallbackLabel: '루틴',
+  spineFallbackLabel: '오늘의 주인공',
   reading: {
     displayName: '독서',
     bookTitle: '데미안',
@@ -79,7 +79,7 @@ const KO: ScreenshotDemoCopy = {
     summary: '오늘 메모',
     tasks: [
       { text: '아이디어 3개 적기', done: true },
-      { text: '내일 루틴 점검', done: false },
+      { text: '내일 오늘의 주인공 점검', done: false },
     ],
     pages: [
       {
@@ -93,14 +93,14 @@ const KO: ScreenshotDemoCopy = {
           { kind: 'checklist', text: '독서 30쪽', checked: true },
           { kind: 'checklist', text: '스트레칭 10분', checked: false },
           { kind: 'bullet', text: '집중이 잘 되는 시간: 오전 9–11시' },
-          { kind: 'bullet', text: '내일은 장보기 전에 루틴부터' },
+          { kind: 'bullet', text: '내일은 장보기 전에 오늘의 주인공부터' },
         ],
       },
       {
         title: '아이디어',
         blocks: [
           { kind: 'paragraph', text: '완벽보다 꾸준함이 우선. 작은 완료를 쌓자.' },
-          { kind: 'numbered', text: '주말 루틴을 가볍게 다시 짜기' },
+          { kind: 'numbered', text: '주말 오늘의 주인공을 가볍게 다시 짜기' },
           { kind: 'numbered', text: '독서 리스트에 에세이 추가' },
         ],
       },
@@ -459,7 +459,7 @@ export const SCREENSHOT_EXTRA_ROUTINES: readonly ScreenshotExtraRoutineDef[] = [
       ja: '就寝準備 — 明かりを落としスマホを置く',
     },
     summary: {
-      ko: '취침 전 루틴으로 하루를 닫아요.',
+      ko: '취침 전 오늘의 주인공으로 하루를 닫아요.',
       en: 'Close the day with a bedtime routine.',
       ja: '就寝前のルーチンで一日を閉じる。',
     },

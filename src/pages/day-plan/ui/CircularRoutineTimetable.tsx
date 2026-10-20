@@ -1,3 +1,5 @@
+import { useDayPlanChromeSettingsStore } from '@entities/day-plan/model/dayPlanChromeSettingsStore';
+import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -5,6 +7,7 @@ import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDecay,
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PaperControl } from '@shared/ui/paper-control';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -21,12 +24,14 @@ type Props = {
   onComplete: (key: string) => void;
   onFinish: (key: string, label: string) => void;
   onAdd: () => void;
+  onEditTime?: (key: string, label: string) => void;
 };
 
-function RoutineSector({ item, angle, radius, orbitRadius, rotation, ink, onPress, onComplete }: {
+function RoutineSector({ item, angle, radius, orbitRadius, rotation, ink, isDark, hideIcons, onPress, onComplete, onEditTime }: {
   item: CircularRoutineItem; angle: number; radius: number; orbitRadius: number; rotation: SharedValue<number>;
-  ink: string; onPress: () => void; onComplete: () => void;
+  hideIcons: boolean; isDark: boolean; ink: string; onPress: () => void; onComplete: () => void; onEditTime?: () => void;
 }) {
+  const { t } = useTranslation();
   const routineInk = item.inkColor ?? ink;
   const radians = angle * Math.PI / 180;
   const upright = useAnimatedStyle(() => ({ transform: [{ rotate: `${-rotation.value}deg` }] }));
@@ -36,18 +41,24 @@ function RoutineSector({ item, angle, radius, orbitRadius, rotation, ink, onPres
       top: radius + Math.sin(radians) * orbitRadius - 58,
     }, upright]}>
       <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={onPress} style={s.itemMain}>
-        <IconSymbol name={item.icon} size={32} color={routineInk} />
+        {!hideIcons ? <IconSymbol name={item.icon} size={32} color={routineInk} /> : null}
         <ThemedText numberOfLines={2} style={[s.itemTitle, { color: routineInk }]}>{item.label}</ThemedText>
-        {item.timeLabel ? <ThemedText style={[s.time, { color: routineInk }]}>{item.timeLabel}</ThemedText> : null}
       </Pressable>
-      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: item.completed }} accessibilityLabel={item.label} onPress={onComplete} hitSlop={7} style={[s.complete, { borderColor: routineInk, backgroundColor: 'transparent' }]}>
-        {item.completed ? <ThemedText style={{ color: routineInk, fontSize: 16, lineHeight: 21 }}>✓</ThemedText> : null}
-      </Pressable>
+      {onEditTime ? <Pressable accessibilityRole="button"
+        accessibilityLabel={item.timeLabel ? t('todo.timeA11y', { time: item.timeLabel }) : t('dayPlan.timeUnsetA11y')}
+        onPress={onEditTime} hitSlop={6} style={({ pressed }) => [s.timeButton, { opacity: pressed ? 0.65 : 1 }]}>
+        <IconSymbol name="clock" size={11} color={routineInk} />
+        <ThemedText numberOfLines={1} style={[s.time, { color: routineInk }]}>{item.timeLabel ?? t('dayPlan.timeUnsetHint')}</ThemedText>
+      </Pressable> : item.timeLabel ? <ThemedText style={[s.time, { color: routineInk }]}>{item.timeLabel}</ThemedText> : null}
+      <CompletionRadioButton checked={item.completed} isDark={isDark} size={25}
+        appearance="ink" motion="gentle" uncheckedColor={isDark ? '#FAFAFA' : '#202020'}
+        accessibilityLabel={item.label} onPress={onComplete} />
     </Animated.View>
   );
 }
 
-export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDetail, onComplete, onFinish, onAdd }: Props) {
+export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDetail, onComplete, onFinish, onAdd, onEditTime }: Props) {
+  const hideIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const { t } = useTranslation();
   const [size, setSize] = useState({ width: 340, height: 600 });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -129,7 +140,7 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
             <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
               <PaperGrain opacity={0.22} />
             </View>
-            {ordered.map((item, index) => <RoutineSector key={item.key} item={item} angle={-67.5 + index * step} radius={radius} orbitRadius={orbitRadius} rotation={rotation} ink={ink} onComplete={() => onComplete(item.key)} onPress={() => openDetail(item.key)} />)}
+            {ordered.map((item, index) => <RoutineSector key={item.key} item={item} angle={-67.5 + index * step} radius={radius} orbitRadius={orbitRadius} rotation={rotation} ink={ink} isDark={isDark} hideIcons={hideIcons} onEditTime={onEditTime ? () => onEditTime(item.key, item.label) : undefined} onComplete={() => onComplete(item.key)} onPress={() => openDetail(item.key)} />)}
           </Animated.View>
         </View>
       </GestureDetector>
@@ -148,16 +159,16 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
           </GestureDetector>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail}>{renderDetail(selected)}</ScrollView>
           <View style={s.drawerFooter}>
-            <Pressable
+            <PaperControl
               accessibilityRole="button"
+              hitSlop={8}
               accessibilityLabel={t('dayPlan.endTodayA11y', { label: selected.label })}
               onPress={() => onFinish(selected.key, selected.label)}
-              style={({ pressed }) => [s.detailFinish, { opacity: pressed ? 0.7 : 1 }]}>
-              <HanddrawnFrame color={selected.inkColor ?? ink} />
-              <ThemedText style={{ color: selected.inkColor ?? ink, textAlign: 'center', fontSize: 16 }}>
+              style={[s.detailFinish, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF', borderColor: isDark ? 'rgba(255,255,255,0.55)' : '#000000' }]}>
+              <ThemedText numberOfLines={1} style={{ color: isDark ? '#FAFAFA' : '#000000', fontSize: 12, fontWeight: '800', letterSpacing: -0.2 }}>
                 {t('dayPlan.endTodayConfirm')}
               </ThemedText>
-            </Pressable>
+            </PaperControl>
           </View>
         </Animated.View>
       </> : null}
@@ -172,13 +183,13 @@ const s = StyleSheet.create({
   itemMain: { alignItems: 'center', gap: 3, paddingHorizontal: 4 },
   itemTitle: { fontSize: 16, textAlign: 'center', lineHeight: 21 },
   time: { fontSize: 12 },
-  complete: { marginTop: 5, width: 25, height: 25, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  timeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 3 },
   add: { position: 'absolute', bottom: 14, right: 14, paddingVertical: 10, paddingHorizontal: 16 },
   closeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   drawer: { zIndex: 3, position: 'absolute', top: 0, bottom: 0, right: 0, width: '90%', borderLeftWidth: StyleSheet.hairlineWidth, borderColor: '#9CA79B', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 8 },
   drawerHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 18 },
   drawerTitle: { flex: 1, fontSize: 20 },
   detail: { paddingHorizontal: 16, paddingBottom: 24 },
-  drawerFooter: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
-  detailFinish: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  drawerFooter: { alignItems: 'flex-end', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
+  detailFinish: { minWidth: 44, height: 28, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, zIndex: 1 },
 });

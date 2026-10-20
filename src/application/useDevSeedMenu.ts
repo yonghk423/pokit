@@ -74,7 +74,7 @@ export function useDevSeedMenu(): void {
         const result = await screenshotSeedRef.current();
         Alert.alert(
           'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·서재·노트·나만의 루틴·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
+          `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·서재·노트·오늘의 주인공 세트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
         );
       })();
     });
@@ -84,7 +84,7 @@ export function useDevSeedMenu(): void {
         const result = await templateDemoSeedRef.current();
         Alert.alert(
           'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n템플릿 루틴 7종 + 알라딘 책방 + 빠른 메모 + 상세 노트 목업이 채워졌어요.\n면색·잉크·중요도 색도 템플릿마다 다르게 들어가 있어요.\n위젯(루틴·책방·노트)·오늘 탭에서 확인하세요.`,
+          `${formatDevMockSeedAlertMessage(result)}\n\n템플릿 오늘의 주인공 7종 + 알라딘 책방 + 빠른 메모 + 상세 노트 목업이 채워졌어요.\n면색·잉크·중요도 색도 템플릿마다 다르게 들어가 있어요.\n위젯(오늘의 주인공·책방·노트)·오늘 탭에서 확인하세요.`,
         );
       })();
     });
@@ -127,7 +127,7 @@ export function useDevSeedMenu(): void {
         await clearSeedRef.current();
         Alert.alert(
           'Clear 완료',
-          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모·템플릿 체험 루틴·Puzzle이 비어 있어야 정상이에요.',
+          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모·템플릿 체험 오늘의 주인공·Puzzle이 비어 있어야 정상이에요.',
         );
       })();
     });

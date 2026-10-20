@@ -7,7 +7,7 @@ export const PRIORITY_CATALOG_PICKER_LABELS: Record<string, string> = {
   fasting: '체중조절',
   reading: '독서',
   work: '노트',
-  other: '루틴 직접 설정',
+  other: '오늘의 주인공 직접 설정',
 };
 
 const STANDARD_LABEL_KEYS: Record<string, I18nKey> = {
@@ -22,6 +22,7 @@ const STANDARD_LABEL_KEYS: Record<string, I18nKey> = {
 
 /** 예전에 쓰던 기본명 — 로케일 사전에 없어도 기본값으로 본다 */
 const STANDARD_LABEL_ALIASES: Record<string, readonly string[]> = {
+  other: ['루틴 직접 설정'],
   fasting: ['체중관리', '단식', 'Weight control'],
 };
 

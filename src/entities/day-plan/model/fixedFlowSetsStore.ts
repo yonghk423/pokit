@@ -970,7 +970,7 @@ export const useFixedFlowSetsStore = create<FixedFlowSetsStoreState>((set, get) 
       const activeCustom = customSets.find((s) => activeSetIds.includes(s.id));
       let targetId = activeCustom?.id ?? customSets[0]?.id;
       if (!targetId) {
-        get().addSet('나만의 루틴');
+        get().addSet('오늘의 주인공 세트');
         const after = get().sets.filter((s) => !isBuiltinPresetScheduleSet(s));
         targetId = after[after.length - 1]?.id;
       }

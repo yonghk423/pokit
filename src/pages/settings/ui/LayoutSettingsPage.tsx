@@ -1,7 +1,8 @@
+import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDayPlanChromeSettingsStore } from '@entities/day-plan';
@@ -31,8 +32,6 @@ export function LayoutSettingsPage() {
   const setHideDailyQuote = useDayPlanChromeSettingsStore((s) => s.setHideDailyQuote);
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
   const setCompleteInAccordion = useDayPlanChromeSettingsStore((s) => s.setCompleteInAccordion);
-  const hideCompleteTape = useDayPlanChromeSettingsStore((s) => s.settings.hideCompleteTape);
-  const setHideCompleteTape = useDayPlanChromeSettingsStore((s) => s.setHideCompleteTape);
   const showTopAnnouncementsButton = useDayPlanChromeSettingsStore(
     (s) => s.settings.showTopAnnouncementsButton,
   );
@@ -96,19 +95,15 @@ export function LayoutSettingsPage() {
                   </ThemedText>
                 </View>
               </View>
-              <Switch
-                value={hideLayoutIcons}
-                onValueChange={(next) => {
+              <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={hideLayoutIcons}
+                onChange={(next) => {
                   void Haptics.selectionAsync();
                   setHideLayoutIcons(next);
                 }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.hideIconsA11y', {
+                label={t('settings.layout.hideIconsA11y', {
                   action: hideLayoutIcons
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
@@ -133,19 +128,15 @@ export function LayoutSettingsPage() {
                   </ThemedText>
                 </View>
               </View>
-              <Switch
-                value={showTopAnnouncementsButton}
-                onValueChange={(next) => {
+              <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={showTopAnnouncementsButton}
+                onChange={(next) => {
                   void Haptics.selectionAsync();
                   setShowTopAnnouncementsButton(next);
                 }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.showTopAnnouncementsButtonA11y', {
+                label={t('settings.layout.showTopAnnouncementsButtonA11y', {
                   action: showTopAnnouncementsButton
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
@@ -170,19 +161,15 @@ export function LayoutSettingsPage() {
                   </ThemedText>
                 </View>
               </View>
-              <Switch
-                value={showTopContactButton}
-                onValueChange={(next) => {
+              <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={showTopContactButton}
+                onChange={(next) => {
                   void Haptics.selectionAsync();
                   setShowTopContactButton(next);
                 }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.showTopContactButtonA11y', {
+                label={t('settings.layout.showTopContactButtonA11y', {
                   action: showTopContactButton
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
@@ -207,19 +194,15 @@ export function LayoutSettingsPage() {
                   </ThemedText>
                 </View>
               </View>
-              <Switch
-                value={hideAppUpdateNudge}
-                onValueChange={(next) => {
+              <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={hideAppUpdateNudge}
+                onChange={(next) => {
                   void Haptics.selectionAsync();
                   setHideAppUpdateNudge(next);
                 }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.hideAppUpdateNudgeA11y', {
+                label={t('settings.layout.hideAppUpdateNudgeA11y', {
                   action: hideAppUpdateNudge
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
@@ -245,19 +228,15 @@ export function LayoutSettingsPage() {
                   </ThemedText>
                 </View>
               </View>
-              <Switch
-                value={hideDailyQuote}
-                onValueChange={(next) => {
+              <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={hideDailyQuote}
+                onChange={(next) => {
                   void Haptics.selectionAsync();
                   setHideDailyQuote(next);
                 }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.hideDailyQuoteA11y', {
+                label={t('settings.layout.hideDailyQuoteA11y', {
                   action: hideDailyQuote
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
@@ -302,57 +281,16 @@ export function LayoutSettingsPage() {
                   </View>
                 </View>
               </View>
-              <Switch
-                value={completeInAccordion}
-                onValueChange={(next) => {
+              <HanddrawnToggle
+                isDark={isDark}
+                checkedColor="#AADBD5"
+                checked={completeInAccordion}
+                onChange={(next) => {
                   void Haptics.selectionAsync();
                   setCompleteInAccordion(next);
                 }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.completeInAccordionA11y', {
+                label={t('settings.layout.completeInAccordionA11y', {
                   action: completeInAccordion
-                    ? t('settings.dayPlanView.toggleOff')
-                    : t('settings.dayPlanView.toggleOn'),
-                })}
-              />
-            </View>
-            <View style={[chrome.item, { borderTopColor: p.border }]}>
-              <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="tag"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.iconBorder}
-                  shadow={p.shadow}
-                />
-                <View style={chrome.itemTextWrap}>
-                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
-                    {t('settings.layout.hideCompleteTape')}
-                  </ThemedText>
-                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
-                    {t('settings.layout.hideCompleteTapeDesc')}
-                  </ThemedText>
-                </View>
-              </View>
-              <Switch
-                value={hideCompleteTape}
-                onValueChange={(next) => {
-                  void Haptics.selectionAsync();
-                  setHideCompleteTape(next);
-                }}
-                trackColor={{
-                  false: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
-                  true: '#000000',
-                }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                accessibilityLabel={t('settings.layout.hideCompleteTapeA11y', {
-                  action: hideCompleteTape
                     ? t('settings.dayPlanView.toggleOff')
                     : t('settings.dayPlanView.toggleOn'),
                 })}

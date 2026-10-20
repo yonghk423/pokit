@@ -1,10 +1,8 @@
 import { memo, type ReactElement } from 'react';
-import { View } from 'react-native';
 import Reanimated, { FadeOut, LinearTransition, Easing } from 'react-native-reanimated';
 
 import type { PriorityMarkColorId } from '@entities/day-plan';
 import type { DayMealSlot, PostItFaceColorId, PostItInkColorId } from '@shared/lib/storage';
-import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
 import { SmoothEnter } from '@shared/ui/list-row-skeleton';
 import { PriorityOrderRow } from '@widgets/day-plan-priority-order';
 
@@ -43,8 +41,6 @@ type Props = {
   ink: string;
   inkMuted: string;
   line: string;
-  hideCompleteTape: boolean;
-  successTapeLabel: string;
   allowBagReorder: boolean;
   animateOnMount: boolean;
   expanded: boolean;
@@ -70,8 +66,6 @@ function PriorityBagMountedRowInner({
   ink,
   inkMuted,
   line,
-  hideCompleteTape,
-  successTapeLabel,
   allowBagReorder,
   animateOnMount,
   expanded,
@@ -89,17 +83,6 @@ function PriorityBagMountedRowInner({
         const h = e.nativeEvent.layout.height;
         if (h > 0) actions.onRowLayoutHeight(h);
       }}>
-      {isCompleted && !hideCompleteTape ? (
-        <View pointerEvents="none" style={tapeAnchorStyle}>
-          <ScrapTapeLabel
-            text={successTapeLabel}
-            isDark={isDark}
-            tone="masking"
-            rotateDeg={-3}
-            accessibilityLabel={successTapeLabel}
-          />
-        </View>
-      ) : null}
       <PriorityOrderRow
         categoryKey={categoryKey}
         icon={icon}
@@ -155,13 +138,6 @@ const wrapStyle = {
   position: 'relative' as const,
   width: '100%' as const,
   overflow: 'visible' as const,
-};
-
-const tapeAnchorStyle = {
-  position: 'absolute' as const,
-  top: -6,
-  left: -2,
-  zIndex: 6,
 };
 
 export const PriorityBagMountedRow = memo(PriorityBagMountedRowInner);

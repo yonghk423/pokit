@@ -34,12 +34,12 @@ public enum PokitWidgetL10n {
   // MARK: - Routine widget
 
   public static var routineName: String {
-    text(ko: "루틴", en: "Routine", ja: "ルーチン")
+    text(ko: "오늘의 주인공", en: "Routine", ja: "ルーチン")
   }
 
   public static var routineGalleryDescription: String {
     text(
-      ko: "위젯마다 루틴을 골라 포스트잇처럼 보여 줘요.",
+      ko: "위젯마다 오늘의 주인공을 골라 포스트잇처럼 보여 줘요.",
       en: "Pick a routine for each widget and show it like a post-it.",
       ja: "ウィジェットごとにルーチンを選び、ふせんのように表示します。"
     )
@@ -47,18 +47,18 @@ public enum PokitWidgetL10n {
 
   public static var routineIntentDescription: String {
     text(
-      ko: "홈 화면에 보여줄 루틴을 고르세요. 위젯마다 다르게 고를 수 있어요.",
+      ko: "홈 화면에 보여줄 오늘의 주인공을 고르세요. 위젯마다 다르게 고를 수 있어요.",
       en: "Choose which routine to show on the Home Screen. Each widget can be different.",
       ja: "ホーム画面に表示するルーチンを選びます。ウィジェットごとに別のルーチンを選べます。"
     )
   }
 
   public static var expandRoutine: String {
-    text(ko: "루틴 펼쳐보기", en: "Expand routine", ja: "ルーチンを開く")
+    text(ko: "오늘의 주인공 펼쳐보기", en: "Expand routine", ja: "ルーチンを開く")
   }
 
   public static var reselectRoutine: String {
-    text(ko: "루틴을 다시 골라 주세요", en: "Choose a routine again", ja: "ルーチンを選び直してください")
+    text(ko: "오늘의 주인공을 다시 골라 주세요", en: "Choose a routine again", ja: "ルーチンを選び直してください")
   }
 
   public static var openAppThenReselect: String {

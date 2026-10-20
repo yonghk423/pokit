@@ -226,7 +226,7 @@ private func routineSectionsFromPayloadItems(
   return (
     routineItems: routineItems,
     today: DayPlanRoutineSectionModel(
-      title: "오늘 루틴",
+      title: "오늘의 주인공",
       count: items.count,
       iconNames: pending.map(\.iconName)
     ),
@@ -243,10 +243,10 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
   home: DayPlanHomeWidgetModel
 ) {
   guard let snapshot else {
-    let empty = DayPlanRoutineSectionModel(title: "오늘 루틴", count: 0, iconNames: [])
+    let empty = DayPlanRoutineSectionModel(title: "오늘의 주인공", count: 0, iconNames: [])
     return (
       lock: DayPlanRoutineIconsModel(
-        headerTitle: "오늘 루틴",
+        headerTitle: "오늘의 주인공",
         count: 0,
         iconNames: [],
         emptyMessage: String(localized: "widget.today.loadError")
@@ -289,7 +289,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
       )
     }
     todaySection = DayPlanRoutineSectionModel(
-      title: "오늘 루틴",
+      title: "오늘의 주인공",
       count: priorityKeys.count,
       iconNames: pendingKeys.map { dayPlanWidgetIconName(for: $0) }
     )
@@ -316,7 +316,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
       )
     }
     todaySection = DayPlanRoutineSectionModel(
-      title: "오늘 루틴",
+      title: "오늘의 주인공",
       count: totalCount,
       iconNames: pending.map { dayPlanWidgetIconName(for: $0.categoryKey) }
     )
@@ -359,7 +359,7 @@ func buildDayPlanWidgetModels(snapshot: DayPlanSnapshotJson?) -> (
 
   return (
     lock: DayPlanRoutineIconsModel(
-      headerTitle: "오늘 루틴",
+      headerTitle: "오늘의 주인공",
       count: lockCount,
       iconNames: lockIcons,
       emptyMessage: emptyMessage
@@ -390,7 +390,7 @@ struct DayPlanWidgetProvider: TimelineProvider {
     DayPlanWidgetEntry(
       date: Date(),
       lockModel: DayPlanRoutineIconsModel(
-        headerTitle: "오늘 루틴",
+        headerTitle: "오늘의 주인공",
         count: 4,
         iconNames: ["brain", "drop.fill", "figure.run", "book.fill"],
         emptyMessage: nil
@@ -398,7 +398,7 @@ struct DayPlanWidgetProvider: TimelineProvider {
       homeModel: DayPlanHomeWidgetModel(
         emptyMessage: nil,
         today: DayPlanRoutineSectionModel(
-          title: "오늘 루틴",
+          title: "오늘의 주인공",
           count: 11,
           iconNames: ["figure.run", "book.fill", "calendar.badge.clock", "person.fill", "person.fill", "tortoise.fill"]
         ),

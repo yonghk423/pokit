@@ -135,9 +135,9 @@ export async function runDevMockClearWithStoreSync(): Promise<void> {
 export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string {
   const locale = getAppLocale();
   const parts: string[] = [];
-  if (result.screenshotRoutines != null) parts.push(`루틴 ${result.screenshotRoutines}개`);
+  if (result.screenshotRoutines != null) parts.push(`오늘의 주인공 ${result.screenshotRoutines}개`);
   if (result.templateDemoRoutines != null) {
-    parts.push(`템플릿 체험 루틴 ${result.templateDemoRoutines}개`);
+    parts.push(`템플릿 체험 오늘의 주인공 ${result.templateDemoRoutines}개`);
   }
   if (result.screenshotBooks != null) parts.push(`도서 ${result.screenshotBooks}권`);
   if (result.screenshotNotes != null) parts.push(`노트 ${result.screenshotNotes}개`);
@@ -155,7 +155,7 @@ export function formatDevMockSeedAlertMessage(result: DevMockSeedResult): string
     result.templateDemoRoutines != null
       ? '오늘 탭·책방·노트·빠른 메모·위젯 Edit에서 확인하세요.'
       : result.screenshotRoutines != null
-        ? '데이플랜·서재·노트·나만의 루틴·Puzzle·히스토리에서 확인하세요.'
+        ? '데이플랜·서재·노트·오늘의 주인공 세트·Puzzle·히스토리에서 확인하세요.'
         : '통계·Puzzle 탭에서 확인하세요.';
   return `[${locale}] ${parts.join(' · ')}\n${hint}`;
 }

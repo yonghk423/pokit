@@ -199,7 +199,7 @@ export const DAILY_QUOTES: readonly DailyQuoteEntry[] = [
     id: 'clear-1',
     author: 'James Clear',
     en: 'Goals inspire you, but systems carry you. Strengthen one tiny system today.',
-    ko: '목표는 마음을 움직이고, 시스템은 당신을 데려가요. 오늘 작은 루틴 하나만 단단히 해봐요.',
+    ko: '목표는 마음을 움직이고, 시스템은 당신을 데려가요. 오늘 작은 오늘의 주인공 하나만 단단히 해봐요.',
     ja: '目標は気持ちを動かし、仕組みがあなたを運ぶ。今日、小さなルーチンをひとつ固めよう。',
   },
   {

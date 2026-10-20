@@ -1,7 +1,14 @@
+import { useState } from 'react';
+import { View, KeyboardAvoidingView, Platform, Pressable, StyleSheet } from 'react-native';
+import { AppModal } from '@shared/ui/app-modal';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+import { IconSymbol } from '@shared/ui/icon-symbol';
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { StorageKeys } from '@shared/lib/storage/storageKeys';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
@@ -20,7 +27,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { key: 'catalog', labelKey: 'catalog.routineListTab' },
   { key: 'myRoutines', labelKey: 'catalog.myRoutinesTab' },
-  { key: 'templates', labelKey: 'catalog.routineTemplatesTab' },
+  ...(FEATURE_FLAGS.routineTemplates ? [{ key: 'templates' as const, labelKey: 'catalog.routineTemplatesTab' as const }] : []),
 ];
 
 /** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
@@ -44,6 +51,27 @@ export function FixedRoutineSectionTabs({
   isDark,
 }: Props) {
   const { t } = useTranslation();
+  const [labels, setLabels] = useState<Partial<Record<FixedRoutineSection, string>>>(() => {
+    const saved = localStorageClient.getJson<Record<string, unknown>>(StorageKeys.routineTabLabels);
+    return Object.fromEntries(TABS.flatMap(tab => {
+      const value = saved?.[tab.key];
+      return typeof value === 'string' && value.trim() ? [[tab.key, value.trim().slice(0, 16)]] : [];
+    }));
+  });
+  const [editing, setEditing] = useState<TabDef | null>(null);
+  const [draft, setDraft] = useState('');
+  const openEditor = (tab: TabDef) => {
+    setDraft(labels[tab.key] ?? t(tab.labelKey));
+    setEditing(tab);
+  };
+  const save = () => {
+    if (!editing || !draft.trim()) return;
+    const next = { ...labels, [editing.key]: draft.trim().slice(0, 16) };
+    localStorageClient.setJson(StorageKeys.routineTabLabels, next);
+    setLabels(next);
+    setEditing(null);
+  };
+
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   /** 설정·템플릿 리스트와 같이 화이트 면 */
   const face = isDark ? tone.surfaceAlt : '#FFFFFF';
@@ -54,6 +82,7 @@ export function FixedRoutineSectionTabs({
   const softShadow = isDark ? ACTION_SOFT_SHADOW_DARK : ACTION_SOFT_SHADOW_LIGHT;
 
   return (
+    <>
     <PostItCardShell
       compact
       isDark={isDark}
@@ -69,7 +98,9 @@ export function FixedRoutineSectionTabs({
             key={tab.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={t(tab.labelKey)}
+            accessibilityLabel={labels[tab.key] ?? t(tab.labelKey)}
+            accessibilityHint={t('catalog.renameTabHint')}
+            onLongPress={() => openEditor(tab)}
             onPress={() => {
               if (active) return;
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -92,12 +123,37 @@ export function FixedRoutineSectionTabs({
                 { color: active ? activeText : inactiveText },
               ]}
               numberOfLines={1}>
-              {t(tab.labelKey)}
+              {labels[tab.key] ?? t(tab.labelKey)}
             </ThemedText>
           </Pressable>
         );
       })}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('catalog.renameTabTitle')}
+        hitSlop={6} onPress={() => openEditor(TABS.find(tab => tab.key === section) ?? TABS[0])}
+        style={{ paddingHorizontal: 10, justifyContent: 'center' }}>
+        <IconSymbol name="pencil" size={14} color={activeText} />
+      </Pressable>
     </PostItCardShell>
+    <AppModal visible={editing !== null} transparent animationType="fade" onRequestClose={() => setEditing(null)}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.22)' }}>
+        <View style={{ backgroundColor: face, padding: 20, gap: 16, width: '100%', maxWidth: 400, alignSelf: 'center' }}>
+          <HanddrawnFrame color={activeText} />
+          <ThemedText style={{ color: activeText, fontSize: 17 }}>{t('catalog.renameTabTitle')}</ThemedText>
+          <ThemedTextInput autoFocus value={draft} onChangeText={setDraft} maxLength={16}
+            accessibilityLabel={t('catalog.renameTabTitle')} returnKeyType="done" onSubmitEditing={save}
+            style={{ color: activeText, borderBottomWidth: 1, borderBottomColor: divider, paddingVertical: 10, fontSize: 16 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Pressable accessibilityRole="button" onPress={() => { if (!editing) return; const next = { ...labels }; delete next[editing.key]; localStorageClient.setJson(StorageKeys.routineTabLabels, next); setLabels(next); setEditing(null); }} style={{ paddingVertical: 10 }}>
+              <ThemedText style={{ color: inactiveText }}>{t('catalog.resetTabName')}</ThemedText>
+            </Pressable>
+            <View style={{ flex: 1 }} />
+            <Pressable accessibilityRole="button" onPress={() => setEditing(null)} style={{ paddingVertical: 10 }}><ThemedText style={{ color: activeText }}>{t('common.cancel')}</ThemedText></Pressable>
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: !draft.trim() }} disabled={!draft.trim()} onPress={save} style={{ paddingVertical: 10, opacity: draft.trim() ? 1 : 0.35 }}><ThemedText style={{ color: activeText }}>{t('common.save')}</ThemedText></Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </AppModal>
+    </>
   );
 }
 

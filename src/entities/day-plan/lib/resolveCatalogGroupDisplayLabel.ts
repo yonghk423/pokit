@@ -19,10 +19,19 @@ type LocaleMatchKey =
   | 'fixedRoutine.presetDaily'
   | 'fixedRoutine.presetWeekend';
 
+/** Older built-in names remain recognizable without renaming user-created labels. */
+const LEGACY_KOREAN_DEFAULTS: Partial<Record<LocaleMatchKey, string>> = {
+  'catalog.groupDailyLife': '일상 루틴',
+  'catalog.groupAbstain': '금지 루틴',
+  'fixedRoutine.presetDaily': '데일리 고정 루틴',
+  'fixedRoutine.presetWeekend': '주말 고정 루틴',
+};
+
 function matchesAnyLocaleDefault(value: string, key: LocaleMatchKey): boolean {
   const trimmed = value.trim();
   if (!trimmed) return true;
   return (
+    trimmed === LEGACY_KOREAN_DEFAULTS[key] ||
     trimmed === t(key, 'ko') || trimmed === t(key, 'en') || trimmed === t(key, 'ja')
   );
 }

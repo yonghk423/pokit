@@ -11,8 +11,6 @@ export type DayPlanChromeSettings = {
    * 루틴 아코디언(펼침) 안에 완료 버튼을 둔다.
    */
   completeInAccordion: boolean;
-  /** 완료한 루틴의 「완료!」 마스킹 테이프 숨김 */
-  hideCompleteTape: boolean;
   /** 오늘 탭 상단 공지 바로가기 표시 (기본 OFF) */
   showTopAnnouncementsButton: boolean;
   /** 오늘 탭 상단 문의 바로가기 표시 (기본 OFF) */
@@ -25,7 +23,6 @@ export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
   hideLayoutIcons: false,
   hideDailyQuote: false,
   completeInAccordion: false,
-  hideCompleteTape: false,
   showTopAnnouncementsButton: false,
   showTopContactButton: false,
   hideAppUpdateNudge: false,
@@ -63,12 +60,6 @@ export function normalizeDayPlanChromeSettings(raw: unknown): DayPlanChromeSetti
   }
   if (typeof o.completeInAccordion === 'boolean') {
     base.completeInAccordion = o.completeInAccordion;
-  }
-  if (typeof o.hideCompleteTape === 'boolean') {
-    base.hideCompleteTape = o.hideCompleteTape;
-  } else if (typeof o.showCompleteTape === 'boolean') {
-    /** 레거시 showCompleteTape — 표시 ON이면 숨김 OFF */
-    base.hideCompleteTape = !o.showCompleteTape;
   }
   const legacyHideTopSupport =
     typeof o.hideTopSupportButtons === 'boolean' ? o.hideTopSupportButtons : undefined;
