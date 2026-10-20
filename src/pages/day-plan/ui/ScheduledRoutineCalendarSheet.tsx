@@ -1,7 +1,7 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -74,7 +74,7 @@ function ScheduledRoutinePickRow({
   onToggle,
 }: RoutinePickRowProps) {
   const progress = useSharedValue(selected ? 1 : 0);
-  const iconColor = activeIconColorByCategory(categoryKey);
+  const iconColor = activeIconColorByCategory(categoryKey, isDark);
   const selectedBg = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(168, 218, 220, 0.34)';
 
   useEffect(() => {

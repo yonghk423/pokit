@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import {
   BottomTabBarHeightCallbackContext,
   type BottomTabBarProps,
@@ -120,7 +121,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             styles.container,
             { backgroundColor: colors.containerBg },
           ]}>
-          {TABS.map((tab) => {
+          {TABS.filter((tab) => FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history').map((tab) => {
             const isFocused =
               focusedRoute === tab.route ||
               (tab.route === 'day-plan' && focusedRoute === 'index');

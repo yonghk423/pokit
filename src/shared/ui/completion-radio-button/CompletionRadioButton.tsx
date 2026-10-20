@@ -11,6 +11,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 
 export const COMPLETION_TOGGLE_ANIM_MS = 280;
 /** soft 모션 기준 — 토글 후 후속 UI 동기화용 */
@@ -103,6 +104,8 @@ type Props = {
   isDark: boolean;
   /** circle: 목록 행 · square: 시간대별 타임라인 */
   shape?: 'circle' | 'square';
+  /** Ink contour for illustrated routine rows; other callers retain their existing look. */
+  appearance?: 'default' | 'ink';
   /** 원/사각 외곽 한 변(px) */
   size?: number;
   checkedColor?: string;
@@ -124,6 +127,7 @@ export function CompletionRadioButton({
   checked,
   isDark,
   shape = 'circle',
+  appearance = 'default',
   size,
   checkedColor = isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT,
   uncheckedColor,
@@ -142,6 +146,7 @@ export function CompletionRadioButton({
   const defaultCheck = shape === 'square' ? SQUARE_CHECK_ICON_SIZE : CHECK_ICON_SIZE;
   const checkIconSize =
     size != null ? Math.max(10, Math.round(outerSize * 0.58)) : defaultCheck;
+  const useInkContour = appearance === 'ink' && shape === 'circle';
   const useSolidShadow = outline === 'shadow';
   const borderWidth = useSolidShadow ? 0 : outerSize <= 26 ? 2 : BORDER_WIDTH;
   const hitSize = size != null ? Math.max(outerSize + 12, 36) : HIT_SIZE;
@@ -266,12 +271,13 @@ export function CompletionRadioButton({
                 height: outerSize,
                 borderRadius: cornerRadius,
                 borderColor: borderIdle,
-                borderWidth,
+                borderWidth: useInkContour ? 0 : borderWidth,
                 backgroundColor: idleFill,
               },
               outlineAnimatedStyle,
-            ]}
-          />
+            ]}>
+            {useInkContour ? <RoutineActionIcon name="ring" size={outerSize} color={borderIdle} /> : null}
+          </Reanimated.View>
           <Reanimated.View
             pointerEvents="none"
             style={[
@@ -286,6 +292,11 @@ export function CompletionRadioButton({
               },
               fillAnimatedStyle,
             ]}>
+            {useInkContour ? (
+              <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                <RoutineActionIcon name="ring" size={outerSize} color={checkIconColor} />
+              </View>
+            ) : null}
             <BrushCheckMark size={checkIconSize} color={checkIconColor} />
           </Reanimated.View>
         </Reanimated.View>

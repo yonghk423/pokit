@@ -132,7 +132,7 @@ function SpineNode({
   const iconName = getBlockTimelineIcon(block);
   const shouldPulse = isCurrent && !completed;
   const pulse = useRef(new Animated.Value(1)).current;
-  const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
+  const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey, isDark);
 
   useEffect(() => {
     if (!shouldPulse) {

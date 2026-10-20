@@ -1,3 +1,5 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -26,7 +28,6 @@ const ON_INK = '#111111';
 const OFF_FILL = '#FFFFFF';
 const OFF_INK = 'rgba(0,0,0,0.38)';
 
-const CHIP = 32;
 /** 투두 휴지통·액션 버튼과 동일 솔리드 음영 */
 const SHADOW = 1;
 const DEFAULT_SOFT_SHADOW = 'rgba(0, 0, 0, 0.12)';
@@ -99,6 +100,8 @@ export function ApplyWeekdayChips({
                     backgroundColor: on ? ON_FILL : OFF_FILL,
                   },
                 ]}>
+                <PaperGrain />
+                {on ? <HanddrawnFrame color="#50665A" /> : null}
                 <ThemedText
                   style={[styles.chipLabel, { color: on ? ON_INK : OFF_INK }]}
                   numberOfLines={1}>
@@ -130,22 +133,21 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
   },
   chipShell: {
-    width: CHIP,
-    height: CHIP,
+    flex: 1,
+    minHeight: 40,
     marginRight: SHADOW,
     marginBottom: SHADOW,
   },
   chipShadow: {
     ...StyleSheet.absoluteFill,
-    borderRadius: 8,
+    borderRadius: 0,
   },
   chipFace: {
     ...StyleSheet.absoluteFill,
-    borderRadius: 8,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

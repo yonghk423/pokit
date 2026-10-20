@@ -774,7 +774,7 @@ function seedScreenshotMyRoutines(): void {
     sets: [
       {
         ...defaultDaily,
-        titleMarkColor: 'yellow',
+        titleMarkColor: null,
         applyWeekdays: [...WEEKDAY_PRESET_WEEKDAY],
         items: SCREENSHOT_DAILY_CATEGORY_KEYS.map((categoryKey) => ({
           categoryKey,
@@ -783,7 +783,7 @@ function seedScreenshotMyRoutines(): void {
       },
       {
         ...defaultWeekend,
-        titleMarkColor: 'lavender',
+        titleMarkColor: null,
         applyWeekdays: [...WEEKDAY_PRESET_WEEKEND],
         items: SCREENSHOT_WEEKEND_CATEGORY_KEYS.map((categoryKey) => ({
           categoryKey,

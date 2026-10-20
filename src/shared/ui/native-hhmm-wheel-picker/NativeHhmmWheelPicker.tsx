@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { useTranslation, type AppLocale } from '@shared/lib/i18n';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 
 import { DigitalHhmmInput } from '../digital-hhmm-input';
 import { hhmmToPickerDate, pickerDateToHhmm } from './hhmmDateBridge';
@@ -96,12 +98,14 @@ export function NativeHhmmWheelPicker({
 
   return (
     <View
-      style={styles.wrap}
+      style={[styles.wrap, { backgroundColor: isDark ? '#292E28' : '#FAF8F2', opacity: disabled ? 0.5 : 1 }]}
       accessibilityLabel={
         accessibilityLabelPrefix
           ? `${accessibilityLabelPrefix} ${valueHhmm}`
           : undefined
       }>
+      <PaperGrain opacity={0.3} />
+      <HanddrawnFrame color={isDark ? '#8B998C' : '#A0A698'} />
       <DateTimePicker
         value={pickerValue}
         mode="time"
@@ -111,11 +115,14 @@ export function NativeHhmmWheelPicker({
         minuteInterval={minuteInterval}
         locale={localeTagForPicker(locale)}
         themeVariant={isDark ? 'dark' : 'light'}
-        textColor={textColor}
+        textColor={textColor ?? (isDark ? '#E4E9DE' : '#4C574B')}
         onChange={onChange}
         disabled={disabled}
         style={styles.picker}
       />
+      {Platform.OS === 'ios' ? <View pointerEvents="none" style={[styles.selection, { backgroundColor: isDark ? 'rgba(168,218,220,0.08)' : 'rgba(168,218,220,0.12)' }]}>
+        <HanddrawnFrame color={isDark ? '#92A89A' : '#90A899'} />
+      </View> : null}
     </View>
   );
 }
@@ -127,6 +134,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     // 휠 높이 고정 — 레이아웃 측정 깜빡임 방지
     minHeight: Platform.OS === 'ios' ? 180 : 160,
+    overflow: 'hidden',
+    marginVertical: 8,
+    paddingHorizontal: 6,
+  },
+  selection: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -17,
+    height: 34,
+    left: 12,
+    right: 12,
   },
   picker: {
     alignSelf: 'stretch',

@@ -1,6 +1,11 @@
+import { useAppAlertStore } from '@shared/lib/app-alert';
+import { AppAlertRoot } from '@shared/ui/app-alert';
+import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { I18nextProvider } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -30,6 +35,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 export default function RootLayout() {
+  const hasPendingAlert = useAppAlertStore((state) => state.queue.length > 0);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [splashImageReady, setSplashImageReady] = useState(false);
@@ -58,7 +64,18 @@ export default function RootLayout() {
 
   const appReady = useAppBootstrap();
   const fontsReady = useCityPopFonts();
-  const contentReady = appReady && fontsReady;
+  const [iconsReady, setIconsReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    // Keep startup bounded even if an asset fails or a development server stalls.
+    const timeout = setTimeout(() => { if (active) setIconsReady(true); }, 2000);
+    void prepareIllustrations().finally(() => {
+      clearTimeout(timeout);
+      if (active) setIconsReady(true);
+    });
+    return () => { active = false; clearTimeout(timeout); };
+  }, []);
+  const contentReady = appReady && fontsReady && iconsReady;
   const showSplash = !contentReady || !splashMinimumElapsed;
 
   useEffect(() => {
@@ -79,93 +96,101 @@ export default function RootLayout() {
     <I18nextProvider i18n={i18n}>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: showSplash ? SPLASH_BACKGROUND_COLOR : rootBg }}>
         <SafeAreaProvider>
-          {contentReady ? (
-            <ThemeProvider value={navigationTheme}>
-              <Stack
-                screenOptions={{
-                  contentStyle: { backgroundColor: rootBg },
-                  statusBarStyle: resolveStatusBarStyle(isDark),
-                }}>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="goal-detail-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="routine-template-detail"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
-                <Stack.Screen
-                  name="daily-rhythm-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="guide-book"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="widget-guide"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="puzzle-guide"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="welcome-intro"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="appearance-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="font-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="day-plan-view-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="layout-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
-                <Stack.Screen
-                  name="notification-settings"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="announcements"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="release-notes"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="activity-session"
-                  options={{ headerShown: false, presentation: 'fullScreenModal' }}
-                />
-                <Stack.Screen
-                  name="puzzle-history-start"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="puzzle-history-detail"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="puzzle-history-album"
-                  options={{ headerShown: false, presentation: 'card' }}
-                />
-              </Stack>
-              <AnalyticsScreenTracker />
-            </ThemeProvider>
-          ) : null}
-          {showSplash ? <LocalizedSplashOverlay onReady={handleSplashReady} /> : null}
+          <AppAlertRoot enabled={contentReady && !showSplash}>
+            {contentReady ? (
+              <ThemeProvider value={navigationTheme}>
+                <Stack
+                  screenOptions={{
+                    contentStyle: { backgroundColor: rootBg },
+                    statusBarStyle: resolveStatusBarStyle(isDark),
+                    gestureEnabled: !hasPendingAlert,
+                  }}>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="goal-detail-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="routine-template-detail"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
+                  <Stack.Screen
+                    name="daily-rhythm-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="guide-book"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="widget-guide"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="puzzle-guide"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="welcome-intro"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="appearance-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="font-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="day-plan-view-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="layout-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
+                  <Stack.Screen
+                    name="notification-settings"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="announcements"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="release-notes"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="activity-session"
+                    options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                  />
+                  <Stack.Screen
+                    name="puzzle-history-start"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="puzzle-history-detail"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                  <Stack.Screen
+                    name="puzzle-history-album"
+                    options={{ headerShown: false, presentation: 'card' }}
+                  />
+                </Stack>
+                <AnalyticsScreenTracker />
+              </ThemeProvider>
+            ) : null}
+            {contentReady && !showSplash && !isDark ? (
+              <View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, { zIndex: 100, mixBlendMode: 'multiply' }]}>
+                <PaperGrain opacity={0.24} />
+              </View>
+            ) : null}
+            {showSplash ? <LocalizedSplashOverlay onReady={handleSplashReady} /> : null}
+          </AppAlertRoot>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </I18nextProvider>

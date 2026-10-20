@@ -1,7 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RetroFlatColors, SOLID_SHADOW_OFFSET } from '@shared/config/retroFlat';
+import Svg, { Path } from 'react-native-svg';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -20,7 +22,6 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
   const displayPercent = clamped >= 100 ? 100 : clamped;
   const fillW = Math.max(displayPercent, clamped > 0 ? 4 : 0);
   const face = isDark ? c.surfaceAlt : '#FFFFFF';
-  const shadow = isDark ? c.solidShadow : '#000000';
 
   return (
     <View
@@ -43,35 +44,13 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
           {t('storyImport.loadingStory')}
         </ThemedText>
 
-        <View
-          style={[
-            styles.trackShell,
-            { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
-          ]}>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.trackShadow,
-              {
-                backgroundColor: shadow,
-                transform: [
-                  { translateX: SOLID_SHADOW_OFFSET },
-                  { translateY: SOLID_SHADOW_OFFSET },
-                ],
-              },
-            ]}
-          />
+        <View style={styles.trackShell}>
           <View style={[styles.trackFace, { backgroundColor: face }]}>
-            <View
-              style={[
-                styles.fill,
-                {
-                  width: `${fillW}%`,
-                  backgroundColor: isDark ? c.bgMint : c.primaryContainer,
-                },
-              ]}
-            />
+            <View style={[styles.fill, { width: `${fillW}%`, backgroundColor: isDark ? c.bgMint : c.primaryContainer }]}><PaperGrain /></View>
           </View>
+          <Svg width="100%" height="100%" viewBox="0 0 280 16" preserveAspectRatio="none" style={StyleSheet.absoluteFill} accessible={false}>
+            <Path d="M2 3Q130 1.8 278 3l-.3 10Q135 14.1 2 13Z" stroke={c.textMuted} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </Svg>
         </View>
 
         <ThemedText style={[styles.percent, { color: c.text }]}>{displayPercent}%</ThemedText>
@@ -107,7 +86,7 @@ const styles = StyleSheet.create({
   },
   trackShell: {
     width: '100%',
-    height: 12,
+    height: 16,
     position: 'relative',
   },
   trackShadow: {
@@ -116,7 +95,7 @@ const styles = StyleSheet.create({
   trackFace: {
     ...StyleSheet.absoluteFill,
     overflow: 'hidden',
-    zIndex: 1,
+    margin: 3,
   },
   fill: {
     height: '100%',

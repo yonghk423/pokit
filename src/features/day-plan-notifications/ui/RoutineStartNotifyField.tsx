@@ -1,7 +1,8 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   collectRoutineStartNotifySlots,
@@ -18,7 +19,7 @@ import {
 } from '../model/syncRoutineStartNotifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { formatHhmmClock, t, useTranslation } from '@shared/lib/i18n';
-import { OutlinedSwitch } from '@shared/ui/outlined-switch';
+import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -117,8 +118,6 @@ export function RoutineStartNotifyField({
     return enabled ? tr('routineNotify.genericOn') : tr('routineNotify.genericOff');
   }, [canResolve, categoryKey, enabled, locale, resolveInput, sets, tr]);
 
-  const trackOff = isDark ? '#3f3f46' : '#e5e7eb';
-
   const onToggle = useCallback(
     async (next: boolean) => {
       if (busy) return;
@@ -154,18 +153,16 @@ export function RoutineStartNotifyField({
           <ThemedText style={[styles.title, { color: ink }]}>{tr('routineNotify.title')}</ThemedText>
           <ThemedText style={[styles.hint, { color: muted }]}>{timeHint}</ThemedText>
         </View>
-        <OutlinedSwitch
-          accessibilityLabel={tr('routineNotify.toggleA11y', {
+        <HanddrawnToggle
+          isDark={isDark}
+          label={tr('routineNotify.toggleA11y', {
             state: enabled ? tr('routineNotify.toggleOn') : tr('routineNotify.toggleOff'),
           })}
-          value={enabled}
+          checked={enabled}
           disabled={busy || (!canResolve && !enabled)}
-          onValueChange={(next) => {
+          onChange={(next) => {
             void onToggle(next);
           }}
-          trackColor={{ false: trackOff, true: '#000000' }}
-          thumbColor="#FFFFFF"
-          ios_backgroundColor={trackOff}
         />
       </View>
     </View>

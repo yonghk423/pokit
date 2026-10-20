@@ -1,7 +1,8 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -20,7 +21,6 @@ import { registerOtherCategoryResolverFromStorage } from '@features/other-catego
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import { RoutineAtmosphereFooterStrip } from '@shared/ui/routine-atmosphere';
 import {
   appendCustomFlowCatalogEntry,
   DEFAULT_CUSTOM_FLOW_GROUP_KEY,
@@ -261,7 +261,6 @@ export function RoutineCatalogManageContent() {
           manageOnly
           onCreatePress={openCreateSheet}
         />
-        <RoutineAtmosphereFooterStrip variant="catalog" isDark={isDark} />
       </ScrollView>
       <CreateCustomFlowSheet
         visible={createSheetOpen}

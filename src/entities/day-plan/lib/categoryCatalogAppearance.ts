@@ -1,5 +1,3 @@
-import { contrastingForeground, pastelizeAccentHex } from '@shared/lib/colorMath';
-import { isRoutineColorPresetLightHex } from '@shared/lib/routineColorPresets';
 import {
   DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
@@ -7,7 +5,6 @@ import {
   normalizeCustomFlowIcon,
 } from '@shared/lib/customFlowAppearanceCatalog';
 import {
-  BUILTIN_STRETCHING_FLOW_ID,
   resolveCustomFlowCatalogColor,
   resolveCustomFlowCatalogIcon,
   type CustomFlowAccentColorOption,
@@ -21,8 +18,7 @@ import { HEALTH_INTAKE_CATEGORY_KEY, normalizeHealthIntakeDetailConfig } from '.
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import { readRoutineDisplayNameFromConfig } from './routineDisplayName';
 
-const HEALTH_INTAKE_LEGACY_ICONS = new Set(['drop.fill', 'cross.case.fill']);
-const HEALTH_INTAKE_CATALOG_ICON = 'pills.fill';
+const HEALTH_INTAKE_CATALOG_ICON = 'routine:medicine';
 /** 건강을 위한 섭취 — 알약 아이콘 타일 골드 앰버 */
 const HEALTH_INTAKE_CATALOG_ACCENT = '#e9a23b';
 const HEALTH_INTAKE_LEGACY_ACCENT_COLORS = new Set([
@@ -37,21 +33,11 @@ const HEALTH_INTAKE_LEGACY_ACCENT_COLORS = new Set([
 const FASTING_CATALOG_ACCENT = '#14b8a6';
 /** 예전 기본값(건강 섭취와 같던 브라운) → 새 틸로 치환 */
 const FASTING_LEGACY_ACCENT_COLORS = new Set(['#8b5a2b']);
-const FASTING_CATALOG_ICON = 'figure.stand';
-const FASTING_LEGACY_ICONS = new Set(['person.fill', 'scalemass.fill']);
+const FASTING_CATALOG_ICON = 'routine:weight';
 
-const READING_CATEGORY_KEY = 'reading';
-const READING_CATALOG_ICON = 'book.closed.fill';
-const READING_LEGACY_ICONS = new Set(['book.fill']);
+const READING_CATALOG_ICON = 'routine:reading';
 
-const WORK_CATEGORY_KEY = 'work';
-const WORK_CATALOG_ICON = 'square.and.pencil';
-const WORK_LEGACY_ICONS = new Set(['bag.fill']);
-
-function resolveHealthIntakeCatalogIcon(icon: string | undefined): string | undefined {
-  if (icon != null && HEALTH_INTAKE_LEGACY_ICONS.has(icon)) return HEALTH_INTAKE_CATALOG_ICON;
-  return icon;
-}
+const WORK_CATALOG_ICON = 'routine:work';
 
 function resolveHealthIntakeCatalogAccentColor(color: string | undefined): string | undefined {
   if (color != null && HEALTH_INTAKE_LEGACY_ACCENT_COLORS.has(color.toLowerCase())) {
@@ -67,41 +53,15 @@ function resolveFastingCatalogAccentColor(color: string | undefined): string | u
   return color;
 }
 
-function resolveFastingCatalogIcon(icon: string | undefined): string | undefined {
-  if (icon != null && FASTING_LEGACY_ICONS.has(icon)) return FASTING_CATALOG_ICON;
-  return icon;
-}
-
-function resolveReadingCatalogIcon(icon: string | undefined): string | undefined {
-  if (icon != null && READING_LEGACY_ICONS.has(icon)) return READING_CATALOG_ICON;
-  return icon;
-}
-
-function resolveWorkCatalogIcon(icon: string | undefined): string | undefined {
-  if (icon != null && WORK_LEGACY_ICONS.has(icon)) return WORK_CATALOG_ICON;
-  return icon;
-}
-
-/** 담기·카탈로그 기본 SF Symbol */
+/** 담기·카탈로그 기본 전용 그림 */
 const BUILTIN_CATEGORY_ICONS: Record<string, string> = {
   healthIntake: HEALTH_INTAKE_CATALOG_ICON,
-  water: 'drop.fill',
-  medicine: 'pills.fill',
+  water: 'routine:water',
+  medicine: 'routine:medicine',
   fasting: FASTING_CATALOG_ICON,
   reading: READING_CATALOG_ICON,
   work: WORK_CATALOG_ICON,
-  other: 'person.fill',
-};
-
-/** 담기·카탈로그 기본 강조색 */
-const BUILTIN_CATEGORY_ACCENT_COLORS: Record<string, string> = {
-  healthIntake: HEALTH_INTAKE_CATALOG_ACCENT,
-  water: '#0ea5e9',
-  medicine: '#8b5a2b',
-  fasting: FASTING_CATALOG_ACCENT,
-  reading: '#356668',
-  work: '#1e3a8a',
-  other: '#ffc078',
+  other: 'routine:journal',
 };
 
 function asConfigObj(raw: unknown): Record<string, unknown> {
@@ -140,7 +100,6 @@ function resolveBuiltinCategoryAccentColor(categoryKey: string): CustomFlowAccen
     );
   }
   return (
-    normalizeCustomFlowAccentColor(BUILTIN_CATEGORY_ACCENT_COLORS[categoryKey]) ??
     DEFAULT_CUSTOM_FLOW_ACCENT_COLOR
   );
 }
@@ -164,21 +123,7 @@ export function resolveCategoryCatalogIcon(categoryKey: string): string {
     return resolveCustomFlowCatalogIcon(resolvedCategoryKey);
   }
   const stored = readStoredCategoryIcon(resolvedCategoryKey);
-  if (stored) {
-    if (resolvedCategoryKey === 'healthIntake') {
-      return resolveHealthIntakeCatalogIcon(stored) ?? stored;
-    }
-    if (resolvedCategoryKey === 'fasting') {
-      return resolveFastingCatalogIcon(stored) ?? stored;
-    }
-    if (resolvedCategoryKey === READING_CATEGORY_KEY) {
-      return resolveReadingCatalogIcon(stored) ?? stored;
-    }
-    if (resolvedCategoryKey === WORK_CATEGORY_KEY) {
-      return resolveWorkCatalogIcon(stored) ?? stored;
-    }
-    return stored;
-  }
+  if (stored?.startsWith('routine:')) return stored;
   return BUILTIN_CATEGORY_ICONS[resolvedCategoryKey] ?? DEFAULT_CUSTOM_FLOW_ICON;
 }
 
@@ -198,24 +143,19 @@ export function resolveCategoryCatalogAccentColor(categoryKey: string): string {
     return stored;
   }
   return (
-    BUILTIN_CATEGORY_ACCENT_COLORS[resolvedCategoryKey] ??
     DEFAULT_CUSTOM_FLOW_ACCENT_COLOR
   );
 }
 
-/** 담기·루틴 목록 아이콘 칸 — 공통 팔레트면 그대로, 그 외(레거시·HSV)만 파스텔화 */
-export function resolveCategoryCatalogIconTile(categoryKey: string): {
+/** 아이콘은 사용자가 고른 색과 분리해 원본 그림과 중립 잉크로 표시한다. */
+export function resolveCategoryCatalogIconTile(_categoryKey: string, isDark = false): {
   boxBg: string;
   iconColor: string;
 } {
-  const accent = resolveCategoryCatalogAccentColor(categoryKey);
-  const boxBg = isRoutineColorPresetLightHex(accent)
-    ? accent
-    : pastelizeAccentHex(accent);
-  return { boxBg, iconColor: contrastingForeground(boxBg) };
+  return { boxBg: 'transparent', iconColor: isDark ? '#FAFAFA' : '#252525' };
 }
 
-/** 목표 상세 아이콘·색상 편집 UI — 저장값·builtin을 그대로 반영(담기용 레거시 치환 없음) */
+/** 목표 상세 아이콘·색상 편집 UI — 이전 시스템 아이콘은 전용 기본 그림으로 표시 */
 export function readEditableCategoryAppearance(
   categoryKey: string,
   raw: unknown,
@@ -232,8 +172,7 @@ export function readEditableCategoryAppearance(
     fromStored.icon ??
     fromLegacyWater.icon ??
     resolveBuiltinCategoryIcon(categoryKey);
-  const icon =
-    categoryKey === 'fasting' ? (resolveFastingCatalogIcon(rawIcon) ?? rawIcon) : rawIcon;
+  const icon = rawIcon.startsWith('routine:') ? rawIcon : resolveBuiltinCategoryIcon(categoryKey);
   const rawAccent =
     fromRaw.accentColor ??
     fromStored.accentColor ??
@@ -244,10 +183,7 @@ export function readEditableCategoryAppearance(
       ? (resolveFastingCatalogAccentColor(rawAccent) ?? rawAccent)
       : categoryKey === 'healthIntake'
         ? (resolveHealthIntakeCatalogAccentColor(rawAccent) ?? rawAccent)
-        : categoryKey === BUILTIN_STRETCHING_FLOW_ID &&
-            (rawAccent == null || rawAccent.toLowerCase() === '#14b8a6')
-          ? '#8b5cf6'
-          : rawAccent;
+        : rawAccent;
 
   return { icon, accentColor };
 }

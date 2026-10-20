@@ -1,5 +1,7 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RetroFlatColors, cityPopFont } from '@shared/config/retroFlat';
@@ -136,8 +138,8 @@ export function PokitWeekTourTipSheet({
           <PostItCardShell isDark={isDark} faceColor={face} contentStyle={styles.card}>
             <ThemedText style={[styles.kicker, { color: muted }, cityPopFont('500')]}>
               {t('tour.pokitWeek.tipKicker', {
-                current: safeIndex + 1,
-                total: POKIT_WEEK_TOUR_STEP_COUNT,
+                current: safeIndex + 1 - (!FEATURE_FLAGS.puzzle && safeIndex > 2 ? 1 : 0),
+                total: POKIT_WEEK_TOUR_STEP_COUNT - (FEATURE_FLAGS.puzzle ? 0 : 1),
               })}
             </ThemedText>
             <ThemedText style={[styles.title, { color: ink }, cityPopFont('700')]}>{title}</ThemedText>

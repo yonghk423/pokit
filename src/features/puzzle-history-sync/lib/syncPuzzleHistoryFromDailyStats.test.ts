@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useHistoryStore } from '@entities/history';
 import { resetPuzzleRevealSeenForTests, usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -6,7 +7,10 @@ import { StorageKeys } from '@shared/lib/storage/storageKeys';
 import { syncPuzzleHistoryFromDailyStats } from './syncPuzzleHistoryFromDailyStats';
 
 describe('syncPuzzleHistoryFromDailyStats (completion count)', () => {
+  afterEach(() => { FEATURE_FLAGS.puzzle = false; });
+
   beforeEach(() => {
+    FEATURE_FLAGS.puzzle = true;
     resetPuzzleRevealSeenForTests();
     localStorageClient.removeItem(StorageKeys.historyDailyStats);
     localStorageClient.removeItem(StorageKeys.historyMeta);
@@ -21,6 +25,20 @@ describe('syncPuzzleHistoryFromDailyStats (completion count)', () => {
       activeHistoryId: null,
       isHydrated: true,
     });
+  });
+
+  it('preserves saved puzzle data and skips hydration while suspended', () => {
+    usePuzzleHistoryStore.getState().startHistory({
+      title: 'keep me', imageUri: 'file:///saved.jpg', targetCount: 10,
+      linkedCategoryKeys: ['reading'], completionBaseline: 0,
+    });
+    const saved = localStorageClient.getJson(StorageKeys.puzzleHistory);
+    usePuzzleHistoryStore.setState({ isHydrated: false });
+    const before = usePuzzleHistoryStore.getState();
+    FEATURE_FLAGS.puzzle = false;
+    syncPuzzleHistoryFromDailyStats();
+    expect(usePuzzleHistoryStore.getState()).toBe(before);
+    expect(localStorageClient.getJson(StorageKeys.puzzleHistory)).toEqual(saved);
   });
 
   it('credits each linked routine completion toward pieces', () => {

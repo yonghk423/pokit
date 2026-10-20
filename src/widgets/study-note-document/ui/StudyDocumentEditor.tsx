@@ -1,8 +1,8 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  Alert,
   Animated,
   InputAccessoryView,
   Keyboard,

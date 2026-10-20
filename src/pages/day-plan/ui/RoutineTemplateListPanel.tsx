@@ -1,5 +1,6 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -11,10 +12,6 @@ import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import {
-  headerArtForVariant,
-  RoutineAtmosphereFooterStrip,
-} from '@shared/ui/routine-atmosphere';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -29,7 +26,6 @@ type Props = {
 /** 설정 탭 SettingsRowIcon / settingsChrome 과 동일 스펙 */
 const SHADOW_SM = 2;
 const ICON_FACE = 34;
-const ICON_BORDER = 1;
 
 /**
  * 루틴 템플릿 목록 — 설정 탭 리스트와 동일:
@@ -66,15 +62,6 @@ export function RoutineTemplateListPanel({
             <ThemedText style={[styles.lead, { color: muted }]}>
               {t('fixedRoutine.templatesLead')}
             </ThemedText>
-          </View>
-          <View style={styles.headerArtSlot} pointerEvents="none">
-            <Image
-              source={headerArtForVariant('templates')}
-              style={styles.headerArt}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={0}
-            />
           </View>
         </View>
       </View>
@@ -121,7 +108,9 @@ export function RoutineTemplateListPanel({
                       styles.iconBox,
                       { backgroundColor: iconBoxBg, borderColor: iconBorder },
                     ]}>
-                    <IconSymbol name={entry.icon} size={16} color={iconColor} />
+                    <PaperGrain />
+                    <HanddrawnFrame color={iconBorder} />
+                    <IconSymbol name={entry.icon} size={23} color={iconColor} />
                   </View>
                 </View>
                 <View style={styles.itemTextWrap}>
@@ -137,7 +126,6 @@ export function RoutineTemplateListPanel({
         </View>
       </CityPopCardShell>
 
-      <RoutineAtmosphereFooterStrip variant="templates" isDark={isDark} density="rich" />
     </View>
   );
 }
@@ -158,21 +146,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 4,
-  },
-  headerArtSlot: {
-    width: 72,
-    height: 56,
-    marginRight: 2,
-    marginBottom: -2,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderRadius: 4,
-  },
-  headerArt: {
-    width: 88,
-    height: 88,
-    marginBottom: -18,
   },
   pageTitle: {
     fontSize: 22,
@@ -223,7 +196,7 @@ const styles = StyleSheet.create({
     width: ICON_FACE,
     height: ICON_FACE,
     borderRadius: 0,
-    borderWidth: ICON_BORDER,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

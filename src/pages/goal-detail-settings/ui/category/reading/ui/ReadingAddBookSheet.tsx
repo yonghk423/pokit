@@ -1,7 +1,7 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,

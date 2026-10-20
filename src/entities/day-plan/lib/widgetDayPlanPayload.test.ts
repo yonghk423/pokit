@@ -96,7 +96,7 @@ describe('widgetDayPlanPayload', () => {
 
     expect(payload.priorityRoutineItems).toEqual([
       { categoryKey: 'reading', iconName: 'book.closed.fill', isCompleted: true },
-      { categoryKey: 'work', iconName: 'square.and.pencil', isCompleted: false },
+      { categoryKey: 'work', iconName: 'laptopcomputer', isCompleted: false },
     ]);
   });
 });

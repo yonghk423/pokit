@@ -1,7 +1,9 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -83,18 +85,17 @@ const SHOW_APPEARANCE_SETTINGS = false;
 const SHOW_NOTIFICATION_SETTINGS = true;
 
 function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
-  if (fontId === 'gaegu') return t('settings.font.gaegu', locale);
-  if (fontId === 'songMyung') return t('settings.font.songMyung', locale);
   if (fontId === 'gothicA1') return t('settings.font.gothicA1', locale);
   if (fontId === 'hanken') return t('settings.font.hanken', locale);
-  if (fontId === 'dongle') return t('settings.font.dongle', locale);
   return t('settings.font.hiMelody', locale);
 }
 
-function fontSizeLabelForId(sizeId: 'sm' | 'md' | 'lg', locale: 'ko' | 'en' | 'ja'): string {
+function fontSizeLabelForId(sizeId: 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg', locale: 'ko' | 'en' | 'ja'): string {
   if (sizeId === 'sm') return t('settings.font.size.sm', locale);
-  if (sizeId === 'lg') return t('settings.font.size.lg', locale);
-  return t('settings.font.size.md', locale);
+  if (sizeId === 'smMd') return t('settings.font.size.smMd', locale);
+  if (sizeId === 'md') return t('settings.font.size.md', locale);
+  if (sizeId === 'mdLg') return t('settings.font.size.mdLg', locale);
+  return t('settings.font.size.lg', locale);
 }
 
 /** 앱 설정 (로그인·Profile 없음). 문의하기 탭 시 네이티브 메일 작성을 바로 엽니다. */
@@ -130,7 +131,7 @@ export function SettingsPage() {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
       // 설명서 진입 전에 이미지를 미리 올려 흰 스테이지 대기를 줄인다.
       void prefetchWidgetGuideAssets(locale);
-      void prefetchPuzzleGuideAssets();
+      if (FEATURE_FLAGS.puzzle) void prefetchPuzzleGuideAssets();
       if (SHOW_POKIT_PRO_SETTINGS) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
       }
@@ -495,6 +496,7 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
+          {FEATURE_FLAGS.puzzle ? (
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
             onPress={() => {
@@ -522,6 +524,7 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
+          ) : null}
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
             onPress={() => {

@@ -1,3 +1,4 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -54,7 +55,7 @@ export function CityPopCardShell({
           ]}
         />
       ) : null}
-      <View style={[styles.face, { backgroundColor: face }, contentStyle]}>{children}</View>
+      <View style={[styles.face, { backgroundColor: face }, contentStyle]}><PaperGrain />{children}</View>
     </View>
   );
 }

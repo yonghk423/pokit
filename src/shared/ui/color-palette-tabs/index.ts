@@ -1,8 +1,7 @@
 export {
-  RowColorPaletteActivePanel,
   RowColorPaletteBridgeProvider,
   RowColorPaletteFallbackHost,
-  RowColorPaletteTabStrip,
+  RowColorPaletteDesk,
   useRowColorPaletteBridge,
   type RowColorPaletteTab,
   type RowColorPaletteTabId,

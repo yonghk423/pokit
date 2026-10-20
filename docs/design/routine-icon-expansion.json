@@ -1,0 +1,1003 @@
+[
+  {
+    "id": "running",
+    "category": "exercise",
+    "labels": {
+      "ko": "달리기",
+      "en": "Running",
+      "ja": "ランニング"
+    },
+    "subject": "one running shoe with tied laces",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-147ab0ec-01f3-4e48-b815-5a7ead3e963a.png"
+  },
+  {
+    "id": "cycling",
+    "category": "exercise",
+    "labels": {
+      "ko": "자전거",
+      "en": "Cycling",
+      "ja": "サイクリング"
+    },
+    "subject": "one simple bicycle in side view",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-8e2e5d89-4b97-460b-b828-20d540810d19.png"
+  },
+  {
+    "id": "yoga",
+    "category": "exercise",
+    "labels": {
+      "ko": "요가",
+      "en": "Yoga",
+      "ja": "ヨガ"
+    },
+    "subject": "one rolled yoga mat with a strap",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c8463046-2ad0-4231-bf89-964d28d1be6a.png"
+  },
+  {
+    "id": "swimming",
+    "category": "exercise",
+    "labels": {
+      "ko": "수영",
+      "en": "Swimming",
+      "ja": "水泳"
+    },
+    "subject": "one pair of swim goggles",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-3ad2cc96-700a-4a11-9226-9be927f7da26.png"
+  },
+  {
+    "id": "stretching",
+    "category": "exercise",
+    "labels": {
+      "ko": "스트레칭",
+      "en": "Stretching",
+      "ja": "ストレッチ"
+    },
+    "subject": "one looped exercise resistance band",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-9193bb94-51c6-48bc-ba0f-a263e02c0694.png"
+  },
+  {
+    "id": "jump-rope",
+    "category": "exercise",
+    "labels": {
+      "ko": "줄넘기",
+      "en": "Jump rope",
+      "ja": "縄跳び"
+    },
+    "subject": "one jump rope loosely curved with two handles",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-17626ec2-f9f7-4d97-8130-2559997a81d8.png"
+  },
+  {
+    "id": "tennis",
+    "category": "exercise",
+    "labels": {
+      "ko": "테니스",
+      "en": "Tennis",
+      "ja": "テニス"
+    },
+    "subject": "one tennis racket and one ball",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-6270bdc7-f1a9-405b-b38d-95422bbb3cf4.png"
+  },
+  {
+    "id": "basketball",
+    "category": "exercise",
+    "labels": {
+      "ko": "농구",
+      "en": "Basketball",
+      "ja": "バスケットボール"
+    },
+    "subject": "one basketball",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-db33475b-23b8-4662-b479-ac1925be597f.png"
+  },
+  {
+    "id": "football",
+    "category": "exercise",
+    "labels": {
+      "ko": "축구",
+      "en": "Football",
+      "ja": "サッカー"
+    },
+    "subject": "one classic soccer ball",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-962efd37-26ec-4a1c-9b8c-69a783dc82b7.png"
+  },
+  {
+    "id": "hiking",
+    "category": "exercise",
+    "labels": {
+      "ko": "등산",
+      "en": "Hiking",
+      "ja": "登山"
+    },
+    "subject": "one hiking boot",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c94b9e66-1780-49c6-b7ed-ed0237ce5f4f.png"
+  },
+  {
+    "id": "boxing",
+    "category": "exercise",
+    "labels": {
+      "ko": "복싱",
+      "en": "Boxing",
+      "ja": "ボクシング"
+    },
+    "subject": "one boxing glove",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-5d3d041f-cba4-4156-9735-b98e9af5b08c.png"
+  },
+  {
+    "id": "pilates",
+    "category": "exercise",
+    "labels": {
+      "ko": "필라테스",
+      "en": "Pilates",
+      "ja": "ピラティス"
+    },
+    "subject": "one pilates exercise ring with two pads",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-65845565-e188-4e15-b8a5-641fba399624.png"
+  },
+  {
+    "id": "toothbrush",
+    "category": "health",
+    "labels": {
+      "ko": "양치",
+      "en": "Brush teeth",
+      "ja": "歯磨き"
+    },
+    "subject": "one toothbrush with a small toothpaste swirl",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-89d0b29b-a6b3-4352-bc87-88b564b99cd9.png"
+  },
+  {
+    "id": "skincare",
+    "category": "health",
+    "labels": {
+      "ko": "피부 관리",
+      "en": "Skincare",
+      "ja": "スキンケア"
+    },
+    "subject": "one unlabeled lotion pump bottle",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-40234544-e2bb-4741-b469-5ebde0e612c0.png"
+  },
+  {
+    "id": "shower",
+    "category": "health",
+    "labels": {
+      "ko": "샤워",
+      "en": "Shower",
+      "ja": "シャワー"
+    },
+    "subject": "one handheld shower head with a few water droplets",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-2f3d87a8-6c53-4329-be89-dde6a1801c73.png"
+  },
+  {
+    "id": "handwashing",
+    "category": "health",
+    "labels": {
+      "ko": "손 씻기",
+      "en": "Wash hands",
+      "ja": "手洗い"
+    },
+    "subject": "one bar of soap with three large bubbles",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-aec778ce-52f5-4197-b18c-85471f0059dc.png"
+  },
+  {
+    "id": "checkup",
+    "category": "health",
+    "labels": {
+      "ko": "건강 검진",
+      "en": "Health checkup",
+      "ja": "健康診断"
+    },
+    "subject": "one stethoscope",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-a1ca41ca-7bfb-4806-b057-dc4b9954f872.png"
+  },
+  {
+    "id": "weight",
+    "category": "health",
+    "labels": {
+      "ko": "체중 기록",
+      "en": "Weight tracking",
+      "ja": "体重記録"
+    },
+    "subject": "one bathroom weighing scale with a blank dial",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-fb2ca59e-02aa-4778-9832-5cf515bd2be2.png"
+  },
+  {
+    "id": "blood-pressure",
+    "category": "health",
+    "labels": {
+      "ko": "혈압 측정",
+      "en": "Blood pressure",
+      "ja": "血圧測定"
+    },
+    "subject": "one blood pressure cuff beside a blank gauge",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-ce814895-e421-4921-a716-89cf8562ba69.png"
+  },
+  {
+    "id": "vitamins",
+    "category": "health",
+    "labels": {
+      "ko": "비타민",
+      "en": "Vitamins",
+      "ja": "ビタミン"
+    },
+    "subject": "one open small supplement jar with two round tablets",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-8500ed75-5a62-4aa4-8504-e9e1941ccfaf.png"
+  },
+  {
+    "id": "eye-rest",
+    "category": "health",
+    "labels": {
+      "ko": "눈 휴식",
+      "en": "Eye rest",
+      "ja": "目の休息"
+    },
+    "subject": "one pair of simple round eyeglasses",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-b375a8de-ccfb-4af4-b0af-610323ad8fe6.png"
+  },
+  {
+    "id": "sunscreen",
+    "category": "health",
+    "labels": {
+      "ko": "선크림",
+      "en": "Sunscreen",
+      "ja": "日焼け止め"
+    },
+    "subject": "one sunscreen tube with a small simple sun emblem and no letters",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-385c1db4-bd72-4146-813b-162b9e136127.png"
+  },
+  {
+    "id": "pencil",
+    "category": "study",
+    "labels": {
+      "ko": "공부",
+      "en": "Study",
+      "ja": "勉強"
+    },
+    "subject": "one sharpened wooden pencil",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-5a337f98-fc21-4efb-b78c-124315be7b18.png"
+  },
+  {
+    "id": "language",
+    "category": "study",
+    "labels": {
+      "ko": "외국어 공부",
+      "en": "Language study",
+      "ja": "語学学習"
+    },
+    "subject": "two blank vocabulary flashcards on one binder ring",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c0185335-9f9a-4226-9707-2336e197ea7e.png"
+  },
+  {
+    "id": "lecture",
+    "category": "study",
+    "labels": {
+      "ko": "강의 듣기",
+      "en": "Lecture",
+      "ja": "講義"
+    },
+    "subject": "one small desk microphone",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-ac60dd11-7815-43bc-b6c7-c9fd53b3306b.png"
+  },
+  {
+    "id": "exam",
+    "category": "study",
+    "labels": {
+      "ko": "시험 준비",
+      "en": "Exam preparation",
+      "ja": "試験勉強"
+    },
+    "subject": "one examination sheet with three check marks and a pencil no lettering",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-691769e3-a20d-4e8e-9f71-bd82cfaa0c5a.png"
+  },
+  {
+    "id": "planning",
+    "category": "study",
+    "labels": {
+      "ko": "계획 세우기",
+      "en": "Planning",
+      "ja": "計画"
+    },
+    "subject": "one ring bound planner with blank blocks",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-92cba7a7-9667-43cf-8f47-0dde1fcb7699.png"
+  },
+  {
+    "id": "focus",
+    "category": "study",
+    "labels": {
+      "ko": "집중",
+      "en": "Focus",
+      "ja": "集中"
+    },
+    "subject": "one simple mechanical kitchen timer with an unnumbered dial",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-a59f0796-0316-4a1e-b6ab-2e350f6e1d9b.png"
+  },
+  {
+    "id": "coding",
+    "category": "study",
+    "labels": {
+      "ko": "개발",
+      "en": "Coding",
+      "ja": "プログラミング"
+    },
+    "subject": "one compact computer keyboard",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-a4a63f49-6b2c-4c6f-b98d-19cef0bc847b.png"
+  },
+  {
+    "id": "email",
+    "category": "study",
+    "labels": {
+      "ko": "이메일",
+      "en": "Email",
+      "ja": "メール"
+    },
+    "subject": "one open mail envelope with a blank letter",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-2e308976-c2f1-402c-87db-a34e81806b78.png"
+  },
+  {
+    "id": "research",
+    "category": "study",
+    "labels": {
+      "ko": "자료 조사",
+      "en": "Research",
+      "ja": "調査"
+    },
+    "subject": "one magnifying glass over a blank document",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-844cb8a4-db5b-43b8-9767-538f6763f45e.png"
+  },
+  {
+    "id": "finance",
+    "category": "study",
+    "labels": {
+      "ko": "재무 공부",
+      "en": "Finance study",
+      "ja": "金融学習"
+    },
+    "subject": "one basic calculator with blank buttons",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-77488ac8-cfdf-42d9-9d4c-091842456d05.png"
+  },
+  {
+    "id": "coffee",
+    "category": "food",
+    "labels": {
+      "ko": "커피",
+      "en": "Coffee",
+      "ja": "コーヒー"
+    },
+    "subject": "one ceramic coffee cup on a saucer",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-63e3adb1-eeab-41c4-906c-567af208a09e.png"
+  },
+  {
+    "id": "tea",
+    "category": "food",
+    "labels": {
+      "ko": "차 마시기",
+      "en": "Tea",
+      "ja": "お茶"
+    },
+    "subject": "one small teapot",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c6a17d80-e853-4c0d-84a6-0388bdf1d7f2.png"
+  },
+  {
+    "id": "breakfast",
+    "category": "food",
+    "labels": {
+      "ko": "아침 식사",
+      "en": "Breakfast",
+      "ja": "朝食"
+    },
+    "subject": "one slice of toast with a fried egg",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-3808056f-9764-4cdf-9012-548f8824081b.png"
+  },
+  {
+    "id": "salad",
+    "category": "food",
+    "labels": {
+      "ko": "채소 먹기",
+      "en": "Salad",
+      "ja": "サラダ"
+    },
+    "subject": "one bowl of leafy salad",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-ceded145-c81f-49ce-b72f-2c3bf6ff7164.png"
+  },
+  {
+    "id": "fruit",
+    "category": "food",
+    "labels": {
+      "ko": "과일 먹기",
+      "en": "Fruit",
+      "ja": "果物"
+    },
+    "subject": "one apple with a leaf",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-3e32efd4-0de0-4dba-8d97-9c8fde0e9af4.png"
+  },
+  {
+    "id": "cooking",
+    "category": "food",
+    "labels": {
+      "ko": "요리",
+      "en": "Cooking",
+      "ja": "料理"
+    },
+    "subject": "one frying pan with a wooden spatula",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-90c6b78f-6277-4e16-98e0-9a8905095a9c.png"
+  },
+  {
+    "id": "baking",
+    "category": "food",
+    "labels": {
+      "ko": "베이킹",
+      "en": "Baking",
+      "ja": "お菓子作り"
+    },
+    "subject": "one rolling pin with a small dough circle",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-55ada423-eebd-4085-a016-52e8bb94feb9.png"
+  },
+  {
+    "id": "lunchbox",
+    "category": "food",
+    "labels": {
+      "ko": "도시락",
+      "en": "Lunchbox",
+      "ja": "お弁当"
+    },
+    "subject": "one opened compact bento lunchbox with simple food compartments",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-47d8d10d-0159-4a6b-93b3-c6ded6a1fb00.png"
+  },
+  {
+    "id": "laundry",
+    "category": "life",
+    "labels": {
+      "ko": "빨래",
+      "en": "Laundry",
+      "ja": "洗濯"
+    },
+    "subject": "one laundry basket with a folded towel",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-ecbfeda6-c732-4a72-b940-9da75a14675e.png"
+  },
+  {
+    "id": "dishes",
+    "category": "life",
+    "labels": {
+      "ko": "설거지",
+      "en": "Wash dishes",
+      "ja": "皿洗い"
+    },
+    "subject": "two stacked clean plates with a sponge",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-eb745713-d97f-4a46-b1da-1dac56b5bd37.png"
+  },
+  {
+    "id": "vacuum",
+    "category": "life",
+    "labels": {
+      "ko": "청소기",
+      "en": "Vacuuming",
+      "ja": "掃除機"
+    },
+    "subject": "one compact canister vacuum cleaner",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c08bdf77-83c1-48a3-ba2b-f5059be405f2.png"
+  },
+  {
+    "id": "bed-making",
+    "category": "life",
+    "labels": {
+      "ko": "이불 정리",
+      "en": "Make bed",
+      "ja": "ベッドメイク"
+    },
+    "subject": "one neatly folded quilt with a pillow",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-92219185-6b8d-45cc-8ebe-b0b2e6788bb9.png"
+  },
+  {
+    "id": "organizing",
+    "category": "life",
+    "labels": {
+      "ko": "정리 정돈",
+      "en": "Organizing",
+      "ja": "片付け"
+    },
+    "subject": "one open storage box with three simple upright items",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-3a34e634-ff5a-43fd-84a5-eb2813b18c0a.png"
+  },
+  {
+    "id": "recycling",
+    "category": "life",
+    "labels": {
+      "ko": "분리수거",
+      "en": "Recycling",
+      "ja": "リサイクル"
+    },
+    "subject": "one recycling bin with a simple recycling emblem",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-610dbfe7-f95a-4e00-abd5-2301697d1922.png"
+  },
+  {
+    "id": "shopping",
+    "category": "life",
+    "labels": {
+      "ko": "장보기",
+      "en": "Grocery shopping",
+      "ja": "買い物"
+    },
+    "subject": "one grocery tote bag with a baguette and leafy vegetables",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-667ebfa9-6eae-499f-af8b-a0ef2f8cf142.png"
+  },
+  {
+    "id": "budget",
+    "category": "life",
+    "labels": {
+      "ko": "가계부",
+      "en": "Budget",
+      "ja": "家計簿"
+    },
+    "subject": "one small coin purse with two coins",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-e211e6d0-5e51-4834-bb61-f77c776eb21c.png"
+  },
+  {
+    "id": "repair",
+    "category": "tools",
+    "labels": {
+      "ko": "수리",
+      "en": "Repair",
+      "ja": "修理"
+    },
+    "subject": "one adjustable wrench",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-efba976c-7e81-4b93-874a-06a7ee812e69.png"
+  },
+  {
+    "id": "sewing",
+    "category": "tools",
+    "labels": {
+      "ko": "바느질",
+      "en": "Sewing",
+      "ja": "裁縫"
+    },
+    "subject": "one spool of thread with a needle",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-bef3dde8-905e-4de7-b316-b8547fa72517.png"
+  },
+  {
+    "id": "measuring",
+    "category": "tools",
+    "labels": {
+      "ko": "측정",
+      "en": "Measuring",
+      "ja": "計測"
+    },
+    "subject": "one rolled measuring tape",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-f3444bbc-a07f-486c-aa14-bb67a46b79d6.png"
+  },
+  {
+    "id": "painting-room",
+    "category": "tools",
+    "labels": {
+      "ko": "집 꾸미기",
+      "en": "Home decorating",
+      "ja": "模様替え"
+    },
+    "subject": "one household paint roller",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-e83a5f1b-f3a2-4446-82fd-bcf833d2c8a7.png"
+  },
+  {
+    "id": "meditation",
+    "category": "rest",
+    "labels": {
+      "ko": "명상",
+      "en": "Meditation",
+      "ja": "瞑想"
+    },
+    "subject": "one round meditation cushion",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-a211cf21-4b1e-415c-ae02-ae1ccfdb3dbc.png"
+  },
+  {
+    "id": "breathing",
+    "category": "rest",
+    "labels": {
+      "ko": "호흡",
+      "en": "Breathing",
+      "ja": "深呼吸"
+    },
+    "subject": "one feather with two simple flowing air curves",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-0a790eb1-4302-4786-8045-1d376fa93e5d.png"
+  },
+  {
+    "id": "bath",
+    "category": "rest",
+    "labels": {
+      "ko": "목욕",
+      "en": "Bath",
+      "ja": "入浴"
+    },
+    "subject": "one bathtub with a few large bubbles",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-6b8698e4-36df-4d6d-827e-d367528b2897.png"
+  },
+  {
+    "id": "nap",
+    "category": "rest",
+    "labels": {
+      "ko": "낮잠",
+      "en": "Nap",
+      "ja": "昼寝"
+    },
+    "subject": "one soft sleep eye mask",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-5ea7bd81-b1db-44b5-aba3-1d115c4268c8.png"
+  },
+  {
+    "id": "candle",
+    "category": "rest",
+    "labels": {
+      "ko": "향초",
+      "en": "Candle",
+      "ja": "キャンドル"
+    },
+    "subject": "one lit candle in a small jar",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c71e72df-a26f-48b5-8870-b8a23f0c2009.png"
+  },
+  {
+    "id": "offline",
+    "category": "rest",
+    "labels": {
+      "ko": "디지털 휴식",
+      "en": "Digital break",
+      "ja": "デジタル休憩"
+    },
+    "subject": "one smartphone placed face down beside a small leaf",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c0ed32d6-1a6c-4147-89dc-465145151563.png"
+  },
+  {
+    "id": "camera",
+    "category": "creative",
+    "labels": {
+      "ko": "사진 촬영",
+      "en": "Photography",
+      "ja": "写真撮影"
+    },
+    "subject": "one compact modern camera",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-edad7763-87fa-42d2-808d-3135756aa746.png"
+  },
+  {
+    "id": "drawing",
+    "category": "creative",
+    "labels": {
+      "ko": "그림 그리기",
+      "en": "Drawing",
+      "ja": "お絵描き"
+    },
+    "subject": "one sketchbook with a graphite pencil",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-87d1e651-9706-4565-a0fb-8a114c7fabfd.png"
+  },
+  {
+    "id": "watercolor",
+    "category": "creative",
+    "labels": {
+      "ko": "수채화",
+      "en": "Watercolor",
+      "ja": "水彩画"
+    },
+    "subject": "one watercolor paint palette with a brush",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-da365303-ff96-44bd-ab5c-1e7d4bd74ea0.png"
+  },
+  {
+    "id": "guitar",
+    "category": "creative",
+    "labels": {
+      "ko": "기타",
+      "en": "Guitar",
+      "ja": "ギター"
+    },
+    "subject": "one acoustic guitar",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-44938371-eb20-4c25-aae8-cb30bba87dfc.png"
+  },
+  {
+    "id": "piano",
+    "category": "creative",
+    "labels": {
+      "ko": "피아노",
+      "en": "Piano",
+      "ja": "ピアノ"
+    },
+    "subject": "one short section of piano keys",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-170bb2a0-5e6f-4668-b6f5-c9e14b9dd0cd.png"
+  },
+  {
+    "id": "crafts",
+    "category": "creative",
+    "labels": {
+      "ko": "만들기",
+      "en": "Crafts",
+      "ja": "工作"
+    },
+    "subject": "one pair of scissors beside a small folded paper shape",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-b6c4c609-6c74-482a-a25a-9c31bc9a82b1.png"
+  },
+  {
+    "id": "knitting",
+    "category": "creative",
+    "labels": {
+      "ko": "뜨개질",
+      "en": "Knitting",
+      "ja": "編み物"
+    },
+    "subject": "one ball of yarn with two knitting needles",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-0b6bd89d-e82e-4259-903a-b582797220f0.png"
+  },
+  {
+    "id": "film",
+    "category": "creative",
+    "labels": {
+      "ko": "영화 감상",
+      "en": "Movies",
+      "ja": "映画鑑賞"
+    },
+    "subject": "one movie clapperboard without lettering",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-b45e76e4-b44d-4fbb-a3d8-26c6dc0da81a.png"
+  },
+  {
+    "id": "game",
+    "category": "creative",
+    "labels": {
+      "ko": "게임",
+      "en": "Gaming",
+      "ja": "ゲーム"
+    },
+    "subject": "one modern game controller",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-1dbd0f80-a6dc-4e00-9f95-0ba1f0568282.png"
+  },
+  {
+    "id": "collage",
+    "category": "creative",
+    "labels": {
+      "ko": "사진 콜라주",
+      "en": "Photo collage",
+      "ja": "写真コラージュ"
+    },
+    "subject": "three overlapping small photo prints with very simple portrait silhouettes no detailed faces",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-1f509f8d-f6ca-4a09-b56f-61b5f4707b43.png"
+  },
+  {
+    "id": "travel",
+    "category": "travel",
+    "labels": {
+      "ko": "여행",
+      "en": "Travel",
+      "ja": "旅行"
+    },
+    "subject": "one compact wheeled suitcase",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-1f1b25c4-2e3e-4435-a342-86aa8c881046.png"
+  },
+  {
+    "id": "passport",
+    "category": "travel",
+    "labels": {
+      "ko": "해외여행",
+      "en": "International travel",
+      "ja": "海外旅行"
+    },
+    "subject": "one passport booklet with a small globe emblem no text",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-410a3868-c732-4d9b-883c-350755f02b56.png"
+  },
+  {
+    "id": "bus",
+    "category": "travel",
+    "labels": {
+      "ko": "버스",
+      "en": "Bus",
+      "ja": "バス"
+    },
+    "subject": "one city bus in simple three quarter view",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c6729f96-12b4-4a60-b3cc-c3c773695fd0.png"
+  },
+  {
+    "id": "train",
+    "category": "travel",
+    "labels": {
+      "ko": "기차",
+      "en": "Train",
+      "ja": "電車"
+    },
+    "subject": "one commuter train front view",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-60138584-4ea3-4126-bbe5-c9cbb2e68d14.png"
+  },
+  {
+    "id": "car",
+    "category": "travel",
+    "labels": {
+      "ko": "운전",
+      "en": "Driving",
+      "ja": "運転"
+    },
+    "subject": "one compact car in simple three quarter view",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-c6da218b-7acd-421b-945d-a885bf0e186b.png"
+  },
+  {
+    "id": "walking",
+    "category": "travel",
+    "labels": {
+      "ko": "산책",
+      "en": "Walking",
+      "ja": "散歩"
+    },
+    "subject": "one pair of casual walking sneakers",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-ec8e7ae2-f969-45bc-a7f1-fc3856721596.png"
+  },
+  {
+    "id": "map",
+    "category": "travel",
+    "labels": {
+      "ko": "길 찾기",
+      "en": "Navigation",
+      "ja": "道案内"
+    },
+    "subject": "one folded paper map with a route line",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-629ebb0a-171c-44ed-81c4-1bcbd3ae594e.png"
+  },
+  {
+    "id": "camping",
+    "category": "travel",
+    "labels": {
+      "ko": "캠핑",
+      "en": "Camping",
+      "ja": "キャンプ"
+    },
+    "subject": "one small pitched camping tent",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-f8a7a882-16f8-4f98-ad1a-7c8912bdbfd6.png"
+  },
+  {
+    "id": "plant",
+    "category": "nature",
+    "labels": {
+      "ko": "식물 돌보기",
+      "en": "Plant care",
+      "ja": "植物の世話"
+    },
+    "subject": "one potted leafy houseplant",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-f6f38768-0147-4aa2-8a8c-63a96d9c3bcf.png"
+  },
+  {
+    "id": "watering",
+    "category": "nature",
+    "labels": {
+      "ko": "물 주기",
+      "en": "Water plants",
+      "ja": "水やり"
+    },
+    "subject": "one small watering can",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-cf9d1508-623e-4d47-aa72-ce422c616d5c.png"
+  },
+  {
+    "id": "gardening",
+    "category": "nature",
+    "labels": {
+      "ko": "원예",
+      "en": "Gardening",
+      "ja": "園芸"
+    },
+    "subject": "one garden hand trowel",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-ec0c4e16-39a5-4f2e-822d-c22fb588f0ec.png"
+  },
+  {
+    "id": "sunshine",
+    "category": "nature",
+    "labels": {
+      "ko": "햇볕 쬐기",
+      "en": "Sunshine",
+      "ja": "日光浴"
+    },
+    "subject": "one simple rising sun behind a low hill",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-0cfe29c8-4eda-467a-8d60-1d21ba0c8595.png"
+  },
+  {
+    "id": "flower",
+    "category": "nature",
+    "labels": {
+      "ko": "꽃꽂이",
+      "en": "Flowers",
+      "ja": "生け花"
+    },
+    "subject": "one small vase with three flowers",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-583190ad-a073-46dd-a9a7-d795662899e2.png"
+  },
+  {
+    "id": "pet-care",
+    "category": "nature",
+    "labels": {
+      "ko": "반려동물 돌보기",
+      "en": "Pet care",
+      "ja": "ペットの世話"
+    },
+    "subject": "one pet food bowl with a tiny paw emblem",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-77922c8a-a260-4c25-b766-726d6a991ec4.png"
+  },
+  {
+    "id": "birdwatching",
+    "category": "nature",
+    "labels": {
+      "ko": "자연 관찰",
+      "en": "Birdwatching",
+      "ja": "バードウォッチング"
+    },
+    "subject": "one pair of binoculars",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-8a487ff8-2951-45cd-bff1-46ed85319034.png"
+  },
+  {
+    "id": "beach",
+    "category": "nature",
+    "labels": {
+      "ko": "바다",
+      "en": "Beach",
+      "ja": "海"
+    },
+    "subject": "one seashell",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-4c970f90-9794-4172-8e2c-f4caca106c2f.png"
+  },
+  {
+    "id": "call",
+    "category": "people",
+    "labels": {
+      "ko": "가족에게 전화",
+      "en": "Call family",
+      "ja": "家族に電話"
+    },
+    "subject": "one classic telephone handset",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-1958bcd8-e203-4f63-9a1d-c2c1e39d965d.png"
+  },
+  {
+    "id": "letter",
+    "category": "people",
+    "labels": {
+      "ko": "편지 쓰기",
+      "en": "Write a letter",
+      "ja": "手紙を書く"
+    },
+    "subject": "one sealed envelope with a small heart seal",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-22ca813f-084d-42fd-afce-eb01c5a46e5a.png"
+  },
+  {
+    "id": "gift",
+    "category": "people",
+    "labels": {
+      "ko": "선물",
+      "en": "Gift",
+      "ja": "贈り物"
+    },
+    "subject": "one wrapped gift box with a ribbon bow",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-30f1146d-08a2-4f20-882e-f8859b46812f.png"
+  },
+  {
+    "id": "volunteer",
+    "category": "people",
+    "labels": {
+      "ko": "봉사",
+      "en": "Volunteering",
+      "ja": "ボランティア"
+    },
+    "subject": "one donation box with a heart emblem",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-281239f8-48f0-498a-9a00-6f5c05f8d524.png"
+  },
+  {
+    "id": "meeting",
+    "category": "people",
+    "labels": {
+      "ko": "약속",
+      "en": "Meetup",
+      "ja": "待ち合わせ"
+    },
+    "subject": "two simple ceramic mugs side by side",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-3aa2c8af-bc68-4f18-9c05-0db1bb71bc7f.png"
+  },
+  {
+    "id": "anniversary",
+    "category": "people",
+    "labels": {
+      "ko": "기념일",
+      "en": "Anniversary",
+      "ja": "記念日"
+    },
+    "subject": "one small celebration cake with a single candle",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-9e094316-cb0c-4595-920a-16d13656e5d9.png"
+  },
+  {
+    "id": "abstain",
+    "category": "health",
+    "labels": {
+      "ko": "금지",
+      "en": "Abstain",
+      "ja": "禁止"
+    },
+    "subject": "round prohibition plaque",
+    "source": "/Users/yonghee/.codex/generated_images/01a14f30-2da0-71a2-bde3-c8bb192df0b2/exec-bc4e390f-c1bc-45c5-9259-0fef5658eb0a.png"
+  }
+]

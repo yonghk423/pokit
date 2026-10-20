@@ -95,7 +95,7 @@ describe('ensureDefaultPriorityCatalog', () => {
 
     const stretchingCfg = loadChecklistConfig(BUILTIN_STRETCHING_FLOW_ID);
     expect(stretchingCfg?.displayName).toBe('스트레칭');
-    expect((stretchingCfg as { icon?: string })?.icon).toBe('figure.flexibility');
+    expect((stretchingCfg as { icon?: string })?.icon).toBe('routine:stretching');
     expect((stretchingCfg as { templateKey?: string })?.templateKey).toBe('checklist');
     expect(stretchingCfg?.checklist?.map((item) => item.text)).toEqual(['스트레칭']);
 
@@ -106,7 +106,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(overrides.fasting).toBeUndefined();
     expect(resolveCatalogItemGroupKey('healthIntake')).toBe('health');
     expect(resolveCatalogItemGroupKey('fasting')).toBe('health');
-    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('routine:weight');
   });
 
   it('purges legacy good posture flow from catalog and storage', () => {

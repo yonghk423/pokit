@@ -1,9 +1,12 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { AppModal as Modal } from '@shared/ui/app-modal';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -11,7 +14,6 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -143,9 +145,13 @@ export function ReadingBookDetailSheet({
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
-  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const faceWhite = isDark ? '#30342F' : '#FCFBF7';
+  const pencil = isDark ? '#A2B0A5' : '#8B9589';
   const { height: windowHeight } = useWindowDimensions();
-  const c = palette;
+  const c = useMemo(() => ({
+    ...palette,
+    surfaceLowest: isDark ? '#242923' : '#F8F7F2',
+  }), [palette, isDark]);
   const scrollRef = useRef<ScrollView>(null);
   const scrollViewportHeightRef = useRef(300);
   const memoSectionLayoutRef = useRef({ y: 0, height: 0 });
@@ -458,10 +464,11 @@ export function ReadingBookDetailSheet({
               maxHeight: effectiveSheetMaxHeight,
             },
           ]}>
+            <PaperGrain opacity={0.32} />
             <View
               style={[
                 styles.sheetHandle,
-                { backgroundColor: isDark ? 'rgba(241,239,255,0.55)' : '#000000' },
+                { backgroundColor: isDark ? '#829487' : '#B5BDB2' },
               ]}
             />
 
@@ -557,21 +564,16 @@ export function ReadingBookDetailSheet({
               <View style={styles.statusRow}>
                 {statusOptions.map((opt) => {
                   const on = status === opt.key;
-                  const shadow = on ? 2 : CHIP_SHADOW;
+                  const shadow = CHIP_SHADOW;
                   const doneFace = readingStatusDoneFace(isDark);
-                  const wantFace = isDark ? 'rgba(255, 236, 179, 0.28)' : '#FFE8A8';
+                  const wantFace = isDark ? '#405F57' : '#D7EBE5';
                   const onFace =
                     opt.key === 'done'
                       ? doneFace
                       : opt.key === 'want'
                         ? wantFace
                         : readingStatusReadingFace(isDark);
-                  const onLabelColor =
-                    on && (opt.key === 'done' || opt.key === 'reading')
-                      ? readingAccentOnInk(isDark)
-                      : on
-                        ? tone.text
-                        : c.onVariant;
+                  const onLabelColor = on ? readingAccentOnInk(isDark) : c.onVariant;
                   return (
                     <View
                       key={opt.key}
@@ -600,6 +602,8 @@ export function ReadingBookDetailSheet({
                             opacity: pressed ? 0.9 : 1,
                           },
                         ]}>
+                        <PaperGrain opacity={0.22} />
+                        <HanddrawnFrame color={pencil} />
                         <ThemedText
                           style={{
                             fontSize: 12,
@@ -786,6 +790,8 @@ export function ReadingBookDetailSheet({
                           : faceWhite,
                       },
                     ]}>
+                    <PaperGrain opacity={0.22} />
+                    <HanddrawnFrame color={pencil} />
                     <View style={styles.pageFieldLabelRow}>
                       <ThemedText
                         style={[
@@ -794,7 +800,7 @@ export function ReadingBookDetailSheet({
                             color: field.accent
                               ? isDark
                                 ? c.onVariant
-                                : 'rgba(247, 242, 243, 0.78)'
+                                : '#587468'
                               : c.onVariant,
                           },
                         ]}

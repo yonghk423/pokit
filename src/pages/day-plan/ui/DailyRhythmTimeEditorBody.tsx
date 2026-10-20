@@ -1,8 +1,10 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -281,7 +283,7 @@ function SolidShadowFace({
           },
         ]}
       />
-      <View style={[styles.shadowFace, { backgroundColor }, style]}>{children}</View>
+      <View style={[styles.shadowFace, { backgroundColor }, style]}><PaperGrain />{children}<HanddrawnFrame color="rgba(35,35,35,0.45)" /></View>
     </View>
   );
 }
@@ -321,7 +323,11 @@ function OnboardingTimeRow({
   const pillFg = ocean.pillInk;
 
   return (
-    <View style={styles.onboardTimeBlock}>
+    <View style={[styles.onboardTimeBlock, {
+      backgroundColor: isDark ? ink.surfaceAlt : role === 'start' ? DayBalanceOcean.skyWash : DayBalanceOcean.amberWash,
+      borderLeftColor: isDark ? DayBalanceOcean.sky : role === 'start' ? DayBalanceOcean.sky : '#A6A29B',
+    }]} >
+      <PaperGrain opacity={0.24} />
       <Pressable
         onPress={() => {
           void Haptics.selectionAsync();
@@ -331,20 +337,7 @@ function OnboardingTimeRow({
           styles.onboardTimeRow,
           pressed && { transform: [{ translateY: 1 }] },
         ]}>
-        <SolidShadowFace
-          borderColor={ocean.border}
-          shadowColor={ocean.shadow}
-          backgroundColor={isDark ? ink.surfaceAlt : '#FFFFFF'}
-          style={styles.thumbFace}
-          shellStyle={styles.thumbShell}>
-          <Image
-            source={thumb}
-            style={styles.thumbImage}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={0}
-          />
-        </SolidShadowFace>
+        <Image source={thumb} style={styles.thumbFace} contentFit="contain" cachePolicy="memory-disk" transition={0} />
 
         <View style={styles.onboardTimeCopy}>
           <ThemedText
@@ -589,7 +582,7 @@ export function DailyRhythmTimeEditorBody({
       selectedInk={endDateSegmentColors.selectedInk}
       unselectedInk={endDateSegmentColors.unselectedInk}
       shadowColor={endDateSegmentColors.shadow}
-      minHeight={36}
+      minHeight={44}
     />
   );
 
@@ -762,18 +755,9 @@ export function DailyRhythmTimeEditorBody({
         {isOnboarding ? (
           <View style={styles.onboardCardStack}>
             <View pointerEvents="none" style={styles.onboardEditTapeRow}>
-              <ScrapTapeLabel
-                text={t('dayRhythm.editTapTape')}
-                isDark={isDark}
-                rotateDeg={0}
-                style={styles.onboardEditTape}
-              />
+              <ThemedText style={{ color: c.onVariant, fontSize: 12, lineHeight: 18 }}>{t('dayRhythm.editTapTape')}</ThemedText>
             </View>
-            <SolidShadowFace
-              borderColor={c.border}
-              shadowColor={shadowInk}
-              backgroundColor={isDark ? ink.surfaceAlt : ink.bg}
-              style={styles.mainCardFace}>
+            <View style={styles.mainCardFace}>
               <OnboardingTimeRow
                 label={t('dayRhythm.dayStart')}
                 hint={t('dayRhythm.dayStartHint')}
@@ -835,12 +819,7 @@ export function DailyRhythmTimeEditorBody({
 
               <FinalReviewCue active={pickerTarget === null && !dialDragging}>
                 <View style={styles.summaryBox}>
-                  <ScrapTapeLabel
-                    text={t('dayRhythm.myDaySummary')}
-                    isDark={isDark}
-                    rotateDeg={-1.5}
-                    style={styles.summaryTape}
-                  />
+                  <ThemedText style={{ color: c.onVariant, fontSize: 12, textAlign: 'center', marginBottom: 8 }}>{t('dayRhythm.myDaySummary')}</ThemedText>
                   <View style={styles.summarySplit}>
                     <View
                       style={[
@@ -873,7 +852,7 @@ export function DailyRhythmTimeEditorBody({
                   </View>
                 </View>
               </FinalReviewCue>
-            </SolidShadowFace>
+            </View>
           </View>
         ) : (
           settingsTimeCard
@@ -899,13 +878,13 @@ export function DailyRhythmTimeEditorBody({
                 <SolidShadowFace
                   borderColor={DayBalanceOcean.deepSpace}
                   shadowColor={shadowInk}
-                  backgroundColor="#1C1C1C"
+                  backgroundColor={isDark ? '#333333' : '#FFFFFF'}
                   shellStyle={styles.primaryShell}
                   style={styles.primaryFace}>
                   <ThemedText
                     style={[
                       styles.primaryBtnTextOnboard,
-                      { color: '#FAFAFA' },
+                      { color: isDark ? '#FAFAFA' : '#202020' },
                       cityPopFont('800'),
                     ]}>
                     {primaryLabel}
@@ -1061,8 +1040,8 @@ const styles = StyleSheet.create({
   },
 
   mainCardFace: {
-    padding: 22,
-    gap: 18,
+    padding: 0,
+    gap: 16,
   },
   onboardCardStack: {
     width: '100%',
@@ -1073,26 +1052,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     paddingRight: 4,
-    marginBottom: -10,
+    marginBottom: 8,
     zIndex: 8,
   },
   onboardEditTape: {
     maxWidth: 200,
     alignSelf: 'flex-end',
   },
-  cardRule: {
-    borderTopWidth: 2,
-    opacity: 0.12,
-  },
+  cardRule: { height: 0, borderTopWidth: 0 },
 
-  onboardTimeBlock: { gap: 8 },
+  onboardTimeBlock: { gap: 10, padding: 12, borderRadius: 4, borderLeftWidth: 2, overflow: 'hidden' },
   onboardTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    marginHorizontal: -6,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
   },
   thumbShell: {
     flexShrink: 0,
@@ -1107,8 +1083,8 @@ const styles = StyleSheet.create({
   onboardTimeCopy: { flex: 1, minWidth: 0, gap: 2 },
   onboardTimeLabel: { fontSize: 15, lineHeight: 20, letterSpacing: -0.25 },
   onboardTimeHint: {
-    fontSize: 10,
-    letterSpacing: 0.8,
+    fontSize: 11,
+    letterSpacing: 0,
     textTransform: 'uppercase',
     lineHeight: 14,
   },
@@ -1123,8 +1099,8 @@ const styles = StyleSheet.create({
   dateStackLine: { fontSize: 11, lineHeight: 14, textAlign: 'right' },
   dateInline: { fontSize: 11, lineHeight: 14, textAlign: 'right', marginBottom: 2 },
   timePillFace: {
-    minWidth: 110,
-    paddingHorizontal: 14,
+    minWidth: 86,
+    paddingHorizontal: 10,
     paddingVertical: 12,
     borderRadius: 2,
     alignItems: 'center',
@@ -1136,10 +1112,10 @@ const styles = StyleSheet.create({
   },
   inputBlock: { paddingTop: 4, gap: 8 },
 
-  endDateChoiceOnboard: { gap: 12, paddingTop: 4 },
+  endDateChoiceOnboard: { gap: 10, paddingTop: 12, paddingBottom: 6 },
   endDateChoiceQuestionOnboard: {
     fontSize: 11,
-    letterSpacing: 1.6,
+    letterSpacing: 0,
     textAlign: 'center',
     textTransform: 'uppercase',
   },
@@ -1160,7 +1136,8 @@ const styles = StyleSheet.create({
   dayChoiceText: { fontSize: 12, textAlign: 'center' },
 
   summaryBox: {
-    marginTop: 10,
+    marginTop: 8,
+    paddingVertical: 12,
     position: 'relative',
     overflow: 'visible',
   },
@@ -1188,8 +1165,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
-    paddingTop: 22,
-    paddingBottom: 6,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   summaryValue: { fontSize: 16, letterSpacing: -0.2, textAlign: 'center', lineHeight: 24 },
 
@@ -1215,8 +1192,8 @@ const styles = StyleSheet.create({
   },
   primaryPress: {
     alignSelf: 'center',
-    width: '78%',
-    maxWidth: 280,
+    width: '100%',
+    maxWidth: 440,
     position: 'relative',
     overflow: 'visible',
     paddingTop: 8,

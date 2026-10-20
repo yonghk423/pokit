@@ -6,14 +6,9 @@ import type { AppFontId } from './appFontIds';
  */
 export const APP_FONT_OPTICAL_SCALE: Record<AppFontId, number> = {
   hiMelody: 1,
-  /** 산세리프 · 시티팝 — 동일 pt에서 크게 보임 */
-  hanken: 0.88,
-  gothicA1: 0.9,
-  /** 동글 · 개구 — 동일 pt에서 작아 보여 키움 */
-  dongle: 1.32,
-  gaegu: 1.24,
-  /** 명조 */
-  songMyung: 0.9,
+  /** Hi Melody의 체감 크기에 맞춰 표시 크기를 보정 */
+  hanken: 0.8,
+  gothicA1: 0.84,
 };
 
 export function resolveAppFontOpticalScale(fontId: AppFontId): number {

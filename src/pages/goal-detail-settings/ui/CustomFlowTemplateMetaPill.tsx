@@ -1,8 +1,8 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
-  Alert,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,11 +19,15 @@ import {
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-const PILL_SHADOW = 2;
+const PILL_SHADOW = 1;
 
 type Props = {
   dataConfig: unknown;
@@ -64,14 +68,15 @@ export function CustomFlowTemplateMetaPill({
   const label = resolveAppliedCustomFlowTemplateLabel(templateKey);
   const mutedColor = muted ?? ink;
   const canChange = Boolean(onChangeDataConfig) && !disabled;
-  const shadowInk = '#000000';
-  const faceBg = '#FFFFFF';
+  const isDark = useColorScheme() === 'dark';
+  const pencil = isDark ? '#ADB5A9' : '#737B70';
+  const controlInk = isDark ? '#E6E9E0' : '#4B554C';
+  const faceBg = isDark ? '#30342E' : '#FBFAF6';
 
-  const templateOptions = useMemo(() => {
-    const creatable = listCustomFlowTemplateCatalogEntries();
-    if (creatable.some((entry) => entry.key === templateKey)) return creatable;
-    return [resolveCustomFlowTemplateCatalogEntry(templateKey), ...creatable];
-  }, [templateKey]);
+  const creatableTemplates = listCustomFlowTemplateCatalogEntries();
+  const templateOptions = creatableTemplates.some((entry) => entry.key === templateKey)
+    ? creatableTemplates
+    : [resolveCustomFlowTemplateCatalogEntry(templateKey), ...creatableTemplates];
 
   const applyTemplate = (nextKey: CustomFlowTemplateKey) => {
     if (!onChangeDataConfig || nextKey === templateKey) {
@@ -113,26 +118,18 @@ export function CustomFlowTemplateMetaPill({
         disabled && onChangeDataConfig ? styles.pillDisabled : null,
       ]}>
       <View
-        pointerEvents="none"
-        style={[
-          styles.pillShadow,
-          {
-            backgroundColor: shadowInk,
-            transform: [{ translateX: PILL_SHADOW }, { translateY: PILL_SHADOW }],
-          },
-        ]}
-      />
-      <View
         style={[
           styles.pill,
           { backgroundColor: faceBg },
           canChange && styles.pillInteractive,
         ]}>
-        <ThemedText style={[styles.text, { color: ink }]}>
+        <PaperGrain opacity={0.3} />
+        <HanddrawnFrame color={pencil} />
+        <ThemedText style={[styles.text, { color: controlInk }]}>
           {t('goalDetail.routineMode', { label })}
         </ThemedText>
         {canChange ? (
-          <IconSymbol name="chevron.down" size={11} color={mutedColor} />
+          <RoutineActionIcon name="expand" size={14} color={controlInk} />
         ) : null}
       </View>
     </View>
@@ -162,9 +159,9 @@ export function CustomFlowTemplateMetaPill({
           animationType="slide"
           presentationStyle="pageSheet"
           onRequestClose={() => setPickerOpen(false)}>
-          <View style={[styles.sheetRoot, { backgroundColor: '#F7F4EF' }]}>
+          <View style={[styles.sheetRoot, { backgroundColor: isDark ? '#252923' : '#F7F4EF' }]}>
             <View style={[styles.sheetHeader, { borderBottomColor: line }]}>
-              <ThemedText style={[styles.sheetTitle, { color: ink }]}>
+              <ThemedText style={[styles.sheetTitle, { color: controlInk }]}>
                 {t('goalDetail.changeRoutineModeTitle')}
               </ThemedText>
               <View
@@ -172,19 +169,6 @@ export function CustomFlowTemplateMetaPill({
                   styles.closeShell,
                   { marginRight: PILL_SHADOW, marginBottom: PILL_SHADOW },
                 ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.pillShadow,
-                    {
-                      backgroundColor: shadowInk,
-                      transform: [
-                        { translateX: PILL_SHADOW },
-                        { translateY: PILL_SHADOW },
-                      ],
-                    },
-                  ]}
-                />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('common.cancel')}
@@ -192,10 +176,12 @@ export function CustomFlowTemplateMetaPill({
                   onPress={() => setPickerOpen(false)}
                   style={({ pressed }) => [
                     styles.sheetCloseBtn,
-                    { backgroundColor: '#FFFFFF' },
+                    { backgroundColor: faceBg },
                     pressed && { opacity: 0.7 },
                   ]}>
-                  <IconSymbol name="xmark" size={14} color={ink} />
+                  <PaperGrain opacity={0.3} />
+                  <HanddrawnFrame color={pencil} />
+                  <IconSymbol name="xmark" size={14} color={controlInk} />
                 </Pressable>
               </View>
             </View>
@@ -258,14 +244,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     position: 'relative',
   },
-  pillShadow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 0,
-  },
   pill: {
     borderWidth: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    minHeight: 36,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -303,8 +286,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   sheetCloseBtn: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',

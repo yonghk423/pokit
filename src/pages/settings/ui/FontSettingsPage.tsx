@@ -1,3 +1,4 @@
+import { PaperControl } from '@shared/ui/paper-control';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pressable, Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
@@ -41,50 +42,30 @@ const FONT_OPTIONS: {
   key: AppFontId;
   labelKey: I18nKey;
   descKey: I18nKey;
-  previewKey: I18nKey;
 }[] = [
   {
     key: 'hiMelody',
     labelKey: 'settings.font.hiMelody',
     descKey: 'settings.font.hiMelodyDesc',
-    previewKey: 'settings.font.hiMelodyPreview',
   },
   {
     key: 'hanken',
     labelKey: 'settings.font.hanken',
     descKey: 'settings.font.hankenDesc',
-    previewKey: 'settings.font.hankenPreview',
   },
   {
     key: 'gothicA1',
     labelKey: 'settings.font.gothicA1',
     descKey: 'settings.font.gothicA1Desc',
-    previewKey: 'settings.font.gothicA1Preview',
-  },
-  {
-    key: 'dongle',
-    labelKey: 'settings.font.dongle',
-    descKey: 'settings.font.dongleDesc',
-    previewKey: 'settings.font.donglePreview',
-  },
-  {
-    key: 'gaegu',
-    labelKey: 'settings.font.gaegu',
-    descKey: 'settings.font.gaeguDesc',
-    previewKey: 'settings.font.gaeguPreview',
-  },
-  {
-    key: 'songMyung',
-    labelKey: 'settings.font.songMyung',
-    descKey: 'settings.font.songMyungDesc',
-    previewKey: 'settings.font.songMyungPreview',
   },
 ];
 
-const SIZE_OPTIONS: { key: AppFontSizeId; labelKey: I18nKey; descKey: I18nKey }[] = [
-  { key: 'sm', labelKey: 'settings.font.size.sm', descKey: 'settings.font.size.smDesc' },
-  { key: 'md', labelKey: 'settings.font.size.md', descKey: 'settings.font.size.mdDesc' },
-  { key: 'lg', labelKey: 'settings.font.size.lg', descKey: 'settings.font.size.lgDesc' },
+const SIZE_OPTIONS: { key: AppFontSizeId; labelKey: I18nKey }[] = [
+  { key: 'sm', labelKey: 'settings.font.size.sm' },
+  { key: 'smMd', labelKey: 'settings.font.size.smMd' },
+  { key: 'md', labelKey: 'settings.font.size.md' },
+  { key: 'mdLg', labelKey: 'settings.font.size.mdLg' },
+  { key: 'lg', labelKey: 'settings.font.size.lg' },
 ];
 
 /** 설정 → 글씨 크기·글씨체 — 사용 설명서 목차와 같은 카드 결 */
@@ -102,8 +83,7 @@ export function FontSettingsPage() {
   /** 외곽선 없이 음영만 — 면은 불투명 */
   const cardFace = isDark ? rf.surfaceAlt : '#FFFFFF';
   const cardFacePressed = isDark ? rf.surfaceContainer : '#F3F0E8';
-  const shadowColor = isDark ? rf.solidShadow : rf.border;
-  const checkOn = rf.text;
+  const checkOn = rf.primary;
   const checkOff = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.28)';
 
   /** 선택 중인 글씨체·크기로 미리보기 (크롬과 분리) */
@@ -120,12 +100,6 @@ export function FontSettingsPage() {
     ...(sizeLabelFamily ? { fontFamily: sizeLabelFamily } : {}),
     fontWeight: sizeLabelWeight,
   };
-  const sizeDescFamily = resolveAppFontFamily(fontId, '400');
-  const sizeDescStyle = {
-    ...(sizeDescFamily ? { fontFamily: sizeDescFamily } : {}),
-    fontWeight: '400' as const,
-  };
-
   const topInset =
     insets.top >= 1
       ? insets.top
@@ -185,8 +159,11 @@ export function FontSettingsPage() {
               const active = sizeId === opt.key;
               const optScale =
                 resolveAppFontSizeScale(opt.key) * resolveAppFontOpticalScale(fontId);
-              const face = active ? rf.primaryContainer : cardFace;
-              const facePressed = active ? rf.primaryContainer : cardFacePressed;
+              const selectedWash = isDark
+                ? 'rgba(158,207,209,0.18)'
+                : 'rgba(168,218,220,0.38)';
+              const face = active ? selectedWash : cardFace;
+              const facePressed = active ? selectedWash : cardFacePressed;
               return (
                 <View
                   key={opt.key}
@@ -199,7 +176,7 @@ export function FontSettingsPage() {
                     style={[
                       styles.cardShadow,
                       {
-                        backgroundColor: shadowColor,
+                        backgroundColor: 'transparent',
                         transform: [
                           { translateX: SOLID_SHADOW_OFFSET },
                           { translateY: SOLID_SHADOW_OFFSET },
@@ -207,7 +184,7 @@ export function FontSettingsPage() {
                       },
                     ]}
                   />
-                  <Pressable
+                  <PaperControl
                     accessibilityRole="button"
                     accessibilityLabel={t(opt.labelKey)}
                     accessibilityState={{ selected: active }}
@@ -217,7 +194,7 @@ export function FontSettingsPage() {
                       void Haptics.selectionAsync();
                     }}
                     style={({ pressed }) => [
-                      styles.sizeCard,
+                    styles.sizeCard,
                       { backgroundColor: pressed ? facePressed : face },
                     ]}>
                     <Text
@@ -225,30 +202,33 @@ export function FontSettingsPage() {
                         styles.sizeCardTitle,
                         {
                           color: rf.text,
-                          fontSize: scaleTypeSize(15, optScale),
-                          lineHeight: scaleTypeSize(20, optScale),
+                          fontSize: scaleTypeSize(16, optScale),
+                          lineHeight: scaleTypeSize(22, optScale),
                         },
                         sizeLabelStyle,
                       ]}>
-                      {t(opt.labelKey)}
+                      {APP_FONT_SIZE_IDS.indexOf(opt.key) + 1}
                     </Text>
-                    <Text
-                      style={[
-                        {
-                          color: rf.textMuted,
-                          fontSize: scaleTypeSize(11, optScale),
-                          lineHeight: scaleTypeSize(15, optScale),
-                        },
-                        sizeDescStyle,
-                      ]}
-                      numberOfLines={2}>
-                      {t(opt.descKey)}
-                    </Text>
-                  </Pressable>
+                  </PaperControl>
                 </View>
               );
             })}
           </View>
+
+          <View style={styles.sizeScaleLabels}>
+            <Text style={[styles.sizeScaleLabel, { color: rf.textMuted }, sizeLabelStyle]}>
+              {t('settings.font.size.sm')}
+            </Text>
+            <Text style={[styles.sizeScaleLabel, { color: rf.textMuted }, sizeLabelStyle]}>
+              {t('settings.font.size.md')}
+            </Text>
+            <Text style={[styles.sizeScaleLabel, { color: rf.textMuted }, sizeLabelStyle]}>
+              {t('settings.font.size.lg')}
+            </Text>
+          </View>
+          <Text style={[styles.sizeSelectedLabel, { color: rf.text }, sizeLabelStyle]}>
+            {t(SIZE_OPTIONS.find((opt) => opt.key === sizeId)?.labelKey ?? 'settings.font.size.sm')}
+          </Text>
 
           <Text
             style={[
@@ -278,7 +258,7 @@ export function FontSettingsPage() {
                   style={[
                     styles.cardShadow,
                     {
-                      backgroundColor: shadowColor,
+                      backgroundColor: 'transparent',
                       transform: [
                         { translateX: SOLID_SHADOW_OFFSET },
                         { translateY: SOLID_SHADOW_OFFSET },
@@ -286,7 +266,7 @@ export function FontSettingsPage() {
                     },
                   ]}
                 />
-                <Pressable
+                <PaperControl
                   accessibilityRole="button"
                   accessibilityLabel={t(opt.labelKey)}
                   accessibilityState={{ selected: active }}
@@ -297,9 +277,25 @@ export function FontSettingsPage() {
                   }}
                   style={({ pressed }) => [
                     styles.fontCard,
-                    { backgroundColor: pressed ? cardFacePressed : cardFace },
+                    {
+                      backgroundColor: pressed
+                        ? active
+                          ? isDark
+                            ? 'rgba(158,207,209,0.24)'
+                            : 'rgba(168,218,220,0.46)'
+                          : cardFacePressed
+                        : active
+                          ? isDark
+                            ? 'rgba(158,207,209,0.14)'
+                            : 'rgba(168,218,220,0.26)'
+                          : cardFace,
+                    },
                   ]}>
-                  <View style={[styles.fontIcon, { backgroundColor: rf.primaryContainer }]}>
+                  <View
+                    style={[
+                      styles.fontIcon,
+                      { backgroundColor: active ? (isDark ? '#1A4E50' : '#A8DADC') : 'transparent' },
+                    ]}>
                     <Text
                       style={[
                         styles.fontIconGlyph,
@@ -324,10 +320,18 @@ export function FontSettingsPage() {
                         },
                       ]}
                       numberOfLines={1}>
-                      {t(opt.previewKey)}
+                      {t('settings.font.size.preview')}
                     </Text>
                     <Text
-                      style={[styles.fontSub, { color: rf.textMuted }, appFontTextStyle(fontId, '500')]}
+                      style={[
+                        styles.fontSub,
+                        sampleFamily ? { fontFamily: sampleFamily, fontWeight: sampleWeight } : null,
+                        {
+                          color: rf.textMuted,
+                          fontSize: scaleTypeSize(12, previewScale),
+                          lineHeight: scaleTypeSize(17, previewScale),
+                        },
+                      ]}
                       numberOfLines={2}>
                       {t(opt.labelKey)} · {t(opt.descKey)}
                     </Text>
@@ -337,7 +341,7 @@ export function FontSettingsPage() {
                     size={20}
                     color={active ? checkOn : checkOff}
                   />
-                </Pressable>
+                </PaperControl>
               </View>
             );
           })}
@@ -403,15 +407,29 @@ const styles = StyleSheet.create({
   },
   sizeCard: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 0,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    gap: 4,
-    minHeight: 84,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minHeight: 48,
     zIndex: 1,
   },
   sizeCardTitle: {
     letterSpacing: -0.2,
+  },
+  sizeScaleLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+    marginTop: -4,
+  },
+  sizeScaleLabel: {
+    fontSize: 10,
+  },
+  sizeSelectedLabel: {
+    fontSize: 12,
+    marginTop: -6,
   },
   fontCardShell: {
     position: 'relative',

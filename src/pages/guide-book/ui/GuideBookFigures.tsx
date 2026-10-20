@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import type { ReactElement, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -80,7 +81,7 @@ function AppTabBar({
         styles.tabBar,
         { backgroundColor: colors.containerBg, borderColor: colors.containerBorder },
       ]}>
-      {APP_TABS.map((tab) => {
+      {APP_TABS.filter((tab) => FEATURE_FLAGS.puzzle || tab.key !== 'puzzle').map((tab) => {
         const on = tab.key === active;
         return (
           <View

@@ -1,8 +1,10 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -75,7 +77,7 @@ type SheetMode = 'search' | 'detail';
 
 const SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.10)';
 const SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.10)';
-const SEARCH_SOFT_OFFSET = 3;
+const SEARCH_SOFT_OFFSET = 1;
 
 type Props = {
   visible: boolean;
@@ -138,11 +140,12 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
   const isDark = useColorScheme() === 'dark';
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const shadowInk = isDark ? tone.solidShadow : tone.text;
-  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const faceWhite = isDark ? '#30342F' : '#FCFBF7';
+  const pencil = isDark ? '#A2B0A5' : '#8B9589';
   const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const searchCtaFill = READING_ACCENT;
   const searchCtaLabel = READING_ACCENT_ON;
-  const searchCtaDisabledFill = isDark ? 'rgba(92, 61, 72, 0.45)' : '#A88A92';
+  const searchCtaDisabledFill = isDark ? '#6C8D83' : '#DEEBE4';
   const aladinConfigured = useMemo(() => isAladinApiConfigured(), []);
 
   const [mode, setMode] = useState<SheetMode>('search');
@@ -305,7 +308,8 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.sheet, { backgroundColor: surface, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.sheet, { backgroundColor: isDark ? '#242923' : '#F8F7F2', paddingTop: insets.top + 12 }]}>
+        <PaperGrain opacity={0.32} />
         <View style={[styles.header, { borderBottomColor: line }]}>
           {mode === 'detail' ? (
             <Pressable
@@ -354,6 +358,8 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     ]}
                   />
                   <View style={[styles.searchRow, { backgroundColor: faceWhite }]}>
+                    <PaperGrain opacity={0.22} />
+                    <HanddrawnFrame color={pencil} />
                     <IconSymbol name="magnifyingglass" size={18} color={muted} />
                     <ThemedTextInput
                       value={query}
@@ -396,6 +402,8 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                         backgroundColor: loading ? searchCtaDisabledFill : searchCtaFill,
                       },
                     ]}>
+                    <PaperGrain opacity={0.22} />
+                    <HanddrawnFrame color={pencil} />
                     {loading ? (
                       <ActivityIndicator size="small" color={searchCtaLabel} />
                     ) : (

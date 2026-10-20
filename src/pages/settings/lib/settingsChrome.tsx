@@ -1,3 +1,5 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -8,7 +10,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 /** 오늘 탭 PlanModeSwitch 아이콘과 동일 스펙 */
 const SHADOW_SM = 2;
 const ICON_FACE = 34;
-const ICON_BORDER = 1;
 
 export type SettingsPalette = {
   bg: string;
@@ -92,7 +93,9 @@ export function SettingsRowIcon({
         ]}
       />
       <View style={[styles.iconBox, { backgroundColor: boxBg, borderColor: border }]}>
-        <IconSymbol name={name as 'bell.fill'} size={16} color={color} />
+        <PaperGrain />
+        <HanddrawnFrame color={border} />
+        <IconSymbol name={name as 'bell.fill'} size={22} color={color} />
       </View>
       {showBadge ? (
         <View
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
     width: ICON_FACE,
     height: ICON_FACE,
     borderRadius: 0,
-    borderWidth: ICON_BORDER,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

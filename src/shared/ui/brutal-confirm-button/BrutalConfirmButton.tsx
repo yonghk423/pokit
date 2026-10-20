@@ -1,3 +1,5 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import {
   Pressable,
   StyleSheet,
@@ -128,6 +130,8 @@ export function BrutalConfirmButton({
             backgroundColor: resolvedFill,
           },
         ]}>
+        <PaperGrain />
+        <HanddrawnFrame color={resolvedLabelColor} />
         <ThemedText
           lightColor={resolvedLabelColor}
           darkColor={resolvedLabelColor}

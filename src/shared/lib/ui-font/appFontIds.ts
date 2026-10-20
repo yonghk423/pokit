@@ -11,16 +11,10 @@ export const APP_FONT_IDS: readonly AppFontId[] = [
   'hiMelody',
   'hanken',
   'gothicA1',
-  'dongle',
-  'gaegu',
-  'songMyung',
 ] as const;
 
 export function isAppFontId(value: unknown): value is AppFontId {
   return (
-    value === 'dongle' ||
-    value === 'gaegu' ||
-    value === 'songMyung' ||
     value === 'gothicA1' ||
     value === 'hiMelody' ||
     value === 'hanken'
@@ -29,5 +23,5 @@ export function isAppFontId(value: unknown): value is AppFontId {
 
 /** Regular 페이스만 있는 폰트 (가짜 bold 합성 방지) */
 export function isSingleFaceAppFont(fontId: AppFontId): boolean {
-  return fontId === 'songMyung' || fontId === 'hiMelody';
+  return fontId === 'hiMelody';
 }

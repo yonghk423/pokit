@@ -1,7 +1,9 @@
 /**
- * 루틴 메모지 면색 · 상세설정 아이콘 accent 공통 팔레트.
- * 두 UI는 동일한 light hex를 같은 순서로 보여 준다.
+ * 루틴 포스트잇 면색 팔레트와 이전 저장값 호환.
  */
+
+import { contrastingForeground } from './colorMath';
+import { ROUTINE_ACCENT_PALETTE } from './routineAccentPalette';
 
 export type RoutineColorInkTone = 'dark' | 'light';
 
@@ -12,7 +14,7 @@ export type RoutineColorPreset = {
   inkTone: RoutineColorInkTone;
 };
 
-export const ROUTINE_COLOR_PRESETS = [
+const LEGACY_ROUTINE_COLOR_PRESETS = [
   { id: 'cream', light: '#F5F2EB', dark: '#2D2F44', inkTone: 'dark' },
   { id: 'sand', light: '#EDE4D4', dark: '#3A3428', inkTone: 'dark' },
   { id: 'ivory', light: '#FBF8F1', dark: '#323248', inkTone: 'dark' },
@@ -76,6 +78,22 @@ export const ROUTINE_COLOR_PRESETS = [
   { id: 'copper', light: '#6A3A28', dark: '#4A281C', inkTone: 'light' },
   { id: 'olive', light: '#3A4A28', dark: '#28341C', inkTone: 'light' },
 ] as const satisfies readonly RoutineColorPreset[];
+
+/** 아이콘 컬러에서 포스트잇 면색으로 옮긴 팔레트. 기존 면색 id는 계속 읽는다. */
+export const POST_IT_SELECTION_COLOR_PRESETS = ROUTINE_ACCENT_PALETTE.map((hex) => {
+  const existing = LEGACY_ROUTINE_COLOR_PRESETS.find((preset) => preset.light.toLowerCase() === hex);
+  return existing ?? {
+    id: `paper-${hex.slice(1)}` as `paper-${string}`,
+    light: hex,
+    dark: hex,
+    inkTone: contrastingForeground(hex) === '#FAFAFA' ? 'light' as const : 'dark' as const,
+  };
+});
+
+export const ROUTINE_COLOR_PRESETS = [
+  ...LEGACY_ROUTINE_COLOR_PRESETS,
+  ...POST_IT_SELECTION_COLOR_PRESETS.filter((preset) => !LEGACY_ROUTINE_COLOR_PRESETS.some((legacy) => legacy.id === preset.id)),
+] as const;
 
 export type RoutineColorPresetId = (typeof ROUTINE_COLOR_PRESETS)[number]['id'];
 

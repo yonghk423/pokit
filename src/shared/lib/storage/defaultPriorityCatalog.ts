@@ -17,7 +17,7 @@ export type BuiltinCustomFlowDef = {
   id: string;
   groupKey: string;
   displayName: string;
-  /** SF Symbol — 없으면 `person.fill` */
+  /** 앱 전용 루틴 그림 ID */
   icon: string;
   /** 집중 중 아이콘 강조색 — 없으면 기본 오렌지 */
   color: string;
@@ -144,8 +144,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     id: BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
     groupKey: BUILTIN_TUTORIAL_GROUP_KEY,
     displayName: POKIT_WEEK_TOUR_DISPLAY_NAME,
-    icon: 'sparkles',
-    color: '#0f766e',
+    icon: 'routine:planning',
+    color: '#ffffff',
     summary: POKIT_WEEK_TOUR_SUMMARY,
     templateKey: 'checklist',
     checklistLabels: POKIT_WEEK_TOUR_CHECKLIST_LABELS,
@@ -154,8 +154,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     id: BUILTIN_DAILY_EXERCISE_FLOW_ID,
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '주말 러닝',
-    icon: 'figure.run',
-    color: '#ef4444',
+    icon: 'routine:running',
+    color: '#ffffff',
     summary: '주말에 가볍게 뛰며 몸을 움직여요.',
     templateKey: 'checklist',
     checklistLabels: ['주말 러닝'],
@@ -164,8 +164,8 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     id: BUILTIN_ABSTAIN_FLOW_ID,
     groupKey: BUILTIN_ABSTAIN_GROUP_KEY,
     displayName: '금지',
-    icon: 'hand.raised.fill',
-    color: '#dc2626',
+    icon: 'routine:abstain',
+    color: '#ffffff',
     summary: '오늘 하지 말아야 할 것들을 지켰는지 확인해요.',
     checklistLabels: ABSTAIN_CHECKLIST_LABELS,
     templateKey: 'abstain',
@@ -174,9 +174,9 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     id: BUILTIN_STRETCHING_FLOW_ID,
     groupKey: 'health',
     displayName: '스트레칭',
-    icon: 'figure.flexibility',
+    icon: 'routine:stretching',
     /** 체중조절(fasting `#14b8a6`)과 겹치지 않도록 바이올렛 */
-    color: '#8b5cf6',
+    color: '#ffffff',
     summary: '몸을 풀고 가볍게 늘려 줘요.',
     templateKey: 'checklist',
     checklistLabels: ['스트레칭'],
@@ -190,7 +190,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '이불정리',
     icon: 'bed.double.fill',
-    color: '#0d9488',
+    color: '#ffffff',
     summary: '아침에 이불을 정리해 하루를 가볍게 시작해요.',
   },
   {
@@ -198,7 +198,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '빨래하기',
     icon: 'washer.fill',
-    color: '#6366f1',
+    color: '#ffffff',
     summary: '쌓인 빨래를 돌리거나 개어 정리해요.',
   },
   {
@@ -206,7 +206,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '세수하기',
     icon: 'hands.sparkles.fill',
-    color: '#14b8a6',
+    color: '#ffffff',
     summary: '하루를 시작·마무리할 때 깨끗이 씻어요.',
   },
   {
@@ -214,7 +214,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '쇼핑하기',
     icon: 'cart.fill',
-    color: '#f59e0b',
+    color: '#ffffff',
     summary: '장보기·필요한 물건을 사러 나가요.',
   },
   {
@@ -222,7 +222,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '청소하기',
     icon: 'sparkles',
-    color: '#0891b2',
+    color: '#ffffff',
     summary: '방·거실 등 생활 공간을 간단히 정리해요.',
     templateKey: 'checklist',
     checklistLabels: ['청소하기'],
@@ -232,7 +232,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
     displayName: '분리수거',
     icon: 'arrow.3.trianglepath',
-    color: '#22c55e',
+    color: '#ffffff',
     summary: '재활용·분리수거를 챙겨요.',
     templateKey: 'checklist',
     checklistLabels: ['분리수거'],
@@ -242,7 +242,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: 'productivity',
     displayName: '집중하기',
     icon: 'brain.head.profile',
-    color: '#2563eb',
+    color: '#ffffff',
     summary: '방해 없이 한 가지에 깊게 몰입해요.',
     templateKey: 'checklist',
     checklistLabels: ['집중하기'],
@@ -252,7 +252,7 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: 'health',
     displayName: '간헐적 단식',
     icon: 'hourglass',
-    color: '#a16207',
+    color: '#ffffff',
     summary: '정해 둔 식사 시간 창을 지키며 단식해요.',
   },
   {
@@ -260,24 +260,24 @@ export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[
     groupKey: 'health',
     displayName: '자세 바르게하기',
     icon: 'figure.stand',
-    color: '#6366f1',
+    color: '#ffffff',
     summary: '정해 둔 시간마다 앉거나 서 있는 자세를 점검해요.',
   },
-  { id: 'customFlow:builtin_hobby_draw', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '드로잉 연습', icon: 'paintbrush.pointed.fill', color: '#a855f7' },
-  { id: 'customFlow:builtin_hobby_guitar', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '기타 연주', icon: 'guitars.fill', color: '#f59e0b' },
-  { id: 'customFlow:builtin_hobby_photo', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '사진 촬영', icon: 'camera.fill', color: '#0ea5e9' },
-  { id: 'customFlow:builtin_hobby_cooking', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '요리 실험', icon: 'frying.pan.fill', color: '#ea580c' },
-  { id: 'customFlow:builtin_hobby_hiking', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '등산·트레킹', icon: 'figure.hiking', color: '#10b981' },
-  { id: 'customFlow:builtin_family_call', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '가족 통화', icon: 'phone.fill', color: '#3b82f6' },
-  { id: 'customFlow:builtin_family_friends', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '친구 만남', icon: 'person.2.fill', color: '#ec4899' },
-  { id: 'customFlow:builtin_family_parents', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '부모님 안부', icon: 'heart.fill', color: '#f43f5e' },
-  { id: 'customFlow:builtin_family_community', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '커뮤니티 참여', icon: 'person.3.fill', color: '#6366f1' },
-  { id: 'customFlow:builtin_family_partner', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '연인·배우자 시간', icon: 'heart.circle.fill', color: '#e11d48' },
-  { id: 'customFlow:builtin_mind_gratitude', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '감사 일기', icon: 'heart.text.square.fill', color: '#14b8a6' },
-  { id: 'customFlow:builtin_mind_pledge', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '오늘의 다짐', icon: 'flag.fill', color: '#8b5cf6' },
-  { id: 'customFlow:builtin_mind_nap', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '낮잠·파워냅', icon: 'moon.zzz.fill', color: '#64748b' },
-  { id: 'customFlow:builtin_mind_music', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '음악 감상', icon: 'headphones', color: '#d946ef' },
-  { id: 'customFlow:builtin_mind_detox', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '디지털 디톡스', icon: 'leaf.fill', color: '#22c55e' },
+  { id: 'customFlow:builtin_hobby_draw', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '드로잉 연습', icon: 'paintbrush.pointed.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_hobby_guitar', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '기타 연주', icon: 'guitars.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_hobby_photo', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '사진 촬영', icon: 'camera.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_hobby_cooking', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '요리 실험', icon: 'frying.pan.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_hobby_hiking', groupKey: BUILTIN_CUSTOM_GROUP_HOBBY, displayName: '등산·트레킹', icon: 'figure.hiking', color: '#ffffff' },
+  { id: 'customFlow:builtin_family_call', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '가족 통화', icon: 'phone.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_family_friends', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '친구 만남', icon: 'person.2.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_family_parents', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '부모님 안부', icon: 'heart.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_family_community', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '커뮤니티 참여', icon: 'person.3.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_family_partner', groupKey: BUILTIN_CUSTOM_GROUP_FAMILY, displayName: '연인·배우자 시간', icon: 'heart.circle.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_mind_gratitude', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '감사 일기', icon: 'heart.text.square.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_mind_pledge', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '오늘의 다짐', icon: 'flag.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_mind_nap', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '낮잠·파워냅', icon: 'moon.zzz.fill', color: '#ffffff' },
+  { id: 'customFlow:builtin_mind_music', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '음악 감상', icon: 'headphones', color: '#ffffff' },
+  { id: 'customFlow:builtin_mind_detox', groupKey: BUILTIN_CUSTOM_GROUP_MINDSET, displayName: '디지털 디톡스', icon: 'leaf.fill', color: '#ffffff' },
 ];
 
 export function isRemovedBuiltinCustomFlowId(id: string): boolean {
@@ -297,17 +297,11 @@ const ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID = Object.fromEntries(
   DEFAULT_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.icon]),
 ) as Record<string, string>;
 
-const ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID = Object.fromEntries(
-  DEFAULT_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.color]),
-) as Record<string, string>;
 
 const LEGACY_BUILTIN_CUSTOM_FLOW_ICON_BY_ID = Object.fromEntries(
   LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.icon]),
 ) as Record<string, string>;
 
-const LEGACY_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID = Object.fromEntries(
-  LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS.map((flow) => [flow.id, flow.color]),
-) as Record<string, string>;
 
 function readStoredCustomFlowIcon(categoryKey: string): string | undefined {
   const icon = normalizeCustomFlowIcon(
@@ -323,10 +317,14 @@ function readStoredCustomFlowAccentColor(categoryKey: string): string | undefine
   return accentColor;
 }
 
-/** 기본·사용자 커스텀 플로우 아이콘 — 저장값 → legacy builtin → `person.fill` */
+/** 기본·사용자 커스텀 플로우 아이콘 — 전용 그림 우선, 이전 기본 심볼 호환 */
 export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
   const fromConfig = readStoredCustomFlowIcon(categoryKey);
-  if (fromConfig) return fromConfig;
+  // Old stored symbols must not mask the new defaults; explicit illustration choices remain editable.
+  if (fromConfig) {
+    const builtin = ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey];
+    return builtin && !fromConfig.startsWith('routine:') ? builtin : fromConfig;
+  }
   if (ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey]) {
     return ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey];
   }
@@ -336,22 +334,7 @@ export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
   return DEFAULT_CUSTOM_FLOW_ICON;
 }
 
-/** 기본·사용자 커스텀 플로우 강조색 — 저장값 → legacy builtin → 오렌지 */
+/** Explicit user colors override the uncolored initial state. */
 export function resolveCustomFlowCatalogColor(categoryKey: string): string {
-  const fromConfig = readStoredCustomFlowAccentColor(categoryKey);
-  // 스트레칭 예전 기본 틸(#14b8a6)은 체중조절과 겹침 → 바이올렛으로 치환
-  if (
-    categoryKey === BUILTIN_STRETCHING_FLOW_ID &&
-    (fromConfig == null || fromConfig.toLowerCase() === '#14b8a6')
-  ) {
-    return '#8b5cf6';
-  }
-  if (fromConfig) return fromConfig;
-  if (ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey]) {
-    return ACTIVE_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey];
-  }
-  if (LEGACY_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey]) {
-    return LEGACY_BUILTIN_CUSTOM_FLOW_COLOR_BY_ID[categoryKey];
-  }
-  return DEFAULT_CUSTOM_FLOW_ACCENT_COLOR;
+  return readStoredCustomFlowAccentColor(categoryKey) ?? DEFAULT_CUSTOM_FLOW_ACCENT_COLOR;
 }

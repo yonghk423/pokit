@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import React from 'react';
 import { DynamicColorIOS, Image, Platform, StyleSheet, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
@@ -65,7 +66,7 @@ function IosTabLayout() {
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['fixed-routines']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="puzzle-history" accessibilityLabel={t('tabs.puzzle')} disableAutomaticContentInsets>
+      <NativeTabs.Trigger hidden={!FEATURE_FLAGS.puzzle} name="puzzle-history" accessibilityLabel={t('tabs.puzzle')} disableAutomaticContentInsets>
         {/* <NativeTabs.Trigger.Label>{t('tabs.puzzle')}</NativeTabs.Trigger.Label> */}
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['puzzle-history']} renderingMode="original" />
@@ -144,7 +145,7 @@ function FloatingTabLayout() {
         })}>
         <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
         <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines') }} />
-        <Tabs.Screen name="puzzle-history" options={{ title: t('tabs.puzzle') }} />
+        <Tabs.Screen name="puzzle-history" options={{ title: t('tabs.puzzle'), href: FEATURE_FLAGS.puzzle ? undefined : null }} />
         <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
     </Tabs>
   );

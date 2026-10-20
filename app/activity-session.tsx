@@ -1,5 +1,10 @@
 import { ActivitySessionPage } from '@pages/activity-session';
+import { AppAlertScreenBoundary } from '@shared/ui/app-alert';
 
 export default function ActivitySessionScreen() {
-  return <ActivitySessionPage />;
+  return (
+    <AppAlertScreenBoundary>
+      <ActivitySessionPage />
+    </AppAlertScreenBoundary>
+  );
 }

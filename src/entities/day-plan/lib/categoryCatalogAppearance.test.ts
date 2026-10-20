@@ -18,31 +18,45 @@ beforeEach(() => {
 });
 
 describe('resolveCategoryCatalogIcon', () => {
+  it('persists proprietary icons through builtin and custom routine readers', () => {
+    for (const key of ['water', 'customFlow:artwork']) {
+      const config = mergeCategoryAppearanceIntoConfig(key, { displayName: '내 루틴', summary: '' }, {
+        icon: 'routine:music', accentColor: '#ffc078',
+      });
+      saveGoalDetailCategoryConfig(key, config);
+      expect(resolveCategoryCatalogIcon(key)).toBe('routine:music');
+      expect(readEditableCategoryAppearance(key, config).icon).toBe('routine:music');
+    }
+  });
+
   it('returns builtin icon for standard categories', () => {
-    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
-    expect(resolveCategoryCatalogIcon('water')).toBe('drop.fill');
-    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
-    expect(resolveCategoryCatalogIcon('work')).toBe('square.and.pencil');
-    expect(resolveCategoryCatalogIcon('reading')).toBe('book.closed.fill');
+    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('routine:medicine');
+    expect(resolveCategoryCatalogIcon('water')).toBe('routine:water');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('routine:weight');
+    expect(resolveCategoryCatalogIcon('work')).toBe('routine:work');
+    expect(resolveCategoryCatalogIcon('reading')).toBe('routine:reading');
   });
 
-  it('returns builtin blue accent for water', () => {
-    expect(resolveCategoryCatalogAccentColor('water')).toBe('#0ea5e9');
+  it('returns uncolored accent for water', () => {
+    expect(resolveCategoryCatalogAccentColor('water')).toBe('#ffffff');
   });
 
-  it('returns builtin amber accent for healthIntake', () => {
-    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#e9a23b');
+  it('returns uncolored accent for healthIntake', () => {
+    expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#ffffff');
   });
 
-  it('uses a pastelized accent for the icon tile, with dark glyph', () => {
-    const health = resolveCategoryCatalogIconTile('healthIntake');
-    expect(health.boxBg).not.toBe('#e9a23b');
-    expect(health.boxBg.toLowerCase()).toMatch(/^#[0-9a-f]{6}$/);
-    expect(health.iconColor).toBe('#09090b');
+  it('renders uncolored initial icon tiles with no background', () => {
+    for (const category of ['healthIntake', 'water', 'fasting', 'reading', 'work']) {
+      expect(resolveCategoryCatalogIconTile(category)).toEqual({ boxBg: 'transparent', iconColor: '#252525' });
+    }
+  });
 
-    const fasting = resolveCategoryCatalogIconTile('fasting');
-    expect(fasting.boxBg).not.toBe('#14b8a6');
-    expect(fasting.iconColor).toBe('#09090b');
+  it('ignores stored icon colors on builtin and custom routines in both themes', () => {
+    for (const category of ['water', 'customFlow:artwork']) {
+      saveGoalDetailCategoryConfig(category, { icon: 'routine:music', accentColor: '#ffc078' });
+      expect(resolveCategoryCatalogIconTile(category)).toEqual({ boxBg: 'transparent', iconColor: '#252525' });
+      expect(resolveCategoryCatalogIconTile(category, true)).toEqual({ boxBg: 'transparent', iconColor: '#FAFAFA' });
+    }
   });
 
   it('maps legacy person and scale icons to standing figure for fasting', () => {
@@ -51,18 +65,18 @@ describe('resolveCategoryCatalogIcon', () => {
       summary: '',
       icon: 'person.fill',
     });
-    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('routine:weight');
 
     saveGoalDetailCategoryConfig('fasting', {
       displayName: '체중조절',
       summary: '',
       icon: 'scalemass.fill',
     });
-    expect(resolveCategoryCatalogIcon('fasting')).toBe('figure.stand');
+    expect(resolveCategoryCatalogIcon('fasting')).toBe('routine:weight');
   });
 
-  it('returns builtin teal accent for fasting (distinct from healthIntake)', () => {
-    expect(resolveCategoryCatalogAccentColor('fasting')).toBe('#14b8a6');
+  it('starts fasting without an accent', () => {
+    expect(resolveCategoryCatalogAccentColor('fasting')).toBe('#ffffff');
   });
 
   it('maps legacy shared brown accent to teal for fasting', () => {
@@ -136,7 +150,7 @@ describe('resolveCategoryCatalogIcon', () => {
         dinnerTime: '18:00',
       },
     });
-    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
+    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('routine:medicine');
   });
 
   it('maps legacy hospital icon to pills for healthIntake', () => {
@@ -163,7 +177,7 @@ describe('resolveCategoryCatalogIcon', () => {
         dinnerTime: '18:00',
       },
     });
-    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('pills.fill');
+    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('routine:medicine');
   });
 
   it('maps legacy open book icon to closed book for reading', () => {
@@ -173,7 +187,7 @@ describe('resolveCategoryCatalogIcon', () => {
       icon: 'book.fill',
       books: [],
     });
-    expect(resolveCategoryCatalogIcon('reading')).toBe('book.closed.fill');
+    expect(resolveCategoryCatalogIcon('reading')).toBe('routine:reading');
   });
 
   it('maps legacy bag icon to square pencil for work', () => {
@@ -183,14 +197,14 @@ describe('resolveCategoryCatalogIcon', () => {
       icon: 'bag.fill',
       tasks: [],
     });
-    expect(resolveCategoryCatalogIcon('work')).toBe('square.and.pencil');
+    expect(resolveCategoryCatalogIcon('work')).toBe('routine:work');
   });
 
   it('prefers saved icon over builtin default', () => {
     saveGoalDetailCategoryConfig('healthIntake', {
       displayName: '건강을 위한 섭취',
       summary: '',
-      icon: 'star.fill',
+      icon: 'routine:camera',
       accentColor: '#3b82f6',
       water: { displayName: '', summary: '', goalMl: 2000, drankMl: 0, smartNotification: false, reminderTimes: [] },
       medicine: {
@@ -210,24 +224,24 @@ describe('resolveCategoryCatalogIcon', () => {
         dinnerTime: '18:00',
       },
     });
-    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('star.fill');
+    expect(resolveCategoryCatalogIcon('healthIntake')).toBe('routine:camera');
     expect(resolveCategoryCatalogAccentColor('healthIntake')).toBe('#3b82f6');
   });
   it('reads customFlow icon from goal-detail storage like accent color', () => {
     saveGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID, {
       displayName: '금지',
       summary: '',
-      icon: 'moon.fill',
+      icon: 'routine:music',
       accentColor: '#f97316',
       templateKey: 'abstain',
     });
-    expect(resolveCategoryCatalogIcon(BUILTIN_ABSTAIN_FLOW_ID)).toBe('moon.fill');
+    expect(resolveCategoryCatalogIcon(BUILTIN_ABSTAIN_FLOW_ID)).toBe('routine:music');
     expect(resolveCategoryCatalogAccentColor(BUILTIN_ABSTAIN_FLOW_ID)).toBe('#f97316');
   });
 });
 
 describe('readEditableCategoryAppearance', () => {
-  it('reads icon from healthIntake config without catalog legacy remap', () => {
+  it('maps the old healthIntake symbol to its illustration in settings', () => {
     const cfg = {
       displayName: '수분 섭취',
       summary: '',
@@ -252,15 +266,15 @@ describe('readEditableCategoryAppearance', () => {
       },
     };
     expect(readEditableCategoryAppearance('healthIntake', cfg)).toEqual({
-      icon: 'drop.fill',
+      icon: 'routine:medicine',
       accentColor: '#e9a23b',
     });
   });
 
   it('falls back to water builtin defaults for legacy water category', () => {
     expect(readEditableCategoryAppearance('water', { displayName: '수분 섭취', summary: '' })).toEqual({
-      icon: 'drop.fill',
-      accentColor: '#0ea5e9',
+      icon: 'routine:water',
+      accentColor: '#ffffff',
     });
   });
 
@@ -268,8 +282,8 @@ describe('readEditableCategoryAppearance', () => {
     const catalogIcon = resolveCategoryCatalogIcon(BUILTIN_ABSTAIN_FLOW_ID);
     const editable = readEditableCategoryAppearance(BUILTIN_ABSTAIN_FLOW_ID, {});
     expect(editable.icon).toBe(catalogIcon);
-    expect(editable.icon).toBe('hand.raised.fill');
-    expect(editable.accentColor).toBe('#dc2626');
+    expect(editable.icon).toBe('routine:abstain');
+    expect(editable.accentColor).toBe('#ffffff');
   });
 
   it('merges appearance without stripping healthIntake nested config', () => {
@@ -355,4 +369,21 @@ describe('readEditableCategoryAppearance', () => {
     expect(merged.displayName).toBe('영양제 섭취');
     expect(merged.icon).toBe('heart.fill');
   });
+});
+
+
+it('uses title-appropriate illustrations for all six active defaults even with stored system symbols', () => {
+  const cases = [
+    ['customFlow:preset_pokit_week_tour', 'headphones', 'routine:planning'],
+    ['healthIntake', 'pills.fill', 'routine:medicine'],
+    ['customFlow:preset_abstain', 'hand.raised.fill', 'routine:abstain'],
+    ['customFlow:preset_stretching', 'figure.flexibility', 'routine:stretching'],
+    ['customFlow:preset_daily_exercise', 'figure.run', 'routine:running'],
+    ['fasting', 'figure.stand', 'routine:weight'],
+  ];
+  for (const [key, oldIcon, illustration] of cases) {
+    saveGoalDetailCategoryConfig(key, { displayName: '루틴', summary: '', icon: oldIcon });
+    expect(resolveCategoryCatalogIcon(key)).toBe(illustration);
+    expect(readEditableCategoryAppearance(key, {}).icon).toBe(illustration);
+  }
 });

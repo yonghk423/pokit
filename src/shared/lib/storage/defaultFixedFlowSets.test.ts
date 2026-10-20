@@ -161,8 +161,8 @@ describe('createDefaultFixedFlowSetsState', () => {
         items: [{ categoryKey: 'healthIntake', enabled: true }],
       },
     ]);
-    expect(withDefaults.find((set) => set.id === 'set_daily')?.titleMarkColor).toBe('yellow');
-    expect(withDefaults.find((set) => set.id === 'set_weekend')?.titleMarkColor).toBe('lavender');
+    expect(withDefaults.find((set) => set.id === 'set_daily')?.titleMarkColor).toBeNull();
+    expect(withDefaults.find((set) => set.id === 'set_weekend')?.titleMarkColor).toBeNull();
 
     const cleared = mergeBuiltInPresetSets([
       {

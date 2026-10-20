@@ -146,14 +146,14 @@ const DEFAULT_SET_TEMPLATES: DefaultSetTemplate[] = [
     name: '데일리 고정 루틴',
     applyRule: 'daily',
     categoryKeys: ['fasting'],
-    titleMarkColor: 'yellow',
+    titleMarkColor: null,
   },
   {
     id: 'set_weekend',
     name: '주말 고정 루틴',
     applyRule: 'weekend',
     categoryKeys: [BUILTIN_DAILY_EXERCISE_FLOW_ID],
-    titleMarkColor: 'lavender',
+    titleMarkColor: null,
   },
 ];
 

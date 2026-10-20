@@ -1,9 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
-import { OutlinedSwitch } from '@shared/ui/outlined-switch';
+import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { ThemedText } from '@shared/ui/themed-text';
 
-const PRIMARY = 'rgb(0, 0, 0)';
 
 export type DailyRhythmStyleAlarmRowPalette = {
   onSurface: string;
@@ -29,6 +29,7 @@ export function DailyRhythmStyleAlarmRow({
   palette,
   compact = false,
 }: DailyRhythmStyleAlarmRowProps) {
+  const isDark = useColorScheme() === 'dark';
   return (
     <View style={[styles.alarmRow, compact && styles.alarmRowCompact]}>
       <View style={[styles.alarmTextCol, compact && styles.alarmTextColCompact]}>
@@ -47,12 +48,11 @@ export function DailyRhythmStyleAlarmRow({
           </ThemedText>
         ) : null}
       </View>
-      <OutlinedSwitch
-        trackColor={{ true: PRIMARY, false: palette.trackOff }}
-        thumbColor="#fff"
-        ios_backgroundColor={palette.trackOff}
-        value={value}
-        onValueChange={onValueChange}
+      <HanddrawnToggle
+        label={title}
+        checked={value}
+        onChange={onValueChange}
+        isDark={isDark}
       />
     </View>
   );

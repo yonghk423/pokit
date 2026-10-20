@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 /**
  * POKIT 사용 설명서 — 실제 구현과 맞춘 탭·버튼 안내 (읽기 전용).
  */
@@ -95,6 +96,7 @@ function pageKey(pageId: string, suffix: string): I18nKey {
 function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
   const callouts: GuideBookCallout[] = [];
   for (let n = 1; n <= spec.callouts; n += 1) {
+    if (!FEATURE_FLAGS.puzzle && spec.id === 'cover' && n === 3) continue;
     callouts.push({
       n,
       label: t(pageKey(spec.id, `c${n}.label`), locale),
@@ -104,6 +106,7 @@ function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
 
   const notes: string[] = [];
   for (let i = 1; i <= spec.notes; i += 1) {
+    if (!FEATURE_FLAGS.puzzle && (spec.id === 'cover' || spec.id === 'history') && i === 1) continue;
     notes.push(t(pageKey(spec.id, `note${i}`), locale));
   }
 
@@ -111,7 +114,11 @@ function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
     id: spec.id,
     chapter: t(`guideBook.chapter.${spec.chapterKey}.name` as I18nKey, locale),
     title: t(pageKey(spec.id, 'title'), locale),
-    lead: spec.hasLead ? t(pageKey(spec.id, 'lead'), locale) : undefined,
+    lead: !FEATURE_FLAGS.puzzle && spec.id === 'cover'
+      ? t('guideBook.page.cover.leadWithoutPuzzle', locale)
+      : !FEATURE_FLAGS.puzzle && spec.id === 'history'
+        ? t('guideBook.chapter.historyTab.subtitle', locale)
+        : spec.hasLead ? t(pageKey(spec.id, 'lead'), locale) : undefined,
     figureId: spec.figureId,
     callouts,
     notes: notes.length > 0 ? notes : undefined,
@@ -119,7 +126,7 @@ function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
 }
 
 export function getGuideBookPages(locale: AppLocale): readonly GuideBookPage[] {
-  return PAGE_SPECS.map((spec) => localizePage(spec, locale));
+  return PAGE_SPECS.filter((spec) => FEATURE_FLAGS.puzzle || spec.chapterKey !== 'puzzleTab').map((spec) => localizePage(spec, locale));
 }
 
 /** 목차용 — chapter 순서대로 묶음 */
@@ -137,7 +144,7 @@ export function buildGuideBookToc(locale: AppLocale): GuideBookTocSection[] {
 
   return order.map((chapter) => {
     const firstIndex = indexes.get(chapter)?.[0] ?? 0;
-    const chapterKey = PAGE_SPECS[firstIndex]!.chapterKey;
+    const chapterKey = PAGE_SPECS.find((spec) => spec.id === pages[firstIndex]!.id)!.chapterKey;
     const meta = CHAPTER_META[chapterKey] ?? { icon: 'book', subtitleKey: 'guideBook.chapter.common.subtitle' as I18nKey };
     return {
       chapter,

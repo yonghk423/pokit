@@ -1,7 +1,10 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Easing,
   Keyboard,
@@ -500,9 +503,11 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
             styles.fabMock,
             {
               bottom: keyboardPad + 16,
-              backgroundColor: RetroFlatColors.light.bgMint,
+              backgroundColor: '#FFFFFF',
             },
           ]}>
+          <PaperGrain />
+          <HanddrawnFrame color="#333333" />
           <View style={styles.fabIconSlot}>
             <Animated.View
               pointerEvents="none"
@@ -523,7 +528,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
                   ],
                 },
               ]}>
-              <IconSymbol name="plus" size={16} color="#000000" />
+              <RoutineActionIcon name="adjust" size={22} color="#202020" />
             </Animated.View>
             <Animated.View
               pointerEvents="none"
@@ -669,18 +674,18 @@ const styles = StyleSheet.create({
     zIndex: 12,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
+    elevation: 2,
   },
   fabIconSlot: {
-    width: 16,
-    height: 16,
+    width: 22,
+    height: 22,
   },
   fabIconLayer: {
     ...StyleSheet.absoluteFill,

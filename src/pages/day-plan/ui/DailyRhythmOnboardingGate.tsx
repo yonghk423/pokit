@@ -1,5 +1,6 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan';

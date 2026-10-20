@@ -1,14 +1,16 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { AppModal as Modal } from '@shared/ui/app-modal';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 // @ts-nocheck — RN Web에서 StyleSheet.create 타입이 TextStyle|ViewStyle로 합쳐져 Reanimated·제스처와 충돌함
 import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Alert,
   AppState,
   Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -18,9 +20,7 @@ import {
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Reanimated, {
-  cancelAnimation,
   Easing,
-  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -236,34 +236,20 @@ function formatOvernightTailEndHeadline(end: string): string {
 function PriorityWindowTimeChip({
   line,
   ink,
-  muted,
-  chipBg,
-  chipBgPressed: _chipBgPressed,
-  borderColor,
   emphasize = false,
   onPress,
 }: {
   line: string;
   ink: string;
-  muted: string;
-  chipBg: string;
-  chipBgPressed: string;
-  borderColor: string;
   emphasize?: boolean;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const isDark = useColorScheme() === 'dark';
-  const mint = isDark ? RetroFlatColors.dark.bgMint : RetroFlatColors.light.bgMint;
   const scale = useSharedValue(1);
-  const pulse = useSharedValue(0);
 
   useEffect(() => {
     if (!emphasize) {
-      cancelAnimation(scale);
-      cancelAnimation(pulse);
       scale.value = withTiming(1, { duration: 160 });
-      pulse.value = withTiming(0, { duration: 160 });
       return;
     }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -275,34 +261,16 @@ function PriorityWindowTimeChip({
       4,
       false,
     );
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) }),
-        withTiming(0, { duration: 320, easing: Easing.inOut(Easing.quad) }),
-      ),
-      4,
-      false,
-    );
-  }, [emphasize, pulse, scale]);
+  }, [emphasize, scale]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    borderColor: interpolateColor(pulse.value, [0, 1], [borderColor, mint]),
-    shadowOpacity: 0.08 + pulse.value * 0.2,
-    shadowRadius: 1 + pulse.value * 7,
-    elevation: pulse.value > 0.15 ? 4 : 0,
   }));
 
   return (
     <Reanimated.View
       style={[
-        styles.priorityTimelineTimeChipShadow,
         styles.priorityTimelineTimeChip,
-        {
-          backgroundColor: chipBg,
-          borderColor,
-          shadowColor: mint,
-        },
         animStyle,
       ]}>
       <Pressable
@@ -1826,14 +1794,6 @@ export function PriorityBasedPlanSection({
     };
   }, [isDark, bc.cover]);
 
-  const priorityTimeChipColors = useMemo(
-    () =>
-      isDark
-        ? { bg: editorial.actionBg, pressed: 'rgba(255,255,255,0.13)' }
-        : { bg: editorial.actionBg, pressed: 'rgba(168, 218, 220, 0.35)' },
-    [editorial.actionBg, isDark],
-  );
-
   /** 당일(오늘) · 다음날 — 전날 열은 제외하고, 자정 넘김 종료일만 연장 카드로 표시 */
   const timelineThreeDayKeys = useMemo(
     () => [
@@ -2998,10 +2958,6 @@ export function PriorityBasedPlanSection({
                         <PriorityWindowTimeChip
                           line={priorityWindowLine}
                           ink={editorial.ink}
-                          muted={editorial.muted}
-                          chipBg={priorityTimeChipColors.bg}
-                          chipBgPressed={priorityTimeChipColors.pressed}
-                          borderColor={editorial.line}
                           emphasize={emphasizePriorityWindowChip}
                           onPress={openPriorityTimeEditor}
                         />
@@ -3042,10 +2998,6 @@ export function PriorityBasedPlanSection({
                         <PriorityWindowTimeChip
                           line={priorityWindowLine}
                           ink={editorial.ink}
-                          muted={editorial.muted}
-                          chipBg={priorityTimeChipColors.bg}
-                          chipBgPressed={priorityTimeChipColors.pressed}
-                          borderColor={editorial.line}
                           emphasize={emphasizePriorityWindowChip}
                           onPress={openPriorityTimeEditor}
                         />
@@ -3250,24 +3202,26 @@ export function PriorityBasedPlanSection({
                                     borderColor: editorial.line,
                                     backgroundColor: isDark
                                       ? 'rgba(255,255,255,0.03)'
-                                      : 'rgba(0,0,0,0.025)',
+                                      : '#FFFFFF',
                                   },
                                 ]}>
+                                <PaperGrain />
+                                <HanddrawnFrame color={isDark ? '#DDDDDD' : '#303030'} />
                                 <ThemedText
-                                  style={[styles.priorityMainEmptyHintTitle, { color: editorial.ink }]}
-                                  lightColor={editorial.ink}
-                                  darkColor={editorial.ink}>
+                                  style={[styles.priorityMainEmptyHintTitle, { color: isDark ? '#F5F5F5' : '#202020' }]}
+                                  lightColor="#202020"
+                                  darkColor="#F5F5F5">
                                   {t('dayPlan.emptyBagTitle')}
                                 </ThemedText>
                                 <ThemedText
-                                  style={[styles.priorityMainEmptyHintBody, { color: editorial.muted }]}
-                                  lightColor={editorial.muted}
-                                  darkColor={editorial.muted}>
+                                  style={[styles.priorityMainEmptyHintBody, { color: isDark ? '#BBBBBB' : '#555555' }]}
+                                  lightColor="#555555"
+                                  darkColor="#BBBBBB">
                                   {t('dayPlan.emptyBagBody')}
                                 </ThemedText>
                                 <PriorityMealSlotAddRoutineRow
                                   label={t('dayPlan.addRoutine')}
-                                  ink={editorial.ink}
+                                  ink={isDark ? '#F5F5F5' : '#202020'}
                                   line={editorial.line}
                                   isDark={isDark}
                                   onPress={openAddRoutineForBag}
@@ -3696,14 +3650,10 @@ const styles = StyleSheet.create({
     gap: 4,
     flexShrink: 1,
     maxWidth: '100%',
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
     paddingVertical: 4,
-    borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     marginTop: 1,
-  },
-  priorityTimelineTimeChipShadow: {
-    shadowOffset: { width: 0, height: 0 },
   },
   priorityTimelineTimeChipPressable: {
     flexDirection: 'row',
@@ -3868,7 +3818,7 @@ const styles = StyleSheet.create({
   priorityInlineListUnderDate: {
     width: '100%',
     alignSelf: 'stretch',
-    paddingHorizontal: 6,
+    paddingHorizontal: 3,
     overflow: 'visible',
   },
   priorityInlineListUnderDateMain: {
@@ -3918,10 +3868,10 @@ const styles = StyleSheet.create({
   },
   priorityMainEmptyHint: {
     /** 타임라인 헤더·노트 카드와 같은 가는 실선 */
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderWidth: 0,
     borderRadius: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     gap: 8,
     marginBottom: 10,
   },

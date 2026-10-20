@@ -132,7 +132,7 @@ describe('screenshotDemoMockSeed', () => {
       SCREENSHOT_EXTRA_ROUTINES[0]!.id,
       SCREENSHOT_EXTRA_ROUTINES[2]!.id,
     ]);
-    expect(daily?.titleMarkColor).toBe('yellow');
+    expect(daily?.titleMarkColor).toBeNull();
     expect(daily?.applyWeekdays).toEqual([1, 2, 3, 4, 5]);
     expect(weekend?.items.map((item) => item.categoryKey)).toEqual([
       BUILTIN_DAILY_EXERCISE_FLOW_ID,
@@ -140,7 +140,7 @@ describe('screenshotDemoMockSeed', () => {
       BUILTIN_DAILY_CLEAN_FLOW_ID,
       'customFlow:preset_daily_shopping',
     ]);
-    expect(weekend?.titleMarkColor).toBe('lavender');
+    expect(weekend?.titleMarkColor).toBeNull();
     expect(weekend?.applyWeekdays).toEqual([0, 6]);
     expect(loadMyRoutineCollapsedGroupIds().has('set_weekend')).toBe(true);
     expect(loadMyRoutineCollapsedGroupIds().has('set_daily')).toBe(false);

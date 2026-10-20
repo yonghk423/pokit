@@ -11,7 +11,6 @@ import Animated, {
 
 import { resolveCategoryCatalogIcon } from '@entities/day-plan';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
-import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -125,7 +124,7 @@ function DraggableFixedRoutineRow({
           <IconSymbol
             name={resolveCategoryCatalogIcon(categoryKey) as any}
             size={20}
-            color={activeIconColorByCategory(categoryKey)}
+            color={ink}
           />
           <ThemedText style={[styles.orderLabel, { color: ink }]} numberOfLines={1}>
             {cat.label}

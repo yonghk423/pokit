@@ -1,14 +1,14 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Alert,
   InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   TextInput,
-  View
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
@@ -294,7 +294,7 @@ export function DayPlanPage({
   const quickMemoInputRef = useRef<TextInput>(null);
   const surface = dayPlanSurface(planMode);
   const [visitedSurfaces, setVisitedSurfaces] = useState(
-    () => new Set<DayPlanSurface>([dayPlanSurface(planMode)]),
+    () => new Set<DayPlanSurface>([dayPlanSurface(planMode), 'quickMemo']),
   );
   const mountedSurfaces = visitedSurfaces.has(surface)
     ? visitedSurfaces
@@ -852,15 +852,17 @@ export function DayPlanPage({
             <View
               style={[
                 styles.quickMemoColumn,
-                surface !== 'quickMemo' && styles.cachedModeHidden,
+                surface !== 'quickMemo' && styles.preparedMemoHidden,
                 surface === 'quickMemo' && styles.cachedModeActive,
                 { backgroundColor: shellBg },
               ]}
               pointerEvents={surface === 'quickMemo' ? 'auto' : 'none'}
-              accessibilityElementsHidden={surface !== 'quickMemo'}>
+              accessibilityElementsHidden={surface !== 'quickMemo'}
+              importantForAccessibility={surface === 'quickMemo' ? 'auto' : 'no-hide-descendants'}>
               <View style={[styles.contentPad, styles.quickMemoContentPad]}>
                 <QuickMemoPlanSection
                   ref={quickMemoInputRef}
+                  isActive={surface === 'quickMemo'}
                   c={c}
                   isDark={isDark}
                   memos={quickMemos}
@@ -959,6 +961,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 0, gap: 16 },
   priorityModeStack: { flex: 1, minHeight: 0, width: '100%', gap: 0 },
   cachedModeHidden: { display: 'none' },
+  preparedMemoHidden: { ...StyleSheet.absoluteFill, opacity: 0, zIndex: -1 },
   cachedModeActive: { zIndex: 2 },
   /** 다이어리 등 풀블리드 섹션 제외 영역만 좌우 여백 */
   contentPad: { paddingHorizontal: 24 },

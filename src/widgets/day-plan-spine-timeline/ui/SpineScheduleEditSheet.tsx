@@ -1,8 +1,8 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   formatMinutesToHHmm,
   parseHHmmToMinutes,
-  resolveCategoryCatalogAccentColor,
   resolveCategoryCatalogIcon,
 } from '@entities/day-plan';
 import { PrimaryColor } from '@shared/config/theme';
@@ -160,7 +159,7 @@ export function SpineScheduleEditSheet({
   }, [categoryKey, routineSections, titleText]);
 
   const linkedRoutineIcon = categoryKey ? resolveCategoryCatalogIcon(categoryKey) : null;
-  const linkedRoutineAccent = categoryKey ? resolveCategoryCatalogAccentColor(categoryKey) : palette.ink;
+  const linkedRoutineAccent = palette.ink;
 
   const destructive = isDark ? '#F87171' : '#DC2626';
   const sheetBg = isDark ? '#18181B' : '#FFFFFF';
@@ -224,7 +223,7 @@ export function SpineScheduleEditSheet({
                 />
                 {categoryKey && linkedRoutineLabel ? (
                   <View style={[styles.linkedRoutineRow, { borderColor: palette.line, backgroundColor: panelBg }]}>
-                    <View style={[styles.linkedRoutineIcon, { backgroundColor: `${linkedRoutineAccent}22` }]}>
+                    <View style={[styles.linkedRoutineIcon, { backgroundColor: 'transparent' }]}>
                       {linkedRoutineIcon ? (
                         <IconSymbol name={linkedRoutineIcon as any} size={16} color={linkedRoutineAccent} />
                       ) : null}
@@ -315,7 +314,7 @@ export function SpineScheduleEditSheet({
                         </View>
                         {section.items.map((option, itemIndex) => {
                           const selected = option.key === categoryKey;
-                          const accent = resolveCategoryCatalogAccentColor(option.key);
+                          const accent = palette.ink;
                           const isLastInSection = itemIndex === section.items.length - 1;
                           return (
                             <Pressable
@@ -337,11 +336,7 @@ export function SpineScheduleEditSheet({
                                 style={[
                                   styles.routineIconBox,
                                   {
-                                    backgroundColor: selected
-                                      ? `${accent}22`
-                                      : isDark
-                                        ? '#27272A'
-                                        : '#FFFFFF',
+                                    backgroundColor: 'transparent',
                                   },
                                 ]}>
                                 <IconSymbol

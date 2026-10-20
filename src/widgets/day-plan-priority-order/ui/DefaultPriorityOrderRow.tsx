@@ -1,3 +1,9 @@
+import { PaperControl } from '@shared/ui/paper-control';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
+import { FountainPenColorPalette } from '@shared/ui/fountain-pen-color-palette';
+import { PostItColorPalette } from '@shared/ui/post-it-color-palette';
+import { PigmentGrain } from '@shared/ui/pigment-grain';
 import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Animated, Pressable, View } from 'react-native';
@@ -12,23 +18,16 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import {
-  PRIORITY_MARK_COLOR_PRESETS,
-  priorityMarkTitleHighlight,
   resolveCategoryCatalogIcon,
   resolveCategoryCatalogIconTile,
   useDayPlanChromeSettingsStore,
   useGoalDetailSettingsStore,
-  type PriorityMarkColorId,
 } from '@entities/day-plan';
-import { useTranslation, type I18nKey } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
 import {
-  POST_IT_FACE_COLOR_PRESETS,
-  POST_IT_INK_COLOR_PRESETS,
   resolvePostItFaceColor,
   resolvePostItInkHex,
   resolvePostItInkMuted,
-  type PostItFaceColorId,
-  type PostItInkColorId,
 } from '@shared/lib/storage';
 import { resolveBrutalConfirmPrimaryColors } from '@shared/ui/brutal-confirm-button';
 import {
@@ -38,19 +37,13 @@ import {
 } from '@shared/ui/color-palette-tabs';
 import { COMPLETION_CHECKED_COLOR_DARK, COMPLETION_CHECKED_COLOR_LIGHT, CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import {
-  ORDER_ROW_DIVIDER_DARK,
-  ORDER_ROW_DIVIDER_LIGHT,
-  orderRowStyles as styles,
-} from '../lib/orderRowStyles';
+import { orderRowStyles as styles } from '../lib/orderRowStyles';
 import type { PriorityOrderRowProps } from '../lib/types';
 
-const MARK_SWATCH = 28;
-const MARK_SHADOW = 2;
 
-const GRAY_DEFAULT_LIGHT = '#9CA3AF';
 const PEN_STRIKE_MS = 720;
 const PEN_STRIKE_EASE = Easing.bezier(0.16, 0.72, 0.2, 1);
 
@@ -111,8 +104,6 @@ function DefaultPriorityOrderRowInner({
   label,
   subtitle,
   summaryHint,
-  itemMarkColor = null,
-  onSelectItemMarkColor,
   itemFaceColor = null,
   onSelectItemFaceColor,
   itemInkColor = null,
@@ -141,7 +132,6 @@ function DefaultPriorityOrderRowInner({
   const icon = resolveCategoryCatalogIcon(categoryKey);
   const hideCategoryIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
-  const titleHighlight = priorityMarkTitleHighlight(itemMarkColor, isDark);
   const rowFaceBg = itemFaceColor ? resolvePostItFaceColor(itemFaceColor, isDark) : undefined;
   const customInk = Boolean(itemInkColor || itemFaceColor);
   const rowInk = customInk
@@ -274,9 +264,7 @@ function DefaultPriorityOrderRowInner({
   }));
 
   const enter = useRef(new Animated.Value(animateOnMount ? 0 : 1)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
-  const shouldPulse = Boolean(isFocusStarted && !isCompleted);
-  const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey);
+  const { boxBg: iconBoxBg, iconColor } = resolveCategoryCatalogIconTile(categoryKey, isDark);
 
   useEffect(() => {
     if (!animateOnMount) {
@@ -292,29 +280,6 @@ function DefaultPriorityOrderRowInner({
     }).start();
   }, [animateOnMount, enter]);
 
-  useEffect(() => {
-    if (!shouldPulse) {
-      pulse.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 0.5,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [shouldPulse, pulse]);
-
   const actionBg = isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF';
   const actionBorder = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
   const completeCta = resolveBrutalConfirmPrimaryColors(isDark);
@@ -325,41 +290,22 @@ function DefaultPriorityOrderRowInner({
     <>
       {hideCategoryIcons ? null : (
         <View
-          style={[
-            styles.orderIconBoxShell,
-            { marginRight: BRUTAL_SHADOW_SM, marginBottom: BRUTAL_SHADOW_SM },
-          ]}>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.orderIconBoxShadow,
-              {
-                backgroundColor: actionShadow,
-                borderColor: actionBorder,
-                transform: [
-                  { translateX: BRUTAL_SHADOW_SM },
-                  { translateY: BRUTAL_SHADOW_SM },
-                ],
-              },
-            ]}
-          />
+          style={styles.orderIconBoxShell}>
           <View
             style={[
               styles.orderIconBox,
               {
                 backgroundColor: iconBoxBg,
+                borderWidth: 0,
                 borderColor: actionBorder,
               },
             ]}>
-            <Animated.View
-              style={[
-                shouldPulse ? { opacity: pulse } : undefined,
-                isCompleted && { opacity: 0.5 },
-              ]}>
+            {iconBoxBg && iconBoxBg !== 'transparent' ? <PigmentGrain /> : null}
+            <Animated.View style={isCompleted ? { opacity: 0.5 } : undefined}>
               <IconSymbol
                 key={`${categoryKey}-${icon}-${iconColor}-${isCompleted ? 1 : 0}`}
                 name={icon as any}
-                size={16}
+                size={32}
                 color={iconColor}
               />
             </Animated.View>
@@ -368,12 +314,6 @@ function DefaultPriorityOrderRowInner({
       )}
       <View style={styles.orderRowRomanText}>
         <View style={styles.orderRowTitleMark}>
-          {titleHighlight ? (
-            <View
-              pointerEvents="none"
-              style={[styles.orderRowTitleHighlight, { backgroundColor: titleHighlight }]}
-            />
-          ) : null}
           <PenStruckBlock struck={Boolean(isCompleted)} strikeColor={rowInk}>
             <ThemedText
               style={[styles.orderRowRomanTitle, styles.orderRowTitleText, { color: rowInk }]}
@@ -386,10 +326,10 @@ function DefaultPriorityOrderRowInner({
         </View>
         {summaryHint ? (
           <ThemedText
-            style={[styles.orderRowSummaryHint, { color: rowInkMuted }]}
+            style={[styles.orderRowSummaryHint, { color: rowInk }]}
             numberOfLines={2}
-            lightColor={rowInkMuted}
-            darkColor={rowInkMuted}>
+            lightColor={rowInk}
+            darkColor={rowInk}>
             {summaryHint}
           </ThemedText>
         ) : null}
@@ -472,10 +412,6 @@ function DefaultPriorityOrderRowInner({
 
   const renderFacePalette = (compact: boolean, hideLabel = false) => {
     if (!onSelectItemFaceColor) return null;
-    const pick = (color: PostItFaceColorId | null) => {
-      void Haptics.selectionAsync();
-      onSelectItemFaceColor(color);
-    };
     return (
       <View
         style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
@@ -488,105 +424,13 @@ function DefaultPriorityOrderRowInner({
             {t('dayPlan.routineFaceColorLabel')}
           </ThemedText>
         )}
-        <View style={styles.importanceMarkChipRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: itemFaceColor == null }}
-            accessibilityLabel={t('dayPlan.routineFaceColorClearA11y')}
-            hitSlop={6}
-            onPress={() => pick(null)}
-            style={({ pressed }) => [
-              styles.importanceMarkChipShell,
-              {
-                width: MARK_SWATCH,
-                height: MARK_SWATCH,
-                marginRight: MARK_SHADOW,
-                marginBottom: MARK_SHADOW,
-                opacity: pressed ? 0.88 : 1,
-              },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.importanceMarkChipShadow,
-                {
-                  backgroundColor: actionShadow,
-                  transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.importanceMarkChipFace,
-                {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                  borderColor: actionBorder,
-                  borderWidth: itemFaceColor == null ? 2 : 1,
-                },
-              ]}>
-              <IconSymbol name="xmark" size={12} color={rowInkMuted} />
-            </View>
-          </Pressable>
-          {POST_IT_FACE_COLOR_PRESETS.map((preset) => {
-            const selected = itemFaceColor === preset.id;
-            const face = isDark ? preset.dark : preset.light;
-            const colorLabel = t(`catalog.postItColor.${preset.id}` as I18nKey);
-            return (
-              <Pressable
-                key={preset.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={t('dayPlan.routineFaceColorA11y', { color: colorLabel })}
-                hitSlop={6}
-                onPress={() => pick(preset.id)}
-                style={({ pressed }) => [
-                  styles.importanceMarkChipShell,
-                  {
-                    width: MARK_SWATCH,
-                    height: MARK_SWATCH,
-                    marginRight: MARK_SHADOW,
-                    marginBottom: MARK_SHADOW,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.importanceMarkChipShadow,
-                    {
-                      backgroundColor: actionShadow,
-                      transform: [
-                        { translateX: MARK_SHADOW },
-                        { translateY: MARK_SHADOW },
-                      ],
-                    },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.importanceMarkChipFace,
-                    {
-                      backgroundColor: face,
-                      borderColor: selected ? actionBorder : 'transparent',
-                      borderWidth: selected ? 2 : 0,
-                    },
-                  ]}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
+        <PostItColorPalette value={itemFaceColor} onChange={onSelectItemFaceColor} isDark={isDark} />
       </View>
     );
   };
 
   const renderInkPalette = (compact: boolean, hideLabel = false) => {
     if (!onSelectItemInkColor) return null;
-    const pick = (color: PostItInkColorId | null) => {
-      void Haptics.selectionAsync();
-      onSelectItemInkColor(color === 'auto' ? null : color);
-    };
-    const selectedId: PostItInkColorId = itemInkColor ?? 'auto';
     return (
       <View
         style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
@@ -599,181 +443,13 @@ function DefaultPriorityOrderRowInner({
             {t('dayPlan.routineInkColorLabel')}
           </ThemedText>
         )}
-        <View style={styles.importanceMarkChipRow}>
-          {POST_IT_INK_COLOR_PRESETS.map((preset) => {
-            const selected = selectedId === preset.id;
-            const isAuto = preset.id === 'auto';
-            const colorLabel = t(`dayPlan.quickMemoInkSwatch.${preset.id}` as I18nKey);
-            return (
-              <Pressable
-                key={preset.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={t('dayPlan.routineInkColorA11y', { color: colorLabel })}
-                hitSlop={6}
-                onPress={() => pick(preset.id)}
-                style={({ pressed }) => [
-                  styles.importanceMarkChipShell,
-                  {
-                    width: MARK_SWATCH,
-                    height: MARK_SWATCH,
-                    marginRight: MARK_SHADOW,
-                    marginBottom: MARK_SHADOW,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.importanceMarkChipShadow,
-                    {
-                      backgroundColor: actionShadow,
-                      transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                    },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.importanceMarkChipFace,
-                    {
-                      backgroundColor: isAuto
-                        ? isDark
-                          ? 'rgba(255,255,255,0.08)'
-                          : '#FFFFFF'
-                        : preset.hex,
-                      borderColor: isAuto || selected ? actionBorder : 'transparent',
-                      borderWidth: isAuto ? (selected ? 2 : 1) : selected ? 2 : 0,
-                    },
-                  ]}>
-                  {isAuto ? (
-                    <IconSymbol
-                      name="circle.lefthalf.filled"
-                      size={14}
-                      color={rowInkMuted}
-                    />
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-    );
-  };
-
-  const renderMarkPalette = (compact: boolean, hideLabel = false) => {
-    if (!onSelectItemMarkColor) return null;
-    const pick = (color: PriorityMarkColorId | null) => {
-      void Haptics.selectionAsync();
-      onSelectItemMarkColor(color);
-    };
-    return (
-      <View
-        style={[styles.importanceMarkBlock, compact && styles.importanceMarkBlockCompact]}
-        accessibilityRole="toolbar"
-        accessibilityLabel={t('dayPlan.importanceMarkLabel')}>
-        {hideLabel ? null : (
-          <ThemedText
-            style={[styles.expandNoteActionText, { color: rowInkMuted }]}
-            numberOfLines={1}>
-            {t('dayPlan.importanceMarkLabel')}
-          </ThemedText>
-        )}
-        <View style={styles.importanceMarkChipRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: itemMarkColor == null }}
-            accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
-            hitSlop={6}
-            onPress={() => pick(null)}
-            style={({ pressed }) => [
-              styles.importanceMarkChipShell,
-              {
-                width: MARK_SWATCH,
-                height: MARK_SWATCH,
-                marginRight: MARK_SHADOW,
-                marginBottom: MARK_SHADOW,
-                opacity: pressed ? 0.88 : 1,
-              },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.importanceMarkChipShadow,
-                {
-                  backgroundColor: actionShadow,
-                  transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.importanceMarkChipFace,
-                {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                  borderColor: actionBorder,
-                  borderWidth: itemMarkColor == null ? 2 : 1,
-                },
-              ]}>
-              <IconSymbol name="xmark" size={12} color={rowInkMuted} />
-            </View>
-          </Pressable>
-          {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
-            const selected = itemMarkColor === preset.id;
-            const face = isDark ? preset.faceDark : preset.face;
-            return (
-              <Pressable
-                key={preset.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
-                  color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
-                })}
-                hitSlop={6}
-                onPress={() => pick(preset.id)}
-                style={({ pressed }) => [
-                  styles.importanceMarkChipShell,
-                  {
-                    width: MARK_SWATCH,
-                    height: MARK_SWATCH,
-                    marginRight: MARK_SHADOW,
-                    marginBottom: MARK_SHADOW,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.importanceMarkChipShadow,
-                    {
-                      backgroundColor: actionShadow,
-                      transform: [
-                        { translateX: MARK_SHADOW },
-                        { translateY: MARK_SHADOW },
-                      ],
-                    },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.importanceMarkChipFace,
-                    {
-                      backgroundColor: face,
-                      borderColor: selected ? actionBorder : 'transparent',
-                      borderWidth: selected ? 2 : 0,
-                    },
-                  ]}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
+        <FountainPenColorPalette value={itemInkColor} onChange={onSelectItemInkColor} isDark={isDark} />
       </View>
     );
   };
 
   const priorityButton =
-    onSelectItemMarkColor || onSelectItemFaceColor || onSelectItemInkColor
+    onSelectItemFaceColor || onSelectItemInkColor
       ? wrapBrutal(
           <View
             style={[
@@ -785,14 +461,13 @@ function DefaultPriorityOrderRowInner({
             ]}>
             {renderFacePalette(true)}
             {renderInkPalette(true)}
-            {renderMarkPalette(true)}
           </View>,
         )
       : null;
 
   const finishButton = onFinishForToday
-    ? wrapBrutal(
-      <Pressable
+    ? (
+      <PaperControl
         accessibilityRole="button"
         accessibilityLabel={t('dayPlan.endTodayA11y', { label })}
         hitSlop={10}
@@ -812,7 +487,7 @@ function DefaultPriorityOrderRowInner({
           numberOfLines={1}>
           {t('dayPlan.endTodayConfirm')}
         </ThemedText>
-      </Pressable>,
+      </PaperControl>
     )
     : null;
 
@@ -845,11 +520,9 @@ function DefaultPriorityOrderRowInner({
   );
 
   const noteFaceAction =
-    expandEnabled && onSelectItemFaceColor ? renderFacePalette(false, true) : null;
+    Boolean(expandEnabled && onSelectItemFaceColor);
   const noteInkAction =
-    expandEnabled && onSelectItemInkColor ? renderInkPalette(false, true) : null;
-  const notePriorityAction =
-    expandEnabled && onSelectItemMarkColor ? renderMarkPalette(false, true) : null;
+    Boolean(expandEnabled && onSelectItemInkColor);
 
   const colorTabs = useMemo((): RowColorPaletteTab[] => {
     const tabs: RowColorPaletteTab[] = [];
@@ -857,29 +530,26 @@ function DefaultPriorityOrderRowInner({
       tabs.push({
         id: 'face',
         label: t('dayPlan.colorTab.face'),
-        panel: noteFaceAction,
+        choices: deskPaperChoices(itemFaceColor, onSelectItemFaceColor!, isDark),
+        reset: () => onSelectItemFaceColor?.(null),
+        swatch: rowFaceBg ?? undefined,
       });
     }
     if (noteInkAction) {
       tabs.push({
         id: 'ink',
         label: t('dayPlan.colorTab.ink'),
-        panel: noteInkAction,
-      });
-    }
-    if (notePriorityAction) {
-      tabs.push({
-        id: 'mark',
-        label: t('dayPlan.colorTab.mark'),
-        panel: notePriorityAction,
+        choices: deskInkChoices(itemInkColor, onSelectItemInkColor!),
+        reset: () => onSelectItemInkColor?.(null),
+        swatch: rowInk ?? undefined,
       });
     }
     return tabs;
-  }, [noteFaceAction, noteInkAction, notePriorityAction, t]);
+  }, [noteFaceAction, noteInkAction, rowFaceBg, rowInk, itemFaceColor, itemInkColor, onSelectItemFaceColor, onSelectItemInkColor, isDark, t]);
 
   const noteFinishAction = expandEnabled && onFinishForToday
-    ? wrapBrutal(
-      <Pressable
+    ? (
+      <PaperControl
         accessibilityRole="button"
         accessibilityLabel={t('dayPlan.endTodayA11y', { label })}
         hitSlop={8}
@@ -904,7 +574,7 @@ function DefaultPriorityOrderRowInner({
           numberOfLines={1}>
           {t('dayPlan.endTodayConfirm')}
         </ThemedText>
-      </Pressable>,
+      </PaperControl>
     )
     : null;
 
@@ -948,36 +618,30 @@ function DefaultPriorityOrderRowInner({
   const expandInlineActions = Boolean(
     noteFaceAction ||
       noteInkAction ||
-      notePriorityAction ||
       noteFinishAction ||
       noteCompleteAction,
   );
-  const colorSectionActions = Boolean(noteFaceAction || noteInkAction || notePriorityAction);
+  const colorSectionActions = Boolean(noteFaceAction || noteInkAction);
   const expandButton = expandEnabled
-    ? wrapBrutal(
+    ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={expanded ? t('dayPlan.collapseA11y', { label }) : t('dayPlan.expandA11y', { label })}
+          accessibilityState={{ expanded: Boolean(expanded) }}
           hitSlop={8}
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onToggleExpand?.();
           }}
-          style={[
-            styles.expandChevronBtn,
-            {
-              borderColor: actionBorder,
-              backgroundColor: actionBg,
-            },
-          ]}>
+          style={styles.expandChevronBtn}>
           <Reanimated.View style={expandChevronAnimatedStyle}>
-            <IconSymbol
-              name="chevron.down"
-              size={10}
+            <RoutineActionIcon
+              name="expand"
+              size={19}
               color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT}
             />
           </Reanimated.View>
-        </Pressable>,
+        </Pressable>
       )
     : null;
 
@@ -986,7 +650,7 @@ function DefaultPriorityOrderRowInner({
       {!expandInlineActions ? priorityButton : null}
       {!expandInlineActions ? finishButton : null}
       {onSettings
-        ? wrapBrutal(
+        ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('dayPlan.detailSettingsA11y', { label })}
@@ -997,17 +661,13 @@ function DefaultPriorityOrderRowInner({
             }}
             style={({ pressed }) => [
               styles.orderSettingsBtn,
-              {
-                borderColor: actionBorder,
-                backgroundColor: actionBg,
-              },
               pressed && { opacity: 0.88 },
             ]}>
-            <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT} />
-          </Pressable>,
+            <RoutineActionIcon name="adjust" size={24} color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT} />
+          </Pressable>
         )
         : isFocusStarted && onFocusDetail
-          ? wrapBrutal(
+          ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('dayPlan.focusDetailA11y', { label })}
@@ -1018,14 +678,10 @@ function DefaultPriorityOrderRowInner({
               }}
               style={({ pressed }) => [
                 styles.orderSettingsBtn,
-                {
-                  borderColor: actionBorder,
-                  backgroundColor: actionBg,
-                },
                 pressed && { opacity: 0.88 },
               ]}>
-              <IconSymbol name="slider.horizontal.3" size={11} color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT} />
-            </Pressable>,
+              <RoutineActionIcon name="adjust" size={24} color={isDark ? ACTION_ICON_DARK : ACTION_ICON_LIGHT} />
+            </Pressable>
           )
           : null}
       {expandButton}
@@ -1035,9 +691,10 @@ function DefaultPriorityOrderRowInner({
             checked={Boolean(isCompleted)}
             isDark={isDark}
             size={ORDER_ACTION_FACE}
+            appearance="ink"
             motion="gentle"
             checkedColor={isDark ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT}
-            uncheckedColor={isDark ? 'rgba(255,255,255,0.42)' : GRAY_DEFAULT_LIGHT}
+            uncheckedColor={isDark ? '#FAFAFA' : '#202020'}
             accessibilityLabel={isCompleted ? t('dayPlan.completeCancelA11y', { label }) : t('dayPlan.completeA11y', { label })}
             onPress={onToggleFocusComplete}
           />
@@ -1050,7 +707,6 @@ function DefaultPriorityOrderRowInner({
     <Animated.View
       style={[
         styles.orderRowRoman,
-        { borderBottomColor: isDark ? ORDER_ROW_DIVIDER_DARK : ORDER_ROW_DIVIDER_LIGHT },
         rowFaceBg ? { backgroundColor: rowFaceBg } : null,
         {
           opacity: enter,
@@ -1060,6 +716,7 @@ function DefaultPriorityOrderRowInner({
           ],
         },
       ]}>
+      {rowFaceBg ? <PaperGrain /> : null}
       {reorderPanGesture ? (
         <Reanimated.View style={[styles.orderRowDragShell, reorderMainAnimatedStyle]}>
           <GestureDetector gesture={reorderPanGesture}>{mainContent}</GestureDetector>

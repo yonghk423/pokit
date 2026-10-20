@@ -1,3 +1,5 @@
+> 2026-10-19 업데이트: 루틴·템플릿·통계·퍼즐의 장식 사진 배경과 하단 스트립을 제거했습니다. `assets/unsplash-routine/`의 미사용 사진 16장(1,868,290 bytes)과 `src/shared/ui/routine-atmosphere/` 모듈을 삭제하고 앱 시작 프리패치도 제거했습니다. 온보딩에서 사용하는 `morning-brunch.webp`, `sunset-ridge.webp` 및 다이얼·개발용 샘플 앨범에서 사용하는 `assets/puzzle/`은 유지합니다. 아래 표는 이전 점검 당시 기록입니다.
+
 # assets 이미지 사용 현황 점검
 
 점검일: 2026-10-19

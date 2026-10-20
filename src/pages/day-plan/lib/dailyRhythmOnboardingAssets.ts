@@ -9,9 +9,9 @@ export const dailyRhythmOnboardingAssets = {
   /** 히어로 — 아침 러닝 */
   hero: require('../../../../assets/onboarding/hero.jpg') as number,
   /** 하루 시작 행 — 아침 브런치 */
-  startThumb: require('../../../../assets/unsplash-routine/morning-brunch.webp') as number,
+  startThumb: require('../../../../assets/routine-icons/meal.webp') as number,
   /** 하루 마무리 행 — 노을 실루엣 */
-  endThumb: require('../../../../assets/unsplash-routine/sunset-ridge.webp') as number,
+  endThumb: require('../../../../assets/routine-icons/sleep.webp') as number,
 } as const;
 
 let prefetchPromise: Promise<void> | null = null;

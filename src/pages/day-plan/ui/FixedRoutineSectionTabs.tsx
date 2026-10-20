@@ -1,3 +1,5 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet } from 'react-native';
 
@@ -81,6 +83,8 @@ export function FixedRoutineSectionTabs({
               },
               pressed && styles.pressed,
             ]}>
+            <PaperGrain />
+            {active ? <HanddrawnFrame color={activeText} /> : null}
             <ThemedText
               style={[
                 styles.tabLabel,

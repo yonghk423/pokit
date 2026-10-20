@@ -1,3 +1,5 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -50,7 +52,7 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey, onPressDay }:
           styles.track,
           {
             backgroundColor: palette.weekdayIdle,
-            borderColor: palette.ink,
+            borderColor: 'transparent',
           },
         ]}>
         {weekdayLabels.map((label, index) => {
@@ -73,9 +75,10 @@ export function FlowHistoryWeekdayRow({ row, palette, categoryKey, onPressDay }:
                 },
                 { backgroundColor: done ? doneFill : 'transparent' },
               ]}
-            />
+            ><PaperGrain /></Pressable>
           );
         })}
+        <HanddrawnFrame color={palette.ink} />
       </View>
     </View>
   );

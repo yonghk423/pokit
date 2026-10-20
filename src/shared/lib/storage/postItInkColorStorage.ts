@@ -20,6 +20,22 @@ export type PostItInkColorPreset = {
 
 export const POST_IT_INK_COLOR_PRESETS = [
   { id: 'auto', hex: '' },
+  /** 선명한 무지개 색상 — 기존 저장 ID와 색상값은 유지한다. */
+  { id: 'vividRed', hex: '#EF233C' },
+  { id: 'lightRed', hex: '#FF6B6B' },
+  { id: 'vividOrange', hex: '#FF7A00' },
+  { id: 'lightOrange', hex: '#FFB067' },
+  { id: 'vividYellow', hex: '#FFD600' },
+  { id: 'lightYellow', hex: '#FFF176' },
+  { id: 'vividGreen', hex: '#26B843' },
+  { id: 'lightGreen', hex: '#8BDD67' },
+  { id: 'vividCyan', hex: '#00BCD4' },
+  { id: 'vividBlue', hex: '#1685F8' },
+  { id: 'lightBlue', hex: '#8CC8FF' },
+  { id: 'vividIndigo', hex: '#3E40C9' },
+  { id: 'vividViolet', hex: '#933FF0' },
+  { id: 'lightViolet', hex: '#C59BFA' },
+  { id: 'vividPink', hex: '#F03D9A' },
   { id: 'black', hex: POST_IT_DARK_INK },
   { id: 'white', hex: POST_IT_LIGHT_INK },
   /** 뉴트럴 */

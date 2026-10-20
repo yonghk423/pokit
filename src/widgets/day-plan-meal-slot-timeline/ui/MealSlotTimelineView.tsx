@@ -125,7 +125,7 @@ function RoutineIconBadge({
   palette: MealSlotTimelinePalette;
   size?: number;
 }) {
-  const accent = categoryIconAccent(categoryKey);
+  const accent = categoryIconAccent(categoryKey, isDark);
   const colors = cardColors(isDark);
   const iconColor = accent.color;
 

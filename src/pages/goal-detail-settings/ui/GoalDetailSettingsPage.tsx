@@ -788,8 +788,18 @@ export function GoalDetailSettingsPage() {
                 styles.contentConfirmWrap,
                 contentFlush && styles.metaSectionInset,
               ]}>
+              {routineMetaVisible ? (
+                <RoutineDeleteButton
+                  onDelete={() => handleDeleteRoutine(categoryKey)}
+                />
+              ) : null}
               <BrutalConfirmButton
-                align="stretch"
+                align="end"
+                compact
+                fill="rgba(168,218,220,0.35)"
+                labelColor="#46564E"
+                shadowColor="rgba(45,67,59,0.10)"
+                shadowOffset={1}
                 label={t('common.confirm')}
                 accessibilityLabel={
                   waterDetailUi
@@ -803,11 +813,6 @@ export function GoalDetailSettingsPage() {
                   handleCompleteAndStart();
                 }}
               />
-              {routineMetaVisible ? (
-                <RoutineDeleteButton
-                  onDelete={() => handleDeleteRoutine(categoryKey)}
-                />
-              ) : null}
             </View>
           </View>
         </ScrollView>
@@ -904,12 +909,15 @@ const styles = StyleSheet.create({
   startPickerRowMeta: { fontSize: 12, fontWeight: '600' },
   /** 상세 설정 콘텐츠 마지막 확인(+삭제) — 스크롤 영역 안에 배치 */
   contentConfirmWrap: {
-    alignItems: 'stretch',
-    gap: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 10,
     paddingTop: 12,
     paddingBottom: 8,
   },
   footerConfirm: {
-    alignSelf: 'stretch',
+    minWidth: 96,
   },
 });

@@ -1,9 +1,10 @@
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -152,6 +153,7 @@ export function PriorityRoutinePickerSheet({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
+  const sectionLine = isDark ? 'rgba(215,222,211,0.20)' : 'rgba(96,107,93,0.22)';
   const resolvedConfirmLabel = confirmLabel ?? t('dayPlan.confirmLink');
   const scrollRef = useRef<ScrollView>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
@@ -304,7 +306,7 @@ export function PriorityRoutinePickerSheet({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 12 : 0}>
         <View style={{ flex: 1, backgroundColor: surface, paddingTop: insets.top + 12 }}>
-        <View style={[styles.header, { borderBottomColor: line }]}>
+        <View style={[styles.header, { borderBottomColor: sectionLine }]}>
           <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
           <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
@@ -363,7 +365,7 @@ export function PriorityRoutinePickerSheet({
                 onCreateCustom();
               }}
               style={({ pressed }) => [styles.createRow, pressed && { opacity: 0.72 }]}>
-              <IconSymbol name="plus.circle.fill" size={20} color={ink} />
+              <RoutineActionIcon name="adjust" size={22} color={ink} />
               <ThemedText style={[styles.rowLabel, { color: ink }]}>{t('fixedRoutine.createNew')}</ThemedText>
             </Pressable>
           ) : null}
@@ -394,7 +396,7 @@ export function PriorityRoutinePickerSheet({
                   <IconSymbol
                     name={resolveCategoryCatalogIcon(cat.key) as 'drop.fill'}
                     size={18}
-                    color={activeIconColorByCategory(cat.key)}
+                    color={activeIconColorByCategory(cat.key, isDark)}
                   />
                   <ThemedText style={[styles.rowLabel, { color: ink }]}>{cat.label}</ThemedText>
                   {spineTimeEnabled && selected ? (
@@ -490,7 +492,7 @@ export function PriorityRoutinePickerSheet({
           style={[
             styles.footer,
             {
-              borderTopColor: line,
+              borderTopColor: sectionLine,
               paddingBottom: Math.max(insets.bottom, 12),
               backgroundColor: surface,
             },
@@ -534,7 +536,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 14,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   title: {
     fontSize: 16,
@@ -605,7 +607,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   empty: {
     fontSize: 14,

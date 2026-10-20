@@ -1,6 +1,9 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { PaperControl as Pressable } from '@shared/ui/paper-control';
+import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import {
@@ -17,7 +20,6 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -39,7 +41,7 @@ import {
 
 const PRIMARY = 'rgb(0, 0, 0)';
 /** 루틴 탭 액션과 동일 — offset 1 + 옅은 반투명 */
-const CHIP_SHADOW = 1;
+const CHIP_SHADOW = 0;
 const SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
 const SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
 
@@ -353,14 +355,14 @@ export function MedicineSettings({
             {SLOT_GRID.map((slot) => {
               const on = slotOn(draft, slot.key);
               const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-              const bg = on ? tone.bgMint : isDark ? tone.surfaceAlt : '#FFFFFF';
+              const bg = on ? (isDark ? '#444444' : '#E6E6E6') : isDark ? tone.surfaceAlt : '#FFFFFF';
               const fg = on ? (isDark ? tone.text : tone.tertiary) : tone.text;
               const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
               return (
                 <View key={slot.key} style={styles.slotChipShell}>
                   <View
                     pointerEvents="none"
-                    style={[styles.slotChipShadow, { backgroundColor: shadowInk }]}
+                    style={[styles.slotChipShadow, { backgroundColor: 'transparent' }]}
                   />
                   <Pressable
                     accessibilityRole="button"
@@ -557,11 +559,9 @@ export function MedicineSettings({
               <View style={[styles.row, styles.rowInSlotGroup, styles.slotNotifyRow]}>
                 <ThemedText style={[styles.rowSubTitle, { color: c.onVariant }]}>{copy.slotNotifyLabel(t(slot.labelKey))}</ThemedText>
                 <View style={styles.slotNotifySwitchWrap}>
-                  <OutlinedSwitch
-                    value={notifyOn}
-                    onValueChange={(v) => handleSlotNotifyChange(slot.key, v)}
-                    trackColor={{ true: PRIMARY, false: 'rgba(0,0,0,0.28)' }}
-                    thumbColor="#fff"
+                  <HanddrawnToggle isDark={isDark} label={copy.slotNotifyLabel(t(slot.labelKey))}
+                    checked={notifyOn}
+                    onChange={(v) => handleSlotNotifyChange(slot.key, v)}
                   />
                 </View>
               </View>
@@ -588,7 +588,7 @@ export function MedicineSettings({
                       {
                         backgroundColor: isDark
                           ? RetroFlatColors.dark.primary
-                          : RetroFlatColors.light.primaryContainer,
+                          : '#E6E6E6',
                       },
                       isSlotDone && styles.doseActionBtnDone,
                     ]}>
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   doseActionBtnDone: {
-    backgroundColor: '#C5E8E9',
+    backgroundColor: '#E5E5E5',
   },
   doseActionBtnText: { fontSize: 13, fontWeight: '400' },
   rowSubTitle: { fontSize: 12, fontWeight: '400' },

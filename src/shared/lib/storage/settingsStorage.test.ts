@@ -120,8 +120,6 @@ describe('settingsStorage', () => {
 
   it('persists app font id', () => {
     expect(loadAppFontId()).toBe('hiMelody');
-    saveAppFontId('gaegu');
-    expect(loadAppFontId()).toBe('gaegu');
     saveAppFontId('gothicA1');
     expect(loadAppFontId()).toBe('gothicA1');
     saveAppFontId('hanken');
@@ -131,7 +129,7 @@ describe('settingsStorage', () => {
   });
 
   it('ignores invalid app font id', () => {
-    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'comic-sans' });
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gaegu' });
     expect(loadAppFontId()).toBe('hiMelody');
   });
 

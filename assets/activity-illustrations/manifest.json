@@ -1,0 +1,272 @@
+[
+  {
+    "id": "01-exercise",
+    "label": "운동하기",
+    "file": "01-exercise.webp"
+  },
+  {
+    "id": "02-study",
+    "label": "공부하기",
+    "file": "02-study.webp"
+  },
+  {
+    "id": "03-meeting",
+    "label": "회의하기",
+    "file": "03-meeting.webp"
+  },
+  {
+    "id": "04-laundry",
+    "label": "빨래하기",
+    "file": "04-laundry.webp"
+  },
+  {
+    "id": "05-work",
+    "label": "업무 보기",
+    "file": "05-work.webp"
+  },
+  {
+    "id": "06-reading",
+    "label": "독서하기",
+    "file": "06-reading.webp"
+  },
+  {
+    "id": "07-movie-home",
+    "label": "집에서 영화 보기",
+    "file": "07-movie-home.webp"
+  },
+  {
+    "id": "08-study-hoodie",
+    "label": "후드티와 둥근 안경으로 공부하기",
+    "file": "08-study-hoodie.webp"
+  },
+  {
+    "id": "09-coffee-tablet",
+    "label": "커피와 아이패드",
+    "file": "09-coffee-tablet.webp"
+  },
+  {
+    "id": "10-park-walk",
+    "label": "공원 산책",
+    "file": "10-park-walk.webp"
+  },
+  {
+    "id": "11-photography",
+    "label": "사진 촬영",
+    "file": "11-photography.webp"
+  },
+  {
+    "id": "12-weights",
+    "label": "웨이트 트레이닝",
+    "file": "12-weights.webp"
+  },
+  {
+    "id": "13-yoga",
+    "label": "요가하기",
+    "file": "13-yoga.webp"
+  },
+  {
+    "id": "14-headphone-run",
+    "label": "헤드셋을 끼고 러닝",
+    "file": "14-headphone-run.webp"
+  },
+  {
+    "id": "15-eating",
+    "label": "맛있는 음식 먹기",
+    "file": "15-eating.webp"
+  },
+  {
+    "id": "16-cinema",
+    "label": "영화관에서 팝콘과 콜라",
+    "file": "16-cinema.webp"
+  },
+  {
+    "id": "17-web-browsing",
+    "label": "웹서핑",
+    "file": "17-web-browsing.webp"
+  },
+  {
+    "id": "18-shopping",
+    "label": "쇼핑하기",
+    "file": "18-shopping.webp"
+  },
+  {
+    "id": "19-hiking",
+    "label": "등산하기",
+    "file": "19-hiking.webp"
+  },
+  {
+    "id": "20-swimming",
+    "label": "수영하기",
+    "file": "20-swimming.webp"
+  },
+  {
+    "id": "21-airport-travel",
+    "label": "캐리어를 끌고 공항 가기",
+    "file": "21-airport-travel.webp"
+  },
+  {
+    "id": "22-driving",
+    "label": "드라이브",
+    "file": "22-driving.webp"
+  },
+  {
+    "id": "23-morning-stretch",
+    "label": "아침 스트레칭",
+    "file": "23-morning-stretch.webp"
+  },
+  {
+    "id": "24-making-bed",
+    "label": "침대 정리",
+    "file": "24-making-bed.webp"
+  },
+  {
+    "id": "25-skincare",
+    "label": "스킨케어",
+    "file": "25-skincare.webp"
+  },
+  {
+    "id": "26-getting-dressed",
+    "label": "외출 준비하기",
+    "file": "26-getting-dressed.webp"
+  },
+  {
+    "id": "27-breakfast",
+    "label": "아침 식사 준비",
+    "file": "27-breakfast.webp"
+  },
+  {
+    "id": "28-cooking",
+    "label": "저녁 요리하기",
+    "file": "28-cooking.webp"
+  },
+  {
+    "id": "29-dishes",
+    "label": "설거지",
+    "file": "29-dishes.webp"
+  },
+  {
+    "id": "30-vacuuming",
+    "label": "청소기 돌리기",
+    "file": "30-vacuuming.webp"
+  },
+  {
+    "id": "31-organizing-closet",
+    "label": "옷장 정리",
+    "file": "31-organizing-closet.webp"
+  },
+  {
+    "id": "32-watering-plants",
+    "label": "화초 물주기",
+    "file": "32-watering-plants.webp"
+  },
+  {
+    "id": "33-grocery-shopping",
+    "label": "장보기",
+    "file": "33-grocery-shopping.webp"
+  },
+  {
+    "id": "34-subway-commute",
+    "label": "지하철 이동",
+    "file": "34-subway-commute.webp"
+  },
+  {
+    "id": "35-bus-ride",
+    "label": "버스 타기",
+    "file": "35-bus-ride.webp"
+  },
+  {
+    "id": "36-cycling",
+    "label": "자전거 타기",
+    "file": "36-cycling.webp"
+  },
+  {
+    "id": "37-journaling",
+    "label": "일기 쓰기",
+    "file": "37-journaling.webp"
+  },
+  {
+    "id": "38-listening-music",
+    "label": "음악 듣기",
+    "file": "38-listening-music.webp"
+  },
+  {
+    "id": "39-piano-practice",
+    "label": "피아노 연습",
+    "file": "39-piano-practice.webp"
+  },
+  {
+    "id": "40-video-call",
+    "label": "친구와 영상통화",
+    "file": "40-video-call.webp"
+  },
+  {
+    "id": "41-pet-walk",
+    "label": "반려동물 산책",
+    "file": "41-pet-walk.webp"
+  },
+  {
+    "id": "42-meditation",
+    "label": "명상하기",
+    "file": "42-meditation.webp"
+  },
+  {
+    "id": "43-sketching",
+    "label": "그림 그리기",
+    "file": "43-sketching.webp"
+  },
+  {
+    "id": "44-baking",
+    "label": "쿠키 굽기",
+    "file": "44-baking.webp"
+  },
+  {
+    "id": "45-board-game",
+    "label": "친구와 보드게임",
+    "file": "45-board-game.webp"
+  },
+  {
+    "id": "46-camping",
+    "label": "캠핑하기",
+    "file": "46-camping.webp"
+  },
+  {
+    "id": "47-fold-laundry",
+    "label": "빨래 개기",
+    "file": "47-fold-laundry.webp"
+  },
+  {
+    "id": "48-recycling",
+    "label": "분리수거",
+    "file": "48-recycling.webp"
+  },
+  {
+    "id": "49-guitar",
+    "label": "기타 연습",
+    "file": "49-guitar.webp"
+  },
+  {
+    "id": "50-nap",
+    "label": "낮잠",
+    "file": "50-nap.webp"
+  },
+  {
+    "id": "51-sleeping-in-bed",
+    "label": "침대에서 자기",
+    "file": "51-sleeping-in-bed.webp"
+  },
+  {
+    "id": "52-reading-cafe",
+    "label": "카페에서 독서하기",
+    "file": "52-reading-cafe.webp"
+  },
+  {
+    "id": "53-diary-in-bed",
+    "label": "침대에 기대어 다이어리 쓰기",
+    "file": "53-diary-in-bed.webp"
+  },
+  {
+    "id": "54-seaside-trip",
+    "label": "바닷가 여행",
+    "file": "54-seaside-trip.webp"
+  }
+]

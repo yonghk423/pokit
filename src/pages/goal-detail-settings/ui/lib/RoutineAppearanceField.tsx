@@ -6,7 +6,7 @@ import {
   readEditableCategoryAppearance,
   readRoutineDisplayNameFromConfig,
 } from '@entities/day-plan';
-import type { CustomFlowIconOption } from '@shared/lib/customFlowAppearanceCatalog';
+import { DEFAULT_CUSTOM_FLOW_ACCENT_COLOR, type CustomFlowIconOption } from '@shared/lib/customFlowAppearanceCatalog';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
 
 import type { GoalDetailCategoryKey } from '../../model/types';
@@ -30,7 +30,7 @@ function withDisplayName(payload: unknown, displayName: string, fallback: string
   };
 }
 
-/** 목표 상세 설정 — 루틴 이름·아이콘·색상 편집 */
+/** 목표 상세 설정 — 루틴 이름·아이콘 편집 */
 export function RoutineAppearanceField({
   categoryKey,
   previewLabel,
@@ -52,7 +52,6 @@ export function RoutineAppearanceField({
   );
 
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(initialAppearance.icon);
-  const [selectedAccentColor, setSelectedAccentColor] = useState<string>(initialAppearance.accentColor);
   const [previewName, setPreviewName] = useState(
     () => readRoutineDisplayNameFromConfig(dataConfig) || previewLabel,
   );
@@ -62,13 +61,11 @@ export function RoutineAppearanceField({
   const onChangeDataConfigRef = useRef(onChangeDataConfig);
   const catalogNameFallbackRef = useRef(catalogNameFallback);
   const selectedIconRef = useRef(selectedIcon);
-  const selectedAccentColorRef = useRef(selectedAccentColor);
   const previewNameRef = useRef(previewName);
   dataConfigRef.current = dataConfig;
   onChangeDataConfigRef.current = onChangeDataConfig;
   catalogNameFallbackRef.current = catalogNameFallback;
   selectedIconRef.current = selectedIcon;
-  selectedAccentColorRef.current = selectedAccentColor;
   previewNameRef.current = previewName;
 
   const persistAppearance = useCallback(
@@ -99,9 +96,6 @@ export function RoutineAppearanceField({
     const appearance = readEditableCategoryAppearance(categoryKey, dataConfig);
     const nextName = readRoutineDisplayNameFromConfig(dataConfig) || previewLabel;
     setSelectedIcon((prev) => (prev === appearance.icon ? prev : appearance.icon));
-    setSelectedAccentColor((prev) =>
-      prev === appearance.accentColor ? prev : appearance.accentColor,
-    );
     if (!nameFocusedRef.current) {
       setPreviewName((prev) => (prev === nextName ? prev : nextName));
     }
@@ -113,21 +107,11 @@ export function RoutineAppearanceField({
   return (
     <CustomFlowAppearancePicker
       icon={selectedIcon}
-      accentColor={selectedAccentColor}
       onChangeIcon={(icon) => {
         setSelectedIcon(icon);
         persistAppearance({
           icon,
-          accentColor: selectedAccentColorRef.current,
-          previewName: previewNameRef.current,
-          updateDisplayName: false,
-        });
-      }}
-      onChangeAccentColor={(accentColor) => {
-        setSelectedAccentColor(accentColor);
-        persistAppearance({
-          icon: selectedIconRef.current,
-          accentColor,
+          accentColor: DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
           previewName: previewNameRef.current,
           updateDisplayName: false,
         });
@@ -137,7 +121,7 @@ export function RoutineAppearanceField({
         setPreviewName(nextName);
         persistAppearance({
           icon: selectedIconRef.current,
-          accentColor: selectedAccentColorRef.current,
+          accentColor: DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
           previewName: nextName,
           updateDisplayName: true,
         });

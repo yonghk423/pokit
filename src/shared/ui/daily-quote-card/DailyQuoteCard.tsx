@@ -6,7 +6,7 @@ import { Pressable, Share, StyleSheet, View } from 'react-native';
 import { RetroFlatColors, cityPopFont } from '@shared/config/retroFlat';
 import { resolveDailyQuote } from '@shared/lib/daily-quote';
 import { t as brandText, useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PaperActionIcon } from '@shared/ui/paper-action-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -61,9 +61,9 @@ export function DailyQuoteCard({ dateKey, isDark = false }: Props) {
               void handleCopy();
             }}
             style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.55 }]}>
-            <IconSymbol
-              name={copied ? 'checkmark' : 'doc.on.doc'}
-              size={12}
+            <PaperActionIcon
+              name={copied ? 'check' : 'copy'}
+              size={20}
               color={copied ? tone.text : tone.textMuted}
             />
           </Pressable>
@@ -75,7 +75,7 @@ export function DailyQuoteCard({ dateKey, isDark = false }: Props) {
               void handleShare();
             }}
             style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.55 }]}>
-            <IconSymbol name="square.and.arrow.up" size={12} color={tone.textMuted} />
+            <PaperActionIcon name="share" size={20} color={tone.textMuted} />
           </Pressable>
         </View>
       </View>

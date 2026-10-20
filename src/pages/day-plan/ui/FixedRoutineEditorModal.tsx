@@ -1,6 +1,7 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -140,7 +141,7 @@ export function FixedRoutineEditorModal({
                     <IconSymbol
                       name={resolveCategoryCatalogIcon(cat.key) as any}
                       size={20}
-                      color={activeIconColorByCategory(cat.key)}
+                      color={activeIconColorByCategory(cat.key, isDark)}
                     />
                     <ThemedText style={[styles.orderLabel, { color: ink }]} numberOfLines={1}>
                       {cat.label}

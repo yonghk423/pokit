@@ -3,8 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useTranslation } from '@shared/lib/i18n';
 import {
-  RowColorPaletteActivePanel,
-  RowColorPaletteTabStrip,
+  RowColorPaletteDesk,
   useRowColorPaletteBridge,
 } from '@shared/ui/color-palette-tabs';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
@@ -35,28 +34,32 @@ export function RoutineSummaryField({
   const presentation = useUiSurfacePresentation();
   const colorBridge = useRowColorPaletteBridge();
   const isNote = presentation === 'note';
+  const summaryInk = colorBridge?.tabs.find((tab) => tab.id === 'ink')?.choices?.find((choice) => choice.selected)?.color
+    ?? colorBridge?.ink
+    ?? palette.onSurface;
   const placeholderText = placeholderProp ?? t('goalDetail.summaryPlaceholder');
-  const showColorTabs = Boolean(isNote && colorBridge && colorBridge.tabs.length > 0);
+  const showColorDesk = Boolean(isNote && colorBridge && colorBridge.tabs.length > 0);
 
   const claimSummaryHost = colorBridge?.claimSummaryHost;
   const releaseSummaryHost = colorBridge?.releaseSummaryHost;
   useLayoutEffect(() => {
-    if (!showColorTabs || !claimSummaryHost || !releaseSummaryHost) return;
+    if (!showColorDesk || !claimSummaryHost || !releaseSummaryHost) return;
     claimSummaryHost();
     return () => {
       releaseSummaryHost();
     };
-  }, [showColorTabs, claimSummaryHost, releaseSummaryHost]);
+  }, [showColorDesk, claimSummaryHost, releaseSummaryHost]);
 
   return (
     <View style={[styles.wrap, isNote && styles.wrapNote]}>
       <View style={styles.labelBlock}>
-        {showColorTabs ? <RowColorPaletteTabStrip /> : null}
         <ThemedText style={[styles.label, { color: palette.onVariant }]}>
           {t('goalDetail.summaryLabel')}
         </ThemedText>
       </View>
       <ThemedTextInput
+        // iOS가 기존 입력 문자열의 이전 색을 유지하지 않도록 색 변경 시 입력 뷰만 갱신한다.
+        key={summaryInk}
         value={value}
         onChangeText={onChangeValue}
         placeholder={placeholderText}
@@ -72,7 +75,7 @@ export function RoutineSummaryField({
           isNote ? styles.inputNote : styles.input,
           isNote && !underline ? styles.inputNoteNoLine : null,
           {
-            color: palette.onSurface,
+            color: summaryInk,
             ...(isNote
               ? underline
                 ? { borderBottomColor: palette.outlineVariant }
@@ -87,7 +90,7 @@ export function RoutineSummaryField({
         multiline
         textAlignVertical="top"
       />
-      {showColorTabs ? <RowColorPaletteActivePanel /> : null}
+      {showColorDesk ? <RowColorPaletteDesk /> : null}
     </View>
   );
 }

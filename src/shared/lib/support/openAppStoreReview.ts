@@ -1,4 +1,5 @@
-import { Alert, Linking, Platform } from 'react-native';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { Linking, Platform } from 'react-native';
 
 import { t, useAppLocaleStore } from '@shared/lib/i18n';
 

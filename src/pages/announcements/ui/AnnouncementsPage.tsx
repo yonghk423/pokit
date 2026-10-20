@@ -1,10 +1,10 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -195,6 +195,10 @@ export function AnnouncementsPage() {
           {hasUnread ? (
             <BrutalConfirmButton
               compact
+              fill={isDark ? '#49665C' : '#D8EAE3'}
+              labelColor={isDark ? '#DDE8DF' : '#6A7F70'}
+              shadowColor="transparent"
+              shadowOffset={0}
               label={t('announcements.markAllRead')}
               accessibilityLabel={t('announcements.a11y.markAllRead')}
               onPress={markAllRead}

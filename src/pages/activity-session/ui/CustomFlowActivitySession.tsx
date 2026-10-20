@@ -14,9 +14,7 @@ import { RoutineTemplatePreviewBody } from '@pages/goal-detail-settings/ui/Routi
 import { CategoryImmersionTheme } from '@shared/config/categoryImmersionTheme';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import {
-  DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
   DEFAULT_CUSTOM_FLOW_ICON,
-  normalizeCustomFlowAccentColor,
   normalizeCustomFlowIcon,
   saveGoalDetailBlockConfig,
   saveGoalDetailCategoryConfig,
@@ -33,7 +31,7 @@ function readSessionAppearance(raw: unknown) {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   return {
     icon: normalizeCustomFlowIcon(o.icon) ?? DEFAULT_CUSTOM_FLOW_ICON,
-    accentColor: normalizeCustomFlowAccentColor(o.accentColor) ?? DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
+    accentColor: PRIMARY,
   };
 }
 

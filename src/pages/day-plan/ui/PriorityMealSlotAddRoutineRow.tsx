@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -29,7 +29,7 @@ export function PriorityMealSlotAddRoutineRow({
       accessibilityLabel={resolvedLabel}
       onPress={onPress}
       style={({ pressed }) => [styles.root, pressed && styles.pressed]}>
-      <IconSymbol name="plus.circle.fill" size={14} color={ink} />
+      <RoutineActionIcon name="adjust" size={22} color={ink} />
       <ThemedText style={[styles.label, { color: ink }]}>{resolvedLabel}</ThemedText>
     </Pressable>
   );

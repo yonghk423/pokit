@@ -2,19 +2,13 @@ import { StyleSheet } from 'react-native';
 
 import { RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
 
-/** 우선순위 행 구분선 — 풀 블랙보다 연하되, 행 구분은 또렷하게 */
-export const ORDER_ROW_DIVIDER_LIGHT = 'rgba(0, 0, 0, 0.32)';
-export const ORDER_ROW_DIVIDER_DARK = 'rgba(241, 239, 255, 0.38)';
-
 export const orderRowStyles = StyleSheet.create({
   /** 바깥 띠(보더·세로 패딩만) — 드래그 시 잘리지 않게 flex 행은 `orderRowDragShell` */
   orderRowRoman: {
     width: '100%',
     paddingTop: 10,
     paddingBottom: 6,
-    paddingHorizontal: 12,
-    /** 행 구분 — 브루탈 2px 대신 얇고 연한 선 */
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 6,
   },
   /** 아이콘·제목과 액션 버튼을 한 줄로 — 리오더 시 전체가 함께 움직임 */
   orderRowDragShell: {
@@ -65,8 +59,8 @@ export const orderRowStyles = StyleSheet.create({
     borderRadius: 0,
   },
   orderIconBox: {
-    width: 34,
-    height: 34,
+    width: 44,
+    height: 44,
     borderRadius: 0,
     borderWidth: 1,
     alignItems: 'center',
@@ -184,12 +178,11 @@ export const orderRowStyles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#000000',
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   orderFinishBtn: {
     minWidth: 26,
@@ -328,11 +321,10 @@ export const orderRowStyles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#000000',
+    borderWidth: 0,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     zIndex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
 });

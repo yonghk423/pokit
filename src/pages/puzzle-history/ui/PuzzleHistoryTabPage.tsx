@@ -1,8 +1,8 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   FlatList,
   InteractionManager,
   Pressable,
@@ -38,10 +38,6 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ListRowSkeletonStack } from '@shared/ui/list-row-skeleton';
-import {
-  RoutineAtmosphereFooterStrip,
-  RoutineTabAtmosphere,
-} from '@shared/ui/routine-atmosphere';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 import {
@@ -490,15 +486,14 @@ export function PuzzleHistoryTabPage() {
         </View>
       );
     }
-    return <RoutineAtmosphereFooterStrip variant="puzzle" isDark={isDark} />;
-  }, [isDark, isHydrated, palette.muted, t]);
+    return null;
+  }, [isHydrated, palette.muted, t]);
 
   return (
     <ThemedView
       style={[styles.root, { backgroundColor: palette.pageBg }]}
       lightColor={palette.pageBg}
       darkColor={palette.pageBg}>
-      <RoutineTabAtmosphere variant="puzzle" isDark={isDark} />
       <View style={styles.foreground}>
         <View style={styles.stickyHeader}>
           <View style={styles.headerTitleRow}>

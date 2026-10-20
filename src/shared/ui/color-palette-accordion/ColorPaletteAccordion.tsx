@@ -1,3 +1,4 @@
+import { StationeryCaptionIcon } from '@shared/ui/stationery-desk/StationeryCaptionIcon';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -10,7 +11,7 @@ import Reanimated, {
 
 import { useMeasuredAccordion } from '@shared/lib/hooks/useMeasuredAccordion';
 import { useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 const CHEVRON_MS = 220;
@@ -29,31 +30,7 @@ type Props = {
 };
 
 function ColorSectionGlyph({ isDark }: { isDark: boolean }) {
-  return (
-    <View
-      style={styles.glyph}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants">
-      <View style={[styles.glyphChipShell, { left: 0, top: 4 }]}>
-        <View pointerEvents="none" style={styles.glyphChipShadow} />
-        <View
-          style={[
-            styles.glyphChipFace,
-            { backgroundColor: isDark ? 'rgba(147,180,232,0.92)' : '#B7D0F5' },
-          ]}
-        />
-      </View>
-      <View style={[styles.glyphChipShell, { right: 0, top: 0 }]}>
-        <View pointerEvents="none" style={styles.glyphChipShadow} />
-        <View
-          style={[
-            styles.glyphChipFace,
-            { backgroundColor: isDark ? 'rgba(236,170,186,0.95)' : '#F0B8C6' },
-          ]}
-        />
-      </View>
-    </View>
-  );
+  return <StationeryCaptionIcon kind="face" color={isDark ? '#C69AB0' : '#F2B8C8'} size={26} />;
 }
 
 /** 「메모지 컬러」타이틀 + 파스텔 칩 아이콘 아코디언 (루틴·나만의 루틴·오늘 탭 공용) */
@@ -66,7 +43,7 @@ export function ColorPaletteAccordion({
 }: Props) {
   const { t } = useTranslation();
   /** 박스 없이 화살표만 — 중간 톤 */
-  const chevronInk = isDark ? 'rgba(250,250,250,0.72)' : 'rgba(17,17,17,0.58)';
+  const chevronInk = isDark ? 'rgba(250,250,250,0.72)' : 'rgba(17,17,17,0.84)';
   const [expanded, setExpanded] = useState(defaultExpanded);
   const accordion = useMeasuredAccordion(expanded);
   const chevronProgress = useSharedValue(defaultExpanded ? 1 : 0);
@@ -101,7 +78,7 @@ export function ColorPaletteAccordion({
           {t('dayPlan.colorSectionTitle')}
         </ThemedText>
         <Reanimated.View style={chevronStyle}>
-          <IconSymbol name="chevron.down" size={13} color={chevronInk} weight="medium" />
+          <RoutineActionIcon name="expand" size={19} color={chevronInk} />
         </Reanimated.View>
       </Pressable>
       {accordion.mounted ? (

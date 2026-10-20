@@ -1,8 +1,12 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { RowColorPaletteBridgeProvider, RowColorPaletteDesk } from '@shared/ui/color-palette-tabs';
+import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { forwardRef, useCallback, useEffect, useRef, useState, type ForwardedRef } from 'react';
 import {
-  Alert,
   Animated,
   Easing,
   Keyboard,
@@ -42,8 +46,6 @@ import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
-import { PostItFaceColorChips } from '@shared/ui/post-it-face-color-chips';
-import { PostItInkColorChips } from '@shared/ui/post-it-ink-color-chips';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
@@ -62,6 +64,7 @@ const FAB_SIZE = 40;
 const MEMO_PAD_H = 14;
 
 type Props = {
+  isActive?: boolean;
   c: DayPlanPalette;
   isDark: boolean;
   memos: DayPlanQuickMemo[];
@@ -79,7 +82,7 @@ function plainDraftFromStored(raw: string): string {
 }
 
 export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
-  { isDark, memos, draft, onChangeDraft, onSavePress, onFaceColorChange }: Props,
+  { isActive = true, isDark, memos, draft, onChangeDraft, onSavePress, onFaceColorChange }: Props,
   ref: ForwardedRef<TextInput>,
 ) {
   const { t } = useTranslation();
@@ -88,6 +91,11 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   const hydratedRef = useRef(false);
   const inputRef = useRef<TextInput | null>(null);
   const keyboardInsetRef = useRef(0);
+  useEffect(() => {
+    if (!isActive) return;
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [isActive]);
   const pill = tabPillColors(isDark);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [faceColorId, setFaceColorId] = useState<PostItFaceColorId>(() =>
@@ -318,7 +326,8 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           backgroundColor: active ? TOOLBAR_BTN_ACTIVE_BG : TOOLBAR_BTN_BG,
         },
       ]}>
-      <IconSymbol name={icon} size={18} color="#111111" />
+      <PaperGrain /><HanddrawnFrame color="#333333" />
+      <IconSymbol name={icon} size={24} color="#111111" />
     </Pressable>
   );
 
@@ -333,27 +342,24 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       style={styles.shell}
       contentStyle={styles.root}>
       <ColorPaletteAccordion ink={faceInk} isDark={isDark || chromeIsLightInk} defaultExpanded={false}>
-        <View style={styles.colorBlock}>
-          <ThemedText style={[styles.colorLabel, { color: faceInk }]} numberOfLines={1}>
-            {t('dayPlan.quickMemoFaceColorLabel')}
-          </ThemedText>
-          <PostItFaceColorChips
-            selectedId={faceColorId}
-            isDark={isDark}
-            ink={faceInk}
-            onSelect={onSelectFaceColor}
-            compact
-            collapsible={false}
-          />
-          <ThemedText style={[styles.colorLabel, { color: faceInk }]} numberOfLines={1}>
-            {t('dayPlan.quickMemoInkColorLabel')}
-          </ThemedText>
-          <PostItInkColorChips
-            selectedId={inkColorId}
-            chromeInk={faceInk}
-            onSelect={onSelectInkColor}
-          />
-        </View>
+        <RowColorPaletteBridgeProvider
+          ink={faceInk}
+          muted={faceMuted}
+          isDark={isDark}
+          tabs={[
+            {
+              id: 'face', label: t('dayPlan.colorTab.face'),
+              choices: deskPaperChoices(faceColorId === 'white' ? null : faceColorId, (id) => onSelectFaceColor(id ?? 'white'), isDark),
+              reset: () => onSelectFaceColor('white'),
+            },
+            {
+              id: 'ink', label: t('dayPlan.colorTab.ink'),
+              choices: deskInkChoices(inkColorId === 'auto' ? null : inkColorId, (id) => onSelectInkColor(id ?? 'auto')),
+              reset: () => onSelectInkColor('auto'),
+            },
+          ]}>
+          <RowColorPaletteDesk />
+        </RowColorPaletteBridgeProvider>
       </ColorPaletteAccordion>
 
       <ScrollView
@@ -406,7 +412,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           multiline
           scrollEnabled={false}
           textAlignVertical="top"
-          autoFocus
+          autoFocus={isActive}
           onContentSizeChange={(event) => {
             const next = Math.ceil(event.nativeEvent.contentSize.height);
             setDraftContentHeight((prev) => (Math.abs(prev - next) < 2 ? prev : next));
@@ -441,7 +447,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
             bottom: fabBottom,
           },
         ]}>
-        <IconSymbol name="keyboard.chevron.compact.down" size={22} color={faceInk} />
+        <IconSymbol name="keyboard.chevron.compact.down" size={27} color={faceInk} />
       </Pressable>
 
       <Pressable
@@ -454,12 +460,13 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           styles.saveFab,
           {
             bottom: fabBottom,
-            backgroundColor: '#000000',
+            backgroundColor: '#FFFFFF',
           },
         ]}>
+        <PaperGrain /><HanddrawnFrame color="#333333" />
         <IconSymbol
           name="square.and.arrow.down"
-          size={18}
+          size={27}
           color={RetroFlatColors.light.bgMint}
           weight="semibold"
         />
@@ -548,7 +555,7 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
                     backgroundColor: selected ? TOOLBAR_BTN_ACTIVE_BG : TOOLBAR_BTN_BG,
                   },
                 ]}>
-                <ThemedText style={styles.fontChipText}>{pt}</ThemedText>
+                <PaperGrain /><HanddrawnFrame color="#333333" /><ThemedText style={styles.fontChipText}>{pt}</ThemedText>
               </Pressable>
             );
           })}
@@ -566,11 +573,12 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           styles.fontFab,
           {
             bottom: fabBottom,
-            backgroundColor: fontPanelOpen ? '#111111' : RetroFlatColors.light.bgMint,
+            backgroundColor: fontPanelOpen ? '#EAEAEA' : '#FFFFFF',
           },
         ]}>
+        <PaperGrain /><HanddrawnFrame color="#333333" />
         <ThemedText
-          style={[styles.fontFabLabel, { color: fontPanelOpen ? '#FFFFFF' : '#000000' }]}>
+          style={[styles.fontFabLabel, { color: '#202020' }]}>
           {fontSizePt}
         </ThemedText>
       </Pressable>
@@ -590,10 +598,11 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           styles.fabDock,
           {
             bottom: fabBottom,
-            backgroundColor: RetroFlatColors.light.bgMint,
+            backgroundColor: '#FFFFFF',
           },
         ]}>
-        <View style={styles.fabIconSlot}>
+        <PaperGrain /><HanddrawnFrame color="#333333" />
+      <View style={styles.fabIconSlot}>
           <Animated.View
             pointerEvents="none"
             style={[
@@ -727,7 +736,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -743,7 +752,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 28,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -755,12 +764,12 @@ const styles = StyleSheet.create({
   fabFace: {
     width: FAB_SIZE,
     height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     shadowOffset: { width: 0, height: 3 },
     elevation: 6,
   },

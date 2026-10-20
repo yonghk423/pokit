@@ -1,3 +1,5 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -51,10 +53,12 @@ export function AnnouncementHomeNudge({ announcement, onUpdatePress, onDismiss }
             styles.laterBtn,
             {
               borderColor: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF',
             },
             pressed && styles.pressed,
           ]}>
+          <PaperGrain />
+          <HanddrawnFrame color={isDark ? '#E8E8E8' : '#303030'} />
           <ThemedText
             style={[styles.laterLabel, { color: tone.textMuted }, cityPopFont('600')]}
             lightColor={tone.textMuted}
@@ -72,15 +76,17 @@ export function AnnouncementHomeNudge({ announcement, onUpdatePress, onDismiss }
           style={({ pressed }) => [
             styles.openBtn,
             {
-              backgroundColor: tone.bgMint,
+              backgroundColor: isDark ? tone.surfaceAlt : '#FFFFFF',
               borderColor: isDark ? tone.primary : '#000000',
             },
             pressed && styles.pressed,
           ]}>
+          <PaperGrain />
+          <HanddrawnFrame color={isDark ? '#E8E8E8' : '#303030'} />
           <ThemedText
-            style={[styles.openLabel, { color: tone.primary }, cityPopFont('700')]}
-            lightColor={tone.primary}
-            darkColor={tone.primary}>
+            style={[styles.openLabel, { color: isDark ? '#F5F5F5' : '#202020' }, cityPopFont('700')]}
+            lightColor="#202020"
+            darkColor="#F5F5F5">
             {t('announcements.homeNudge.updateBtn')}
           </ThemedText>
         </Pressable>
@@ -121,7 +127,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   laterBtn: {
-    borderWidth: 1,
+    borderWidth: 0,
+    minHeight: 40,
+    justifyContent: 'center',
     borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -131,7 +139,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   openBtn: {
-    borderWidth: 1,
+    borderWidth: 0,
+    minHeight: 40,
+    justifyContent: 'center',
     borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 5,

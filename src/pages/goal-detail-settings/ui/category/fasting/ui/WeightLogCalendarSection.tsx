@@ -1,6 +1,8 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   addMonths,
@@ -39,8 +41,8 @@ const DEFAULT_DRAFT_KG = 70;
 
 /** 월=0 … 토=5 · 일=6 — 주말만 구분색 */
 function weekendLabelColor(weekdayIndexMon0: number, fallback: string, lightInk: boolean): string {
-  if (weekdayIndexMon0 === 5) return lightInk ? '#9EC4F0' : '#3D6FA6';
-  if (weekdayIndexMon0 === 6) return lightInk ? '#F0A8A8' : '#C45C5C';
+  if (weekdayIndexMon0 === 5) return lightInk ? '#CCCCCC' : '#555555';
+  if (weekdayIndexMon0 === 6) return lightInk ? '#CCCCCC' : '#555555';
   return fallback;
 }
 
@@ -227,6 +229,7 @@ export function WeightLogCalendarSection({
               style={[
                 styles.dayCell,
                 selected && {
+                  borderWidth: 0,
                   backgroundColor: palette.usesLightInk
                     ? 'rgba(255,255,255,0.14)'
                     : 'rgba(0,0,0,0.08)',
@@ -234,6 +237,7 @@ export function WeightLogCalendarSection({
                 },
                 (!inMonth || isFuture) && styles.dayCellMuted,
               ]}>
+              {selected ? <HanddrawnFrame color={palette.onSurface} bold /> : null}
               <ThemedText
                 style={[
                   styles.dayLabel,

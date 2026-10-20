@@ -1,3 +1,5 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet } from 'react-native';
 
@@ -65,6 +67,8 @@ export function HistoryPeriodTabs({ period, onSelectPeriod, isDark }: Props) {
               },
               pressed && { opacity: 0.88 },
             ]}>
+            <PaperGrain />
+            {active ? <HanddrawnFrame color={activeText} /> : null}
             <ThemedText
               style={[
                 styles.label,

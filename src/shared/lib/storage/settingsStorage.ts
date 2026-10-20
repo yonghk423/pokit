@@ -61,15 +61,12 @@ export type AppearanceMode = 'light' | 'dark';
 
 /** 앱 글씨체 — ko/en/ja 공통 (한글·라틴 위주 디스플레이 폰트) */
 export type AppFontId =
-  | 'dongle'
-  | 'gaegu'
-  | 'songMyung'
   | 'gothicA1'
   | 'hiMelody'
   | 'hanken';
 
-/** 글씨 크기 — 작게 / 기본 / 크게 */
-export type AppFontSizeId = 'sm' | 'md' | 'lg';
+/** 글씨 크기 — 작게부터 크게까지 5단계 */
+export type AppFontSizeId = 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg';
 
 /** 하루(시작~마무리) 구간이 지난 뒤 오늘 탭 담기 처리 */
 export type PriorityDayRollMode = 'reset' | 'keep';
@@ -391,10 +388,7 @@ function parseAppFontId(value: unknown): AppFontId {
   if (
     value === 'hiMelody' ||
     value === 'hanken' ||
-    value === 'gothicA1' ||
-    value === 'dongle' ||
-    value === 'gaegu' ||
-    value === 'songMyung'
+    value === 'gothicA1'
   ) {
     return value;
   }
@@ -416,7 +410,7 @@ export function saveAppFontId(fontId: AppFontId): void {
 }
 
 function parseAppFontSizeId(value: unknown): AppFontSizeId {
-  if (value === 'sm' || value === 'md' || value === 'lg') return value;
+  if (value === 'sm' || value === 'smMd' || value === 'md' || value === 'mdLg' || value === 'lg') return value;
   return 'sm';
 }
 

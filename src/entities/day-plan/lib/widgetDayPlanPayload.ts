@@ -1,3 +1,4 @@
+import { toRoutineWidgetSymbol } from '@shared/lib/routineWidgetSymbol';
 import { loadDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
 import type { PersistedDayPlan } from '@shared/lib/storage/dayPlanStorage';
 import { t } from '@shared/lib/i18n';
@@ -22,7 +23,7 @@ export type WidgetDayPlanPayload = PersistedDayPlan & {
   completedFocusCategoryKeys: string[];
   /** 빠른 메모 입력 중 초안 — `dayPlanDraftStore.quickMemoDraft` */
   quickMemoDraft: string;
-  /** 담기·블록 순서 + 앱과 동일 SF Symbol — 위젯은 이 배열을 우선 사용 */
+  /** 담기·블록 순서 + 위젯용 SF Symbol — 위젯은 이 배열을 우선 사용 */
   priorityRoutineItems: WidgetPriorityRoutineItem[];
   /** 홈 위젯 「빠른 메모」 섹션 제목 — 현재 앱 로케일 */
   quickMemoSectionTitle: string;
@@ -52,7 +53,7 @@ function buildRoutineItemsFromPriorityList(
     const categoryKey = resolvePriorityRoutineCategoryKey(routineKey);
     return {
       categoryKey,
-      iconName: resolveCategoryCatalogIcon(categoryKey),
+      iconName: toRoutineWidgetSymbol(resolveCategoryCatalogIcon(categoryKey)),
       isCompleted: completed.has(routineKey),
     };
   });
@@ -69,7 +70,7 @@ function buildRoutineItemsFromBlocks(
       const categoryKey = resolveBlockCategoryKey(block) ?? block.id;
       return {
         categoryKey,
-        iconName: String(getBlockTimelineIcon(block)),
+        iconName: toRoutineWidgetSymbol(String(getBlockTimelineIcon(block))),
         isCompleted: completedIds.has(block.id),
       };
     });

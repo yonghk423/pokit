@@ -1,3 +1,5 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -11,7 +13,7 @@ import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 
-const PILL_SHADOW = 1;
+const PILL_SHADOW = 0;
 const DEFAULT_DRAFT = '09:00';
 
 type Props = {
@@ -118,10 +120,12 @@ export function ReminderTimePickerPill({
               fullWidth && styles.pillFull,
               {
                 backgroundColor: faceBg,
-                borderWidth: isNote ? StyleSheet.hairlineWidth : 0,
+                borderWidth: 0,
                 borderColor: line,
               },
             ]}>
+            <PaperGrain />
+            <HanddrawnFrame color={ink} />
             <View style={styles.pillLeft}>
               <IconSymbol name="clock" size={15} color={iconColor} />
               <ThemedText
@@ -158,6 +162,9 @@ export function ReminderTimePickerPill({
             surface={faceBg}
           />
           <BrutalConfirmButton
+            fill={isDark ? '#292929' : '#FFFFFF'}
+            labelColor={isDark ? '#F5F5F5' : '#202020'}
+            shadowOffset={0}
             accessibilityLabel={t('timePicker.confirmA11y')}
             onPress={() => {
               const result = onChangeHhmm(draftHhmm);

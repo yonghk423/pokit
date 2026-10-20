@@ -1,3 +1,5 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -302,7 +304,7 @@ export function WidgetGuidePage() {
             style={[
               styles.copyCardShadow,
               {
-                backgroundColor: softShadow,
+                backgroundColor: 'transparent',
                 transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
               },
             ]}
@@ -311,9 +313,11 @@ export function WidgetGuidePage() {
             style={[
               styles.copyCard,
               {
-                backgroundColor: isDark ? rf.surfaceAlt : stageCream,
+                backgroundColor: isDark ? '#292929' : '#FFFFFF',
               },
             ]}>
+            <PaperGrain />
+            <HanddrawnFrame color={isDark ? '#CCCCCC' : '#555555'} />
             <ThemedText
               style={[styles.copyTitle, { color: rf.text }, cityPopFont('800')]}
               lightColor={rf.text}
@@ -353,7 +357,7 @@ export function WidgetGuidePage() {
                   style={[
                     styles.dot,
                     {
-                      width: active ? 22 : 8,
+                      width: active ? 16 : 6,
                       backgroundColor: active ? rf.text : rf.borderMuted,
                       opacity: active ? 1 : 0.4,
                     },
@@ -368,7 +372,7 @@ export function WidgetGuidePage() {
               style={[
                 styles.ctaShadow,
                 {
-                  backgroundColor: softShadow,
+                  backgroundColor: 'transparent',
                   transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
                 },
               ]}
@@ -380,17 +384,19 @@ export function WidgetGuidePage() {
               style={({ pressed }) => [
                 styles.cta,
                 {
-                  backgroundColor: rf.primaryContainer,
+                  backgroundColor: isDark ? '#292929' : '#FFFFFF',
                   transform: [
                     { translateX: pressed ? SOFT_SHADOW : 0 },
                     { translateY: pressed ? SOFT_SHADOW : 0 },
                   ],
                 },
               ]}>
+              <PaperGrain />
+              <HanddrawnFrame color={isDark ? '#DDDDDD' : '#333333'} />
               <ThemedText
-                style={[styles.ctaLabel, { color: rf.primary }, cityPopFont('800')]}
-                lightColor={rf.primary}
-                darkColor={rf.primary}>
+                style={[styles.ctaLabel, { color: isDark ? '#F5F5F5' : '#202020' }, cityPopFont('800')]}
+                lightColor="#202020"
+                darkColor="#F5F5F5">
                 {last ? t('widgetGuide.doneBtn') : t('widgetGuide.nextBtn')}
               </ThemedText>
             </Pressable>
@@ -535,10 +541,13 @@ const styles = StyleSheet.create({
     gap: 4,
     zIndex: 1,
   },
-  copyTitle: { fontSize: 20, letterSpacing: -0.35, lineHeight: 26 },
+  copyTitle: { fontSize: 17, letterSpacing: -0.2, lineHeight: 24 },
   copyBody: { fontSize: 14, lineHeight: 21, letterSpacing: -0.1 },
   swipeHint: { fontSize: 12, lineHeight: 17, marginTop: 4, letterSpacing: -0.05 },
   footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: CityPopSpacing.gutter,
     paddingTop: 4,
     gap: 12,
@@ -551,9 +560,11 @@ const styles = StyleSheet.create({
     minHeight: 10,
   },
   dot: {
-    height: 8,
+    height: 5,
   },
   ctaWrap: {
+    minWidth: 96,
+    maxWidth: 160,
     position: 'relative',
   },
   ctaShadow: {
@@ -561,10 +572,12 @@ const styles = StyleSheet.create({
   },
   cta: {
     borderWidth: 0,
-    paddingVertical: 16,
+    minHeight: 42,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
   },
-  ctaLabel: { fontSize: 16, lineHeight: 22, letterSpacing: -0.2 },
+  ctaLabel: { fontSize: 14, lineHeight: 20, letterSpacing: -0.2 },
 });

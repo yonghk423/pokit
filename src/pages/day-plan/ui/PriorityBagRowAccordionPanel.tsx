@@ -1,3 +1,5 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { PaperActionIcon } from '@shared/ui/paper-action-icon';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -303,10 +305,11 @@ export function PriorityBagRowAccordionPanel({
     return `${s} – ${e}`;
   }, [startMinutes, endMinutes]);
 
-  const doneCount = tasks.filter((task) => task.done).length;
+  const visibleTourTasks = tasks.filter((task, index) => FEATURE_FLAGS.puzzle || !isWeekTour || (resolvePokitWeekTourStepIndex(task.id) ?? index) !== 2);
+  const doneCount = visibleTourTasks.filter((task) => task.done).length;
   const firstUndoneTourIndex = useMemo(() => {
     if (!isWeekTour) return -1;
-    return tasks.findIndex((task) => !task.done);
+    return tasks.findIndex((task, index) => !task.done && (FEATURE_FLAGS.puzzle || (resolvePokitWeekTourStepIndex(task.id) ?? index) !== 2));
   }, [isWeekTour, tasks]);
   const showTourTapNudge =
     isWeekTour && tourTipStep == null && firstUndoneTourIndex >= 0;
@@ -517,6 +520,7 @@ export function PriorityBagRowAccordionPanel({
   }, [clearWidgetNudgeTimer, locale]);
 
   const queuePuzzleNudgeSoon = useCallback(() => {
+    if (!FEATURE_FLAGS.puzzle) return;
     if (loadPokitWeekTourPuzzleNudgeSeen()) return;
     clearPuzzleNudgeTimer();
     void prefetchPuzzleGuideAssets();
@@ -725,13 +729,14 @@ export function PriorityBagRowAccordionPanel({
         <View style={[s.noteBlock, { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: muted, paddingTop: 10 }]}>
           {tasks.length > 0 ? (
             <ThemedText style={[s.progressLine, { color: muted }]}>
-              {doneCount}/{tasks.length}
+              {doneCount}/{visibleTourTasks.length}
             </ThemedText>
           ) : null}
 
           {showTourTapNudge ? <TourChecklistTapNudge color={ink} /> : null}
 
           {tasks.map((task, index) => {
+            if (!FEATURE_FLAGS.puzzle && isWeekTour && (resolvePokitWeekTourStepIndex(task.id) ?? index) === 2) return null;
             const isNudgeTarget = showTourTapNudge && index === firstUndoneTourIndex;
             const checkBox = (
               <View
@@ -848,7 +853,7 @@ export function PriorityBagRowAccordionPanel({
           onOpenWidgetGuide={openWidgetGuideFromNudge}
         />
         <PokitWeekTourPuzzleNudgeSheet
-          visible={puzzleNudgeVisible}
+          visible={FEATURE_FLAGS.puzzle && puzzleNudgeVisible}
           isDark={isDark}
           onClose={dismissPuzzleNudge}
           onOpenPuzzleGuide={openPuzzleGuideFromNudge}
@@ -860,7 +865,7 @@ export function PriorityBagRowAccordionPanel({
               hitSlop={6}
               onPress={handleCopy}
               style={({ pressed }) => [s.actionBtn, pressed && s.actionPressed]}>
-              <IconSymbol name="doc.on.doc" size={13} color={muted} />
+              <PaperActionIcon name="copy" size={20} color={muted} />
               <ThemedText style={[s.actionLabel, { color: muted }]}>
                 {t('dayPlan.rowAccordionCopy')}
               </ThemedText>
@@ -869,7 +874,7 @@ export function PriorityBagRowAccordionPanel({
               hitSlop={6}
               onPress={handleShare}
               style={({ pressed }) => [s.actionBtn, pressed && s.actionPressed]}>
-              <IconSymbol name="square.and.arrow.up" size={13} color={muted} />
+              <PaperActionIcon name="share" size={20} color={muted} />
             </Pressable>
           </View>
         </View>

@@ -23,7 +23,7 @@ export type PostItFaceColorPreset = {
 
 export type PostItFaceColorByGroup = Record<string, PostItFaceColorId>;
 
-/** 메모지·상세설정 아이콘 색 공통 팔레트 (`routineColorPresets`) */
+/** 포스트잇 면색 팔레트와 이전 면색 저장값 (`routineColorPresets`) */
 export const POST_IT_FACE_COLOR_PRESETS: readonly PostItFaceColorPreset[] =
   ROUTINE_COLOR_PRESETS;
 

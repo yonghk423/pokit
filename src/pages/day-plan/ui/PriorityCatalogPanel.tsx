@@ -1,8 +1,12 @@
-import { useTranslation, type I18nKey } from '@shared/lib/i18n';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
+import { PigmentGrain } from '@shared/ui/pigment-grain';
+import { useTranslation } from '@shared/lib/i18n';
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   Easing,
   runOnJS,
@@ -15,8 +19,6 @@ import {
   formatSpineScheduleRangeLabel,
   getLocalDateKey,
   lookupCategoryPlannedDayCount,
-  PRIORITY_MARK_COLOR_PRESETS,
-  priorityMarkTitleHighlight,
   resolveCategoryCatalogIcon,
   resolveCategoryCatalogIconTile,
   resolveCategoryMarkColor,
@@ -36,8 +38,6 @@ import {
   getDayMealSlotLabel,
   loadPostItFaceColorByGroup,
   loadRoutineCatalogCollapsedGroupIds,
-  POST_IT_FACE_COLOR_PRESETS,
-  POST_IT_INK_COLOR_PRESETS,
   postItFaceUsesLightInk,
   pruneRoutineCatalogCollapsedGroupIds,
   resolvePostItFaceColor,
@@ -259,7 +259,6 @@ function CatalogListRow({
   line,
   actionBg,
   actionHoverBg,
-  shadow,
   isDark,
   isFocusStarted,
   onAddPress,
@@ -282,8 +281,6 @@ function CatalogListRow({
   priorityStart,
   priorityEnd,
   manageOnly = false,
-  markColor = null,
-  onSelectMarkColor,
   itemFaceColor = null,
   onSelectItemFaceColor,
   itemInkColor = null,
@@ -335,10 +332,6 @@ function CatalogListRow({
   const [manageDetailMounted, setManageDetailMounted] = useState(false);
   const manageDetailProgress = useSharedValue(0);
   const manageDetailHeight = useSharedValue(0);
-  const titleHighlight = manageOnly ? priorityMarkTitleHighlight(markColor, isDark) : undefined;
-  const markShadow = shadow ?? (isDark ? SOFT_SOLID_SHADOW_DARK : SOFT_SOLID_SHADOW_LIGHT);
-  const MARK_SWATCH = 22;
-  const MARK_SHADOW = 2;
   const rowFaceBg =
     manageOnly && itemFaceColor ? resolvePostItFaceColor(itemFaceColor, isDark) : undefined;
   const customRowInk = manageOnly && Boolean(itemFaceColor || itemInkColor);
@@ -367,8 +360,6 @@ function CatalogListRow({
   const actionGlyphColor = manageOnly ? '#000000' : ink;
   const actionGlyphMuted = manageOnly ? 'rgba(0,0,0,0.55)' : muted;
   const settingsLocked = !manageOnly && isFocusStarted && selected;
-  const shouldPulse = !manageOnly && Boolean(selected && isFocusStarted);
-  const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!manageOnly) return;
@@ -421,45 +412,16 @@ function CatalogListRow({
     [isManageDetailExpanded, manageDetailHeight, manageDetailProgress],
   );
 
-  useEffect(() => {
-    if (!shouldPulse) {
-      pulse.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 0.5,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [shouldPulse, pulse]);
-
   // 색과 동일하게 매 렌더·revision 기준으로 읽어 props 캐시를 피한다.
   void useGoalDetailSettingsStore((s) => s.revision);
   const icon = resolveCategoryCatalogIcon(categoryKey);
   const label = getPickerCategoryLabel(categoryKey) || labelProp;
   const labelColor = manageOnly ? rowInk : selected ? ink : muted;
-  const catalogTile = resolveCategoryCatalogIconTile(categoryKey);
+  const catalogTile = resolveCategoryCatalogIconTile(categoryKey, isDark);
   const categoryIconColor = manageOnly
     ? catalogTile.iconColor
-    : activeIconColorByCategory(categoryKey);
-  const iconColor = shouldPulse
-    ? categoryIconColor
-    : manageOnly
-      ? categoryIconColor
-      : selected
-        ? categoryIconColor
-        : muted;
+    : activeIconColorByCategory(categoryKey, isDark);
+  const iconColor = manageOnly || selected ? categoryIconColor : muted;
   const iconBoxBg = manageOnly ? catalogTile.boxBg : undefined;
 
   const mealSlotActive = Boolean(selectedMealSlots && selectedMealSlots.length > 0);
@@ -503,109 +465,14 @@ function CatalogListRow({
   const manageColorTabs = useMemo((): RowColorPaletteTab[] => {
     if (!manageOnly) return [];
     const tabs: RowColorPaletteTab[] = [];
-    const chipPress = (pressed: boolean) =>
-      pressed ? ({ transform: [{ translateX: 0.5 }, { translateY: 0.5 }] } as const) : null;
 
     if (onSelectItemFaceColor) {
       tabs.push({
         id: 'face',
         label: t('dayPlan.colorTab.face'),
-        panel: (
-          <View
-            style={styles.catalogImportanceChipRow}
-            accessibilityRole="toolbar"
-            accessibilityLabel={t('dayPlan.colorTab.face')}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: itemFaceColor == null }}
-              accessibilityLabel={t('dayPlan.routineFaceColorClearA11y')}
-              hitSlop={6}
-              onPress={() => {
-                void Haptics.selectionAsync();
-                onSelectItemFaceColor(null);
-              }}
-              style={({ pressed }) => [
-                styles.catalogImportanceChipShell,
-                {
-                  width: MARK_SWATCH,
-                  height: MARK_SWATCH,
-                  marginRight: MARK_SHADOW,
-                  marginBottom: MARK_SHADOW,
-                },
-                chipPress(pressed),
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.catalogImportanceChipShadow,
-                  {
-                    backgroundColor: markShadow,
-                    transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.catalogImportanceChipFace,
-                  {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                    borderColor: rowLine,
-                    borderWidth: itemFaceColor == null ? 2 : 1,
-                  },
-                ]}>
-                <IconSymbol name="xmark" size={11} color={rowMuted} />
-              </View>
-            </Pressable>
-            {POST_IT_FACE_COLOR_PRESETS.map((preset) => {
-              const selectedFace = itemFaceColor === preset.id;
-              const face = isDark ? preset.dark : preset.light;
-              const colorLabel = t(`catalog.postItColor.${preset.id}` as I18nKey);
-              return (
-                <Pressable
-                  key={preset.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedFace }}
-                  accessibilityLabel={t('dayPlan.routineFaceColorA11y', { color: colorLabel })}
-                  hitSlop={6}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    onSelectItemFaceColor(preset.id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.catalogImportanceChipShell,
-                    {
-                      width: MARK_SWATCH,
-                      height: MARK_SWATCH,
-                      marginRight: MARK_SHADOW,
-                      marginBottom: MARK_SHADOW,
-                    },
-                    chipPress(pressed),
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.catalogImportanceChipShadow,
-                      {
-                        backgroundColor: markShadow,
-                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.catalogImportanceChipFace,
-                      {
-                        backgroundColor: face,
-                        borderColor: selectedFace ? rowInk : 'transparent',
-                        borderWidth: selectedFace ? 2 : 0,
-                      },
-                    ]}
-                  />
-                </Pressable>
-              );
-            })}
-          </View>
-        ),
+        choices: deskPaperChoices(itemFaceColor, onSelectItemFaceColor, isDark),
+        reset: () => onSelectItemFaceColor(null),
+        swatch: rowFaceBg ?? undefined,
       });
     }
 
@@ -613,187 +480,23 @@ function CatalogListRow({
       tabs.push({
         id: 'ink',
         label: t('dayPlan.colorTab.ink'),
-        panel: (
-          <View
-            style={styles.catalogImportanceChipRow}
-            accessibilityRole="toolbar"
-            accessibilityLabel={t('dayPlan.colorTab.ink')}>
-            {POST_IT_INK_COLOR_PRESETS.map((preset) => {
-              const selectedInk = (itemInkColor ?? 'auto') === preset.id;
-              const isAuto = preset.id === 'auto';
-              const colorLabel = t(`dayPlan.quickMemoInkSwatch.${preset.id}` as I18nKey);
-              return (
-                <Pressable
-                  key={preset.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedInk }}
-                  accessibilityLabel={t('dayPlan.routineInkColorA11y', { color: colorLabel })}
-                  hitSlop={6}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    onSelectItemInkColor(isAuto ? null : preset.id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.catalogImportanceChipShell,
-                    {
-                      width: MARK_SWATCH,
-                      height: MARK_SWATCH,
-                      marginRight: MARK_SHADOW,
-                      marginBottom: MARK_SHADOW,
-                    },
-                    chipPress(pressed),
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.catalogImportanceChipShadow,
-                      {
-                        backgroundColor: markShadow,
-                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.catalogImportanceChipFace,
-                      {
-                        backgroundColor: isAuto
-                          ? isDark
-                            ? 'rgba(255,255,255,0.08)'
-                            : '#FFFFFF'
-                          : preset.hex,
-                        borderColor: isAuto || selectedInk ? rowLine : 'transparent',
-                        borderWidth: isAuto ? (selectedInk ? 2 : 1) : selectedInk ? 2 : 0,
-                      },
-                    ]}>
-                    {isAuto ? (
-                      <IconSymbol name="circle.lefthalf.filled" size={12} color={rowMuted} />
-                    ) : null}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        ),
+        choices: deskInkChoices(itemInkColor, onSelectItemInkColor),
+        reset: () => onSelectItemInkColor(null),
+        swatch: rowInk ?? undefined,
       });
     }
 
-    if (onSelectMarkColor) {
-      tabs.push({
-        id: 'mark',
-        label: t('dayPlan.colorTab.mark'),
-        panel: (
-          <View
-            style={styles.catalogImportanceChipRow}
-            accessibilityRole="toolbar"
-            accessibilityLabel={t('dayPlan.colorTab.mark')}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: markColor == null }}
-              accessibilityLabel={t('dayPlan.importanceMarkClearA11y')}
-              hitSlop={6}
-              onPress={() => {
-                void Haptics.selectionAsync();
-                onSelectMarkColor(null);
-              }}
-              style={({ pressed }) => [
-                styles.catalogImportanceChipShell,
-                {
-                  width: MARK_SWATCH,
-                  height: MARK_SWATCH,
-                  marginRight: MARK_SHADOW,
-                  marginBottom: MARK_SHADOW,
-                },
-                chipPress(pressed),
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.catalogImportanceChipShadow,
-                  {
-                    backgroundColor: markShadow,
-                    transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.catalogImportanceChipFace,
-                  {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF',
-                    borderColor: rowLine,
-                    borderWidth: markColor == null ? 2 : 1,
-                  },
-                ]}>
-                <IconSymbol name="xmark" size={11} color={rowMuted} />
-              </View>
-            </Pressable>
-            {PRIORITY_MARK_COLOR_PRESETS.map((preset) => {
-              const selectedMark = markColor === preset.id;
-              const face = isDark ? preset.faceDark : preset.face;
-              return (
-                <Pressable
-                  key={preset.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedMark }}
-                  accessibilityLabel={t('dayPlan.importanceMarkColorA11y', {
-                    color: t(`dayPlan.importanceMarkSwatch.${preset.id}` as const),
-                  })}
-                  hitSlop={6}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    onSelectMarkColor(preset.id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.catalogImportanceChipShell,
-                    {
-                      width: MARK_SWATCH,
-                      height: MARK_SWATCH,
-                      marginRight: MARK_SHADOW,
-                      marginBottom: MARK_SHADOW,
-                    },
-                    chipPress(pressed),
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.catalogImportanceChipShadow,
-                      {
-                        backgroundColor: markShadow,
-                        transform: [{ translateX: MARK_SHADOW }, { translateY: MARK_SHADOW }],
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.catalogImportanceChipFace,
-                      {
-                        backgroundColor: face,
-                        borderColor: selectedMark ? rowInk : 'transparent',
-                        borderWidth: selectedMark ? 2 : 0,
-                      },
-                    ]}
-                  />
-                </Pressable>
-              );
-            })}
-          </View>
-        ),
-      });
-    }
 
     return tabs;
   }, [
     manageOnly,
     onSelectItemFaceColor,
     onSelectItemInkColor,
-    onSelectMarkColor,
     itemFaceColor,
     itemInkColor,
-    markColor,
     isDark,
-    markShadow,
     rowInk,
+    rowFaceBg,
     rowMuted,
     rowLine,
     t,
@@ -809,6 +512,7 @@ function CatalogListRow({
         },
         rowFaceBg ? { backgroundColor: rowFaceBg } : null,
       ]}>
+      {rowFaceBg ? <PaperGrain /> : null}
       <View style={[styles.catalogRow, manageOnly && styles.catalogRowManage]}>
         <Pressable
           accessibilityRole="button"
@@ -842,11 +546,7 @@ function CatalogListRow({
               backgroundColor: rowFaceBg ? `${rowInk}14` : 'rgba(168, 218, 220, 0.1)',
             },
           ]}>
-          <Animated.View
-            style={[
-              manageOnly ? styles.catalogIconSlot : undefined,
-              shouldPulse ? { opacity: pulse } : undefined,
-            ]}>
+          <View style={manageOnly ? styles.catalogIconSlot : undefined}>
             {manageOnly ? (
               <View
                 style={[
@@ -854,30 +554,19 @@ function CatalogListRow({
                   { marginRight: ACTION_SHADOW, marginBottom: ACTION_SHADOW },
                 ]}>
                 <View
-                  pointerEvents="none"
-                  style={[
-                    styles.catalogIconBoxShadow,
-                    {
-                      backgroundColor: actionSoftShadow,
-                      transform: [
-                        { translateX: ACTION_SHADOW },
-                        { translateY: ACTION_SHADOW },
-                      ],
-                    },
-                  ]}
-                />
-                <View
                   style={[
                     styles.catalogIconBox,
                     styles.catalogIconBoxManageSoft,
                     {
-                      backgroundColor: iconBoxBg ?? 'rgba(255,255,255,0.85)',
+                      backgroundColor: iconBoxBg ?? '#FEFEFF',
+                      borderWidth: 0,
                     },
                   ]}>
+                  {iconBoxBg && iconBoxBg !== 'transparent' ? <PigmentGrain /> : null}
                   <IconSymbol
                     key={`${categoryKey}-${icon}-${iconColor}`}
                     name={icon as any}
-                    size={16}
+                    size={32}
                     color={iconColor}
                   />
                 </View>
@@ -890,18 +579,9 @@ function CatalogListRow({
                 color={iconColor}
               />
             )}
-          </Animated.View>
+          </View>
           <View style={styles.catalogRowTextCol}>
             <View style={styles.catalogRowTitleMark}>
-              {titleHighlight ? (
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.catalogRowTitleHighlight,
-                    { backgroundColor: titleHighlight },
-                  ]}
-                />
-              ) : null}
               <ThemedText
                 style={[
                   styles.catalogRowLabel,
@@ -933,60 +613,30 @@ function CatalogListRow({
 
         <View style={[styles.catalogRowActions, manageOnly && styles.catalogRowActionsManage]}>
           {onDeleteItem ? (
-            manageOnly ? (
-              <BrutalActionButton
-                accessibilityLabel={t('catalog.deleteA11y', { label })}
-                disabled={settingsLocked}
-                borderColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)') : settingsBorder}
-                backgroundColor={settingsLocked ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : settingsBg}
-                pressedBg={settingsHoverBg}
-                shadowColor={actionSoftShadow}
-                soft={manageOnly}
-                onPress={() => {
-                  if (settingsLocked) return;
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onDeleteItem();
-                }}>
-                <IconSymbol
-                  name="trash"
-                  size={14}
-                  color={settingsLocked ? actionGlyphMuted : actionGlyphColor}
-                />
-              </BrutalActionButton>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('catalog.deleteA11y', { label })}
-                hitSlop={10}
-                disabled={settingsLocked}
-                onPress={() => {
-                  if (settingsLocked) return;
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onDeleteItem();
-                }}
-                style={[
-                  styles.catalogSettingsBtn,
-                  {
-                    borderColor: settingsLocked
-                      ? isDark
-                        ? 'rgba(255,255,255,0.12)'
-                        : 'rgba(0,0,0,0.08)'
-                      : settingsBorder,
-                    backgroundColor: settingsLocked
-                      ? isDark
-                        ? 'rgba(255,255,255,0.04)'
-                        : 'rgba(0,0,0,0.02)'
-                      : settingsBg,
-                    opacity: settingsLocked ? 0.55 : 1,
-                  },
-                ]}>
-                <IconSymbol
-                  name="trash"
-                  size={14}
-                  color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
-                />
-              </Pressable>
-            )
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('catalog.deleteA11y', { label })}
+              hitSlop={10}
+              disabled={settingsLocked}
+              onPress={() => {
+                if (settingsLocked) return;
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onDeleteItem();
+              }}
+              style={({ pressed }) => [
+                manageOnly ? styles.catalogSettingsBtnManageSoft : styles.catalogSettingsBtn,
+                {
+                  borderWidth: 0,
+                  backgroundColor: 'transparent',
+                  opacity: settingsLocked ? 0.55 : pressed ? 0.65 : 1,
+                },
+              ]}>
+              <IconSymbol
+                name="trash"
+                size={14}
+                color={settingsLocked ? actionGlyphMuted : actionGlyphColor}
+              />
+            </Pressable>
           ) : null}
           {onMoveGroup ? (
             manageOnly ? (
@@ -1134,108 +784,36 @@ function CatalogListRow({
               </Reanimated.View>
             </Pressable>
           ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: settingsLocked }}
+            accessibilityLabel={settingsLocked ? t('catalog.goalSettingsLockedA11y', { label }) : t('catalog.goalSettingsA11y', { label })}
+            disabled={settingsLocked}
+            hitSlop={10}
+            onPress={() => {
+              if (settingsLocked) return;
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onOpenSettings();
+            }}
+            style={{ width: 32, height: 36, alignItems: 'center', justifyContent: 'center', opacity: settingsLocked ? 0.45 : 1 }}>
+            {settingsLocked ? <IconSymbol name="lock.fill" size={18} color={actionGlyphMuted} /> : <RoutineActionIcon name="adjust" size={24} color={actionGlyphColor} />}
+          </Pressable>
           {manageOnly ? (
-            <BrutalActionButton
-              accessibilityLabel={
-                isManageDetailExpanded
-                  ? t('dayPlan.collapseA11y', { label })
-                  : t('dayPlan.expandA11y', { label })
-              }
-              borderColor={settingsBorder}
-              backgroundColor={settingsBg}
-              pressedBg={settingsHoverBg}
-              shadowColor={actionSoftShadow}
-              soft
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: isManageDetailExpanded }}
+              accessibilityLabel={isManageDetailExpanded ? t('dayPlan.collapseA11y', { label }) : t('dayPlan.expandA11y', { label })}
+              hitSlop={10}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setIsManageDetailExpanded((value) => !value);
-              }}>
-              <Reanimated.View style={manageDetailChevronStyle}>
-                <IconSymbol name="chevron.down" size={14} color={actionGlyphColor} />
-              </Reanimated.View>
-            </BrutalActionButton>
-          ) : null}
-          {manageOnly ? (
-            <BrutalActionButton
-              accessibilityLabel={
-                settingsLocked
-                  ? t('catalog.goalSettingsLockedA11y', { label })
-                  : t('catalog.goalSettingsA11y', { label })
-              }
-              disabled={settingsLocked}
-              borderColor={
-                settingsLocked
-                  ? isDark
-                    ? 'rgba(255,255,255,0.12)'
-                    : 'rgba(0,0,0,0.08)'
-                  : settingsBorder
-              }
-              backgroundColor={
-                settingsLocked
-                  ? isDark
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'rgba(0,0,0,0.02)'
-                  : settingsBg
-              }
-              pressedBg={
-                settingsLocked
-                  ? isDark
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'rgba(0,0,0,0.02)'
-                  : settingsBg
-              }
-              shadowColor={actionSoftShadow}
-              soft={manageOnly}
-              onPress={() => {
-                if (settingsLocked) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onOpenSettings();
-              }}>
-              <IconSymbol
-                name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
-                size={settingsLocked ? 13 : 14}
-                color={settingsLocked ? actionGlyphMuted : actionGlyphColor}
-              />
-            </BrutalActionButton>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: settingsLocked }}
-              accessibilityLabel={
-                settingsLocked
-                  ? t('catalog.goalSettingsLockedA11y', { label })
-                  : t('catalog.goalSettingsA11y', { label })
-              }
-              disabled={settingsLocked}
-              hitSlop={settingsLocked ? 0 : 10}
-              onPress={() => {
-                if (settingsLocked) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onOpenSettings();
               }}
-              style={[
-                styles.catalogSettingsBtn,
-                {
-                  borderColor: settingsLocked
-                    ? isDark
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(0,0,0,0.08)'
-                    : settingsBorder,
-                  backgroundColor: settingsLocked
-                    ? isDark
-                      ? 'rgba(255,255,255,0.04)'
-                      : 'rgba(0,0,0,0.02)'
-                    : settingsBg,
-                  opacity: settingsLocked ? 0.55 : 1,
-                },
-              ]}>
-              <IconSymbol
-                name={settingsLocked ? 'lock.fill' : 'slider.horizontal.3'}
-                size={settingsLocked ? 13 : 14}
-                color={settingsLocked ? muted : isDark ? '#FAFAFA' : '#000000'}
-              />
+              style={{ width: 32, height: 36, alignItems: 'center', justifyContent: 'center' }}>
+              <Reanimated.View style={manageDetailChevronStyle}>
+                <RoutineActionIcon name="expand" size={19} color={actionGlyphColor} />
+              </Reanimated.View>
             </Pressable>
-          )}
+          ) : null}
           {!manageOnly ? (
             <Pressable
               accessibilityRole="button"

@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useHistoryStore } from '@entities/history';
 import {
   ensurePuzzleRevealBaseline,
@@ -12,6 +13,7 @@ import { desiredPuzzleCompletions } from './countLinkedCompletions';
  * - sticky / completionBaseline 적용
  */
 export function syncPuzzleHistoryFromDailyStats(): void {
+  if (!FEATURE_FLAGS.puzzle) return;
   const puzzle = usePuzzleHistoryStore.getState();
   if (!puzzle.isHydrated) {
     puzzle.hydrate();

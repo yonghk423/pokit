@@ -1,3 +1,5 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -44,8 +46,6 @@ import {
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import {
   PostItCardShell,
-  POST_IT_YELLOW_DARK,
-  POST_IT_YELLOW_LIGHT,
 } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -533,7 +533,7 @@ export function ReadingSettings({
                 <PostItCardShell
                   isDark={isDark}
                   compact
-                  faceColor={isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT}
+                  faceColor={isDark ? '#4B4D42' : '#F2EEDC'}
                   shadowColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}
                   contentStyle={styles.searchGuideNoteContent}>
                   <ThemedText
@@ -569,7 +569,7 @@ export function ReadingSettings({
                 accessibilityLabel={t('goalDetail.reading.addBook')}
                 onPress={() => setAddSheetVisible(true)}
                 style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
-                <IconSymbol name="plus" size={15} color={c.onSurface} />
+                <PaperGrain /><HanddrawnFrame color={c.onVariant} /><IconSymbol name="plus" size={23} color={c.onSurface} />
               </Pressable>
             </View>
             {searchEnabled ? (
@@ -599,7 +599,7 @@ export function ReadingSettings({
                     setSearchSheetVisible(true);
                   }}
                   style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
-                  <IconSymbol name="magnifyingglass" size={15} color={c.onSurface} />
+                  <PaperGrain /><HanddrawnFrame color={c.onVariant} /><IconSymbol name="magnifyingglass" size={23} color={c.onSurface} />
                 </Pressable>
               </View>
             ) : null}
@@ -727,7 +727,7 @@ export function ReadingSettings({
                   <PostItCardShell
                     isDark={isDark}
                     compact
-                    faceColor={isDark ? POST_IT_YELLOW_DARK : POST_IT_YELLOW_LIGHT}
+                    faceColor={isDark ? '#4B4D42' : '#F2EEDC'}
                     shadowColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}
                     contentStyle={styles.tapGuideNoteContent}>
                     <ThemedText

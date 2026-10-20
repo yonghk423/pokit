@@ -1,7 +1,8 @@
+import { PaperControl as Pressable } from '@shared/ui/paper-control';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -20,9 +21,7 @@ import { buildGuideBookToc, getGuideBookPages } from '../lib/guideBookPages';
 import { GuideBookFigure } from './GuideBookFigures';
 
 /** 오늘 탭 상단 아이콘과 동일 소프트 음영 */
-const SOFT_SHADOW = 2;
-const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
-const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
+const SOFT_SHADOW = 0;
 
 type ViewMode = 'toc' | 'read';
 
@@ -46,7 +45,6 @@ export function GuideBookPage() {
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const pages = useMemo(() => getGuideBookPages(locale), [locale]);
   const toc = useMemo(() => buildGuideBookToc(locale), [locale]);
 
@@ -189,7 +187,7 @@ export function GuideBookPage() {
                 style={[
                   styles.tocRowShadow,
                   {
-                    backgroundColor: softShadow,
+                    backgroundColor: 'transparent',
                     transform: [
                       { translateX: SOFT_SHADOW },
                       { translateY: SOFT_SHADOW },
@@ -205,7 +203,7 @@ export function GuideBookPage() {
                   styles.tocRow,
                   { backgroundColor: pressed ? rowBgPressed : rowBg },
                 ]}>
-                <View style={[styles.tocIcon, { backgroundColor: rf.primaryContainer }]}>
+                <View style={styles.tocIcon}>
                   <IconSymbol name={sec.icon as 'calendar'} size={20} color={rf.text} />
                 </View>
                 <View style={styles.tocText}>
@@ -240,7 +238,7 @@ export function GuideBookPage() {
                 style={[
                   styles.frameShadow,
                   {
-                    backgroundColor: softShadow,
+                    backgroundColor: 'transparent',
                     transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
                   },
                 ]}
@@ -249,7 +247,7 @@ export function GuideBookPage() {
                 style={[
                   styles.frame,
                   {
-                    backgroundColor: isDark ? rf.surfaceAlt : '#F6F3EB',
+                    backgroundColor: isDark ? rf.surfaceAlt : '#FFFFFF',
                   },
                 ]}>
               <ScrollView
@@ -295,7 +293,7 @@ export function GuideBookPage() {
                       <View
                         style={[
                           styles.calloutBadge,
-                          { borderColor: rf.border, backgroundColor: rf.primaryContainer },
+                          { borderColor: rf.border, backgroundColor: isDark ? '#444444' : '#FFFFFF' },
                         ]}>
                         <ThemedText
                           style={[styles.calloutBadgeText, { color: rf.text }, cityPopFont('800')]}
@@ -353,7 +351,7 @@ export function GuideBookPage() {
                   style={[
                     styles.navBtnShadow,
                     {
-                      backgroundColor: softShadow,
+                      backgroundColor: 'transparent',
                       transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
                     },
                   ]}
@@ -364,16 +362,16 @@ export function GuideBookPage() {
                   accessibilityLabel={t('guideBook.backToTocA11y')}
                   style={[
                     styles.navBtn,
-                    { backgroundColor: rf.primaryContainer },
+                    { backgroundColor: isDark ? '#444444' : '#FFFFFF' },
                   ]}>
                   <ThemedText
                     style={[
                       styles.navLabel,
-                      { color: isDark ? rf.primaryOn : '#0A0A0A' },
+                      { color: isDark ? '#F5F5F5' : '#202020' },
                       cityPopFont('800'),
                     ]}
                     lightColor="#0A0A0A"
-                    darkColor={rf.primaryOn}>
+                    darkColor="#F5F5F5">
                     {t('common.toc')}
                   </ThemedText>
                 </Pressable>
@@ -391,7 +389,7 @@ export function GuideBookPage() {
                     style={[
                       styles.navBtnShadow,
                       {
-                        backgroundColor: softShadow,
+                        backgroundColor: 'transparent',
                         transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
                       },
                     ]}
@@ -426,7 +424,7 @@ export function GuideBookPage() {
                     style={[
                       styles.navBtnShadow,
                       {
-                        backgroundColor: softShadow,
+                        backgroundColor: 'transparent',
                         transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
                       },
                     ]}
@@ -439,16 +437,16 @@ export function GuideBookPage() {
                     }
                     style={[
                       styles.navBtn,
-                      { backgroundColor: rf.primaryContainer },
+                      { backgroundColor: isDark ? '#444444' : '#FFFFFF' },
                     ]}>
                     <ThemedText
                       style={[
                         styles.navLabel,
-                        { color: isDark ? rf.primaryOn : '#0A0A0A' },
+                        { color: isDark ? '#F5F5F5' : '#202020' },
                         cityPopFont('800'),
                       ]}
                       lightColor="#0A0A0A"
-                      darkColor={rf.primaryOn}>
+                      darkColor="#F5F5F5">
                       {isLastInSection ? t('common.toc') : t('common.next')}
                     </ThemedText>
                   </Pressable>
@@ -581,7 +579,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: CityPopSpacing.gutter,
     paddingTop: 10,
   },
-  navRow: { flexDirection: 'row', gap: 10 },
+  navRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
   navBtnShell: {
     position: 'relative',
   },
@@ -589,15 +587,15 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
   },
   navBtn: {
-    minHeight: 52,
+    minHeight: 42,
     borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
     zIndex: 1,
   },
-  navBtnGhost: { flex: 0.42 },
-  navBtnPrimary: { flex: 1 },
-  navBtnSingle: { width: '100%' },
-  navLabel: { fontSize: 16, letterSpacing: -0.2 },
+  navBtnGhost: { minWidth: 80 },
+  navBtnPrimary: { minWidth: 96 },
+  navBtnSingle: { alignSelf: 'flex-end', minWidth: 96 },
+  navLabel: { fontSize: 14, letterSpacing: -0.2 },
 });

@@ -1,6 +1,7 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Clipboard from 'expo-clipboard';
 import * as MailComposer from 'expo-mail-composer';
-import { Alert, Linking, Share } from 'react-native';
+import { Linking, Share } from 'react-native';
 
 jest.mock('expo-application', () => ({
   nativeApplicationVersion: '1.1.8',
@@ -18,9 +19,11 @@ jest.mock('expo-device', () => ({
   osVersion: '17.0',
 }));
 
+jest.mock('@shared/lib/app-alert', () => ({ AppAlert: { alert: jest.fn() } }));
+
 jest.mock('react-native', () => ({
+  TurboModuleRegistry: { get: jest.fn() },
   Platform: { OS: 'ios' },
-  Alert: { alert: jest.fn() },
   Linking: { openURL: jest.fn() },
   Share: { share: jest.fn() },
 }));

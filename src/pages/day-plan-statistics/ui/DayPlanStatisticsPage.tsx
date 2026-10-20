@@ -17,10 +17,6 @@ import {
   resolvePriorityMealSlot,
   type DayMealSlot,
 } from '@shared/lib/storage';
-import {
-  RoutineAtmosphereFooterStrip,
-  RoutineTabAtmosphere,
-} from '@shared/ui/routine-atmosphere';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -243,7 +239,6 @@ export function DayPlanStatisticsPage({ embedded = false }: DayPlanStatisticsPag
     period === 'week'
       ? t('history.empty.weekBody')
       : t('history.empty.monthBody');
-  const atmosphereVariant = period === 'week' ? 'historyWeek' : 'historyMonth';
   const body = (
     <>
       <View style={styles.foreground}>
@@ -450,7 +445,6 @@ export function DayPlanStatisticsPage({ embedded = false }: DayPlanStatisticsPag
             {t('history.dayDetail.hint')}
           </ThemedText>
 
-          <RoutineAtmosphereFooterStrip variant={atmosphereVariant} isDark={isDark} />
         </ScrollView>
       </View>
 
@@ -471,7 +465,6 @@ export function DayPlanStatisticsPage({ embedded = false }: DayPlanStatisticsPag
       style={[styles.root, { backgroundColor: palette.pageBg }]}
       lightColor={palette.pageBg}
       darkColor={palette.pageBg}>
-      <RoutineTabAtmosphere variant={atmosphereVariant} isDark={isDark} />
       {body}
     </ThemedView>
   );

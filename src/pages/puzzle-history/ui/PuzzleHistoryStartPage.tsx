@@ -1,10 +1,10 @@
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   Pressable,
   ScrollView,
@@ -34,6 +34,8 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { ThemedView } from '@shared/ui/themed-view';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 
 import { collectTodayInProgressRoutineKeys } from './collectTodayInProgressRoutineKeys';
 
@@ -238,18 +240,20 @@ export function PuzzleHistoryStartPage() {
                         {
                           backgroundColor: selected
                             ? isDark
-                              ? RetroFlatColors.dark.bgMint
-                              : RetroFlatColors.light.bgMint
-                            : c.surfaceAlt,
-                          borderColor: selected ? c.text : 'transparent',
+                              ? '#3E5B52'
+                              : '#D8EBE5'
+                            : isDark ? '#30342E' : '#FAF9F4',
                         },
                       ]}>
+                      <PaperGrain opacity={0.28} />
+                      <HanddrawnFrame color={selected ? '#8BA799' : isDark ? '#8D978B' : '#A5AA9E'} />
                       <ThemedText style={[styles.routineLabel, { color: c.text }]} numberOfLines={2}>
                         {categoryReminderLabelKo(key)}
                       </ThemedText>
-                      <ThemedText style={[styles.routineCheck, { color: c.text }]}>
-                        {selected ? '✓' : ''}
-                      </ThemedText>
+                      <View style={[styles.routineCheckBox, { backgroundColor: selected ? (isDark ? '#537366' : '#BFDACF') : 'transparent' }]}>
+                        <HanddrawnFrame color={isDark ? '#ABB8AA' : '#91A18F'} />
+                        {selected ? <IconSymbol name="checkmark" size={12} color={isDark ? '#E6EFE8' : '#506A59'} /> : null}
+                      </View>
                     </Pressable>
                   );
                 })}
@@ -435,7 +439,13 @@ export function PuzzleHistoryStartPage() {
             },
           ]}>
           <BrutalConfirmButton
-            align="stretch"
+            align="end"
+            compact
+            fill={isDark ? '#769F92' : '#C8E2DA'}
+            labelColor={isDark ? '#F0F5EE' : '#456051'}
+            shadowColor="rgba(60,80,65,0.08)"
+            shadowOffset={1}
+            style={{ minWidth: 144 }}
             label={t('history.puzzle.nextPhoto')}
             pressRetentionOffset={20}
             onPress={() => {
@@ -502,7 +512,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   titleInput: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -550,5 +560,5 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   routineLabel: { flex: 1, fontSize: 15, fontWeight: '700' },
-  routineCheck: { fontSize: 16, fontWeight: '800', minWidth: 18, textAlign: 'right' },
+  routineCheckBox: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
 });

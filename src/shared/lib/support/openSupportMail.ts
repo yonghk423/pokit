@@ -1,4 +1,5 @@
-import { Alert, Linking, Share } from 'react-native';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { Linking, Share } from 'react-native';
 
 import {
   getSupportMailBody,

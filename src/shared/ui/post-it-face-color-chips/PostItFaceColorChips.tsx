@@ -1,3 +1,5 @@
+import { PostItColorPalette } from '@shared/ui/post-it-color-palette';
+import { StationeryCaptionIcon } from '@shared/ui/stationery-desk/StationeryCaptionIcon';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -9,19 +11,14 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import { useMeasuredAccordion } from '@shared/lib/hooks/useMeasuredAccordion';
-import { useTranslation, type I18nKey } from '@shared/lib/i18n';
+import { useTranslation } from '@shared/lib/i18n';
 import {
-  POST_IT_FACE_COLOR_PRESETS,
   type PostItFaceColorId,
 } from '@shared/lib/storage';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-import { POST_IT_SOLID_SHADOW } from '@shared/ui/post-it-card-shell';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
-const SWATCH = 22;
-const SWATCH_COMPACT = 20;
 /** 액션 버튼·요일 칩과 동일 솔리드 음영 오프셋 */
-const SHADOW = 1;
 const CHEVRON_MS = 220;
 const CHEVRON_EASE = Easing.out(Easing.cubic);
 
@@ -44,31 +41,7 @@ type Props = {
 };
 
 function ColorSectionGlyph({ isDark }: { isDark: boolean }) {
-  return (
-    <View
-      style={styles.glyph}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants">
-      <View style={[styles.glyphChipShell, { left: 0, top: 4 }]}>
-        <View pointerEvents="none" style={styles.glyphChipShadow} />
-        <View
-          style={[
-            styles.glyphChipFace,
-            { backgroundColor: isDark ? 'rgba(147,180,232,0.92)' : '#B7D0F5' },
-          ]}
-        />
-      </View>
-      <View style={[styles.glyphChipShell, { right: 0, top: 0 }]}>
-        <View pointerEvents="none" style={styles.glyphChipShadow} />
-        <View
-          style={[
-            styles.glyphChipFace,
-            { backgroundColor: isDark ? 'rgba(236,170,186,0.95)' : '#F0B8C6' },
-          ]}
-        />
-      </View>
-    </View>
-  );
+  return <StationeryCaptionIcon kind="face" color={isDark ? '#C69AB0' : '#F2B8C8'} size={26} />;
 }
 
 /** 포스트잇 면 색 프리셋 칩 (전역·그룹 공용) */
@@ -78,13 +51,11 @@ export function PostItFaceColorChips({
   ink,
   onSelect,
   compact = false,
-  shadowColor,
+  shadowColor: _shadowColor,
   collapsible = true,
   defaultExpanded = false,
 }: Props) {
   const { t } = useTranslation();
-  const shade = shadowColor ?? POST_IT_SOLID_SHADOW;
-  const size = compact ? SWATCH_COMPACT : SWATCH;
   const muted = isDark ? 'rgba(250,250,250,0.62)' : 'rgba(0,0,0,0.45)';
 
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -103,67 +74,8 @@ export function PostItFaceColorChips({
   }));
 
   const chips = (
-    <View
-      style={[
-        styles.root,
-        compact && !collapsible && styles.rootCompact,
-        collapsible && styles.rootInAccordion,
-      ]}
-      accessibilityRole="toolbar"
-      accessibilityLabel={t('catalog.postItColorTitle')}>
-      <View style={[styles.row, compact && styles.rowCompact]}>
-        {POST_IT_FACE_COLOR_PRESETS.map((preset) => {
-          const selected = preset.id === selectedId;
-          const swatch = isDark ? preset.dark : preset.light;
-          return (
-            <Pressable
-              key={preset.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel={t('catalog.postItColorOptionA11y', {
-                color: t(`catalog.postItColor.${preset.id}` as I18nKey),
-              })}
-              hitSlop={compact ? 4 : 6}
-              onPress={() => {
-                if (selected) return;
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelect(preset.id);
-              }}
-              style={({ pressed }) => [
-                styles.swatchShell,
-                {
-                  width: size,
-                  height: size,
-                  marginRight: SHADOW,
-                  marginBottom: SHADOW,
-                },
-                selected && styles.swatchShellSelected,
-                pressed && { opacity: 0.88, transform: [{ translateX: 1 }, { translateY: 1 }] },
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.swatchShadow,
-                  {
-                    backgroundColor: shade,
-                    transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.swatchFace,
-                  {
-                    backgroundColor: swatch,
-                    borderColor: selected ? ink : 'transparent',
-                    borderWidth: selected ? 2 : 0,
-                  },
-                ]}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
+    <View style={[styles.root, compact && !collapsible && styles.rootCompact, collapsible && styles.rootInAccordion]}>
+      <PostItColorPalette value={selectedId === 'white' ? null : selectedId} onChange={(id) => onSelect(id ?? 'white')} isDark={isDark} />
     </View>
   );
 
@@ -188,7 +100,7 @@ export function PostItFaceColorChips({
           {t('dayPlan.colorSectionTitle')}
         </ThemedText>
         <Reanimated.View style={chevronStyle}>
-          <IconSymbol name="chevron.down" size={11} color={muted} />
+          <RoutineActionIcon name="expand" size={19} color={muted} />
         </Reanimated.View>
       </Pressable>
       {accordion.mounted ? (

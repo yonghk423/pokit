@@ -1,5 +1,7 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useEffect, useRef } from 'react';
-import { Alert, DevSettings } from 'react-native';
+import { DevSettings } from 'react-native';
 
 import { getAppLocale } from '@shared/lib/i18n';
 import type { HistorySeedProfile } from '@shared/lib/storage/seedHistoryData';
@@ -87,6 +89,7 @@ export function useDevSeedMenu(): void {
       })();
     });
 
+    if (FEATURE_FLAGS.puzzle) {
     DevSettings.addMenuItem('[Seed] 퍼즐 목업', () => {
       void (async () => {
         const result = await puzzleSeedRef.current();
@@ -96,6 +99,7 @@ export function useDevSeedMenu(): void {
         );
       })();
     });
+    }
 
     for (const item of HISTORY_SEED_MENU_ITEMS) {
       DevSettings.addMenuItem(item.label, () => {

@@ -1,8 +1,11 @@
-import { Alert, Platform, Share } from 'react-native';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { Platform, Share } from 'react-native';
+
+jest.mock('@shared/lib/app-alert', () => ({ AppAlert: { alert: jest.fn() } }));
 
 jest.mock('react-native', () => ({
+  TurboModuleRegistry: { get: jest.fn() },
   Platform: { OS: 'ios' },
-  Alert: { alert: jest.fn() },
   Share: { share: jest.fn() },
 }));
 

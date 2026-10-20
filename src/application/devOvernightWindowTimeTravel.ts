@@ -1,4 +1,5 @@
-import { Alert } from 'react-native';
+import { AppAlert as Alert } from '@shared/lib/app-alert';
+
 
 import {
   addDaysToLocalDateKey,

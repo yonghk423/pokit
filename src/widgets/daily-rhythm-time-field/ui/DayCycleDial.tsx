@@ -18,12 +18,12 @@ import {
   parseHHmmToMinutes,
 } from '@entities/day-plan';
 import {
-  RETRO_BORDER_WIDTH,
   RetroFlatColors,
   cityPopFont,
 } from '@shared/config/retroFlat';
 import { formatDateKeyCompact, formatHhmmClock, useTranslation } from '@shared/lib/i18n';
-import { ScrapTapeLabel } from '@shared/ui/scrap-tape-label';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { DialHandleBadge } from './DialHandleBadge';
 
@@ -54,7 +54,7 @@ import {
 } from '../lib/dayCycleDialMath';
 
 /** 그림자 피스 — 다이얼 원 안쪽 면 */
-const DIAL_BACKDROP = require('../../../../assets/puzzle/peace-shadow.webp') as ImageSourcePropType;
+const DIAL_BACKDROP = require('../../../../assets/color-textures/clean-paper.webp') as ImageSourcePropType;
 
 export type DayCycleDialProps = {
   startHhmm: string;
@@ -236,25 +236,26 @@ export function DayCycleDial({
   const activePos =
     activeHandle === 'end' ? endPos : activeHandle === 'wake' ? wakePos : startPos;
 
-  /** Ocean — Pastel Rose 활동 / Deep Space 수면 / Amber 해·달 · 다이얼 면 `#F2FCFF` */
+  /** Activity gets a soft mint wash; sleep gets a denser graphite shade. */
   const colors = {
     dialStroke: isDark ? tone.border : DayBalanceOcean.deepSpace,
-    dialTrack: isDark ? tone.surfaceAlt : '#F2FCFF',
-    activityFill: DayBalanceOcean.pastelRose,
-    sleepFill: '#111111',
+    dialTrack: isDark ? tone.surfaceAlt : '#FFFFFF',
+    activityFill: isDark ? '#306163' : DayBalanceOcean.pastelRose,
+    activityEcho: isDark ? '#9ECFD1' : DayBalanceOcean.blueGreen,
+    sleepFill: isDark ? '#3B3B3B' : '#969493',
     restFill: 'transparent',
-    startHandle: isDark ? DayBalanceOcean.blueGreen : DayBalanceOcean.sky,
-    startHandleIcon: DayBalanceOcean.amber,
-    endHandle: isDark ? '#011824' : DayBalanceOcean.deepSpace,
-    endHandleIcon: DayBalanceOcean.amber,
+    startHandle: isDark ? '#303030' : '#FFFFFF',
+    startHandleIcon: isDark ? '#9ECFD1' : DayBalanceOcean.blueGreen,
+    endHandle: isDark ? '#303030' : '#FFFFFF',
+    endHandleIcon: isDark ? '#9ECFD1' : DayBalanceOcean.blueGreen,
     /** 배경 사진이 비치도록 반투명 — 텍스트 가독용 스크림 */
-    centerBg: isDark ? 'rgba(45, 47, 68, 0.55)' : 'rgba(242, 252, 255, 0.62)',
+    centerBg: isDark ? '#252525' : '#FFFEFC',
     /** Sky 트랙 위 시·날짜·AM/PM은 블랙으로 대비 */
     ink: isDark ? tone.text : '#000000',
-    muted: isDark ? tone.textMuted : '#000000',
-    sleepLabel: isDark ? tone.text : '#FFFFFF',
+    muted: isDark ? tone.textMuted : '#666666',
+    sleepLabel: isDark ? tone.text : '#555555',
     restLabel: isDark ? tone.textMuted : tone.textMuted,
-    sleepAccent: DayBalanceOcean.blueGreen,
+    sleepAccent: isDark ? '#9ECFD1' : DayBalanceOcean.blueGreen,
     shadow: dayBalanceSoftShadow(isDark),
     summaryBg: isDark ? tone.surfaceAlt : '#FFFFFF',
   };
@@ -601,14 +602,6 @@ export function DayCycleDial({
   return (
     <View style={styles.root} onLayout={onRootLayout}>
       <View style={[styles.dialShell, { width: dialBox, height: dialBox }]}>
-        <View pointerEvents="none" style={styles.titleTapeOverlay}>
-          <ScrapTapeLabel
-            text={t('dayCycleDial.title')}
-            isDark={isDark}
-            rotateDeg={-1.5}
-            style={styles.titleTape}
-          />
-        </View>
         <View
           pointerEvents="none"
           style={[
@@ -654,7 +647,7 @@ export function DayCycleDial({
               style={[styles.dialInnerArt, { opacity: isDark ? 0.45 : 0.88 }]}
               contentFit="cover"
               cachePolicy="memory-disk"
-              recyclingKey="day-cycle-dial-peace-shadow"
+              recyclingKey="day-cycle-dial-clean-paper"
               transition={0}
               accessibilityElementsHidden
             />
@@ -665,7 +658,7 @@ export function DayCycleDial({
               cy={cy}
               r={outerR}
               stroke={colors.dialStroke}
-              strokeWidth={RETRO_BORDER_WIDTH}
+              strokeWidth={1.25}
               fill="transparent"
             />
             {segmentPaths.map((seg) => (
@@ -685,11 +678,25 @@ export function DayCycleDial({
               .filter((seg) => seg.kind === 'activity')
               .map((seg) => (
                 <Path
+                  key={`seg-pencil-echo-${seg.startDisplay}`}
+                  d={seg.path}
+                  fill="none"
+                  stroke={colors.activityEcho}
+                  strokeWidth={0.55}
+                  strokeDasharray="1 0.4"
+                  opacity={0.45}
+                  transform="translate(0.65 0.65)"
+                />
+              ))}
+            {segmentPaths
+              .filter((seg) => seg.kind === 'activity')
+              .map((seg) => (
+                <Path
                   key={`seg-stroke-${seg.startDisplay}`}
                   d={seg.path}
                   fill="none"
                   stroke={colors.dialStroke}
-                  strokeWidth={RETRO_BORDER_WIDTH}
+                  strokeWidth={1.25}
                 />
               ))}
             <Circle
@@ -698,7 +705,7 @@ export function DayCycleDial({
               r={innerR}
               fill={colors.centerBg}
               stroke={colors.dialStroke}
-              strokeWidth={RETRO_BORDER_WIDTH}
+              strokeWidth={1.25}
             />
 
             <Line
@@ -707,7 +714,7 @@ export function DayCycleDial({
               x2={cx}
               y2={cy}
               stroke={activeHandle === 'end' ? colors.endHandle : colors.startHandle}
-              strokeWidth={RETRO_BORDER_WIDTH}
+              strokeWidth={1.25}
               strokeDasharray="4 4"
               opacity={activeHandle ? 1 : 0.55}
             />
@@ -736,7 +743,7 @@ export function DayCycleDial({
                     x2={tip.x}
                     y2={tip.y}
                     stroke={colors.dialStroke}
-                    strokeWidth={isMajor ? RETRO_BORDER_WIDTH : 1}
+                    strokeWidth={isMajor ? 1.5 : 0.7}
                     opacity={isMajor ? 1 : 0.55}
                   />
                   {isLabeled ? (
@@ -746,7 +753,7 @@ export function DayCycleDial({
                         y={lab.y}
                         fill={colors.ink}
                         fontSize={isMajor ? 12 : 10}
-                        fontWeight="800"
+                        fontWeight="500" fontFamily={cityPopFont('500').fontFamily}
                         textAnchor="middle"
                         alignmentBaseline="central"
                         dy={h === 0 ? 5 : h === 24 ? -4 : 3}>
@@ -758,7 +765,7 @@ export function DayCycleDial({
                           y={lab.y}
                           fill={colors.muted}
                           fontSize={8}
-                          fontWeight="700"
+                          fontWeight="500" fontFamily={cityPopFont('500').fontFamily}
                           textAnchor="middle"
                           alignmentBaseline="central"
                           dy={h === 0 ? -11 : 12}>
@@ -771,7 +778,7 @@ export function DayCycleDial({
                           y={meridiemPos.y}
                           fill={colors.muted}
                           fontSize={8}
-                          fontWeight="700"
+                          fontWeight="500" fontFamily={cityPopFont('500').fontFamily}
                           textAnchor="middle"
                           alignmentBaseline="central">
                           {meridiem}
@@ -783,25 +790,7 @@ export function DayCycleDial({
               );
             })}
 
-            {segmentPaths.map((seg) => {
-              if (seg.kind === 'rest' || seg.span < 120) return null;
-              const label =
-                seg.kind === 'activity'
-                  ? t('dayCycleDial.arcActivityShort', { duration: activityDuration })
-                  : t('dayCycleDial.arcSleepShort', { duration: sleepDuration });
-              return (
-                <SvgText
-                  key={`arc-label-${seg.kind}-${seg.startDisplay}`}
-                  x={seg.mid.x}
-                  y={seg.mid.y}
-                  fill={seg.kind === 'sleep' ? colors.sleepLabel : '#FFFFFF'}
-                  fontSize={10}
-                  fontWeight="800"
-                  textAnchor="middle">
-                  {label}
-                </SvgText>
-              );
-            })}
+
           </Svg>
 
           {(() => {
@@ -811,7 +800,7 @@ export function DayCycleDial({
             const startSize = handleR * 2 * (startActive ? 1.12 : 1);
             const endSize = handleR * 2 * (endActive ? 1.12 : 1);
             const wakeSize = handleR * 2 * (wakeActive ? 1.12 : 1);
-            const iconSize = Math.round(handleR * 1.15);
+            const iconSize = Math.round(handleR * 1.45);
             return (
               <>
                 <DialHandleBadge
@@ -858,10 +847,10 @@ export function DayCycleDial({
               style={[styles.centerKicker, { color: colors.muted }, cityPopFont('700')]}>
               {t('dayCycleDial.centerKicker')}
             </ThemedText>
-            <ThemedText style={[styles.centerActivity, { color: colors.ink }, cityPopFont('800')]}>
+            <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65} style={[styles.centerActivity, { color: colors.ink }, cityPopFont('800')]}>
               {t('dayCycleDial.centerActivity', { duration: activityDuration })}
             </ThemedText>
-            <ThemedText
+            <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
               style={[styles.centerSleep, { color: colors.sleepAccent }, cityPopFont('700')]}>
               {t('dayCycleDial.centerSleep', { duration: sleepDuration })}
             </ThemedText>
@@ -895,15 +884,15 @@ export function DayCycleDial({
             styles.summaryFace,
             { backgroundColor: colors.summaryBg },
           ]}>
+          <PaperGrain />
           <ThemedText
             style={[styles.summaryCaption, { color: colors.ink }, cityPopFont('800')]}
             lightColor={colors.ink}
             darkColor={colors.ink}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.72}>
+            numberOfLines={3}>
             {rangeSummaryText}
           </ThemedText>
+          <HanddrawnFrame color={isDark ? 'rgba(220,220,220,0.48)' : 'rgba(35,35,35,0.38)'} />
         </View>
       </View>
     </View>
@@ -976,15 +965,15 @@ const styles = StyleSheet.create({
   },
   summaryFace: {
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
   },
   summaryCaption: {
     width: '100%',
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 21,
     textAlign: 'center',
     letterSpacing: -0.35,
   },

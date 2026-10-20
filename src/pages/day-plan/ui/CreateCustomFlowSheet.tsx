@@ -1,8 +1,8 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -126,7 +126,6 @@ export function CreateCustomFlowSheet({
 
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<CustomFlowIconOption>(DEFAULT_CUSTOM_FLOW_ICON);
-  const [selectedAccentColor, setSelectedAccentColor] = useState<string>(DEFAULT_CUSTOM_FLOW_ACCENT_COLOR);
   const [step, setStep] = useState<SheetStep>('basics');
   const [selectedTemplateKey, setSelectedTemplateKey] =
     useState<CustomFlowTemplateKey>('checklist');
@@ -176,7 +175,6 @@ export function CreateCustomFlowSheet({
 
     setName('');
     setSelectedIcon(DEFAULT_CUSTOM_FLOW_ICON);
-    setSelectedAccentColor(DEFAULT_CUSTOM_FLOW_ACCENT_COLOR);
     setStep('basics');
     setSelectedTemplateKey(initialTemplateKey ?? 'checklist');
     setTemplateSetupConfig(buildTemplateSetupConfig(initialTemplateKey ?? 'checklist'));
@@ -227,7 +225,7 @@ export function CreateCustomFlowSheet({
       name: trimmedName.trim(),
       groupKey: initialGroupKey?.trim() || DEFAULT_CUSTOM_FLOW_GROUP_KEY,
       icon: selectedIcon,
-      accentColor: selectedAccentColor,
+      accentColor: DEFAULT_CUSTOM_FLOW_ACCENT_COLOR,
       templateKey: selectedTemplateKey,
       summary: summary.trim(),
       templateDataConfig: templateSetupConfig,
@@ -368,9 +366,7 @@ export function CreateCustomFlowSheet({
                 <CustomFlowAppearancePicker
                   key={`create-appearance-${appearancePickerEpoch}`}
                   icon={selectedIcon}
-                  accentColor={selectedAccentColor}
                   onChangeIcon={setSelectedIcon}
-                  onChangeAccentColor={setSelectedAccentColor}
                   previewLabel={trimmedName.length > 0 ? trimmedName : t('common.preview')}
                   isDark={isDark}
                   ink={ink}

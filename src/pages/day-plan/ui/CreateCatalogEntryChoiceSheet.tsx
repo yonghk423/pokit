@@ -1,10 +1,12 @@
+import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
@@ -69,7 +71,9 @@ function ChoiceOption({
           { backgroundColor: pressed ? rowBgPressed : rowBg },
         ]}>
         <View style={[styles.optionIcon, { backgroundColor: iconBg }]}>
-          <IconSymbol name={icon} size={iconSize} color={ink} />
+          {icon === 'plus.circle.fill'
+            ? <RoutineActionIcon name="adjust" size={iconSize} color={ink} />
+            : <IconSymbol name={icon} size={iconSize} color={ink} />}
         </View>
         <View style={styles.optionText}>
           <ThemedText style={[styles.optionTitle, { color: ink }]}>{title}</ThemedText>

@@ -3,28 +3,25 @@ import {
   createContext,
   useCallback,
   useContext,
-  useLayoutEffect,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
-import { ThemedText } from '@shared/ui/themed-text';
+import { PostItColorGrid } from '@shared/ui/post-it-color-palette';
+import { useTranslation } from '@shared/lib/i18n';
+import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
+import { type DeskTool } from '@shared/ui/stationery-desk/StationeryDeskSurface';
+import { StationeryCaptionIcon } from '@shared/ui/stationery-desk/StationeryCaptionIcon';
 
-export type RowColorPaletteTabId = 'face' | 'ink' | 'mark';
+export type RowColorPaletteTabId = 'face' | 'ink';
 
-export type RowColorPaletteTab = {
-  id: RowColorPaletteTabId;
-  label: string;
-  panel: ReactNode;
-};
+export type RowColorPaletteTab = DeskTool;
 
 type BridgeValue = {
   tabs: RowColorPaletteTab[];
-  activeTab: RowColorPaletteTabId | null;
-  setActiveTab: (id: RowColorPaletteTabId | null) => void;
   ink: string;
   muted: string;
   isDark: boolean;
@@ -52,7 +49,6 @@ export function RowColorPaletteBridgeProvider({
   isDark: boolean;
   children: ReactNode;
 }) {
-  const [activeTab, setActiveTab] = useState<RowColorPaletteTabId | null>(null);
   const [summaryHostClaimed, setSummaryHostClaimed] = useState(false);
 
   const claimSummaryHost = useCallback(() => {
@@ -65,8 +61,6 @@ export function RowColorPaletteBridgeProvider({
   const value = useMemo(
     () => ({
       tabs,
-      activeTab,
-      setActiveTab,
       ink,
       muted,
       isDark,
@@ -76,7 +70,6 @@ export function RowColorPaletteBridgeProvider({
     }),
     [
       tabs,
-      activeTab,
       ink,
       muted,
       isDark,
@@ -93,57 +86,61 @@ export function RowColorPaletteBridgeProvider({
   );
 }
 
-/** 「요약」라벨 바로 위·폴백 헤더용 탭 스트립 */
-export function RowColorPaletteTabStrip() {
+/** Paper and ink color tabs, shared by routine detail and catalog editors. */
+export function RowColorPaletteDesk() {
   const bridge = useRowColorPaletteBridge();
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const [activeId, setActiveId] = useState<RowColorPaletteTabId>('face');
   if (!bridge || bridge.tabs.length === 0) return null;
-
-  const { tabs, activeTab, setActiveTab, ink, isDark } = bridge;
-  const selectedBg = isDark ? RetroFlatColors.dark.bgMint : RetroFlatColors.light.bgMint;
-  const selectedInk = isDark ? RetroFlatColors.dark.primary : RetroFlatColors.light.primary;
+  const { tabs, ink } = bridge;
+  const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
 
   return (
-    <View style={styles.tabRow} accessibilityRole="tablist">
-      {tabs.map((tab) => {
-        const selected = activeTab === tab.id;
-        return (
+    <View style={styles.workspace}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('dayPlan.stationeryTools')}
+        accessibilityState={{ expanded }}
+        onPress={() => { void Haptics.selectionAsync(); setExpanded((value) => !value); }}
+        style={styles.toolsButton}>
+        <View style={styles.toolsGlyph}>
+          <View style={styles.paperGlyph}><StationeryCaptionIcon kind="face" color="#FBFAF6" size={26} /></View>
+          <View style={styles.penGlyph}><StationeryCaptionIcon kind="ink" color="#656960" size={27} /></View>
+        </View>
+        <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
+          <RoutineActionIcon name="expand" color={bridge.isDark ? '#C4C8C0' : '#656960'} size={15} />
+        </View>
+      </Pressable>
+      {expanded ? <View style={styles.panel}>
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {tabs.map((tab) => (
           <Pressable
             key={tab.id}
             accessibilityRole="tab"
-            accessibilityState={{ selected }}
             accessibilityLabel={tab.label}
-            hitSlop={4}
-            onPress={() => {
-              void Haptics.selectionAsync();
-              setActiveTab(selected ? null : tab.id);
-            }}
-            style={({ pressed }) => [
-              styles.tabChip,
-              {
-                /** 행 아이콘 박스와 동일 — 1px 실선 + 잉크색 */
-                borderColor: ink,
-                backgroundColor: selected ? selectedBg : 'transparent',
-              },
-              pressed && { transform: [{ translateX: 0.5 }, { translateY: 0.5 }] },
-            ]}>
-            <ThemedText
-              style={[styles.tabLabel, { color: selected ? selectedInk : ink }]}
-              numberOfLines={1}>
-              {tab.label}
-            </ThemedText>
+            accessibilityState={{ selected: active.id === tab.id }}
+            onPress={() => { void Haptics.selectionAsync(); setActiveId(tab.id); }}
+            style={styles.tab}>
+            <StationeryCaptionIcon
+              kind={tab.id}
+              color={tab.choices?.find((choice) => choice.selected)?.color ?? tab.swatch ?? (tab.id === 'face' ? '#FBFAF6' : ink)}
+              size={32}
+            />
           </Pressable>
-        );
-      })}
+        ))}
+      </View>
+      <PostItColorGrid
+        texture={active.id === 'face' ? 'pigment' : 'paper'}
+        label={active.label}
+        choices={active.choices ?? []}
+        onClear={active.reset}
+        clearLabel={active.label}
+        isDark={bridge.isDark}
+      />
+      </View> : null}
     </View>
   );
-}
-
-export function RowColorPaletteActivePanel() {
-  const bridge = useRowColorPaletteBridge();
-  if (!bridge?.activeTab) return null;
-  const tab = bridge.tabs.find((row) => row.id === bridge.activeTab);
-  if (!tab) return null;
-  return <View style={styles.panel}>{tab.panel}</View>;
 }
 
 /** RoutineSummaryField가 탭을 붙잡지 못할 때(체크리스트 등) 하단 폴백 */
@@ -151,8 +148,9 @@ export function RowColorPaletteFallbackHost() {
   const bridge = useRowColorPaletteBridge();
   /** 요약 필드 claim useLayoutEffect 이후에만 그려 중복 플래시 방지 */
   const [armed, setArmed] = useState(false);
-  useLayoutEffect(() => {
-    setArmed(true);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setArmed(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   if (!armed || !bridge || bridge.tabs.length === 0 || bridge.summaryHostClaimed) {
@@ -161,40 +159,19 @@ export function RowColorPaletteFallbackHost() {
 
   return (
     <View style={styles.fallback}>
-      <RowColorPaletteTabStrip />
-      <RowColorPaletteActivePanel />
+      <RowColorPaletteDesk />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    alignSelf: 'stretch',
-    flexWrap: 'wrap',
-    gap: 5,
-  },
-  tabChip: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderRadius: 0,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    lineHeight: 13,
-  },
-  panel: {
-    marginTop: 10,
-    alignSelf: 'stretch',
-  },
-  fallback: {
-    alignSelf: 'stretch',
-    gap: 10,
-    paddingTop: 4,
-  },
+  workspace: { alignSelf: 'stretch', gap: 14, paddingVertical: 6 },
+  toolsButton: { alignSelf: 'flex-end', minHeight: 44, minWidth: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  toolsGlyph: { width: 36, height: 38 },
+  paperGlyph: { position: 'absolute', left: 0, top: 4 },
+  penGlyph: { position: 'absolute', right: 0, top: 0 },
+  panel: { gap: 14 },
+  tabs: { flexDirection: 'row', gap: 8 },
+  tab: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  fallback: { alignSelf: 'stretch', paddingTop: 4 },
 });

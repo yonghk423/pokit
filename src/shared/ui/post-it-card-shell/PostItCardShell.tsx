@@ -1,3 +1,4 @@
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { type ReactNode } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -108,6 +109,7 @@ export function PostItCardShell({
           !solidShadow && styles.faceSoftShadow,
           contentStyle,
         ]}>
+        <PaperGrain />
         {children}
       </View>
     </View>

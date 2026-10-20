@@ -482,7 +482,7 @@ private struct PinnedCompletionCheck: View {
   }
 }
 
-/// 제목 + 중요도 형광펜. 형광펜은 글자 아래 — Text는 한 겹만 써서 small에서 말줄임이 깨지지 않게 한다.
+/// 루틴 제목. 이전 위젯 데이터의 강조 색상은 표시하지 않는다.
 private struct PinnedHighlightedTitle: View {
   let title: String
   let fontSize: CGFloat
@@ -493,11 +493,6 @@ private struct PinnedHighlightedTitle: View {
   @Environment(\.pokitWidgetInk) private var ink
 
   var body: some View {
-    let trimmed = (highlightHex ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-    let alpha = min(1, max(0, highlightOpacity))
-    let hasHighlight = !trimmed.isEmpty && alpha > 0.01
-    let fill = dayPlanWidgetColor(hex: trimmed, fallback: .clear).opacity(min(alpha, 0.48))
-
     Text(title)
       .font(.system(size: fontSize, weight: .heavy))
       .foregroundStyle(ink)
@@ -505,16 +500,7 @@ private struct PinnedHighlightedTitle: View {
       .truncationMode(.tail)
       .minimumScaleFactor(minimumScaleFactor)
       .allowsTightening(true)
-      .background(alignment: .bottom) {
-        if hasHighlight {
-          Rectangle()
-            .fill(fill)
-            .frame(height: 6)
-            .padding(.horizontal, -2)
-            .offset(y: 1)
-            .allowsHitTesting(false)
-        }
-      }
+
   }
 }
 

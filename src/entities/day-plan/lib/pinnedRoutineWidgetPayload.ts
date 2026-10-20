@@ -1,3 +1,4 @@
+import { toRoutineWidgetSymbol } from '@shared/lib/routineWidgetSymbol';
 import { formatHhmmClock, t } from '@shared/lib/i18n';
 import {
   isPostItFaceColorId,
@@ -39,12 +40,6 @@ import {
 } from './measurementUnits';
 import { resolveStandardCatalogDisplayLabel } from './priorityCatalogPickerLabels';
 import { readRoutineDisplayNameFromConfig } from './routineDisplayName';
-import {
-  getPriorityMarkPreset,
-  isPriorityMarkColorId,
-  resolveCategoryMarkColor,
-  type PriorityMarkColorId,
-} from './priorityMarkColor';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 import {
   buildWeightChartSeries,
@@ -138,31 +133,6 @@ function resolveRoutineWidgetAppearance(categoryKey: string) {
   const faceId = isPostItFaceColorId(rawFace) ? rawFace : null;
   const inkId = isPostItInkColorId(rawInk) ? rawInk : null;
   return resolveWidgetPostItAppearance(false, { faceId, inkId });
-}
-
-function loadImportanceHighlight(categoryKey: string): {
-  titleHighlightHex: string | null;
-  titleHighlightOpacity: number;
-} {
-  const draft = loadDayPlanDraft();
-  const rawMap = draft?.priorityCategoryImportance ?? {};
-  const map: Record<string, PriorityMarkColorId> = {};
-  for (const [key, value] of Object.entries(rawMap)) {
-    if (isPriorityMarkColorId(value)) map[key] = value;
-  }
-  const markRaw = lookupDraftMapValue(rawMap, categoryKey);
-  const markId = isPriorityMarkColorId(markRaw)
-    ? markRaw
-    : resolveCategoryMarkColor(map, categoryKey);
-  const preset = getPriorityMarkPreset(markId);
-  if (!preset) {
-    return { titleHighlightHex: null, titleHighlightOpacity: 0 };
-  }
-  return {
-    titleHighlightHex: preset.face,
-    // 글자 뒤 형광펜 — 위젯에서 잉크가 탁해지지 않게 앱보다 옅게
-    titleHighlightOpacity: 0.42,
-  };
 }
 
 function emptyPayload(emptyMessage: string): PinnedRoutineWidgetPayload {
@@ -481,17 +451,16 @@ function buildPinnedBase(
   options?: { isCompleted?: boolean },
 ) {
   const appearance = resolveRoutineWidgetAppearance(categoryKey);
-  const importance = loadImportanceHighlight(categoryKey);
   return {
     categoryKey,
     title: resolvePinnedTitle(categoryKey),
-    iconName: resolveCategoryCatalogIcon(categoryKey),
+    iconName: toRoutineWidgetSymbol(resolveCategoryCatalogIcon(categoryKey)),
     summary: '',
     faceHex: appearance.faceHex,
     inkHex: appearance.inkHex,
     mutedHex: appearance.mutedHex,
-    titleHighlightHex: importance.titleHighlightHex,
-    titleHighlightOpacity: importance.titleHighlightOpacity,
+    titleHighlightHex: null,
+    titleHighlightOpacity: 0,
     isCompleted: Boolean(options?.isCompleted),
     emptyMessage,
   };

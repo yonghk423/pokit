@@ -1,6 +1,9 @@
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperControl as Pressable } from '@shared/ui/paper-control';
+import { HanddrawnToggle } from '@shared/ui/handdrawn-toggle';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import {
   applyCounterDelta,
@@ -49,15 +52,12 @@ import {
   dismissAllCounterPresets,
   loadDismissedCounterPresetIds,
 } from '@shared/lib/storage';
-import { RetroFlatColors, RETRO_BORDER_WIDTH } from '@shared/config/retroFlat';
+import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useNoteSurfaceColors, useUiSurfacePresentation } from '@shared/ui/presentation';
 import {
-  COMPLETION_CHECKED_COLOR_DARK,
-  COMPLETION_CHECKED_COLOR_LIGHT,
   completionCheckIconColor,
 } from '@shared/ui/completion-radio-button';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
-import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -72,7 +72,7 @@ export type TemplateSessionTheme = {
   accent: string;
 };
 
-/** 완료 체크 채움 — 카테고리 accent 대신 Soft Mint */
+/** Monochrome completion fill, with contrast matched to the paper. */
 function completionCheckFill(theme: TemplateSessionTheme): string {
   const ink = theme.ink.trim().toLowerCase();
   const hex = /^#?([0-9a-f]{6})$/i.exec(ink);
@@ -82,15 +82,15 @@ function completionCheckFill(theme: TemplateSessionTheme): string {
     const g = parseInt(n.slice(2, 4), 16);
     const b = parseInt(n.slice(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT;
+    return luminance > 0.55 ? '#EEEEEE' : '#242424';
   }
   const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(ink);
   if (rgb) {
     const luminance =
       (0.299 * Number(rgb[1]) + 0.587 * Number(rgb[2]) + 0.114 * Number(rgb[3])) / 255;
-    return luminance > 0.55 ? COMPLETION_CHECKED_COLOR_DARK : COMPLETION_CHECKED_COLOR_LIGHT;
+    return luminance > 0.55 ? '#EEEEEE' : '#242424';
   }
-  return COMPLETION_CHECKED_COLOR_LIGHT;
+  return '#242424';
 }
 
 type Props = {
@@ -194,7 +194,7 @@ function ReminderBrutalShell({
   backgroundColor,
   ink,
   borderWidth: _borderWidth = 0,
-  shadowSize = 2,
+  shadowSize = 0,
   noteDivider = 'section',
   style,
   children,
@@ -421,7 +421,7 @@ function MeasurementTemplateView({
 
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   /** 루틴 탭 액션 버튼(`ACTION_SHADOW`)과 같은 1px 솔리드 음영 */
-  const chipShadow = 1;
+  const chipShadow = 0;
 
   const commitValue = (raw: number) => {
     if (!hasMetric || !Number.isFinite(raw)) return;
@@ -474,7 +474,7 @@ function MeasurementTemplateView({
                     style={[
                       styles.measureChipShadow,
                       {
-                        backgroundColor: shadowInk,
+                        backgroundColor: 'transparent',
                         transform: [{ translateX: shadow }, { translateY: shadow }],
                       },
                     ]}
@@ -493,7 +493,7 @@ function MeasurementTemplateView({
                     style={({ pressed }) => [
                       styles.counterChip,
                       {
-                        backgroundColor: selected ? tone.primaryContainer : faceWhite,
+                        backgroundColor: selected ? (isDark ? '#858585' : '#B8B8B8') : faceWhite,
                         opacity: pressed ? 0.88 : 1,
                       },
                     ]}>
@@ -616,7 +616,7 @@ function MeasurementTemplateView({
                   styles.reminderProgressFill,
                   {
                     width: `${Math.round(goalRatio * 100)}%`,
-                    backgroundColor: tone.primaryContainer,
+                    backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
                   },
                 ]}
               />
@@ -636,7 +636,7 @@ function MeasurementTemplateView({
                     style={[
                       styles.measureChipShadow,
                       {
-                        backgroundColor: shadowInk,
+                        backgroundColor: 'transparent',
                         transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
                       },
                     ]}
@@ -680,9 +680,8 @@ function MeasurementTemplateView({
               goal={cfg.useGoalValue ? cfg.goalValue : undefined}
               accent={ink}
               muted={muted}
-              fillColor={tone.primaryContainer}
-              labelColor={ink}
-              formatValue={(v) => formatMeasurementValue(v, cfg.unit)}
+              fillColor={(isDark ? '#858585' : '#B8B8B8')}
+                formatValue={(v) => formatMeasurementValue(v, cfg.unit)}
             />
           </View>
         </ReminderBrutalShell>
@@ -701,7 +700,8 @@ function JournalTemplateView({
   theme: TemplateSessionTheme;
 }) {
   const { t } = useTranslation();
-  const { ink, muted, line, accent } = theme;
+  const { ink, muted, line } = theme;
+  const accent = ink;
   const isNote = useUiSurfacePresentation() === 'note';
   const [draft, setDraft] = useState(cfg.lastEntry ?? '');
   const [mood, setMood] = useState(cfg.moodToday ?? '');
@@ -789,12 +789,10 @@ function MemoTemplateView({
   cfg,
   emit,
   theme,
-  previewMode = false,
 }: {
   cfg: Parameters<typeof applyMemoSave>[0];
   emit: TemplateEmit;
   theme: TemplateSessionTheme;
-  /** 만들기·템플릿 미리보기에서만 예시 placeholder 표시. 이미 추가된 루틴에서는 비움 */
   previewMode?: boolean;
 }) {
   const { t } = useTranslation();
@@ -809,7 +807,7 @@ function MemoTemplateView({
   const recent = cfg.recentEntries.slice(0, 5);
   const draftLen = draft.trim().length;
   const hasDraft = draftLen > 0;
-  const memoPlaceholder = previewMode ? t('customFlowTemplate.memoPlaceholder') : '';
+  const memoPlaceholder = t('customFlowTemplate.memoPlaceholder');
 
   const handleSave = () => {
     if (!hasDraft) return;
@@ -837,6 +835,7 @@ function MemoTemplateView({
             value={draft}
             onChangeText={setDraft}
             multiline
+            accessibilityLabel={t('customFlowTemplate.memoWrite')}
             placeholder={memoPlaceholder}
             placeholderTextColor={muted}
             textAlignVertical="top"
@@ -851,11 +850,15 @@ function MemoTemplateView({
             ]}
           />
           <BrutalConfirmButton
+            fill={isDark ? '#292929' : '#FFFFFF'}
+            labelColor={isDark ? '#F5F5F5' : '#202020'}
+            shadowOffset={0}
             label={t('common.save')}
             accessibilityLabel={t('customFlowTemplate.saveMemoA11y')}
-            labelColor={ink}
             onPress={handleSave}
-            align="stretch"
+            align="end"
+            compact
+            style={{ minWidth: 96 }}
           />
         </View>
       </ReminderBrutalShell>
@@ -893,7 +896,7 @@ function MemoTemplateView({
                     style={[
                       styles.memoEntryDateShadow,
                       {
-                        backgroundColor: shadowInk,
+                        backgroundColor: 'transparent',
                         transform: [{ translateX: 2 }, { translateY: 2 }],
                       },
                     ]}
@@ -901,7 +904,7 @@ function MemoTemplateView({
                   <View
                     style={[
                       styles.memoEntryDateChip,
-                      { backgroundColor: tone.primaryContainer },
+                      { backgroundColor: (isDark ? '#858585' : '#B8B8B8') },
                     ]}>
                     <ThemedText style={[styles.memoEntryDateText, { color: tone.text }]}>
                       {entry.dateKey ? entry.dateKey.slice(5) : t('common.today')}
@@ -946,6 +949,8 @@ function ChecklistTemplateView({
 }) {
   const { t } = useTranslation();
   const { ink, muted } = theme;
+  const isDark = useColorScheme() === 'dark';
+  const checkboxInk = isDark ? '#BAC8BE' : '#77877C';
   const isNote = useUiSurfacePresentation() === 'note';
   const tasks = cfg.checklist;
   const doneCount = tasks.filter((task) => task.done).length;
@@ -1020,11 +1025,12 @@ function ChecklistTemplateView({
                 style={[
                   styles.checklistNoteCheck,
                   {
-                    borderColor: task.done ? ink : muted,
-                    backgroundColor: task.done ? ink : 'transparent',
+                    borderWidth: 0,
+                    backgroundColor: task.done ? (isDark ? '#555650' : '#E2E1DA') : 'transparent',
                   },
                 ]}>
-                {task.done ? <IconSymbol name="checkmark" size={9} color="#FAFAFA" /> : null}
+                <HanddrawnFrame color={checkboxInk} />
+                {task.done ? <IconSymbol name="checkmark" size={10} color={isDark ? '#E2ECE5' : '#536B5D'} /> : null}
               </View>
               <ThemedText
                 style={[
@@ -1096,7 +1102,7 @@ function CounterTemplateView({
   const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
   /** − 버튼 — 민트와 구분되는 따뜻한 베이지(불투명). opacity 줄이면 섀도가 비쳐 검게 보임 */
   const faceDec = tone.surfacePink;
-  const chipShadow = 2;
+  const chipShadow = 0;
   const live = ensureCounterDayBoundary(cfg);
   const ratio = live.goalCount > 0 ? Math.min(1, live.currentCount / live.goalCount) : 0;
   const goalReached = live.currentCount >= live.goalCount;
@@ -1138,7 +1144,7 @@ function CounterTemplateView({
     selected: boolean,
     onPress: () => void,
   ) => {
-    const shadow = selected ? 3 : chipShadow;
+    const shadow = 0;
     return (
       <View
         key={key}
@@ -1148,7 +1154,7 @@ function CounterTemplateView({
           style={[
             styles.measureChipShadow,
             {
-              backgroundColor: shadowInk,
+              backgroundColor: 'transparent',
               transform: [{ translateX: shadow }, { translateY: shadow }],
             },
           ]}
@@ -1160,7 +1166,7 @@ function CounterTemplateView({
           style={[
             styles.counterChip,
             {
-              backgroundColor: selected ? tone.primaryContainer : faceWhite,
+              backgroundColor: selected ? (isDark ? '#858585' : '#B8B8B8') : faceWhite,
             },
           ]}>
           <ThemedText
@@ -1341,7 +1347,7 @@ function CounterTemplateView({
                 styles.reminderProgressFill,
                 {
                   width: `${Math.round(ratio * 100)}%`,
-                  backgroundColor: tone.primaryContainer,
+                  backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
                 },
               ]}
             />
@@ -1358,9 +1364,8 @@ function CounterTemplateView({
               goal={live.goalCount}
               accent={ink}
               muted={muted}
-              fillColor={tone.primaryContainer}
-              labelColor={ink}
-              formatValue={(v) => String(v)}
+              fillColor={(isDark ? '#858585' : '#B8B8B8')}
+                formatValue={(v) => String(v)}
             />
           </View>
         </ReminderBrutalShell>
@@ -1384,7 +1389,7 @@ function CounterTemplateView({
                 style={[
                   styles.measureChipShadow,
                   {
-                    backgroundColor: shadowInk,
+                    backgroundColor: 'transparent',
                     transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
                   },
                 ]}
@@ -1392,7 +1397,7 @@ function CounterTemplateView({
               <View
                 style={[
                   styles.measureStatusChip,
-                  { backgroundColor: tone.primaryContainer },
+                  { backgroundColor: (isDark ? '#858585' : '#B8B8B8') },
                 ]}>
                 <ThemedText style={[styles.measureStatusChipText, { color: tone.text }]}>
                   {t('customFlowTemplate.todayGoalFilled')}
@@ -1411,7 +1416,7 @@ function CounterTemplateView({
                 style={[
                   styles.measureChipShadow,
                   {
-                    backgroundColor: shadowInk,
+                    backgroundColor: 'transparent',
                     transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
                   },
                 ]}
@@ -1448,7 +1453,7 @@ function CounterTemplateView({
                 style={[
                   styles.measureChipShadow,
                   {
-                    backgroundColor: shadowInk,
+                    backgroundColor: 'transparent',
                     transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
                   },
                 ]}
@@ -1463,7 +1468,7 @@ function CounterTemplateView({
                 style={({ pressed }) => [
                   styles.bigCounterBtn,
                   {
-                    backgroundColor: tone.primaryContainer,
+                    backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
                     opacity: pressed ? 0.9 : 1,
                   },
                 ]}>
@@ -1480,7 +1485,7 @@ function CounterTemplateView({
                 style={[
                   styles.measureChipShadow,
                   {
-                    backgroundColor: shadowInk,
+                    backgroundColor: 'transparent',
                     transform: [{ translateX: chipShadow }, { translateY: chipShadow }],
                   },
                 ]}
@@ -1680,7 +1685,7 @@ function ReminderTemplateView({
                   </ThemedText>
                 </View>
               ) : (
-                <View style={[styles.reminderAllDone, { backgroundColor: tone.primaryContainer }]}>
+                <View style={[styles.reminderAllDone, { backgroundColor: (isDark ? '#858585' : '#B8B8B8') }]}>
                   <ThemedText style={[styles.goalBadge, { color: ink }]}>{t('customFlowTemplate.allRemindersDone')}</ThemedText>
                 </View>
               )}
@@ -1691,7 +1696,7 @@ function ReminderTemplateView({
                   styles.reminderProgressFill,
                   {
                     width: `${Math.round(progressRatio * 100)}%`,
-                    backgroundColor: tone.primaryContainer,
+                    backgroundColor: (isDark ? '#858585' : '#B8B8B8'),
                   },
                 ]}
               />
@@ -1758,7 +1763,7 @@ function ReminderTemplateView({
                             style={[
                               styles.reminderActionShadow,
                               {
-                                backgroundColor: shadowInk,
+                                backgroundColor: 'transparent',
                                 transform: [
                                   { translateX: chipShadow },
                                   { translateY: chipShadow },
@@ -1778,7 +1783,7 @@ function ReminderTemplateView({
                           style={({ pressed }) => [
                             styles.reminderDoneBtn,
                             {
-                              backgroundColor: checked ? tone.primaryContainer : faceWhite,
+                              backgroundColor: checked ? (isDark ? '#858585' : '#B8B8B8') : faceWhite,
                               borderWidth: chipBorderWidth,
                               borderColor: line,
                               transform: pressed ? [{ translateY: 1 }] : undefined,
@@ -1810,7 +1815,7 @@ function ReminderTemplateView({
                           style={[
                             styles.reminderActionShadow,
                             {
-                              backgroundColor: shadowInk,
+                              backgroundColor: 'transparent',
                               transform: [
                                 { translateX: chipShadow },
                                 { translateY: chipShadow },
@@ -1837,12 +1842,12 @@ function ReminderTemplateView({
                     </View>
                   </View>
                   <View style={styles.reminderAlarmUnderDone}>
-                    <OutlinedSwitch
-                      accessibilityLabel={t('customFlowTemplate.reminderAlarmA11y', {
+                    <HanddrawnToggle isDark={isDark}
+                      label={t('customFlowTemplate.reminderAlarmA11y', {
                         state: alarmStateLabel,
                       })}
-                      value={alarmOn}
-                      onValueChange={(next) => {
+                      checked={alarmOn}
+                      onChange={(next) => {
                         void Haptics.selectionAsync();
                         emit(setReminderItemAlarmEnabled(cfg, item.time, next));
                       }}
@@ -1928,6 +1933,9 @@ function ReminderTemplateView({
             <ThemedText style={[styles.sub, { color: tone.danger }]}>{addError}</ThemedText>
           ) : null}
           <BrutalConfirmButton
+            fill={isDark ? '#292929' : '#FFFFFF'}
+            labelColor={isDark ? '#F5F5F5' : '#202020'}
+            shadowOffset={0}
             label={t('common.add')}
             accessibilityLabel={t('customFlowTemplate.addReminderA11y')}
             align="stretch"
@@ -1952,7 +1960,8 @@ export function CustomFlowTemplateSessionBody({
   const { t, locale } = useTranslation();
   const isNote = useUiSurfacePresentation() === 'note';
 
-  const { ink, muted, line, surface, accent } = theme;
+  const { ink, muted, line, surface } = theme;
+  const accent = ink;
   const cfg = useMemo(
     () => normalizeCustomFlowDetailConfig(templateKey, rawConfig),
     [templateKey, rawConfig],
@@ -2930,8 +2939,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   checklistNoteCheck: {
-    width: 14,
-    height: 14,
+    width: 16,
+    height: 16,
     borderWidth: 1.5,
     borderRadius: 0,
     marginTop: 2,
