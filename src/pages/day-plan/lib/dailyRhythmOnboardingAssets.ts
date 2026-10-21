@@ -1,3 +1,4 @@
+import { comicRhythmArt } from './comicRhythmArt';
 import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
 
@@ -21,7 +22,7 @@ export function prefetchDailyRhythmOnboardingAssets(): Promise<void> {
   if (prefetchPromise) return prefetchPromise;
 
   prefetchPromise = (async () => {
-    const modules = Object.values(dailyRhythmOnboardingAssets);
+    const modules = Object.values(comicRhythmArt);
     const assets = await Asset.loadAsync(modules);
     const uris = assets
       .map((asset) => asset.localUri ?? asset.uri)

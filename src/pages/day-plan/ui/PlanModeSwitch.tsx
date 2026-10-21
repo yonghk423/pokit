@@ -25,7 +25,6 @@ const MODE_BUTTONS: ModeButton[] = [
   { mode: 'priority', icon: 'daily', labelKey: 'planMode.daily' },
   { mode: 'quickMemo', icon: 'lock-memo', labelKey: 'planMode.quickMemo' },
   { mode: 'dayNote', icon: 'note', labelKey: 'planMode.dayNote' },
-  { mode: 'reading', icon: 'reading', labelKey: 'planMode.reading' },
 ];
 
 /** 설정·펼침 액션 버튼과 동일 — 흰 면 · 얇은 검정 테두리 · 솔리드 음영 */

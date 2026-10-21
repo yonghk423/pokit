@@ -25,7 +25,6 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useTranslation } from '@shared/lib/i18n';
 import { pickImageFromLibrary } from '@shared/lib/media/pickImageFromLibrary';
 import {
-  colorHexUsesLightInk,
   loadPostItFaceColorIdForGroup,
   loadPostItInkColorIdForGroup,
   loadQuickMemoLockPrefs,
@@ -43,7 +42,6 @@ import {
   type QuickMemoFontSizePt,
 } from '@shared/lib/storage';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
-import { ColorPaletteAccordion } from '@shared/ui/color-palette-accordion';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -161,7 +159,6 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   const faceBg = resolvePostItFaceColor(faceColorId, isDark);
   const faceInk = resolvePostItInkHex(inkColorId, faceColorId, isDark);
   const faceMuted = resolvePostItInkMuted(faceInk);
-  const chromeIsLightInk = !colorHexUsesLightInk(faceInk);
 
   const onSelectFaceColor = useCallback(
     (id: PostItFaceColorId) => {
@@ -341,7 +338,6 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
       shadowOffset={CARD_SHADOW_OFFSET}
       style={styles.shell}
       contentStyle={styles.root}>
-      <ColorPaletteAccordion ink={faceInk} isDark={isDark || chromeIsLightInk} defaultExpanded={false}>
         <RowColorPaletteBridgeProvider
           ink={faceInk}
           muted={faceMuted}
@@ -360,7 +356,6 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           ]}>
           <RowColorPaletteDesk />
         </RowColorPaletteBridgeProvider>
-      </ColorPaletteAccordion>
 
       <ScrollView
         style={[styles.memoScroll, { marginBottom: keyboardOverlap }]}

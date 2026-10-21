@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * app.json 의 최신 아이콘(assets/pokit5.png)을
+ * app.json 의 최신 아이콘(assets/app-icon2-square.png)을
  * - iOS AppIcon
  * - Android 런처(mipmap)
  * - Android 알림(drawable/notification_icon)
@@ -24,10 +24,13 @@ const notificationsPlugin = expo.plugins?.find(
   (p) => Array.isArray(p) && p[0] === 'expo-notifications',
 )?.[1];
 
-const ICON = path.resolve(ROOT, expo.icon ?? './assets/pokit5.png');
+const ICON = path.resolve(ROOT, expo.icon ?? './assets/app-icon2-square.png');
 const ADAPTIVE_BG = expo.android?.adaptiveIcon?.backgroundColor ?? '#F2EDE4';
 const NOTIFICATION_ICON =
-  notificationsPlugin?.icon ?? expo.notification?.icon ?? expo.icon ?? './assets/pokit5.png';
+  notificationsPlugin?.icon ??
+  expo.notification?.icon ??
+  expo.icon ??
+  './assets/app-icon2-square.png';
 const NOTIFICATION_COLOR =
   notificationsPlugin?.color ?? expo.notification?.color ?? '#000000';
 

@@ -135,8 +135,6 @@ export const BUILTIN_TUTORIAL_GROUP_LABEL = '오늘의 주인공 사용해보기
 
 export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [
   { key: BUILTIN_TUTORIAL_GROUP_KEY, label: BUILTIN_TUTORIAL_GROUP_LABEL },
-  { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
-  { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
 ] as const;
 
 export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
@@ -150,6 +148,15 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     templateKey: 'checklist',
     checklistLabels: POKIT_WEEK_TOUR_CHECKLIST_LABELS,
   },
+];
+
+/** Removed from the default catalog; saved plans and detail data remain available. */
+export const RETIRED_DEFAULT_CUSTOM_FLOW_IDS: readonly string[] = [
+  BUILTIN_ABSTAIN_FLOW_ID, BUILTIN_STRETCHING_FLOW_ID, BUILTIN_DAILY_EXERCISE_FLOW_ID,
+];
+
+/** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */
+export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
   {
     id: BUILTIN_DAILY_EXERCISE_FLOW_ID,
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
@@ -181,10 +188,6 @@ export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
     templateKey: 'checklist',
     checklistLabels: ['스트레칭'],
   },
-];
-
-/** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */
-export const LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
   {
     id: 'customFlow:preset_daily_bed',
     groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY,
@@ -322,7 +325,9 @@ export function resolveCustomFlowCatalogIcon(categoryKey: string): string {
   const fromConfig = readStoredCustomFlowIcon(categoryKey);
   // Old stored symbols must not mask the new defaults; explicit illustration choices remain editable.
   if (fromConfig) {
-    const builtin = ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey];
+    const builtin = ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey]
+      ?? (RETIRED_DEFAULT_CUSTOM_FLOW_IDS.includes(categoryKey)
+        ? LEGACY_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey] : undefined);
     return builtin && !fromConfig.startsWith('routine:') ? builtin : fromConfig;
   }
   if (ACTIVE_BUILTIN_CUSTOM_FLOW_ICON_BY_ID[categoryKey]) {

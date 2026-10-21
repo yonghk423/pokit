@@ -39,14 +39,14 @@ describe('deleteCatalogCategory', () => {
     localStorageClient.removeItem(StorageKeys.customFlowCatalog);
   });
 
-  it('deletes a standard catalog item instead of leaving it visible', () => {
-    saveGoalDetailCategoryConfig('fasting', { displayName: '체중조절', currentWeightKg: 70 });
-    const deps = createDeps(['fasting', 'healthIntake']);
-
-    expect(deleteCatalogCategory('fasting', deps)).toBe(true);
-    expect(isStandardCatalogKeyHidden('fasting')).toBe(true);
-    expect(loadGoalDetailCategoryConfig('fasting')).toBeNull();
-    expect(deps.order).toEqual(['healthIntake']);
+  it.each(['healthIntake', 'reading', 'fasting'])('keeps the essential %s category, settings and plan intact', (key) => {
+    const config = { displayName: '기본 항목', currentWeightKg: 70 };
+    saveGoalDetailCategoryConfig(key, config);
+    const deps = createDeps([key, 'customFlow:user']);
+    expect(deleteCatalogCategory(key, deps)).toBe(false);
+    expect(isStandardCatalogKeyHidden(key)).toBe(false);
+    expect(loadGoalDetailCategoryConfig(key)).toEqual(config);
+    expect(deps.order).toEqual([key, 'customFlow:user']);
   });
 
   it('hides the tutorial routine so it is not re-seeded', () => {

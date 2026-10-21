@@ -4,7 +4,7 @@ import { t, type I18nKey } from '@shared/lib/i18n';
 export const PRIORITY_CATALOG_PICKER_LABELS: Record<string, string> = {
   healthIntake: '건강을 위한 섭취',
   water: '수분 섭취',
-  fasting: '체중조절',
+  fasting: '체중 관리',
   reading: '독서',
   work: '노트',
   other: '오늘의 주인공 직접 설정',
@@ -23,7 +23,7 @@ const STANDARD_LABEL_KEYS: Record<string, I18nKey> = {
 /** 예전에 쓰던 기본명 — 로케일 사전에 없어도 기본값으로 본다 */
 const STANDARD_LABEL_ALIASES: Record<string, readonly string[]> = {
   other: ['루틴 직접 설정'],
-  fasting: ['체중관리', '단식', 'Weight control'],
+  fasting: ['체중관리', '체중조절', '체중 조절', '단식', 'Weight control'],
 };
 
 export function getPriorityCatalogPickerLabel(key: string): string {

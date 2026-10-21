@@ -1,3 +1,4 @@
+import { ComicDayBoard, ComicSceneDetail } from './ComicDayBoard';
 import { useDayPlanChromeSettingsStore } from '@entities/day-plan/model/dayPlanChromeSettingsStore';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -92,4 +93,29 @@ it('updates circular routine icons immediately when the hide-icons setting chang
   expect(icons()).toHaveLength(1);
   act(() => { tree.unmount(); });
   useDayPlanChromeSettingsStore.setState({ settings: initial });
+});
+
+it('opens comic scenes with existing details and keeps add, time and completion actions connected', () => {
+  const onComplete = jest.fn();
+  const onAdd = jest.fn();
+  const onEditTime = jest.fn();
+  const item: CircularRoutineItem = { key: 'read', label: 'Reading', icon: 'book', completed: false };
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<CircularRoutineTimetable presentation="comic" items={[item]} ink="#222" muted="#888" isDark={false} renderDetail={() => <ThemedText>Existing details</ThemedText>} onComplete={onComplete} onFinish={jest.fn()} onAdd={onAdd} onEditTime={onEditTime} />); });
+  expect(tree.root.findAllByType(Path).filter(node => node.props.accessibilityLabel === item.label)).toHaveLength(0);
+  const board = tree.root.findByType(ComicDayBoard);
+  act(() => {
+    board.props.onAdd();
+    board.props.onEditTime(item.key, item.label);
+    board.props.onComplete(item.key);
+    board.props.onOpen(item.key);
+  });
+  expect(onAdd).toHaveBeenCalledTimes(1);
+  expect(onEditTime).toHaveBeenCalledWith('read', 'Reading');
+  expect(onComplete).toHaveBeenCalledWith('read');
+  expect(tree.root.findByType(ComicSceneDetail).props.item).toEqual(item);
+  expect(tree.root.findAllByType(ThemedText).some(node => node.props.children === 'Existing details')).toBe(true);
+  act(() => { tree.root.findByType(ComicSceneDetail).props.onChoose('walk'); });
+  expect(tree.root.findByType(ComicDayBoard).props.choices.read).toBe('walk');
+  act(() => { tree.unmount(); });
 });

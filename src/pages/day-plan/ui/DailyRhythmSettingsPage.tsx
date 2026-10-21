@@ -167,7 +167,7 @@ export function DailyRhythmSettingsPage() {
             <IconSymbol name="chevron.left" size={20} color={headerFg} />
           </Pressable>
           <ThemedText style={[styles.headerTitle, { color: headerFg }]} lightColor={headerFg} darkColor={headerFg}>
-            {t('dayCycleDial.title')}
+            {t('comicRhythm.title')}
           </ThemedText>
           <View style={styles.headerBtn} pointerEvents="none" />
         </View>

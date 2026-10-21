@@ -1,3 +1,5 @@
+import { catalogCategoryDestination } from '../lib/catalogCategoryDestination';
+import { isNonDeletableCatalogKey } from '@entities/day-plan';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -680,15 +682,12 @@ export function PriorityCatalogContent({
 
   const onOpenCategorySettings = useCallback(
     (categoryKey: string) => {
-      if (isFocusStarted && selectedCategoryKeys.includes(categoryKey)) {
+      if (categoryKey !== 'reading' && isFocusStarted && selectedCategoryKeys.includes(categoryKey)) {
         void Haptics.selectionAsync();
         return;
       }
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push({
-        pathname: '/goal-detail-settings',
-        params: { categoryKey },
-      });
+      router.push(catalogCategoryDestination(categoryKey));
     },
     [isFocusStarted, selectedCategoryKeys, router],
   );
@@ -790,6 +789,7 @@ export function PriorityCatalogContent({
 
   const onDeleteCatalogItem = useCallback(
     (categoryKey: string, label: string) => {
+      if (isNonDeletableCatalogKey(categoryKey)) return;
       if (isFocusStarted && selectedCategoryKeys.includes(categoryKey)) {
         void Haptics.selectionAsync();
         Alert.alert(

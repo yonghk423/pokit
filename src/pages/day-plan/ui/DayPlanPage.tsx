@@ -112,6 +112,7 @@ export function DayPlanPage({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+  const [comicModeActive, setComicModeActive] = useState(false);
   const [rhythmGateOpen, setRhythmGateOpen] = useState(
     () => !loadDailyRhythmOnboardingCompleted(),
   );
@@ -913,6 +914,7 @@ export function DayPlanPage({
               pointerEvents={surface === 'priority' ? 'auto' : 'none'}
               accessibilityElementsHidden={surface !== 'priority'}>
               <PriorityBasedPlanSection
+                onComicModeChange={setComicModeActive}
                 c={c}
                 isFocusStarted={isFocusStarted}
                 priorityPlanDateKey={priorityPlanDateKey}
@@ -942,7 +944,7 @@ export function DayPlanPage({
         </View>
       </KeyboardAvoidingView>
       <DailyRhythmOnboardingGate
-        visible={rhythmGateOpen}
+        visible={rhythmGateOpen && surface === 'priority' && !comicModeActive}
         isDark={isDark}
         c={c}
         onConfirm={handleRhythmConfirm}

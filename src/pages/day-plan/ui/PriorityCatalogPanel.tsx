@@ -16,6 +16,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import {
+  isNonDeletableCatalogKey,
   formatSpineScheduleRangeLabel,
   getLocalDateKey,
   lookupCategoryPlannedDayCount,
@@ -1068,7 +1069,7 @@ function renderRows(
           onMoveCustomFlow ? () => onMoveCustomFlow(cat.key, cat.label) : undefined
         }
         onDeleteItem={
-          onDeleteCatalogItem ? () => onDeleteCatalogItem(cat.key, cat.label) : undefined
+          onDeleteCatalogItem && !isNonDeletableCatalogKey(cat.key) ? () => onDeleteCatalogItem(cat.key, cat.label) : undefined
         }
         showMealSlotPicker={Boolean(sectionsCatalogOptions)}
         selectedMealSlots={
@@ -1120,15 +1121,15 @@ function renderRows(
   });
   if (!manageOnly) return rows;
   return <CatalogPostItGrid cats={cats} details={rows} editorial={editorial} isDark={isDark}
-    selectedKeys={priorityCategoryOrder} onAdd={onCatalogTap}
+    selectedKeys={priorityCategoryOrder} onAdd={onCatalogTap} onOpenCategorySettings={onOpenCategorySettings}
     faceColors={faceColorByKey} inkColors={inkColorByKey}
     frequencyByKey={frequencyByKey} formatFrequency={formatFrequency} />;
 }
 
-function CatalogPostItGrid({ cats, details, editorial, isDark, selectedKeys, onAdd,
+function CatalogPostItGrid({ cats, details, editorial, isDark, selectedKeys, onAdd, onOpenCategorySettings,
   faceColors, inkColors, frequencyByKey, formatFrequency }: {
   cats: PickerCategoryItem[]; details: ReactNode[]; editorial: PriorityCatalogEditorial;
-  isDark: boolean; selectedKeys: string[]; onAdd: (key: string) => void;
+  isDark: boolean; selectedKeys: string[]; onAdd: (key: string) => void; onOpenCategorySettings: (key: string) => void;
   faceColors?: Record<string, PostItFaceColorId>; inkColors?: Record<string, PostItInkColorId>;
   frequencyByKey?: Record<string, number>; formatFrequency?: (count: number) => string;
 }) {
@@ -1152,7 +1153,7 @@ function CatalogPostItGrid({ cats, details, editorial, isDark, selectedKeys, onA
               <View style={{ backgroundColor: color, minHeight: 150, shadowColor: '#000', shadowOpacity: 0.10, shadowRadius: 3, shadowOffset: { width: 1, height: 3 }, elevation: 2 }}>
                 <PaperGrain opacity={0.25} />
                 <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ expanded }}
-                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setOpenKey(expanded ? null : cat.key); }}
+                  onPress={() => { if (cat.key === 'reading') { onOpenCategorySettings(cat.key); return; } LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setOpenKey(expanded ? null : cat.key); }}
                   style={({ pressed }) => ({ minHeight: 150, padding: 8, paddingBottom: 52, alignItems: 'center', opacity: pressed ? 0.65 : 1 })}>
                   <IconSymbol name={resolveCategoryCatalogIcon(cat.key)} size={34} color={ink} />
                   <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>{label}</ThemedText>

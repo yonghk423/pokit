@@ -66,7 +66,7 @@ export const CUSTOM_FLOW_TEMPLATE_LABELS: Record<CustomFlowTemplateKey, string> 
   abstain: '금지 체크',
   measurement: '값 기록',
   healthIntake: '약 복용',
-  fasting: '체중조절',
+  fasting: '체중 관리',
   habit: '오늘 했/안 했',
   counter: '횟수 채우기',
   focus: '집중 시간',

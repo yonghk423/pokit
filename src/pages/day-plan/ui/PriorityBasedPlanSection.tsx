@@ -1,3 +1,4 @@
+import { IndependentComicPlanner } from './IndependentComicPlanner';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { RowColorPaletteBridgeProvider, RowColorPaletteFallbackHost } from '@shared/ui/color-palette-tabs';
 import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
@@ -286,7 +287,7 @@ function PriorityWindowTimeChip({
         accessibilityHint={t('dayPlan.dayWindowHint')}
         style={({ pressed }) => [
           styles.priorityTimelineTimeChipPressable,
-          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F3E8' },
+          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' },
           pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
         ]}>
         <PaperGrain opacity={0.2} />
@@ -399,11 +400,13 @@ type Props = {
    * 상단 모드를 나갔다가 돌아올 때 목록을 처음부터 다시 그리지 않기 위함.
    */
   listPaintActive?: boolean;
+  onComicModeChange?: (active: boolean) => void;
 };
 
 /* ─── 메인 ─── */
 
 export function PriorityBasedPlanSection({
+  onComicModeChange,
   c,
   isFocusStarted,
   priorityPlanDateKey,
@@ -439,6 +442,8 @@ export function PriorityBasedPlanSection({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [circularTimetableOpen, setCircularTimetableOpen] = useState(false);
+  const [comicDayOpen, setComicDayOpen] = useState(false);
+  useEffect(() => { onComicModeChange?.(comicDayOpen); }, [comicDayOpen, onComicModeChange]);
   const hideDailyQuoteSetting = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideDailyQuote = !FEATURE_FLAGS.dailyQuote || hideDailyQuoteSetting;
   const announcementHome = useAnnouncementHomeNudge();
@@ -1084,14 +1089,14 @@ export function PriorityBasedPlanSection({
 
   /** 첫 온보딩 완료 직후 — 집중 시간 칩을 한 번 강조해 탭을 유도 */
   useEffect(() => {
-    if (!loadDailyRhythmWindowChipGuidePending()) return;
+    if (comicDayOpen || !loadDailyRhythmWindowChipGuidePending()) return;
     const timer = setTimeout(() => {
-      if (!loadDailyRhythmWindowChipGuidePending()) return;
+      if (comicDayOpen || !loadDailyRhythmWindowChipGuidePending()) return;
       clearDailyRhythmWindowChipGuidePending();
       triggerPriorityWindowChipEmphasis();
     }, 700);
     return () => clearTimeout(timer);
-  }, [triggerPriorityWindowChipEmphasis, windowChipGuideNonce]);
+  }, [comicDayOpen, triggerPriorityWindowChipEmphasis, windowChipGuideNonce]);
 
   const alertFocusEndedGuideToWindow = useCallback(
     (messageKey: 'catalog.focusEndedAdd' | 'catalog.focusEndedChangeTime') => {
@@ -2929,7 +2934,7 @@ export function PriorityBasedPlanSection({
                 },
               ]}>
               <View style={styles.priorityTimelineHeaderText}>
-                {layoutMode === 'sections' ? (
+                {comicDayOpen ? null : layoutMode === 'sections' ? (
                   <>
                     <View style={styles.priorityTimelineTitleRow}>
                       <ThemedText
@@ -2949,7 +2954,7 @@ export function PriorityBasedPlanSection({
                         hitSlop={10}
                         style={({ pressed }) => [
                           styles.priorityTimelineCalendarIcon,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F3E8' },
+                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' },
                           pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
                         ]}>
                         <PaperGrain opacity={0.2} />
@@ -3002,7 +3007,7 @@ export function PriorityBasedPlanSection({
                         hitSlop={10}
                         style={({ pressed }) => [
                           styles.priorityTimelineCalendarIcon,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F3E8' },
+                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' },
                           pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
                         ]}>
                         <PaperGrain opacity={0.2} />
@@ -3035,9 +3040,11 @@ export function PriorityBasedPlanSection({
                   <DayPlanLayoutModeTabs
                     showCircularTimetable
                     circularActive={circularTimetableOpen}
-                    onSelectCircular={() => setCircularTimetableOpen(true)}
+                    comicActive={comicDayOpen}
+                    onSelectComic={() => { setComicDayOpen(true); setCircularTimetableOpen(false); }}
+                    onSelectCircular={() => { setComicDayOpen(false); setCircularTimetableOpen(true); }}
                     mode={layoutMode}
-                    onSelectMode={(next) => { setCircularTimetableOpen(false); onSelectLayoutMode(next); }}
+                    onSelectMode={(next) => { setCircularTimetableOpen(false); setComicDayOpen(false); onSelectLayoutMode(next); }}
                     c={c}
                     isDark={isDark}
                     visibleModes={visibleLayoutModes}
@@ -3045,7 +3052,7 @@ export function PriorityBasedPlanSection({
                 ) : null}
               </View>
             </View>
-            {circularTimetableOpen ? (
+            {comicDayOpen ? <IndependentComicPlanner key={todayKey} date={todayKey} ink={editorial.ink} muted={editorial.muted} isDark={isDark} /> : circularTimetableOpen ? (
               <View style={{ flex: 1, minHeight: 0 }}>
                 {!hideDailyQuote ? (
                   <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}><DailyQuoteCard dateKey={todayKey} isDark={isDark} /></View>

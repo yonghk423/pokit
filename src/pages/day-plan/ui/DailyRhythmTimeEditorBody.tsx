@@ -1,3 +1,5 @@
+import { ComicEndDateChoice } from './ComicEndDateChoice';
+import { ComicRhythmTimeLayout } from './ComicRhythmTimeLayout';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -477,7 +479,9 @@ export function DailyRhythmTimeEditorBody({
   const isOnboarding = variant === 'onboarding';
   const showOnboardingHero = isOnboarding && !hideOnboardingHero;
   const shadowInk = dayBalanceSoftShadow(isDark);
-  const endDateSegmentColors = dayBalanceSegmentPalette(isDark);
+  const endDateSegmentColors = isOnboarding
+    ? { ...dayBalanceSegmentPalette(false), selectedFill: '#F1E8D5', selectedInk: '#202020', unselectedInk: '#666666' }
+    : dayBalanceSegmentPalette(isDark);
 
   useEffect(() => {
     endDateTargetRef.current = endDateTarget;
@@ -561,7 +565,16 @@ export function DailyRhythmTimeEditorBody({
   const endDateTodayInvalid =
     endDateTarget === 'today' && isInvalidSameDayEnd(startHhmm, endHhmm);
 
-  const endDateSegmentControl = (
+  const endDateSegmentControl = isOnboarding ? (
+    <ComicEndDateChoice
+      value={endDateTarget}
+      onChange={applyEndDateTarget}
+      options={[
+        { value: 'today', label: resolvedEndDateTodayLabel, accessibilityLabel: t('dayRhythm.setTodayA11y') },
+        { value: 'nextDay', label: resolvedEndDateNextDayLabel, accessibilityLabel: t('dayRhythm.setNextDayA11y') },
+      ]}
+    />
+  ) : (
     <SmoothSegmentedControl
       options={[
         {
@@ -690,6 +703,14 @@ export function DailyRhythmTimeEditorBody({
       </View>
     </CityPopCardShell>
   );
+
+  if (isOnboarding) return <ComicRhythmTimeLayout
+    start={startHhmm} end={endHhmm} nextDay={endDateTarget === 'nextDay'} onChange={onDialChange}
+    dateLabel={startDateKey ? formatDateKeyCompact(startDateKey, locale) : undefined}
+    endDateControls={endDateSegmentControl}
+    endDateHint={endDateTodayInvalid ? t('dayRhythm.endDateInvalidHint', { end: formatHhmmClock(endHhmm, locale), start: formatHhmmClock(startHhmm, locale) }) : undefined}
+    onPrimary={validateAndPrimary} primaryLabel={t('comicRhythm.start')} secondaryLabel={secondaryLabel} onSecondary={onSecondaryPress} footer={footerSlot}
+  />;
 
   return (
     <ScrollView

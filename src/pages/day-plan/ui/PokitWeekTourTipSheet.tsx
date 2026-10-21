@@ -58,8 +58,8 @@ const STEP_TARGETS = [
   },
   {
     icon: 'book.closed.fill',
-    labelKey: 'planMode.reading',
-    placeKey: 'tour.pokitWeek.targetPlace.topMode',
+    labelKey: 'category.reading',
+    placeKey: 'tour.pokitWeek.targetPlace.routinesSubTab',
   },
   {
     icon: 'square.and.pencil',

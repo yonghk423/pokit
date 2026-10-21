@@ -1,3 +1,5 @@
+import { ComicDayBoard, ComicSceneDetail } from './ComicDayBoard';
+import { loadComicScenes, saveComicScene } from '../lib/comicSceneImages';
 import { useDayPlanChromeSettingsStore } from '@entities/day-plan/model/dayPlanChromeSettingsStore';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -19,6 +21,7 @@ export type CircularRoutineItem = {
   faceColor?: string; inkColor?: string;
 };
 type Props = {
+  presentation?: 'circle' | 'comic';
   items: CircularRoutineItem[]; ink: string; muted: string; isDark: boolean;
   renderDetail: (item: CircularRoutineItem) => ReactNode;
   onComplete: (key: string) => void;
@@ -57,7 +60,8 @@ function RoutineSector({ item, angle, radius, orbitRadius, rotation, ink, isDark
   );
 }
 
-export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDetail, onComplete, onFinish, onAdd, onEditTime }: Props) {
+export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDetail, onComplete, onFinish, onAdd, onEditTime, presentation = 'circle' }: Props) {
+  const [sceneChoices, setSceneChoices] = useState(loadComicScenes);
   const hideIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const { t } = useTranslation();
   const [size, setSize] = useState({ width: 340, height: 600 });
@@ -123,6 +127,7 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
   const paper = isDark ? '#262B28' : '#FCFBF7';
   return (
     <View style={s.root} onLayout={event => setSize(event.nativeEvent.layout)}>
+      {presentation === 'comic' ? <ComicDayBoard items={ordered} ink={ink} muted={muted} isDark={isDark} choices={sceneChoices} onOpen={openDetail} onComplete={onComplete} onAdd={onAdd} onEditTime={onEditTime} /> : <>
       <ThemedText pointerEvents="none" style={[s.hint, { color: muted }]}>{t('circularTimetable.dragHint')}</ThemedText>
       <GestureDetector gesture={pan}>
         <View style={s.viewport}>
@@ -147,8 +152,9 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
       <Pressable accessibilityRole="button" onPress={onAdd} style={[s.add, { backgroundColor: paper }]}>
         <HanddrawnFrame color={muted} /><ThemedText style={{ color: ink }}>＋ {t('dayPlan.addMoreRoutine')}</ThemedText>
       </Pressable>
+      </>}
       {selected ? <>
-        <Pressable style={[StyleSheet.absoluteFill, { zIndex: 2 }]} onPress={close} accessibilityLabel={t('common.close')} />
+        <Pressable style={[StyleSheet.absoluteFill, { zIndex: 2, backgroundColor: presentation === 'comic' ? 'rgba(0,0,0,0.12)' : 'transparent' }]} onPress={close} accessibilityLabel={t('common.close')} />
         <Animated.View accessibilityViewIsModal style={[s.drawer, { backgroundColor: selected.faceColor ?? paper }, drawerStyle]}>
           <PaperGrain />
           <GestureDetector gesture={dismissGesture}>
@@ -157,8 +163,11 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
             <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={s.closeButton} hitSlop={8} onPress={close}><ThemedText style={{ color: selected.inkColor ?? ink, fontSize: 26 }}>×</ThemedText></Pressable>
           </View>
           </GestureDetector>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail}>{renderDetail(selected)}</ScrollView>
-          <View style={s.drawerFooter}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail}>
+            {presentation === 'comic' ? <ComicSceneDetail item={selected} ink={selected.inkColor ?? ink} muted={muted} choices={sceneChoices} onChoose={id => setSceneChoices(saveComicScene(selected.key, id))} onEditTime={onEditTime} /> : null}
+            {renderDetail(selected)}</ScrollView>
+          <View style={[s.drawerFooter, presentation === 'comic' && { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+            {presentation === 'comic' ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><CompletionRadioButton checked={selected.completed} isDark={isDark} size={25} appearance="ink" motion="gentle" accessibilityLabel={selected.label} onPress={() => onComplete(selected.key)} /><ThemedText style={{ color: selected.inkColor ?? ink, fontSize: 13 }}>{t('comicDay.complete')}</ThemedText></View> : null}
             <PaperControl
               accessibilityRole="button"
               hitSlop={8}

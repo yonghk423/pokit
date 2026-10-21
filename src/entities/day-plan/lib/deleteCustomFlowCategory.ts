@@ -7,6 +7,7 @@ import {
 } from '@shared/lib/storage';
 import { isBuiltinPresetCustomFlowId } from '@shared/lib/storage/defaultPriorityCatalog';
 
+import { isNonDeletableCatalogKey } from './priorityCatalogRegistry';
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
@@ -56,7 +57,7 @@ export function deleteCatalogCategory(
   deps: DeleteCatalogCategoryDeps,
 ): boolean {
   const key = categoryKey.trim();
-  if (!key) return false;
+  if (!key || isNonDeletableCatalogKey(key)) return false;
 
   if (isCustomFlowCategoryKey(key)) {
     if (isBuiltinPresetCustomFlowId(key)) {

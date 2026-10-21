@@ -1,3 +1,4 @@
+import { PencilCheckbox } from '@shared/ui/pencil-checkbox';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { PaperActionIcon } from '@shared/ui/paper-action-icon';
 import * as Clipboard from 'expo-clipboard';
@@ -739,17 +740,8 @@ export function PriorityBagRowAccordionPanel({
             if (!FEATURE_FLAGS.puzzle && isWeekTour && (resolvePokitWeekTourStepIndex(task.id) ?? index) === 2) return null;
             const isNudgeTarget = showTourTapNudge && index === firstUndoneTourIndex;
             const checkBox = (
-              <View
-                style={[
-                  s.check,
-                  {
-                    borderColor: task.done ? ink : muted,
-                    backgroundColor: task.done ? ink : 'transparent',
-                  },
-                ]}>
-                {task.done ? (
-                  <IconSymbol name="checkmark" size={9} color="#FAFAFA" />
-                ) : null}
+              <View style={s.check}>
+                <PencilCheckbox checked={task.done} ink={task.done ? ink : muted} />
               </View>
             );
             return (
@@ -955,13 +947,8 @@ const s = StyleSheet.create({
     paddingVertical: 2,
   },
   check: {
-    width: 14,
-    height: 14,
-    borderWidth: 1.5,
-    borderRadius: 0,
-    marginTop: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 20,
+    height: 20,
     flexShrink: 0,
   },
   taskText: {

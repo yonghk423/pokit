@@ -6,8 +6,8 @@ import {
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
 
-/** 담기·나만의 탭 공통 — 카탈로그에서 숨기는 표준 키 (독서는 상단 모드 전용) */
-export const CATALOG_REMOVED_KEYS = new Set<string>(['other', 'work', 'reading']);
+/** 담기·나만의 탭 공통 — 카탈로그에서 숨기는 표준 키 */
+export const CATALOG_REMOVED_KEYS = new Set<string>(['other', 'work']);
 
 /** 제거된 표준 키 — 기존 저장 데이터 마이그레이션용 */
 export const RETIRED_STANDARD_CATALOG_KEYS = new Set<string>([
@@ -25,9 +25,9 @@ export const PRIORITY_CATALOG_ALL_STANDARD_KEYS = [
   'other',
 ] as const;
 
-/** 카탈로그 관리에서 삭제(숨김) 불가였던 키 — 이제 모두 삭제 가능 */
-export function isNonDeletableCatalogKey(_key: string): boolean {
-  return false;
+/** Essential built-in categories stay available in the routine catalog. */
+export function isNonDeletableCatalogKey(key: string): boolean {
+  return ['healthIntake', 'reading', 'fasting'].includes(resolvePriorityRoutineCategoryKey(key.trim()));
 }
 
 /** @deprecated `isNonDeletableCatalogKey` 사용 */

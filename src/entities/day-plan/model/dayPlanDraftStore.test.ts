@@ -61,9 +61,9 @@ describe('dayPlanDraftStore', () => {
     resetDraftStore();
   });
 
-  it('migrates legacy weekly plan mode to priority on hydrate', () => {
+  it.each(['weekly', 'reading'])('migrates legacy %s plan mode to priority on hydrate', (legacyMode) => {
     mockLoadDayPlanDraft.mockReturnValue({
-      planMode: 'weekly' as never,
+      planMode: legacyMode as never,
       isFocusStarted: false,
       completedFocusCategoryKeys: [],
       planCompletionDismissedKeys: [],
@@ -227,7 +227,7 @@ describe('dayPlanDraftStore', () => {
       priorityCategoryOrder: ['fasting'],
     });
     appendPriorityCategoryKeysIfMissing(['water', 'reading', 'healthIntake']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['fasting', 'healthIntake']);
+    expect(useDayPlanDraftStore.getState().priorityCategoryOrder).toEqual(['fasting', 'reading', 'healthIntake']);
   });
 
   it('keeps repeated routine occurrences independently in the bag order', () => {
@@ -726,11 +726,11 @@ describe('dayPlanDraftStore', () => {
       priorityCategoryImportance: { reading: 'lavender' },
     });
     useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('reading');
-    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({});
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ reading: 'softBlue' });
     useDayPlanDraftStore.getState().cyclePriorityCategoryImportance('water');
-    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'yellow' });
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ reading: 'softBlue', water: 'yellow' });
     useDayPlanDraftStore.getState().setPriorityCategoryOrder(['reading']);
-    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ water: 'yellow' });
+    expect(useDayPlanDraftStore.getState().priorityCategoryImportance).toEqual({ reading: 'softBlue', water: 'yellow' });
   });
 
   it('sets and clears priority category face colors', () => {

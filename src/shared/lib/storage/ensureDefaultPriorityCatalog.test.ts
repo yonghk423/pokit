@@ -1,9 +1,7 @@
 import { listCustomCatalogGroups } from './customCatalogGroupStorage';
-import { listCustomFlowCatalogEntries } from './customFlowCatalogStorage';
+import { listAllCustomFlowCatalogEntries, listCustomFlowCatalogEntries } from './customFlowCatalogStorage';
 import {
-  ABSTAIN_CHECKLIST_LABELS,
   BUILTIN_ABSTAIN_FLOW_ID,
-  BUILTIN_ABSTAIN_GROUP_KEY,
   BUILTIN_DAILY_CLEAN_FLOW_ID,
   BUILTIN_DAILY_EXERCISE_FLOW_ID,
   BUILTIN_DAILY_RECYCLE_FLOW_ID,
@@ -45,19 +43,14 @@ describe('ensureDefaultPriorityCatalog', () => {
     localStorageClient.removeItem(StorageKeys.dayPlanDraft);
   });
 
-  it('seeds one daily life checklist flow and abstain flow on empty storage', () => {
+  it('seeds only the quick tour custom flow alongside the standard health intake and weight entries', () => {
     ensureDefaultPriorityCatalog();
 
     expect(listCustomCatalogGroups()).toEqual([
       { key: BUILTIN_TUTORIAL_GROUP_KEY, label: '오늘의 주인공 사용해보기' },
-      { key: BUILTIN_DAILY_LIFE_GROUP_KEY, label: '일상 루틴' },
-      { key: BUILTIN_ABSTAIN_GROUP_KEY, label: '금지 루틴' },
     ]);
     expect(listCustomFlowCatalogEntries().map((e) => e.id)).toEqual([
       BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
-      ...BUILTIN_DAILY_LIFE_FLOW_IDS,
-      BUILTIN_ABSTAIN_FLOW_ID,
-      BUILTIN_STRETCHING_FLOW_ID,
     ]);
 
     const tourCfg = loadChecklistConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
@@ -75,10 +68,7 @@ describe('ensureDefaultPriorityCatalog', () => {
       '설정에서 레이아웃 바꿔보기',
     ]);
 
-    const exerciseCfg = loadChecklistConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
-    expect(exerciseCfg?.displayName).toBe('주말 러닝');
-    expect((exerciseCfg as { templateKey?: string })?.templateKey).toBe('checklist');
-
+    expect(loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID)).toBeNull();
     expect(loadGoalDetailCategoryConfig('customFlow:preset_daily_bed')).toBeNull();
     expect(loadGoalDetailCategoryConfig('customFlow:preset_daily_laundry')).toBeNull();
     expect(loadGoalDetailCategoryConfig('customFlow:preset_daily_wash')).toBeNull();
@@ -88,16 +78,8 @@ describe('ensureDefaultPriorityCatalog', () => {
 
     expect(loadGoalDetailCategoryConfig(BUILTIN_INTERMITTENT_FASTING_FLOW_ID)).toBeNull();
 
-    const abstainCfg = loadChecklistConfig(BUILTIN_ABSTAIN_FLOW_ID);
-    expect(abstainCfg?.displayName).toBe('금지');
-    expect((abstainCfg as { templateKey?: string })?.templateKey).toBe('abstain');
-    expect(abstainCfg?.checklist?.map((item) => item.text)).toEqual([...ABSTAIN_CHECKLIST_LABELS]);
-
-    const stretchingCfg = loadChecklistConfig(BUILTIN_STRETCHING_FLOW_ID);
-    expect(stretchingCfg?.displayName).toBe('스트레칭');
-    expect((stretchingCfg as { icon?: string })?.icon).toBe('routine:stretching');
-    expect((stretchingCfg as { templateKey?: string })?.templateKey).toBe('checklist');
-    expect(stretchingCfg?.checklist?.map((item) => item.text)).toEqual(['스트레칭']);
+    expect(loadGoalDetailCategoryConfig(BUILTIN_ABSTAIN_FLOW_ID)).toBeNull();
+    expect(loadGoalDetailCategoryConfig(BUILTIN_STRETCHING_FLOW_ID)).toBeNull();
 
     expect(loadGoalDetailCategoryConfig(BUILTIN_FOCUS_FLOW_ID)).toBeNull();
 
@@ -243,7 +225,7 @@ describe('ensureDefaultPriorityCatalog', () => {
 
     const ids = listCustomFlowCatalogEntries().map((e) => e.id);
     expect(ids).not.toContain(LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID);
-    expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => ids.includes(id))).toBe(true);
+    expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => !ids.includes(id))).toBe(true);
     expect(
       localStorageClient.getJson<{ priorityCategoryOrder?: string[] }>(StorageKeys.dayPlanDraft)
         ?.priorityCategoryOrder,
@@ -283,14 +265,12 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(ids).not.toContain('customFlow:seed00001');
     expect(ids).not.toContain('customFlow:builtin_hobby_draw');
     expect(ids).toContain('customFlow:user01abcdef');
-    expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => ids.includes(id))).toBe(true);
-    expect(ids).toContain(BUILTIN_ABSTAIN_FLOW_ID);
-    expect(ids).toContain(BUILTIN_STRETCHING_FLOW_ID);
+    expect(BUILTIN_DAILY_LIFE_FLOW_IDS.every((id) => !ids.includes(id))).toBe(true);
+    expect(ids).not.toContain(BUILTIN_ABSTAIN_FLOW_ID);
+    expect(ids).not.toContain(BUILTIN_STRETCHING_FLOW_ID);
     expect(ids).not.toContain(BUILTIN_FOCUS_FLOW_ID);
     expect(listCustomCatalogGroups().map((g) => g.key)).toEqual([
       BUILTIN_TUTORIAL_GROUP_KEY,
-      BUILTIN_DAILY_LIFE_GROUP_KEY,
-      BUILTIN_ABSTAIN_GROUP_KEY,
       'customGroup:user01',
     ]);
     expect(loadGoalDetailCategoryConfig('customFlow:builtin_hobby_draw')).toBeNull();
@@ -421,6 +401,30 @@ describe('ensureDefaultPriorityCatalog', () => {
     ).toEqual(['healthIntake']);
   });
 
+  it('retires old defaults without erasing saved details or reintroducing them through config recovery', () => {
+    const checklist = [{ id: 'kept-item', text: '사용자가 수정한 운동', done: true }];
+    localStorageClient.setJson(StorageKeys.customFlowCatalog, { items: [
+      { id: BUILTIN_DAILY_EXERCISE_FLOW_ID, groupKey: BUILTIN_DAILY_LIFE_GROUP_KEY },
+      { id: 'customFlow:user-kept', groupKey: 'health' },
+    ] });
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, { byCategory: {
+      [BUILTIN_DAILY_EXERCISE_FLOW_ID]: { displayName: '나의 운동', templateKey: 'checklist', checklist },
+    }, committedCategoryKeys: [BUILTIN_DAILY_EXERCISE_FLOW_ID] });
+    localStorageClient.setJson(StorageKeys.dayPlanDraft, { planMode: 'priority', priorityCategoryOrder: [BUILTIN_DAILY_EXERCISE_FLOW_ID] });
+    ensureDefaultPriorityCatalog();
+    ensureDefaultPriorityCatalog();
+    expect(listAllCustomFlowCatalogEntries().map(entry => entry.id)).toEqual(['customFlow:user-kept', BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+    expect(loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID)).toEqual(expect.objectContaining({ displayName: '나의 운동', checklist }));
+    expect(localStorageClient.getJson<{ priorityCategoryOrder: string[] }>(StorageKeys.dayPlanDraft)?.priorityCategoryOrder).toEqual([BUILTIN_DAILY_EXERCISE_FLOW_ID]);
+  });
+
+  it('restores essential defaults hidden by older versions while keeping optional items hidden', () => {
+    localStorageClient.setJson(StorageKeys.hiddenStandardCatalogKeys, { hidden: ['healthIntake', 'reading', 'fasting', BUILTIN_POKIT_WEEK_TOUR_FLOW_ID] });
+    ensureDefaultPriorityCatalog();
+    expect(localStorageClient.getJson<{ hidden: string[] }>(StorageKeys.hiddenStandardCatalogKeys)?.hidden).toEqual([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+    localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
+  });
+
   it('is idempotent and preserves user-added groups', () => {
     localStorageClient.setJson(StorageKeys.customCatalogGroups, {
       groups: [{ key: 'customGroup:user01', label: '나만의 묶음' }],
@@ -429,7 +433,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
     ensureDefaultPriorityCatalog();
 
-    expect(listCustomCatalogGroups()).toHaveLength(4);
-    expect(listCustomFlowCatalogEntries()).toHaveLength(4);
+    expect(listCustomCatalogGroups()).toHaveLength(2);
+    expect(listCustomFlowCatalogEntries()).toHaveLength(1);
   });
 });

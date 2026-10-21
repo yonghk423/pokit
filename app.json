@@ -8,7 +8,7 @@
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
     "notification": {
-      "icon": "./assets/pokit5.png",
+      "icon": "./assets/app-icon2-square.png",
       "color": "#000000"
     },
     "newArchEnabled": true,
@@ -89,7 +89,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/pokit5.png",
+          "icon": "./assets/app-icon2-square.png",
           "color": "#000000",
           "defaultChannel": "default"
         }

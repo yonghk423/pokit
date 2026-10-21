@@ -48,7 +48,7 @@ const registry: Record<Exclude<GoalDetailCategoryKey, CustomFlowCategoryKey>, Go
   },
   fasting: {
     key: 'fasting',
-    titleKo: '체중조절',
+    titleKo: '체중 관리',
     getInitialDataConfig: getInitialFastingDataConfig,
     Settings: FastingSettings,
   },
@@ -93,7 +93,7 @@ const customFlowTemplateModules: Record<
     Settings: HealthIntakeSettings,
   },
   fasting: {
-    titleKo: '체중조절',
+    titleKo: '체중 관리',
     getInitialDataConfig: getInitialFastingDataConfig,
     Settings: FastingSettings,
   },

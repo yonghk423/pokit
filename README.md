@@ -3,7 +3,7 @@
 하루의 루틴을 가볍게 담고, 집중할 시간을 스스로 정해 가는 앱.
 
 <p align="center">
-  <img src="assets/pokit5.png" width="120" alt="YOUR DAY" />
+  <img src="assets/app-icon2-square.png" width="120" alt="YOUR DAY" />
 </p>
 
 <table width="100%">

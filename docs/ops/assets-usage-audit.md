@@ -66,7 +66,6 @@ assets/widget/_refs의 참고 이미지도 향후 사용하지 않는다는 사�
 | `assets/app-icon.png` | 735.6 | `app.json:7`; `app.json:52`; `app.json:63` |
 | `assets/onboarding/hero.jpg` | 102.0 | `src/pages/day-plan/lib/dailyRhythmOnboardingAssets.ts:11` |
 | `assets/pokit4.webp` | 43.6 | `src/shared/lib/welcome-intro-assets.ts:13` |
-| `assets/pokit5.png` | 1272.6 | `src/shared/lib/welcome-intro-assets.ts:10`; `app.json:11`; `app.json:89` |
 | `assets/puzzle/basketball.webp` | 45.7 | `src/shared/lib/storage/devMockSeed/modules/puzzleHistoryMockSeed.ts:20` |
 | `assets/puzzle/desk-stretch.webp` | 70.7 | `src/shared/lib/storage/devMockSeed/modules/puzzleHistoryMockSeed.ts:22` |
 | `assets/puzzle/garage-kettlebell.webp` | 87.8 | `src/shared/lib/storage/devMockSeed/modules/puzzleHistoryMockSeed.ts:25` |

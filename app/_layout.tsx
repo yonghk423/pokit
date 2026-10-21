@@ -107,6 +107,7 @@ export default function RootLayout() {
                     gestureEnabled: !hasPendingAlert,
                   }}>
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="reading-library" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
                     name="goal-detail-settings"
                     options={{ headerShown: false, presentation: 'card' }}

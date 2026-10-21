@@ -1,3 +1,5 @@
+import { catalogCategoryDestination } from '../lib/catalogCategoryDestination';
+import { isNonDeletableCatalogKey } from '@entities/day-plan';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -197,16 +199,14 @@ export function RoutineCatalogManageContent() {
   const onOpenCategorySettings = useCallback(
     (categoryKey: string) => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push({
-        pathname: '/goal-detail-settings',
-        params: { categoryKey },
-      });
+      router.push(catalogCategoryDestination(categoryKey));
     },
     [router],
   );
 
   const onDeleteCatalogItem = useCallback(
     (categoryKey: string, label: string) => {
+      if (isNonDeletableCatalogKey(categoryKey)) return;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       Alert.alert(
         t('catalog.deleteRoutineTitle'),

@@ -6,11 +6,11 @@ import {
 } from './priorityCatalogRegistry';
 
 describe('isNonDeletableCatalogKey', () => {
-  it('allows deleting standard keys, builtin presets, and user flows', () => {
-    expect(isNonDeletableCatalogKey('reading')).toBe(false);
+  it('protects the three essential defaults and allows deleting other entries', () => {
+    expect(isNonDeletableCatalogKey('reading')).toBe(true);
     expect(isNonDeletableCatalogKey('work')).toBe(false);
-    expect(isNonDeletableCatalogKey('healthIntake')).toBe(false);
-    expect(isNonDeletableCatalogKey('fasting')).toBe(false);
+    expect(isNonDeletableCatalogKey('healthIntake')).toBe(true);
+    expect(isNonDeletableCatalogKey('fasting')).toBe(true);
     expect(isNonDeletableCatalogKey('customFlow:preset_daily_clean')).toBe(false);
     expect(isNonDeletableCatalogKey('customFlow:preset_stretching')).toBe(false);
     expect(isNonDeletableCatalogKey('customFlow:abcdefgh1234')).toBe(false);

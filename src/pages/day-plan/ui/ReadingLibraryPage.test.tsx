@@ -1,0 +1,20 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ReadingLibraryPage } from './ReadingLibraryPage';
+import { ReadingPlanSection } from './ReadingPlanSection';
+const mockBack = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 20, bottom: 10, left: 0, right: 0 }) }));
+jest.mock('@shared/lib/hooks/use-color-scheme', () => ({ useColorScheme: () => 'light' }));
+jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('@shared/ui/icon-symbol', () => ({ IconSymbol: () => null }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
+jest.mock('./ReadingPlanSection', () => ({ ReadingPlanSection: () => null }));
+it('mounts the original reading tab and allows returning to the routine list', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ReadingLibraryPage />); });
+  expect(tree.root.findByType(ReadingPlanSection).props.isDark).toBe(false);
+  const button = tree.root.findAll(node => node.props.accessibilityLabel === 'common.back' && typeof node.props.onPress === 'function')[0];
+  act(() => { button.props.onPress(); });
+  expect(mockBack).toHaveBeenCalledTimes(1);
+  act(() => { tree.unmount(); });
+});

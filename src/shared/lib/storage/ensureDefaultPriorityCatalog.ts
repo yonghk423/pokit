@@ -19,6 +19,8 @@ import {
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
   BUILTIN_TUTORIAL_GROUP_KEY,
   DEFAULT_BUILTIN_CUSTOM_FLOWS,
+  LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS,
+  RETIRED_DEFAULT_CUSTOM_FLOW_IDS,
   DEFAULT_BUILTIN_CUSTOM_GROUPS,
   BUILTIN_DAILY_LIFE_FLOW_IDS,
   BUILTIN_FOCUS_FLOW_ID,
@@ -50,7 +52,7 @@ import {
 } from './migrateHealthIntakeCatalog';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
-import { loadHiddenStandardCatalogKeys } from './hiddenStandardCatalogStorage';
+import { loadHiddenStandardCatalogKeys, restoreStandardCatalogKey } from './hiddenStandardCatalogStorage';
 import { normalizeCustomFlowIcon } from '../customFlowAppearanceCatalog';
 
 /** 제거된 표준 카탈로그 키 — 기존 저장 데이터 마이그레이션용 */
@@ -419,7 +421,7 @@ const LEGACY_EXERCISE_DISPLAY_NAMES = new Set(['운동하기', 'Exercise', '運�
 const LEGACY_EXERCISE_CHECKLIST_TEXTS = new Set(['운동하기', 'Exercise', '運動']);
 
 function migrateExerciseDisplayNameToWeekendRun(): void {
-  const flowDef = DEFAULT_BUILTIN_CUSTOM_FLOWS.find((flow) => flow.id === BUILTIN_DAILY_EXERCISE_FLOW_ID);
+  const flowDef = [...DEFAULT_BUILTIN_CUSTOM_FLOWS, ...LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS].find((flow) => flow.id === BUILTIN_DAILY_EXERCISE_FLOW_ID);
   if (!flowDef) return;
   const cfg = loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID);
   if (!cfg || typeof cfg !== 'object') return;
@@ -511,7 +513,7 @@ function migrateFastingBuiltinIcon(): void {
 function migrateHabitPresetFlowsToChecklist(): void {
   const presetFlowIds = [...BUILTIN_DAILY_LIFE_FLOW_IDS, BUILTIN_STRETCHING_FLOW_ID];
   for (const flowId of presetFlowIds) {
-    const flowDef = DEFAULT_BUILTIN_CUSTOM_FLOWS.find((flow) => flow.id === flowId);
+    const flowDef = [...DEFAULT_BUILTIN_CUSTOM_FLOWS, ...LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS].find((flow) => flow.id === flowId);
     const cfg = loadGoalDetailCategoryConfig(flowId);
     if (!cfg || typeof cfg !== 'object') continue;
     const row = cfg as Record<string, unknown>;
@@ -582,6 +584,7 @@ function mergeDefaultCustomFlows(): void {
 
 /** 기본 담기 카탈로그 정리 — 레거시 시드·빌트인 customFlow 제거, 신규 기본값 병합 */
 export function ensureDefaultPriorityCatalog(): void {
+  for (const key of ['healthIntake', 'reading', 'fasting']) restoreStandardCatalogKey(key);
   migrateWaterMedicineToHealthIntake();
   purgeLegacyDevSeedCustomFlows();
   purgeRemovedBuiltinCustomFlows();
@@ -610,6 +613,8 @@ export function ensureDefaultPriorityCatalog(): void {
   purgeGoodPostureFlow();
   purgeFocusFlow();
   purgeRetiredDailyLifeFlows();
+  // Retire catalog entries only: keep existing plans, progress and user detail settings.
+  for (const id of RETIRED_DEFAULT_CUSTOM_FLOW_IDS) removeCustomFlowCatalogId(id);
   mergeDefaultCustomFlows();
   migratePokitWeekTourToQuickTour();
   migrateTutorialGroupLabel();

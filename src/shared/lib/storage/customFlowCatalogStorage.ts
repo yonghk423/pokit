@@ -1,3 +1,4 @@
+import { RETIRED_DEFAULT_CUSTOM_FLOW_IDS } from './defaultPriorityCatalog';
 import { listGoalDetailCategoryConfigKeys } from './goalDetailSettingsStorage';
 import { loadHiddenStandardCatalogKeys } from './hiddenStandardCatalogStorage';
 import { localStorageClient } from './localStorageClient';
@@ -83,7 +84,7 @@ export function listAllCustomFlowCatalogEntries(): CustomFlowCatalogEntry[] {
     known.set(id, { id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
   }
   const hidden = new Set(loadHiddenStandardCatalogKeys());
-  return [...known.values()].filter((entry) => !hidden.has(entry.id));
+  return [...known.values()].filter((entry) => !hidden.has(entry.id) && !RETIRED_DEFAULT_CUSTOM_FLOW_IDS.includes(entry.id));
 }
 
 type CustomFlowCatalogListener = () => void;

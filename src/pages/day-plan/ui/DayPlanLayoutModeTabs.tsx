@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import * as Haptics from 'expo-haptics';
@@ -145,6 +146,8 @@ type Props = {
   /** 오늘 루틴의 원형 시간표 전환 버튼. */
   showCircularTimetable?: boolean;
   circularActive?: boolean;
+  comicActive?: boolean;
+  onSelectComic?: () => void;
   onSelectCircular?: () => void;
 };
 
@@ -160,6 +163,8 @@ export function DayPlanLayoutModeTabs({
   attached = false,
   showCircularTimetable = false,
   circularActive = false,
+  comicActive = false,
+  onSelectComic,
   onSelectCircular,
 }: Props) {
   const { t } = useTranslation();
@@ -182,7 +187,7 @@ export function DayPlanLayoutModeTabs({
     return (
       <View style={[styles.attachedRoot, { backgroundColor: trackBg }]}>
         {layoutTabs.map((item) => {
-          const active = !circularActive && mode === item.key;
+          const active = !circularActive && !comicActive && mode === item.key;
           const label = layoutModeLabel(t, item.key);
           return (
             <Pressable
@@ -234,6 +239,31 @@ export function DayPlanLayoutModeTabs({
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {showCircularTimetable ? (
         <Pressable
+          onPress={onSelectComic}
+          accessibilityState={{ selected: comicActive }}
+          accessibilityRole="tab"
+          accessibilityLabel={t('layoutMode.a11y.activityIllustrations')}
+          style={[styles.chromeShell, { marginRight: CHROME_SHADOW, marginBottom: CHROME_SHADOW }]}>
+          <View pointerEvents="none" style={[styles.chromeShadow, {
+            backgroundColor: chromeShadow,
+            transform: [{ translateX: CHROME_SHADOW }, { translateY: CHROME_SHADOW }],
+          }]} />
+          <View style={[styles.tab, { backgroundColor: comicActive ? pill.activeBg : isDark ? pill.inactiveBg : '#FFFFFF' }]}>
+            <PaperGrain opacity={0.25} />
+            <Image
+              source={require('../../../../assets/activity-illustrations/10-park-walk.webp')}
+              style={{ width: 25, height: 25 }}
+              contentFit="cover"
+              contentPosition={{ left: '30%', top: '50%' }}
+              transition={0}
+              accessible={false}
+            />
+            <HanddrawnFrame color={chromeBorder} />
+          </View>
+        </Pressable>
+      ) : null}
+      {showCircularTimetable ? (
+        <Pressable
           onPress={onSelectCircular}
           accessibilityRole="tab"
           accessibilityState={{ selected: circularActive }}
@@ -259,7 +289,7 @@ export function DayPlanLayoutModeTabs({
         </Pressable>
       ) : null}
       {layoutTabs.map((item) => {
-        const active = !circularActive && mode === item.key;
+        const active = !circularActive && !comicActive && mode === item.key;
         const label = layoutModeLabel(t, item.key);
         return (
           <ChromeShadowTab

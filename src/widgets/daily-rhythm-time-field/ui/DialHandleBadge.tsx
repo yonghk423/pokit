@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { DayRhythmSymbol } from '@shared/ui/day-rhythm-symbol';
 import { PaperGrain } from '@shared/ui/paper-grain';
 
 type Props = {
@@ -34,7 +34,7 @@ export function DialHandleBadge({ kind, size, left, top, backgroundColor, border
         />
       </Svg>
       <View style={styles.icon}>
-        <IconSymbol name={kind === 'sun' ? 'sun.max.fill' : 'moon.fill'} size={iconSize} color={iconColor} />
+        <DayRhythmSymbol kind={kind} size={iconSize} ink={iconColor} />
       </View>
     </View>
   );

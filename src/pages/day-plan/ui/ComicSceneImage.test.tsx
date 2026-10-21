@@ -1,0 +1,22 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ComicSceneImage } from './ComicSceneImage';
+jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
+it('keeps a same-size skeleton until display and resets it when the source changes', () => {
+  let tree!: ReactTestRenderer;
+  const render = (id: string) => <ComicSceneImage source={{ uri: id }} imageKey={id} style={{ width: 100, height: 80 }} />;
+  act(() => { tree = create(render('first')); });
+  const skeleton = () => tree.root.findAll(node => node.props.testID === 'comic-image-skeleton');
+  const nativeImage = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  expect(skeleton().length).toBeGreaterThan(0);
+  act(() => { nativeImage().props.onDisplay(); });
+  expect(skeleton()).toHaveLength(0);
+  act(() => { tree.update(render('second')); });
+  expect(skeleton().length).toBeGreaterThan(0);
+  act(() => { nativeImage().props.onError(); });
+  expect(skeleton()).toHaveLength(0);
+  const retry = tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.retryImage' && typeof node.props.onPress === 'function')[0];
+  act(() => { retry.props.onPress(); });
+  expect(skeleton().length).toBeGreaterThan(0);
+  act(() => { tree.unmount(); });
+});
