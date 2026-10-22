@@ -1,134 +1,61 @@
-import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useEffect, useRef } from 'react';
 import { DevSettings } from 'react-native';
 
-import { getAppLocale } from '@shared/lib/i18n';
-import type { HistorySeedProfile } from '@shared/lib/storage/seedHistoryData';
-
 import {
-  alertDevClockReset,
-  alertOvernightRollResult,
-  alertOvernightSeedResult,
-  resetDevAppClockToDeviceNow,
-  rollOvernightWindowAsEndDateMorning,
-  seedOvernightWindowTodayToTomorrow,
-} from './devOvernightWindowTimeTravel';
-import {
-  formatDevMockSeedAlertMessage,
-  formatDevMockSeedProfileAlertMessage,
-  runDevMockClearWithStoreSync,
-  runDevMockSeedProfileWithStoreSync,
-  runPuzzleHistoryMockSeedWithStoreSync,
-  runScreenshotDemoSeedWithStoreSync,
-  runTemplateDemoRoutinesSeedWithStoreSync,
-} from './devMockSeedRunner';
+  clearConceptMock,
+  seedConceptMock,
+  type ConceptHistoryProfile,
+  type ConceptMockSeedResult,
+} from './devConceptMockSeed';
 
-const HISTORY_SEED_MENU_ITEMS: ReadonlyArray<{ profile: HistorySeedProfile; label: string; hint: string }> = [
+const PROFILE_MENU: ReadonlyArray<{ profile: ConceptHistoryProfile; label: string; hint: string }> = [
   {
     profile: 'mixed',
-    label: '[Seed] 목업 — 혼합',
-    hint: '고·중·저·빈 날이 섞여 있어요. 달력을 돌리며 다양한 UI를 볼 수 있어요.',
+    label: '[Seed] 오늘 컨셉 — 혼합',
+    hint: '만들 수 있는 루틴 카드, 만화 일기, 오늘·다가오는 날짜, 들쭉날쭉한 달성 기록이에요.',
   },
   {
     profile: 'low',
-    label: '[Seed] 목업 — 저달성',
-    hint: '최근 2주가 저조해요. 오늘·이번 주·이번 달 달성률이 낮은 UI를 확인하세요.',
+    label: '[Seed] 오늘 컨셉 — 저달성',
+    hint: '같은 오늘 화면이고, 최근 2주 달성은 낮게 들어가 있어요.',
   },
   {
     profile: 'strong',
-    label: '[Seed] 목업 — 고달성',
-    hint: '목표를 잘 세운 경우예요. 기존 고달성 데모와 같아요.',
+    label: '[Seed] 오늘 컨셉 — 고달성',
+    hint: '같은 오늘 화면이고, 거의 매일 채운 달성 기록이에요.',
   },
 ];
 
+function formatSeedAlert(result: ConceptMockSeedResult, hint: string): string {
+  return `${hint}\n\n로케일 ${result.locale} · 루틴 ${result.routines}개 · 만화 ${result.scenes}장 · 달력 ${result.scheduledDates}일 · 통계 ${result.historyDays}일\n만화 일기는 일기 모드를 다시 열면 보여요.`;
+}
+
 /**
- * __DEV__ 전용: React Native Dev Menu에 목업 추가·제거 버튼 등록.
- * 스크린샷/호라이즌 문구는 현재 앱 로케일(ko/en/ja)에 맞춰 채워진다.
+ * __DEV__ 전용. 현재 오늘 탭(루틴 카드·만화 일기·날짜 담기)과 통계에 맞는 목업.
  */
 export function useDevSeedMenu(): void {
-  const seedOvernightRef = useRef(seedOvernightWindowTodayToTomorrow);
-  seedOvernightRef.current = seedOvernightWindowTodayToTomorrow;
-  const rollOvernightRef = useRef(rollOvernightWindowAsEndDateMorning);
-  rollOvernightRef.current = rollOvernightWindowAsEndDateMorning;
-  const resetClockRef = useRef(resetDevAppClockToDeviceNow);
-  resetClockRef.current = resetDevAppClockToDeviceNow;
-  /** Fast Refresh 후에도 Dev Menu가 최신 seed 모듈을 쓰도록 ref로 유지 */
-  const screenshotSeedRef = useRef(runScreenshotDemoSeedWithStoreSync);
-  screenshotSeedRef.current = runScreenshotDemoSeedWithStoreSync;
-  const templateDemoSeedRef = useRef(runTemplateDemoRoutinesSeedWithStoreSync);
-  templateDemoSeedRef.current = runTemplateDemoRoutinesSeedWithStoreSync;
-  const historySeedRef = useRef(runDevMockSeedProfileWithStoreSync);
-  historySeedRef.current = runDevMockSeedProfileWithStoreSync;
-  const puzzleSeedRef = useRef(runPuzzleHistoryMockSeedWithStoreSync);
-  puzzleSeedRef.current = runPuzzleHistoryMockSeedWithStoreSync;
-  const clearSeedRef = useRef(runDevMockClearWithStoreSync);
-  clearSeedRef.current = runDevMockClearWithStoreSync;
+  const seedRef = useRef(seedConceptMock);
+  seedRef.current = seedConceptMock;
+  const clearRef = useRef(clearConceptMock);
+  clearRef.current = clearConceptMock;
 
   useEffect(() => {
     if (!__DEV__) return;
 
-    DevSettings.addMenuItem('[Seed] 스크린샷 데모 (locale)', () => {
-      void (async () => {
-        const locale = getAppLocale();
-        const result = await screenshotSeedRef.current();
-        Alert.alert(
-          'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n문구 로케일: ${locale}\n담기·시간대·타임라인·메모·서재·노트·오늘의 주인공 세트·통계가 채워졌어요.\n히스토리 주간이 오늘만 보이면 ◀ 로 지난주를 열어 보세요.`,
-        );
-      })();
-    });
-
-    DevSettings.addMenuItem('[Seed] 템플릿 체험 + 책·메모·노트', () => {
-      void (async () => {
-        const result = await templateDemoSeedRef.current();
-        Alert.alert(
-          'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\n템플릿 오늘의 주인공 7종 + 알라딘 책방 + 빠른 메모 + 상세 노트 목업이 채워졌어요.\n면색·잉크·중요도 색도 템플릿마다 다르게 들어가 있어요.\n위젯(오늘의 주인공·책방·노트)·오늘 탭에서 확인하세요.`,
-        );
-      })();
-    });
-
-    if (FEATURE_FLAGS.puzzle) {
-    DevSettings.addMenuItem('[Seed] 퍼즐 목업', () => {
-      void (async () => {
-        const result = await puzzleSeedRef.current();
-        Alert.alert(
-          'Seed 완료',
-          `${formatDevMockSeedAlertMessage(result)}\n\nassets/puzzle 사진을 모두 완료(앨범) 목업으로 넣었어요.\n퍼즐 탭에서 확인하세요.`,
-        );
-      })();
-    });
-    }
-
-    for (const item of HISTORY_SEED_MENU_ITEMS) {
+    for (const item of PROFILE_MENU) {
       DevSettings.addMenuItem(item.label, () => {
         void (async () => {
-          const result = await historySeedRef.current(item.profile);
-          Alert.alert('Seed 완료', `${formatDevMockSeedProfileAlertMessage(item.profile, result)}\n\n${item.hint}`);
+          const result = await seedRef.current(item.profile);
+          Alert.alert('Seed 완료', formatSeedAlert(result, item.hint));
         })();
       });
     }
 
-    DevSettings.addMenuItem('[Time] 오늘→내일 시드', () => {
-      alertOvernightSeedResult(seedOvernightRef.current());
-    });
-
-    DevSettings.addMenuItem('[Time] 다음날로 넘기기', () => {
-      alertOvernightRollResult(rollOvernightRef.current());
-    });
-
-    DevSettings.addMenuItem('[Time] 시계 되돌리기', () => {
-      alertDevClockReset(resetClockRef.current());
-    });
-
-    DevSettings.addMenuItem('[Clear] 목업 데이터 전체', () => {
+    DevSettings.addMenuItem('[Clear] 목업 데이터', () => {
       void (async () => {
-        await clearSeedRef.current();
-        Alert.alert(
-          'Clear 완료',
-          '목업 데이터를 모두 제거했어요.\n통계·스크린샷 데모·템플릿 체험 오늘의 주인공·Puzzle이 비어 있어야 정상이에요.',
-        );
+        await clearRef.current();
+        Alert.alert('Clear 완료', '추가했던 오늘 루틴·만화 일기·날짜 담기·통계 목업을 지웠어요.');
       })();
     });
   }, []);

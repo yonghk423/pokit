@@ -1,6 +1,6 @@
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
-import { type ReactNode } from 'react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
@@ -119,18 +119,32 @@ export function SettingsSection({
   surface: string;
   isDark?: boolean;
 }) {
-  /** 카드 오프셋 — 소프트 드롭에 가까운 옅은 잉크 */
-  const shadowColor = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)';
+  /** 항목마다 종이 결 + 단정한 오프셋 음영을 주어 현재 카드 스타일로 통일 */
+  const shadowColor = isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(40, 45, 38, 0.13)';
 
   return (
-    <CityPopCardShell
-      isDark={isDark}
-      faceColor={surface}
-      shadowColor={shadowColor}
-      shadowOffset={SHADOW_SM}>
-      <View style={styles.sectionInner}>{children}</View>
-    </CityPopCardShell>
+    <View style={styles.section}>
+      {Children.map(children, (child, index) => {
+        if (!isValidElement<{ style?: unknown }>(child)) return child;
+        if (isSectionHeading(child.props.style)) return child;
+
+        return (
+          <CityPopCardShell
+            key={child.key ?? `settings-row-${index}`}
+            isDark={isDark}
+            faceColor={surface}
+            shadowColor={shadowColor}
+            shadowOffset={SHADOW_SM}>
+            {child}
+          </CityPopCardShell>
+        );
+      })}
+    </View>
   );
+}
+
+function isSectionHeading(style: unknown): boolean {
+  return Array.isArray(style) && style.includes(settingsChromeStyles.sectionTitle);
 }
 
 export const settingsChromeStyles = StyleSheet.create({
@@ -177,7 +191,7 @@ export const settingsChromeStyles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth * 2,
+    borderTopWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -206,8 +220,8 @@ export const settingsChromeStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  sectionInner: {
-    /** 아이콘 솔리드 음영이 잘리지 않게 — 셸이 음영 면적을 포함 */
+  section: {
+    gap: 10,
     overflow: 'visible',
   },
   iconShell: {

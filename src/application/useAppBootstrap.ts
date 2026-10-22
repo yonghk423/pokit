@@ -59,8 +59,8 @@ import {
   loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
 } from '@shared/lib/storage';
-import { useDevSeedMenu } from './useDevSeedMenu';
 import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyRhythmOnboardingAssets';
+import { useDevSeedMenu } from './useDevSeedMenu';
 
 /**
  * 앱 전역 부트스트랩: hydrate + 알림 리스너 + Live Activity 동기화.
