@@ -42,6 +42,18 @@ it('automatically retries without cache, then uses original artwork, and offers 
   act(() => { tree.unmount(); });
   expect(jest.getTimerCount()).toBe(0);
 });
+it('skips the skeleton when artwork that already displayed is mounted again', () => {
+  let tree!: ReactTestRenderer;
+  const render = () => <ComicSceneImage source={{ uri: 'shown' }} imageKey="shown-again" style={{ width: 100, height: 80 }} />;
+  const skeleton = () => tree.root.findAll(node => node.props.testID === 'comic-image-skeleton');
+  act(() => { tree = create(render()); });
+  expect(skeleton().length).toBeGreaterThan(0);
+  act(() => { tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0].props.onDisplay(); });
+  act(() => { tree.unmount(); });
+  act(() => { tree = create(render()); });
+  expect(skeleton()).toHaveLength(0);
+  act(() => { tree.unmount(); });
+});
 it('cancels pending retries when the screen closes', () => {
   jest.useFakeTimers();
   let tree!: ReactTestRenderer;

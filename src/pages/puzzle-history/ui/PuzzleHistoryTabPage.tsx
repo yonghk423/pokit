@@ -48,7 +48,7 @@ import {
 import { PuzzleRenameSheet } from './PuzzleRenameSheet';
 
 /** 포스트잇 벽 배경 (레퍼런스 회백색) */
-const WALL_BG_LIGHT = '#F5F4F2';
+const WALL_BG_LIGHT = '#F7F6F4';
 const WALL_BG_DARK = '#2A2A30';
 /** 헤더 액션 — 루틴 세그먼트 탭(FixedRoutineSectionTabs)과 동일 솔리드 음영 */
 const ICON_SHADOW = 1;

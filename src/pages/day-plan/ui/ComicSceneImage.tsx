@@ -9,13 +9,16 @@ type Props = {
   source: ImageProps['source']; fallbackSource?: ImageProps['source']; imageKey: string;
   style: StyleProp<ViewStyle>; priority?: ImageProps['priority']; contentFit?: ImageProps['contentFit']; backgroundColor?: string;
 };
+/** Artwork already shown this session sits in the memory cache, so remounts skip the skeleton. */
+const shownImageKeys = new Set<string>();
+
 /** A separate load session prevents recycled cells from inheriting a previous image's error. */
 export function ComicSceneImage(props: Props) {
   return <ComicImageSession key={props.imageKey} {...props} />;
 }
 function ComicImageSession({ source, fallbackSource, imageKey, style, priority = 'normal', contentFit = 'cover', backgroundColor = '#ECEEE9' }: Props) {
   const { t } = useTranslation();
-  const [displayed, setDisplayed] = useState<string | null>(null);
+  const [displayed, setDisplayed] = useState<string | null>(() => shownImageKeys.has(imageKey) ? `${imageKey}:0:0` : null);
   const [failed, setFailed] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [reload, setReload] = useState(0);
@@ -26,13 +29,14 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
     const timer = setTimeout(() => setAttempt(value => value + 1), 300 * (attempt + 1));
     return () => clearTimeout(timer);
   }, [failed, key, exhausted, attempt]);
-  const retry = () => { setFailed(null); setDisplayed(null); setAttempt(0); setReload(value => value + 1); };
+  const retry = () => { shownImageKeys.delete(imageKey); setFailed(null); setDisplayed(null); setAttempt(0); setReload(value => value + 1); };
   return <View style={[{ overflow: 'hidden', backgroundColor }, style]}>
     <Image key={key} source={attempt >= 2 && fallbackSource ? fallbackSource : source} recyclingKey={key}
       style={StyleSheet.absoluteFill} contentFit={contentFit}
       useAppleWebpCodec={false} cachePolicy={attempt > 0 || reload > 0 ? 'none' : 'memory-disk'}
       allowDownscaling enforceEarlyResizing priority={priority} transition={0}
-      onDisplay={() => { setDisplayed(key); setFailed(null); }} onError={event => {
+      onDisplay={() => { shownImageKeys.add(imageKey); setDisplayed(key); setFailed(null); }} onError={event => {
+        shownImageKeys.delete(imageKey);
         setFailed(key);
         if (__DEV__ && exhausted) console.warn('[ComicSceneImage] Artwork load failed', { imageKey, error: event?.error ?? 'Unknown image error' });
       }} accessible={false} />

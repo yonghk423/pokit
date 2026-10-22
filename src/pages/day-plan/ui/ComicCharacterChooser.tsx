@@ -50,7 +50,12 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark }: { onStart
         </View>}
         <ThemedText style={[s.description, { color: muted }]}>{t(character.description)}</ThemedText>
         <View style={s.previews}>{character.preview.map(scene => <ComicSceneImage key={scene.id} imageKey={`${scene.id}:small`} source={COMIC_SCENE_THUMBNAILS[scene.id].small} fallbackSource={scene.source} style={s.preview} />)}</View>
-        <ThemedText style={[s.count, { color: muted }]}>{t('comicDay.sceneCount', { count: character.scenes.length })}</ThemedText>
+        <View accessible accessibilityLabel={t('comicDay.sceneCount', { count: character.scenes.length })} style={s.countIcon}>
+          <Svg width={26} height={22} viewBox="0 0 26 22" accessible={false}>
+            <Path d="M7 2.5L22.5 3.5L21.4 18.5L6.2 17.4Z M4.2 5L19.7 6L18.6 21L3.4 19.8Z" fill="#FFFFFF" stroke={muted} strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M8.3 7.8L15.7 8.3M8 10.7L14.3 11.1M7.7 13.5L12.4 13.8" fill="none" stroke={muted} strokeWidth={0.7} strokeLinecap="round" />
+          </Svg>
+        </View>
         <HanddrawnFrame color={selected.id === character.id ? '#78BDA9' : muted} />
       </Pressable>)}
       <View style={s.upcoming}>
@@ -76,6 +81,6 @@ const s = StyleSheet.create({
   content: { padding: 18, paddingBottom: 24 }, title: { fontSize: 24, marginBottom: 6 }, subtitle: { fontSize: 13, marginBottom: 20 },
   card: { padding: 8, overflow: 'hidden' }, cover: { width: '100%', aspectRatio: 1.35 }, check: { position: 'absolute', top: 16, right: 16, width: 30, height: 30 },
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, gap: 4 }, editButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 4, paddingHorizontal: 10 }, editBox: { marginTop: 10, gap: 4 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 8 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 44, borderBottomWidth: 0.6 },
-  name: { textAlign: 'center', fontSize: 24, flexShrink: 1 }, description: { textAlign: 'center', fontSize: 13, marginTop: 2 }, previews: { flexDirection: 'row', gap: 6, marginTop: 14 }, preview: { flex: 1, aspectRatio: 1.3 }, count: { textAlign: 'center', fontSize: 12, marginVertical: 8 },
+  name: { textAlign: 'center', fontSize: 24, flexShrink: 1 }, description: { textAlign: 'center', fontSize: 13, marginTop: 2 }, previews: { flexDirection: 'row', gap: 6, marginTop: 14 }, preview: { flex: 1, aspectRatio: 1.3 }, countIcon: { alignItems: 'center', justifyContent: 'center', marginVertical: 8, height: 16 },
   upcoming: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 16, opacity: 0.6 }, footer: { padding: 14, gap: 8, borderTopWidth: 0.5 }, start: { alignSelf: 'center', maxWidth: '94%', minHeight: 38, backgroundColor: '#C8EBDD', paddingHorizontal: 18, paddingVertical: 7, gap: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
 });

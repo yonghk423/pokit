@@ -1,6 +1,6 @@
 import { openBrowserAsync } from 'expo-web-browser';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -28,6 +28,8 @@ type Props = {
   pullToRefreshEnabled?: boolean;
   /** 첫 로딩 중 표시 UI — progress 0~100 */
   renderInitialLoading?: (progress: number) => ReactNode;
+  /** 첫 로딩 오버레이가 보이거나 사라질 때 */
+  onInitialLoadingChange?: (loading: boolean) => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -52,6 +54,7 @@ export function WebViewScreen({
   onMessage,
   pullToRefreshEnabled = true,
   renderInitialLoading,
+  onInitialLoadingChange,
   style,
 }: Props) {
   const { t } = useTranslation();
@@ -90,6 +93,11 @@ export function WebViewScreen({
     },
     [allowedHostSuffixes],
   );
+
+  const initialLoading = isLoading && !hasError && !hasLoadedOnce;
+  useEffect(() => {
+    onInitialLoadingChange?.(initialLoading);
+  }, [initialLoading, onInitialLoadingChange]);
 
   const handleLoadEnd = useCallback(() => {
     setIsLoading(false);

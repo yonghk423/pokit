@@ -9,8 +9,8 @@ const FRAME = '#929B8B';
 const SHADOW = 'rgba(65, 78, 58, 0.07)';
 
 /** Paper button with the same pencil frame and grain as the layout tiles. */
-export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, style }: {
-  label: string; onPress: () => void; ink?: string; labelSize?: number; style?: StyleProp<ViewStyle>;
+export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, style }: {
+  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; style?: StyleProp<ViewStyle>;
 }) {
   return (
     <Pressable
@@ -19,13 +19,13 @@ export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize =
       onPress={() => { tapHaptic(); onPress(); }}
       style={({ pressed }) => [s.shell, style, pressed && s.pressed]}>
       <View pointerEvents="none" style={s.shadow} />
-      <View style={s.face}>
+      <View style={[s.face, iconOnly && s.iconFace]}>
         <PaperGrain opacity={0.25} />
         <HanddrawnFrame color={FRAME} />
-        <Svg width={17} height={18} viewBox="0 0 20 20" accessible={false}>
+        <Svg width={iconOnly ? 22 : 17} height={iconOnly ? 22 : 18} viewBox="0 0 20 20" accessible={false}>
           <Path d="M3.1 10.4Q9.9 9.8 16.7 10.1M10.2 3L9.8 17M4.2 9.5L15.7 9.4M9.3 4L9.1 15.5" fill="none" stroke={ink} strokeWidth={0.9} strokeLinecap="round" />
         </Svg>
-        <ThemedText style={{ color: ink, fontSize: labelSize, lineHeight: labelSize + 8, flexShrink: 1, textAlign: 'center' }}>{label}</ThemedText>
+        {iconOnly ? null : <ThemedText style={{ color: ink, fontSize: labelSize, lineHeight: labelSize + 8, flexShrink: 1, textAlign: 'center' }}>{label}</ThemedText>}
       </View>
     </Pressable>
   );
@@ -45,5 +45,6 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     zIndex: 1,
   },
+  iconFace: { width: 44, height: 44, minHeight: 44, paddingHorizontal: 0, paddingVertical: 0 },
   pressed: { transform: [{ translateY: 1 }] },
 });

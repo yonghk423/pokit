@@ -97,6 +97,12 @@ export function PlanModeSwitch({
       >,
     [t],
   );
+  const visibleModes = MODE_BUTTONS.filter((btn) =>
+    (btn.mode !== 'quickMemo' || FEATURE_FLAGS.quickMemoShortcut)
+    && (btn.mode !== 'dayNote' || FEATURE_FLAGS.dayNoteShortcut),
+  );
+  // 전환할 모드가 하나뿐이면 왼쪽 모드 버튼은 비운다.
+  const showModeButtons = visibleModes.length > 1;
 
   return (
     <View style={styles.root}>
@@ -107,11 +113,8 @@ export function PlanModeSwitch({
             { backgroundColor: c.containerLow, borderBottomColor: c.border },
             trailing ? styles.rowWithTrailing : null,
           ]}>
-          <View style={styles.leftButtonGroup}>
-            {MODE_BUTTONS.filter((btn) =>
-              (btn.mode !== 'quickMemo' || FEATURE_FLAGS.quickMemoShortcut)
-              && (btn.mode !== 'dayNote' || FEATURE_FLAGS.dayNoteShortcut),
-            ).map((btn) => {
+          {showModeButtons ? <View style={styles.leftButtonGroup}>
+            {visibleModes.map((btn) => {
               const active =
                 planMode === btn.mode;
               const label = modeLabels[btn.mode];
@@ -140,7 +143,7 @@ export function PlanModeSwitch({
                 </Pressable>
               );
             })}
-          </View>
+          </View> : null}
           {middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
           {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
         </View>
@@ -173,10 +176,11 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   rowWithTrailing: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 4,
   },
-  middle: { flex: 1, minWidth: 0, marginHorizontal: 8 },
-  middleContent: { flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center', paddingVertical: 2, paddingHorizontal: 1 },
+  middle: { flexGrow: 0, flexShrink: 1, minWidth: 0 },
+  middleContent: { flexGrow: 0, justifyContent: 'flex-start', alignItems: 'center', paddingVertical: 2, paddingHorizontal: 1 },
   trailing: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -127,7 +127,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
     patch(selected.id, { todos: [...selected.todos, { id: newComicScene('').id, text: todoDraft.trim(), completed: false }] });
     setTodoDraft('');
   };
-  return <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F5F0E6' }}>
+  return <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }}>
     <ComicDayBoard diaryTitle={diary.title} characterName={customName ?? t(character.name)} onRenameCharacter={rename} onSelectCharacter={onSelectCharacter} items={scenes.map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, icon: '', faceColor: scene.paper, inkColor: scene.pen }))}
       ink={ink} muted={muted} isDark={isDark} choices={Object.fromEntries(scenes.map(scene => [scene.id, scene.image]))}
       onOpen={open}
@@ -158,7 +158,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
             <View style={s.head}><ThemedText style={{ color: selected.pen }}>{t('comicDay.sceneNumber', { number: String(scenes.indexOf(selected) + 1).padStart(2, '0') })}</ThemedText><Pressable accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); close(); }} style={s.touch}><ThemedText style={{ fontSize: 28, color: selected.pen }}>×</ThemedText></Pressable></View>
             <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
               <ThemedTextInput accessibilityLabel={t('comicDay.sceneTitle')} value={selected.title} onChangeText={title => patch(selected.id, { title })} style={[s.title, { color: selected.pen }]} maxLength={80} placeholder={t('comicDay.sceneTitle')} placeholderTextColor="#888" />
-              <ComicSceneImage imageKey={`${selected.image}:original`} source={(character.scenes.find(scene => scene.id === selected.image) ?? character.scenes[0]).source} style={{ width: '100%', aspectRatio: 1.5 }} />
+              <ComicSceneImage contentFit="contain" backgroundColor={selected.paper} imageKey={`${selected.image}:original`} source={(character.scenes.find(scene => scene.id === selected.image) ?? character.scenes[0]).source} style={{ width: '100%', height: Math.min(width * 1.05, 440) }} />
               <ThemedText style={[s.section, { color: selected.pen }]}>{t('comicDay.change')}</ThemedText>
               <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flexGrow: 0 }}>
                 {character.scenes.map(scene => <Pressable key={scene.id} accessibilityLabel={t(scene.label)} accessibilityState={{ selected: scene.id === selected.image }} onPress={() => { tapHaptic('select'); patch(selected.id, { image: scene.id }); }} style={{ width: 76, padding: 3, borderWidth: 2, borderColor: scene.id === selected.image ? '#8DDAC2' : 'transparent' }}>

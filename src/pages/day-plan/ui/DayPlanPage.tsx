@@ -1,7 +1,7 @@
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   InteractionManager,
   Keyboard,
@@ -75,6 +75,7 @@ import {
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
+import { DayPlanShellBackgroundContext } from '../model/dayPlanHeaderActions';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
 import { DayNotePlanSection } from './DayNotePlanSection';
@@ -114,6 +115,11 @@ export function DayPlanPage({
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
   const [comicModeActive, setComicModeActive] = useState(false);
+  const setShellBackground = useContext(DayPlanShellBackgroundContext);
+  useEffect(() => {
+    setShellBackground?.(comicModeActive && !isDark ? '#F7F6F4' : null);
+    return () => setShellBackground?.(null);
+  }, [comicModeActive, isDark, setShellBackground]);
   const [rhythmGateOpen, setRhythmGateOpen] = useState(
     () => FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted(),
   );
@@ -810,7 +816,11 @@ export function DayPlanPage({
     endFocusedLiveActivity,
   ]);
 
-  const { registerPrimaryAction } = useDayPlanTabBridge();
+  const { registerPrimaryAction, registerComicDiaryLight } = useDayPlanTabBridge();
+  useFocusEffect(useCallback(() => {
+    registerComicDiaryLight(comicModeActive && !isDark);
+    return () => registerComicDiaryLight(false);
+  }, [comicModeActive, isDark, registerComicDiaryLight]));
 
   /** 마운트 해제 시 primary 를 idle로 되돌림 */
   useEffect(() => {
@@ -839,7 +849,7 @@ export function DayPlanPage({
     registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.start'), hidden: false });
   }, [registerPrimaryAction, planMode]);
 
-  const shellBg = isDark ? c.containerLow : '#F5F0E6';
+  const shellBg = isDark ? c.containerLow : '#F7F6F4';
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>

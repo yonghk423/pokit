@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -73,8 +74,8 @@ export function RoutinePlusIcon({ size = 36, ink = INK_DEFAULT }: { size?: numbe
 }
 
 /** White paper tile with static graphite ink (no color-breathing animation). */
-export function RoutineWheelAddButton({ label, onPress, ink = INK_DEFAULT, style, disabled = false, invite: _invite = false, icon = 'wheel', size = 48 }: {
-  label: string; onPress: () => void; ink?: string; style?: StyleProp<ViewStyle>; disabled?: boolean; invite?: boolean; icon?: 'wheel' | 'cards' | 'createCard' | 'confirmAdd' | 'plus'; size?: number;
+export function RoutineWheelAddButton({ label, onPress, ink = INK_DEFAULT, style, disabled = false, invite: _invite = false, icon = 'wheel', size = 48, translucent = false }: {
+  label: string; onPress: () => void; ink?: string; style?: StyleProp<ViewStyle>; disabled?: boolean; invite?: boolean; icon?: 'wheel' | 'cards' | 'createCard' | 'confirmAdd' | 'plus'; size?: number; translucent?: boolean;
 }) {
   const AddIcon =
     icon === 'plus'
@@ -86,6 +87,7 @@ export function RoutineWheelAddButton({ label, onPress, ink = INK_DEFAULT, style
           : icon === 'cards'
             ? RoutineCardAddIcon
             : RoutineWheelAddIcon;
+  const isDark = useColorScheme() === 'dark';
   const holding = useSharedValue(0);
   const tile = Math.max(34, size - 2);
   const iconSize = Math.round(tile * (icon === 'createCard' ? 0.68 : 0.74));
@@ -104,10 +106,10 @@ export function RoutineWheelAddButton({ label, onPress, ink = INK_DEFAULT, style
       onPressOut={() => { holding.value = 0; }}
       onPress={() => { if (disabled) return; tapHaptic(); onPress(); }}
       style={[{ width: size, height: size }, style, disabled && s.disabled]}>
-      <View pointerEvents="none" style={[s.base, { width: tile, height: tile - 1 }]}><HanddrawnFrame color="#62645E" bold /></View>
-      <Animated.View style={[s.tile, { width: tile, height: tile - 1 }, pressStyle]}>
+      <View pointerEvents="none" style={[s.base, { width: tile, height: tile - 1 }, translucent && { backgroundColor: isDark ? 'rgba(0,0,0,0.28)' : 'rgba(80,76,70,0.14)' }]}><HanddrawnFrame color="#62645E" bold /></View>
+      <Animated.View style={[s.tile, { width: tile, height: tile - 1 }, translucent && { backgroundColor: isDark ? 'rgba(48,54,49,0.55)' : 'rgba(247,246,244,0.55)', shadowOpacity: 0 }, pressStyle]}>
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <PaperGrain opacity={0.25} />
+          <PaperGrain opacity={translucent ? 0.12 : 0.25} />
           <HanddrawnFrame color="#4F514B" bold />
         </View>
         <View style={[ { width: iconSize, height: iconSize }, s.iconCenter ]}>

@@ -28,7 +28,7 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
       style={[
         styles.shell,
         {
-          backgroundColor: c.bg,
+          backgroundColor: isDark ? c.bg : '#F7F6F4',
           paddingTop: insets.top + 24,
           paddingBottom: Math.max(insets.bottom, 16) + 16,
         },

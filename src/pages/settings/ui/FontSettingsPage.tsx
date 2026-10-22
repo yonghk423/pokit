@@ -81,7 +81,7 @@ export function FontSettingsPage() {
   const setSizeId = useAppFontStore((s) => s.setSizeId);
   const sizeScale = useAppFontSizeScale();
   /** 외곽선 없이 음영만 — 면은 불투명 */
-  const cardFace = isDark ? rf.surfaceAlt : '#FFFFFF';
+  const cardFace = isDark ? rf.surfaceAlt : '#F7F6F4';
   const cardFacePressed = isDark ? rf.surfaceContainer : '#F3F0E8';
   const checkOn = rf.primary;
   const checkOff = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.28)';
@@ -108,7 +108,7 @@ export function FontSettingsPage() {
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#262B28' : '#F5F0E6' }]} darkColor="#262B28" lightColor="#F5F0E6">
+    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]} darkColor="#262B28" lightColor="#F7F6F4">
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.topBar}>
           <Pressable

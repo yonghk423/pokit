@@ -81,8 +81,11 @@ const SHOW_POKIT_PRO_SETTINGS = false;
 /** 화면 테마(라이트/다크) 설정 — 출시 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_APPEARANCE_SETTINGS = false;
 
-/** 설정 → 알림 섹션 */
-const SHOW_NOTIFICATION_SETTINGS = true;
+/** 설정 → 알림 섹션 — 다시 쓸 때까지 숨김 (`true`로 바꾸면 다시 표시) */
+const SHOW_NOTIFICATION_SETTINGS = false;
+
+/** 설정 → 레이아웃 설정 — 다시 쓸 때까지 숨김 (`true`로 바꾸면 다시 표시) */
+const SHOW_LAYOUT_SETTINGS = false;
 
 function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
   if (fontId === 'kimJungWon') return t('settings.font.kimJungWon', locale);
@@ -402,6 +405,7 @@ export function SettingsPage() {
             </Pressable>
           </SettingsSection>
 
+          {FEATURE_FLAGS.dailyRhythmWindow || SHOW_LAYOUT_SETTINGS ? (
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
               {t('settings.section.dayPlan', locale)}
@@ -438,6 +442,7 @@ export function SettingsPage() {
           </Pressable>
           ) : null}
 
+          {SHOW_LAYOUT_SETTINGS ? (
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
             onPress={() => {
@@ -465,7 +470,9 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
+          ) : null}
         </SettingsSection>
+          ) : null}
 
         <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
           <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>

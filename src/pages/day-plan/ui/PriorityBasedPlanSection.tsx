@@ -2504,16 +2504,6 @@ export function PriorityBasedPlanSection({
   const registerHeaderActions = useDayPlanHeaderActions();
   const headerLayoutActions = useMemo(() => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      {!comicDayOpen ? <Pressable
-        onPress={() => { void Haptics.selectionAsync(); setScheduledRoutineSheetOpen(true); }}
-        accessibilityRole="button"
-        accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
-        hitSlop={2}
-        style={({ pressed }) => [{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' }, pressed && { opacity: 0.7, transform: [{ translateY: 1 }] }]}>
-        <PaperGrain opacity={0.2} />
-        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#929B8B'} />
-        <HeaderIcon name="calendar" size={20} />
-      </Pressable> : null}
       {(visibleLayoutModes?.length ?? 3) > 0 ? <DayPlanLayoutModeTabs
       showCircularTimetable
       circularActive={circularTimetableOpen && !showCards}
@@ -2949,14 +2939,14 @@ export function PriorityBasedPlanSection({
         }
       />
 
-      <View style={[styles.bookOuter, { backgroundColor: comicDayOpen && !isDark ? '#F5F0E6' : surfaceBg, flex: 1, minHeight: 0 }]}>
+      <View style={[styles.bookOuter, { backgroundColor: comicDayOpen && !isDark ? '#F7F6F4' : surfaceBg, flex: 1, minHeight: 0 }]}>
         {/* 기간·집중 구간 — 다일 타임라인 카드 (달력·시계는 각각 모달) */}
         <View style={styles.priorityTimelineOuter}>
           <View
             style={[
               styles.priorityTimelineCard,
               {
-                backgroundColor: comicDayOpen && !isDark ? '#F5F0E6' : editorial.surface,
+                backgroundColor: comicDayOpen && !isDark ? '#F7F6F4' : editorial.surface,
               },
             ]}>
             {comicDayOpen || FEATURE_FLAGS.dailyPlanDateHeader ? <View
@@ -2965,7 +2955,7 @@ export function PriorityBasedPlanSection({
                 comicDayOpen && { alignItems: 'center', paddingTop: 8, paddingBottom: 8 },
                 {
                   borderBottomColor: editorial.line,
-                  backgroundColor: comicDayOpen && !isDark ? '#F5F0E6' : editorial.surface,
+                  backgroundColor: comicDayOpen && !isDark ? '#F7F6F4' : editorial.surface,
                 },
               ]}>
               {comicDayOpen ? <ComicDiaryMenuButton onPress={() => comicPlannerRef.current?.openLibrary()} /> : null}
@@ -3071,6 +3061,7 @@ export function PriorityBasedPlanSection({
                 onComplete={(key) => bagRowActions.onToggleComplete(key)}
                 onFinish={(key, label) => bagRowActions.onFinishForToday?.(key, label)}
                 onAdd={openAddRoutineForBag}
+                onSchedule={showCards ? () => { void Haptics.selectionAsync(); setScheduledRoutineSheetOpen(true); } : undefined}
                 onEditTime={(key, label) => openBagRowTimeModal({ rowKey: key, categoryKey: key, label })}
                 renderDetail={(item) => {
                   const schedule = resolveBagRowSpineSchedule(item.key);

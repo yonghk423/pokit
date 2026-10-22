@@ -23,9 +23,15 @@ type Ctx = {
   primaryHidden: boolean;
   tabBarHeight: number;
   isDayPlanFocused: boolean;
+  /** Light diary mode: the shared tab bar matches the white diary canvas. */
+  comicDiaryLight: boolean;
+  /** Story WebView first load: the shared tab bar matches the white loading screen. */
+  storyWebLight: boolean;
   invokePrimary: () => void;
   registerTabBarHeight: (height: number) => void;
   registerIsDayPlanFocused: (focused: boolean) => void;
+  registerComicDiaryLight: (active: boolean) => void;
+  registerStoryWebLight: (active: boolean) => void;
   registerPrimaryAction: (run: (() => void) | null, meta: DayPlanPrimaryMeta) => void;
 };
 
@@ -36,6 +42,8 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
   const [meta, setMeta] = useState<DayPlanPrimaryMeta>({ disabled: true, label: t('dayPlan.primary.start'), hidden: false });
   const [tabBarHeight, setTabBarHeight] = useState(0);
   const [isDayPlanFocused, setIsDayPlanFocused] = useState(false);
+  const [comicDiaryLight, setComicDiaryLight] = useState(false);
+  const [storyWebLight, setStoryWebLight] = useState(false);
 
   const registerPrimaryAction = useCallback((run: (() => void) | null, m: DayPlanPrimaryMeta) => {
     runRef.current = run;
@@ -60,6 +68,14 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
     setIsDayPlanFocused((prev) => (prev === focused ? prev : focused));
   }, []);
 
+  const registerComicDiaryLight = useCallback((active: boolean) => {
+    setComicDiaryLight((prev) => (prev === active ? prev : active));
+  }, []);
+
+  const registerStoryWebLight = useCallback((active: boolean) => {
+    setStoryWebLight((prev) => (prev === active ? prev : active));
+  }, []);
+
   const invokePrimary = useCallback(() => {
     if (meta.disabled) return;
     runRef.current?.();
@@ -72,9 +88,13 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       primaryHidden: Boolean(meta.hidden),
       tabBarHeight,
       isDayPlanFocused,
+      comicDiaryLight,
+      storyWebLight,
       invokePrimary,
       registerTabBarHeight,
       registerIsDayPlanFocused,
+      registerComicDiaryLight,
+      registerStoryWebLight,
       registerPrimaryAction,
     }),
     [
@@ -83,9 +103,13 @@ export function DayPlanTabBridgeProvider({ children }: { children: ReactNode }) 
       meta.label,
       tabBarHeight,
       isDayPlanFocused,
+      comicDiaryLight,
+      storyWebLight,
       invokePrimary,
       registerTabBarHeight,
       registerIsDayPlanFocused,
+      registerComicDiaryLight,
+      registerStoryWebLight,
       registerPrimaryAction,
     ],
   );

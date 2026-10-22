@@ -59,7 +59,7 @@ function IosTabLayout() {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const foreground = DynamicColorIOS({ light: '#151518', dark: '#FAFAFA' });
-  const tabBarBg = isDark ? '#262B28' : '#F5F0E6';
+  const tabBarBg = isDark ? '#262B28' : '#F7F6F4';
 
   return (
     <NativeTabs
@@ -123,7 +123,7 @@ function FloatingTabLayout() {
           tabBarStyle: [
             styles.tabBar,
             {
-              backgroundColor: isDark ? '#262B28' : '#F5F0E6',
+              backgroundColor: isDark ? '#262B28' : '#F7F6F4',
               height: TAB_BAR_TOP_GAP + TAB_BAR_HEIGHT + bottomSpace,
               paddingBottom: bottomSpace + 5,
               paddingLeft: Math.max(insets.left, 16) + 7,

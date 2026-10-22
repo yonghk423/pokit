@@ -13,7 +13,7 @@ import type { PlanMode } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { SettingsTopBarButton } from './SettingsTopBarButton';
-import { DayPlanHeaderActionsContext } from '../model/dayPlanHeaderActions';
+import { DayPlanHeaderActionsContext, DayPlanShellBackgroundContext } from '../model/dayPlanHeaderActions';
 
 const WIDGET_PLAN_MODES: readonly PlanMode[] = [
   'priority',
@@ -54,6 +54,7 @@ type Props = {
  */
 export function DayPlanTabScreenShell({ children }: Props) {
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
+  const [shellOverride, setShellOverride] = useState<string | null>(null);
   const router = useRouter();
   const segments = useSegments();
   const params = useLocalSearchParams<{ planMode?: string | string[] }>();
@@ -62,7 +63,7 @@ export function DayPlanTabScreenShell({ children }: Props) {
   const isDark = useColorScheme() === 'dark';
   const c = palette(isDark);
   /** 카드 면과 같은 크림 — 상단 상태바·헤더가 흰 띠로 남지 않게 */
-  const shellBg = isDark ? c.containerLow : '#F5F0E6';
+  const shellBg = shellOverride ?? (isDark ? c.containerLow : '#F7F6F4');
   const shellPalette = { ...c, containerLow: shellBg, bg: shellBg, headerBg: shellBg };
   const { planMode, setPlanMode } = useDayPlanDraftStore(
     useShallow((s) => ({
@@ -120,6 +121,7 @@ export function DayPlanTabScreenShell({ children }: Props) {
   );
 
   return (
+    <DayPlanShellBackgroundContext.Provider value={setShellOverride}>
     <DayPlanHeaderActionsContext.Provider value={setHeaderActions}>
       <View style={[styles.root, { backgroundColor: shellBg, paddingTop: insets.top }]}>
         <View style={styles.stickyTopBar}>
@@ -136,6 +138,7 @@ export function DayPlanTabScreenShell({ children }: Props) {
         <View style={styles.body}>{children}</View>
       </View>
     </DayPlanHeaderActionsContext.Provider>
+    </DayPlanShellBackgroundContext.Provider>
   );
 }
 

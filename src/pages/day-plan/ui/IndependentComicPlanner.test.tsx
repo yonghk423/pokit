@@ -16,6 +16,15 @@ jest.mock('@shared/ui/native-hhmm-wheel-picker', () => ({ NativeHhmmWheelPicker:
 jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').Modal }));
 jest.mock('@shared/ui/completion-radio-button', () => ({ CompletionRadioButton: jest.requireActual('react-native').Pressable }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('react-native-gesture-handler', () => {
+  const chain = () => {
+    const gesture: Record<string, () => unknown> = {};
+    for (const name of ['enabled', 'activeOffsetY', 'failOffsetX', 'onEnd']) gesture[name] = () => gesture;
+    return gesture;
+  };
+  return { GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Pan: chain } };
+});
+jest.mock('react-native-reanimated', () => ({ runOnJS: (fn: (...args: unknown[]) => unknown) => fn }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
 jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.requireActual('react-native').TextInput }));

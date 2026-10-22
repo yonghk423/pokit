@@ -1,6 +1,7 @@
 import { ComicCheck } from './ComicCheck';
 import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
 import { ComicSceneImage } from './ComicSceneImage';
+import { ComicSceneDeck } from './ComicSceneDeck';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/comicSceneThumbnails';
 import { COMIC_BOARD_MODES, comicCardLayout, comicPageLayout, diagonalComicPage, diagonalPanelPath, type ComicPanel, loadComicBoardMode, saveComicBoardMode, type ComicBoardMode } from '../lib/comicBoardLayout';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -35,13 +36,29 @@ export function ComicDayBoard({ diaryTitle, items, ink, muted, isDark, choices, 
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState(loadComicBoardMode);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Diaries open as a card deck; the comic grid appears only from the layout button.
+  const cardsFirst = !!diaryTitle;
+  const [gridOpen, setGridOpen] = useState(false);
+  const showCards = cardsFirst && !gridOpen;
   const small = viewMode === 'small';
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const selectedKeys = items.filter(item => selectedForDeletion.includes(item.key)).map(item => item.key);
   const toggleSelected = (key: string) => setSelectedForDeletion(previous => previous.includes(key) ? previous.filter(value => value !== key) : [...previous, key]);
   const openItem = (key: string) => { if (deleteMode && onRemoveMany) toggleSelected(key); else onOpen(key); };
-  const toggleDeleteMode = () => { setDeleteMode(value => !value); setSelectedForDeletion([]); setMenuOpen(false); };
+  // Deleting from the card deck borrows the grid; leaving delete mode returns to the deck.
+  const [deleteFromCards, setDeleteFromCards] = useState(false);
+  const toggleDeleteMode = () => {
+    setSelectedForDeletion([]); setMenuOpen(false);
+    if (deleteMode) {
+      setDeleteMode(false);
+      if (deleteFromCards) { setGridOpen(false); setDeleteFromCards(false); }
+      return;
+    }
+    setDeleteFromCards(showCards);
+    setGridOpen(true);
+    setDeleteMode(true);
+  };
   const [boardWidth, setBoardWidth] = useState(340);
   const renderCard = (item: BoardItem, index: number, panel?: ComicPanel) => {
     const layout = comicCardLayout(viewMode, index);
@@ -81,19 +98,39 @@ export function ComicDayBoard({ diaryTitle, items, ink, muted, isDark, choices, 
     </View>;
 
   };
-  return <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F5F0E6' }}>
-  <ScrollView onScrollBeginDrag={() => setMenuOpen(false)} showsVerticalScrollIndicator={false} contentContainerStyle={s.board}>
+  const heading = <>
     <View style={s.headingRow}>
       <View style={s.titleGroup}>
         <ThemedText numberOfLines={1} style={[s.heading, { color: ink }]}>{t('comicDay.title')}</ThemedText>
         {characterName ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} onPress={() => { tapHaptic(); (onRenameCharacter ?? onSelectCharacter)?.(); }} style={s.characterName}><ThemedText numberOfLines={1} style={{ color: muted, fontSize: 12, lineHeight: 18 }}>{characterName}</ThemedText></Pressable> : null}
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.boardView')} accessibilityState={{ expanded: menuOpen }} onPress={() => { tapHaptic('select'); setMenuOpen(value => !value); }} style={[s.deleteToggle, menuOpen && { backgroundColor: '#C8EBDD' }]}><LayoutDiagram mode={viewMode} ink={ink} size={26} /></Pressable>
+      {cardsFirst && gridOpen ? <Pressable testID="comic-show-cards" accessibilityRole="button" accessibilityLabel={t('comicDay.showCards')} onPress={() => { tapHaptic('select'); setMenuOpen(false); setDeleteMode(false); setDeleteFromCards(false); setSelectedForDeletion([]); setGridOpen(false); }} style={s.deleteToggle}>
+        <Svg width={26} height={26} viewBox="0 0 30 30" accessible={false}>
+          <Path d="M10 3L25 4L26 21L12 22ZM6 7L21 6L23 25L7 26Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1} strokeLinejoin="round" />
+          <Path d="M3 11L18 10L20 28L4 28Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" />
+        </Svg>
+      </Pressable> : null}
+      {deleteMode ? null : <Pressable testID="comic-board-view" accessibilityRole="button" accessibilityLabel={t('comicDay.boardView')} accessibilityState={{ expanded: menuOpen }} onPress={() => {
+        tapHaptic('select');
+        if (showCards) setGridOpen(true); else setMenuOpen(value => !value);
+      }} style={[s.deleteToggle, menuOpen && { backgroundColor: '#C8EBDD' }]}><LayoutDiagram mode={viewMode} ink={ink} size={26} /></Pressable>}
       {onRemove || onRemoveMany ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.toggleDelete')} accessibilityState={{ selected: deleteMode }} onPress={() => { tapHaptic('select'); toggleDeleteMode(); }} style={[s.deleteToggle, deleteMode && { backgroundColor: '#F6DAD6' }]}>
         <Image source={require('../../../../assets/control-illustrations/trash.webp')} style={{ width: 29, height: 29 }} contentFit="contain" accessible={false} />
       </Pressable> : null}
     </View>
     <ThemedText style={[s.hint, { color: muted }]}>{t(diaryTitle ? 'comicDiary.sceneCount' : 'comicDay.hint', { count: items.length })}</ThemedText>
+  </>;
+  const canvas = isDark ? '#262B28' : '#F7F6F4';
+  if (showCards) return <View style={{ flex: 1, backgroundColor: canvas }}>
+    <View style={s.deckHeading}>{heading}</View>
+    <View style={s.deckStage}>
+      {items.length ? <ComicSceneDeck items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onRemove={onRemove} /> : <ThemedText style={[s.empty, { color: muted, flex: 1 }]}>{t('comicDay.empty')}</ThemedText>}
+    </View>
+    <SketchPaperButton iconOnly label={t('comicDay.add')} ink={ink} onPress={onAdd} style={s.deckAdd} />
+  </View>;
+  return <View style={{ flex: 1, backgroundColor: canvas }}>
+  <ScrollView onScrollBeginDrag={() => setMenuOpen(false)} showsVerticalScrollIndicator={false} contentContainerStyle={s.board}>
+    {heading}
     <View style={s.grid} onLayout={event => setBoardWidth(event.nativeEvent.layout.width)}>
       {viewMode === 'hero' || viewMode === 'page' || viewMode === 'diagonal' ? Array.from({ length: Math.ceil(items.length / (viewMode === 'hero' ? 3 : 4)) }, (_, pageIndex) => {
         const groupSize = viewMode === 'hero' ? 3 : 4;
@@ -159,6 +196,9 @@ const s = StyleSheet.create({
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
   modeOption: { width: '47%', minHeight: 60, padding: 8, borderWidth: 0.5, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
   board: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 100 },
+  deckHeading: { paddingHorizontal: 16, paddingTop: 6 },
+  deckStage: { flex: 1, minHeight: 0 },
+  deckAdd: { position: 'absolute', right: 16, bottom: 8, alignSelf: 'flex-end', zIndex: 2 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 0 },
   deleteToggle: { width: 44, height: 44, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   titleGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },

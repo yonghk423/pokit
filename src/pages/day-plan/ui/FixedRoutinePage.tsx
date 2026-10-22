@@ -2332,11 +2332,10 @@ export function FixedRoutinePage({
   const useBrutalSurface =
     isEmbedded || isCityPopCatalogSurface || isMyRoutinesMode || isHistoryMode;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  /** 이전 앱 배경 — warm beige (페이지 배경만 유지) */
-  const shellBg =
-    isEmbedded || isCityPopCatalogSurface || isMyRoutinesMode || isHistoryMode
-      ? tone.bg
-      : c.bg;
+  /** 탭 페이지 배경은 오늘 탭과 같은 오프화이트 */
+  const shellBg = isDark
+    ? (isEmbedded || isCityPopCatalogSurface || isMyRoutinesMode || isHistoryMode ? tone.bg : c.bg)
+    : '#F7F6F4';
   const cardBg = useBrutalSurface
     ? isDark
       ? tone.surfaceAlt

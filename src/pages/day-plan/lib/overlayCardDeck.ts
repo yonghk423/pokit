@@ -31,7 +31,7 @@ export function overlayDeckLayout(width: number, height: number) {
   const scale = cardWidth / 300;
   const cardHeight = Math.min(414 * scale, Math.max(1, height - 56));
   const offsetX = (width - cardWidth) / 2;
-  const offsetY = (height - cardHeight) / 2 + 12;
+  const offsetY = (height - cardHeight) / 2 + 44;
   return { cardWidth, cardHeight, scale, offsetX, offsetY };
 }
 

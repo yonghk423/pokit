@@ -37,8 +37,8 @@ export type SettingsPalette = {
 export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    bg: isDark ? '#262B28' : '#F5F0E6',
-    surface: c.bg,
+    bg: isDark ? '#262B28' : '#F7F6F4',
+    surface: isDark ? c.bg : '#F7F6F4',
     /** 행 구분 — 순검정 2px 대신 연한 구분선 */
     border: isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)',
     sectionTitle: c.textMuted,
@@ -46,7 +46,7 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
     desc: c.textMuted,
     /** 오늘 탭 상단 모드 아이콘과 동일 — 검정 글리프 · 흰 면 */
     icon: isDark ? '#FAFAFA' : '#000000',
-    iconBoxBg: isDark ? c.surfaceAlt : '#FFFFFF',
+    iconBoxBg: isDark ? c.surfaceAlt : '#F7F6F4',
     iconBorder: isDark ? 'rgba(255,255,255,0.55)' : '#000000',
     shadow: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)',
     chevron: c.textMuted,
@@ -56,7 +56,7 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
     dangerIcon: isDark ? c.danger : '#DC2626',
     dangerChevron: isDark ? '#FFB4AB' : '#FCA5A5',
     dangerShadow: isDark ? 'rgba(120, 40, 40, 0.35)' : 'rgba(185, 28, 28, 0.16)',
-    dangerIconBoxBg: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
+    dangerIconBoxBg: isDark ? 'rgba(255, 255, 255, 0.12)' : '#F7F6F4',
   };
 }
 

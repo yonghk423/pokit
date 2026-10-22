@@ -1,4 +1,4 @@
-export { DayPlanTabBridgeProvider } from './model/dayPlanTabBridge';
+export { DayPlanTabBridgeProvider, useDayPlanTabBridge } from './model/dayPlanTabBridge';
 export { DayPlanCustomTabBar, DAY_PLAN_TAB_BAR_ROW_HEIGHT } from './ui/DayPlanCustomTabBar';
 export { DayPlanTabScreenShell } from './ui/DayPlanTabScreenShell';
 export { DayPlanPage } from './ui/DayPlanPage';

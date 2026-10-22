@@ -15,6 +15,7 @@ import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperControl } from '@shared/ui/paper-control';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { RoutineWheelAddButton } from '@shared/ui/routine-wheel-add-button';
+import { HeaderIcon } from '@shared/ui/header-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 import type { CircularRoutineItem } from './CircularRoutineTimetable';
 import { RhythmEmptyState } from './RhythmEmptyState';
@@ -64,7 +65,7 @@ function OverlayCard({ item, index, colorSlot, width, height, progress, mountedW
       <PaperGrain opacity={0.2} />
     </View>
     <Animated.View style={[s.body, contentMotion]}>
-    <Pressable disabled={!active} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={t('dayPlan.cardOpenHint')} onPress={onPress} style={[s.body, { paddingHorizontal: 30 * scale, paddingBottom: 30 * scale, paddingTop: 62 * scale }]}>
+    <Pressable disabled={!active} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={t('dayPlan.cardOpenHint')} onPress={onPress} style={[s.body, { padding: 30 * scale }]}>
       <View style={s.cardHead}><IconSymbol name={item.icon} size={(hasSummary ? 100 : 140) * scale} color={colors.ink} /><CardDate dateKey={item.dateKey} ink={colors.ink} scale={scale} /></View>
       <ThemedText numberOfLines={2} adjustsFontSizeToFit style={{ color: colors.ink, fontSize: (hasSummary ? 30 : 42) * scale, lineHeight: (hasSummary ? 37 : 51) * scale, marginTop: (hasSummary ? 23 : 30) * scale }}>{item.label}</ThemedText>
       {SHOW_CARD_ROUTINE_TIME ? (
@@ -206,11 +207,12 @@ function ExpandedRhythmCard({ item, slot, origin, width, height, isDark, renderD
 }
 
 /** One tap brings a card forward and expands it; closing restores its original slot. */
-export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, renderDetail, onComplete, onExcludeFromToday, onAdd, onEditTime }: {
+export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, renderDetail, onComplete, onExcludeFromToday, onAdd, onSchedule, onEditTime }: {
   items: CircularRoutineItem[]; width: number; height: number; ink: string; muted: string; isDark: boolean;
   renderDetail: (item: CircularRoutineItem) => ReactNode; onComplete: (key: string) => void;
   onExcludeFromToday?: (key: string, label: string) => void;
   onAdd: () => void;
+  onSchedule?: () => void;
   onEditTime?: (key: string, label: string) => void;
 }) {
   const { t } = useTranslation();
@@ -379,7 +381,7 @@ export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, r
   const deckGesture = Gesture.Simultaneous(cardLongPress, Gesture.Race(cardTap, verticalSwipe));
   // Forget a removed selection before rendering so re-adding it cannot reopen stale details.
   if (expanded && !selected) setExpanded(null);
-  return <View style={[s.root, { backgroundColor: isDark ? '#262B28' : '#F5F0E6' }]} onLayout={event => { const h = event.nativeEvent.layout.height; if (h > 0) setAvailableHeight(previous => previous === h ? previous : h); }}>
+  return <View style={[s.root, { backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]} onLayout={event => { const h = event.nativeEvent.layout.height; if (h > 0) setAvailableHeight(previous => previous === h ? previous : h); }}>
     <View testID="rhythm-card-background" pointerEvents={selected ? 'none' : 'auto'} style={s.root} accessibilityElementsHidden={!!selected} importantForAccessibility={selected ? 'no-hide-descendants' : 'auto'}>
       <GestureDetector gesture={deckGesture}><Animated.View collapsable={false} testID="rhythm-card-stack-layer" pointerEvents={overview ? 'none' : 'auto'} accessibilityElementsHidden={overview} importantForAccessibility={overview ? 'no-hide-descendants' : 'auto'} style={[StyleSheet.absoluteFill, deckVisibility]}>
       {items.length ? <>
@@ -426,13 +428,16 @@ export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, r
         setOverviewMounted(true);
         setOverview(value => !value);
         setDeckEpoch(value => value + 1);
-      }} style={[s.overviewToggle, { backgroundColor: overview ? '#C8EBDD' : isDark ? '#303631' : '#FFFFFF' }]}>
+      }} style={[s.overviewToggle, { right: onSchedule ? 58 : 14, backgroundColor: overview ? 'rgba(200,235,221,0.62)' : isDark ? 'rgba(48,54,49,0.55)' : 'rgba(247,246,244,0.55)' }]}>
         <Svg width={25} height={25} viewBox="0 0 30 30" accessible={false}>
           <Path d={overview ? 'M11 3L25 5L24 23L10 22ZM5 8L20 7L22 27L6 27Z' : 'M4 4L13 3L13 13L4 13ZM18 4L27 4L26 13L18 13ZM4 18L13 18L13 27L4 26ZM18 18L27 18L26 27L18 27Z'} fill="none" stroke={isDark ? '#FAFAF6' : '#343C38'} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </PaperControl> : null}
+      {onSchedule ? <PaperControl testID="rhythm-card-schedule" preserveColor accessibilityRole="button" accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')} onPress={() => { tapHaptic(); onSchedule(); }} style={[s.overviewToggle, { backgroundColor: isDark ? 'rgba(48,54,49,0.55)' : 'rgba(247,246,244,0.55)' }]}>
+        <HeaderIcon name="calendar" size={22} />
+      </PaperControl> : null}
       {!overview && items.length > 3 ? <View pointerEvents="none" style={s.deckCount}><ThemedText style={{ color: muted, fontSize: 12 }}>{loopDeckIndex(safeStart, count) + 1} / {count}</ThemedText><IconSymbol name="chevron.down" size={12} color={muted} /></View> : null}
-      <RoutineWheelAddButton icon="cards" size={36} label={t('dayPlan.addMoreRoutine')} onPress={onAdd} style={[s.add, { bottom: 96, right: count > 0 ? 58 : 14 }]} />
+      <RoutineWheelAddButton translucent icon="cards" size={36} label={t('dayPlan.addMoreRoutine')} onPress={onAdd} style={[s.add, { bottom: 96, right: (count > 0 ? 44 : 0) + (onSchedule ? 44 : 0) + 14 }]} />
     </View>
     {expanded && selected ? <ExpandedRhythmCard key={selected.key} item={selected} slot={expanded.slot} origin={expanded.origin} width={width} height={availableHeight ?? height} isDark={isDark} renderDetail={renderDetail} onClose={close} onComplete={onComplete} onEditTime={onEditTime} /> : null}
   </View>;
