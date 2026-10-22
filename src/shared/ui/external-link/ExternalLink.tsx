@@ -1,4 +1,5 @@
 import { Href, Link } from 'expo-router';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
 import { type ComponentProps } from 'react';
 
@@ -11,6 +12,7 @@ export function ExternalLink({ href, ...rest }: Props) {
       {...rest}
       href={href}
       onPress={async (event) => {
+        tapHaptic();
         if (process.env.EXPO_OS === 'ios') {
           event.preventDefault();
           await openBrowserAsync(href, {

@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -114,7 +115,7 @@ export function DayPlanPage({
   const insets = useSafeAreaInsets();
   const [comicModeActive, setComicModeActive] = useState(false);
   const [rhythmGateOpen, setRhythmGateOpen] = useState(
-    () => !loadDailyRhythmOnboardingCompleted(),
+    () => FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted(),
   );
   const [windowChipGuideNonce, setWindowChipGuideNonce] = useState(0);
 
@@ -273,7 +274,7 @@ export function DayPlanPage({
         const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;
         setPriorityCategoryOrder(latestOrder);
         seedPokitWeekTourIntoTodayIfNeeded();
-        setRhythmGateOpen(!loadDailyRhythmOnboardingCompleted());
+        setRhythmGateOpen(FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted());
       });
       return () => {
         cancelled = true;
@@ -464,6 +465,7 @@ export function DayPlanPage({
   );
 
   const handleOpenFixedRoutine = useCallback(() => {
+    if (!FEATURE_FLAGS.routinesManageTab) return;
     router.push('/(tabs)/fixed-routines');
   }, [router]);
 
@@ -837,7 +839,7 @@ export function DayPlanPage({
     registerPrimaryAction(null, { disabled: true, label: t('dayPlan.primary.start'), hidden: false });
   }, [registerPrimaryAction, planMode]);
 
-  const shellBg = c.containerLow;
+  const shellBg = isDark ? c.containerLow : '#F5F0E6';
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: shellBg }]} darkColor={shellBg} lightColor={shellBg}>
@@ -944,7 +946,7 @@ export function DayPlanPage({
         </View>
       </KeyboardAvoidingView>
       <DailyRhythmOnboardingGate
-        visible={rhythmGateOpen && surface === 'priority' && !comicModeActive}
+        visible={FEATURE_FLAGS.dailyRhythmWindow && rhythmGateOpen && surface === 'priority' && !comicModeActive}
         isDark={isDark}
         c={c}
         onConfirm={handleRhythmConfirm}

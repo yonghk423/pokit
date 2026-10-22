@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -38,7 +39,7 @@ export function SettingsQuickChipRow({
             <Pressable
               key={v}
               accessibilityRole="button"
-              onPress={() => onSelect(v)}
+              onPress={() => { tapHaptic('select'); onSelect(v); }}
               style={[
                 styles.chip,
                 isNote && styles.chipNote,

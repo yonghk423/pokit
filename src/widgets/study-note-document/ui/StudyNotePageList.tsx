@@ -1,3 +1,4 @@
+import { SketchNewPageIcon } from './SketchNewPageIcon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useMemo } from 'react';
@@ -80,7 +81,7 @@ export function StudyNotePageList({
           }}
           hitSlop={8}
           style={({ pressed }) => [styles.composeBtn, pressed && { opacity: 0.65 }]}>
-          <IconSymbol name="square.and.pencil" size={20} color={palette.onSurface} />
+          <SketchNewPageIcon size={24} color={palette.onSurface} />
         </Pressable>
       </View>
 

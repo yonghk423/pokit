@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -26,7 +27,7 @@ export function PriorityMealSlotSetupBanner({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('dayPlan.sectionsSetupBannerA11y')}
-      onPress={onPressSetup}
+      onPress={() => { tapHaptic(); onPressSetup(); }}
       style={({ pressed }) => [
         styles.root,
         { backgroundColor: cardBg, borderColor: line },

@@ -17,6 +17,7 @@ export {
 } from './appFontSize';
 export {
   APP_FONT_OPTICAL_SCALE,
+  resolveAppFontMinLineHeight,
   resolveAppFontOpticalScale,
 } from './appFontOpticalScale';
 export {

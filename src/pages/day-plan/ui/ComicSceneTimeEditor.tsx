@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppModal } from '@shared/ui/app-modal';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -11,16 +12,16 @@ export function ComicSceneTimeEditor({ label, value, onSave, onCancel }: { label
   const [draft, setDraft] = useState(value || '09:00');
   return <AppModal visible transparent animationType="fade" onRequestClose={onCancel}>
     <View style={s.overlay}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t('common.cancel')} />
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); onCancel(); }} accessibilityLabel={t('common.cancel')} />
       <View style={s.paper}>
         <PaperGrain opacity={0.25} /><HanddrawnFrame color="#777D73" />
         <ThemedText style={s.title}>{t('comicDay.time')}</ThemedText>
         <ThemedText numberOfLines={2} style={s.label}>{label}</ThemedText>
         <NativeHhmmWheelPicker valueHhmm={draft} onChangeHhmm={setDraft} minuteInterval={1} isDark={false} textColor="#202020" ink="#202020" surface="#FFFFFF" />
         <View style={s.actions}>
-          <Pressable accessibilityRole="button" onPress={() => onSave('')} style={s.clear}><ThemedText style={s.clearLabel}>{t('comicDay.clearTime')}</ThemedText></Pressable>
-          <Pressable accessibilityRole="button" onPress={onCancel} style={s.button}><HanddrawnFrame color="#777D73" /><ThemedText style={s.buttonText}>{t('common.cancel')}</ThemedText></Pressable>
-          <Pressable accessibilityRole="button" onPress={() => onSave(draft)} style={[s.button, { backgroundColor: '#C8EBDD' }]}><HanddrawnFrame color="#777D73" /><ThemedText style={s.buttonText}>{t('common.save')}</ThemedText></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); onSave(''); }} style={s.clear}><ThemedText style={s.clearLabel}>{t('comicDay.clearTime')}</ThemedText></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); onCancel(); }} style={s.button}><HanddrawnFrame color="#777D73" /><ThemedText style={s.buttonText}>{t('common.cancel')}</ThemedText></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => { tapHaptic('confirm'); onSave(draft); }} style={[s.button, { backgroundColor: '#C8EBDD' }]}><HanddrawnFrame color="#777D73" /><ThemedText style={s.buttonText}>{t('common.save')}</ThemedText></Pressable>
         </View>
       </View>
     </View>

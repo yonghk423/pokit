@@ -58,16 +58,7 @@ function TopBarIconButton({
         { marginRight: SHADOW, marginBottom: SHADOW },
         pressed && styles.pressed,
       ]}>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.shadow,
-          {
-            backgroundColor: shadow,
-            transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
-          },
-        ]}
-      />
+      <View pointerEvents="none" style={[styles.shadow, { backgroundColor: shadow, transform: [{ translateX: SHADOW }, { translateY: SHADOW }] }]} />
       <View style={[styles.iconHit, { backgroundColor: face, borderWidth: 0 }]}>
         <PaperGrain opacity={0.25} />
         <HanddrawnFrame color={border} />

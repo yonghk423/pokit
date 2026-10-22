@@ -71,6 +71,7 @@ import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
 
 import { getPickerCategoryLabel, PICKER_CATEGORIES, PRIMARY } from '../lib/dayPlanEditorShared';
+import { objectParticle, readRoutineTabLabels, subscribeRoutineTabLabels } from '../lib/routineTabLabels';
 import {
   buildPriorityCatalogSections,
   filterCatalogPickerCategories,
@@ -1153,7 +1154,16 @@ function CatalogPostItGrid({ cats, details, editorial, isDark, selectedKeys, onA
               <View style={{ backgroundColor: color, minHeight: 150, shadowColor: '#000', shadowOpacity: 0.10, shadowRadius: 3, shadowOffset: { width: 1, height: 3 }, elevation: 2 }}>
                 <PaperGrain opacity={0.25} />
                 <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ expanded }}
-                  onPress={() => { if (cat.key === 'reading') { onOpenCategorySettings(cat.key); return; } LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setOpenKey(expanded ? null : cat.key); }}
+                  onPress={() => {
+                    if (cat.key === 'reading') {
+                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onOpenCategorySettings(cat.key);
+                      return;
+                    }
+                    void Haptics.selectionAsync();
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setOpenKey(expanded ? null : cat.key);
+                  }}
                   style={({ pressed }) => ({ minHeight: 150, padding: 8, paddingBottom: 52, alignItems: 'center', opacity: pressed ? 0.65 : 1 })}>
                   <IconSymbol name={resolveCategoryCatalogIcon(cat.key)} size={34} color={ink} />
                   <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>{label}</ThemedText>
@@ -1163,7 +1173,7 @@ function CatalogPostItGrid({ cats, details, editorial, isDark, selectedKeys, onA
                   <View style={{ width: 26, height: 2, marginTop: 5, backgroundColor: expanded ? ink : 'transparent' }} />
                 </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={t(selected ? 'catalog.removeFromPriorityA11y' : 'catalog.addToPriorityA11y', { label })}
-                  onPress={() => onAdd(cat.key)} style={{ position: 'absolute', bottom: 0, alignSelf: 'center', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAdd(cat.key); }} style={{ position: 'absolute', bottom: 0, alignSelf: 'center', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                   <IconSymbol name={selected ? 'minus' : 'plus'} size={18} color={ink} />
                 </Pressable>
               </View>
@@ -1552,6 +1562,14 @@ export function PriorityCatalogPanel({
     manageOnly ? loadRoutineCatalogCollapsedGroupIds() : new Set(),
   );
   const [catalogSearchQuery, setCatalogSearchQuery] = useState('');
+  const [catalogNickname, setCatalogNickname] = useState(() => readRoutineTabLabels().catalog ?? null);
+  useEffect(() => subscribeRoutineTabLabels(() => setCatalogNickname(readRoutineTabLabels().catalog ?? null)), []);
+  const searchPlaceholder = catalogNickname
+    ? t('catalog.searchPlaceholderNamed', { name: catalogNickname, object: objectParticle(catalogNickname) })
+    : t('catalog.searchPlaceholder');
+  const createRoutineLabel = catalogNickname
+    ? t('catalog.createRoutineBtnNamed', { name: catalogNickname })
+    : t('catalog.createRoutineBtn');
   const collapsedGroupIdsRef = useRef(collapsedGroupIds);
   collapsedGroupIdsRef.current = collapsedGroupIds;
 
@@ -1810,7 +1828,7 @@ export function PriorityCatalogPanel({
                               : faceMuted,
                           },
                         ]}>
-                        {t('catalog.searchPlaceholder')}
+                        {searchPlaceholder}
                       </ThemedText>
                     ) : null}
                     <ThemedTextInput
@@ -1889,7 +1907,7 @@ export function PriorityCatalogPanel({
                         { color: faceUsesLightInk ? '#111111' : faceInk },
                       ]}
                       numberOfLines={1}>
-                      {t('catalog.createRoutineBtn')}
+                      {createRoutineLabel}
                     </ThemedText>
                   </Pressable>
                 </View>

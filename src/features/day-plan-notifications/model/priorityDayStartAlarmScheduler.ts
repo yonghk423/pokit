@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
@@ -34,6 +35,11 @@ async function cancelAllPriorityDayStartNotifications(): Promise<void> {
 }
 
 async function performSync(input: { enabled: boolean; startHhmm: string }): Promise<boolean> {
+  if (!FEATURE_FLAGS.dailyRhythmWindow) {
+    lastSyncedAlarmKey = '';
+    await cancelAllPriorityDayStartNotifications();
+    return true;
+  }
   const startHhmm = input.startHhmm.trim();
   const syncKey = buildSyncKey(input.enabled, startHhmm);
   if (syncKey === lastSyncedAlarmKey) {

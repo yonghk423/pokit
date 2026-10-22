@@ -1,6 +1,7 @@
 import { useAppAlertStore } from '@shared/lib/app-alert';
 import { AppAlertRoot } from '@shared/ui/app-alert';
 import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
+import { prepareRhythmArtwork } from '@pages/day-plan/lib/rhythmArtworkCache';
 import { prepareSurfaceTextures } from '@shared/ui/surface-texture/textureCache';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -70,7 +71,7 @@ export default function RootLayout() {
     let active = true;
     // Keep startup bounded even if an asset fails or a development server stalls.
     const timeout = setTimeout(() => { if (active) setIconsReady(true); }, 2000);
-    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures()]).finally(() => {
+    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures(), prepareRhythmArtwork()]).finally(() => {
       clearTimeout(timeout);
       if (active) setIconsReady(true);
     });
@@ -119,7 +120,7 @@ export default function RootLayout() {
                   <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
                     name="daily-rhythm-settings"
-                    options={{ headerShown: false, presentation: 'card' }}
+                    options={{ headerShown: false, presentation: 'card', gestureEnabled: false }}
                   />
                   <Stack.Screen
                     name="guide-book"

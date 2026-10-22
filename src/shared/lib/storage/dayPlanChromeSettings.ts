@@ -2,8 +2,6 @@ import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 
 export type DayPlanChromeSettings = {
-  /** 오늘 탭 헤더 목록·할 일 아이콘 숨김 */
-  hideLayoutIcons: boolean;
   /** 오늘 탭 「오늘의 한 줄」 숨김 */
   hideDailyQuote: boolean;
   /**
@@ -20,7 +18,6 @@ export type DayPlanChromeSettings = {
 };
 
 export const DEFAULT_DAY_PLAN_CHROME_SETTINGS: DayPlanChromeSettings = {
-  hideLayoutIcons: false,
   hideDailyQuote: false,
   completeInAccordion: false,
   showTopAnnouncementsButton: false,
@@ -52,9 +49,6 @@ export function normalizeDayPlanChromeSettings(raw: unknown): DayPlanChromeSetti
   const base = { ...DEFAULT_DAY_PLAN_CHROME_SETTINGS };
   if (!raw || typeof raw !== 'object') return base;
   const o = raw as Record<string, unknown>;
-  if (typeof o.hideLayoutIcons === 'boolean') {
-    base.hideLayoutIcons = o.hideLayoutIcons;
-  }
   if (typeof o.hideDailyQuote === 'boolean') {
     base.hideDailyQuote = o.hideDailyQuote;
   }

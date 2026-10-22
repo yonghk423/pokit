@@ -7,6 +7,7 @@ import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { loadComicCharacterName, saveComicCharacterName } from '../lib/comicCharacterName';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { PaperGrain } from '@shared/ui/paper-grain';
@@ -29,26 +30,26 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark }: { onStart
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
       <ThemedText style={[s.title, { color: ink }]}>{t('comicDay.character.title')}</ThemedText>
       <ThemedText style={[s.subtitle, { color: muted }]}>{t('comicDay.character.hint')}</ThemedText>
-      {COMIC_CHARACTERS.map(character => <Pressable key={character.id} accessibilityRole="button" accessibilityLabel={displayName(character)} accessibilityState={{ selected: selected.id === character.id }} onPress={() => setSelected(character)} style={[s.card, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: selected.id === character.id ? '#8DDAC2' : muted }]}>
+      {COMIC_CHARACTERS.map(character => <Pressable key={character.id} accessibilityRole="button" accessibilityLabel={displayName(character)} accessibilityState={{ selected: selected.id === character.id }} onPress={() => { tapHaptic('select'); setSelected(character); }} style={[s.card, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: selected.id === character.id ? '#8DDAC2' : muted }]}>
         <PaperGrain opacity={0.18} />
-        <ComicSceneImage imageKey={`${character.id}:cover`} source={character.cover} style={s.cover} priority="high" />
+        <ComicSceneImage imageKey={`${character.id}:cover`} source={character.cover} fallbackSource={character.preview[0].source} style={s.cover} priority="high" />
         {selected.id === character.id ? <View pointerEvents="none" style={s.check}>
           <ComicCheck checked size={30} />
         </View> : null}
         {editing === character.id ? <View style={s.editBox}>
           <ThemedTextInput accessibilityLabel={t('comicDay.character.rename')} value={draft} onChangeText={setDraft} maxLength={24} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={saveName} style={[s.nameInput, { color: ink, borderColor: muted }]} />
           <View style={s.editActions}>
-            <Pressable accessibilityRole="button" onPress={() => setEditing(null)} style={s.editButton}><ThemedText style={{ color: muted, fontSize: 13 }}>{t('common.cancel')}</ThemedText></Pressable>
-            <Pressable accessibilityRole="button" disabled={!draft.trim()} accessibilityState={{ disabled: !draft.trim() }} onPress={saveName} style={[s.editButton, { backgroundColor: '#C8EBDD', opacity: draft.trim() ? 1 : 0.4 }]}><ThemedText style={{ color: '#202020', fontSize: 13 }}>{t('common.save')}</ThemedText></Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); setEditing(null); }} style={s.editButton}><ThemedText style={{ color: muted, fontSize: 13 }}>{t('common.cancel')}</ThemedText></Pressable>
+            <Pressable accessibilityRole="button" disabled={!draft.trim()} accessibilityState={{ disabled: !draft.trim() }} onPress={() => { tapHaptic('confirm'); saveName(); }} style={[s.editButton, { backgroundColor: '#C8EBDD', opacity: draft.trim() ? 1 : 0.4 }]}><ThemedText style={{ color: '#202020', fontSize: 13 }}>{t('common.save')}</ThemedText></Pressable>
           </View>
         </View> : <View style={s.nameRow}>
           <ThemedText style={[s.name, { color: ink }]}>{displayName(character)}</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} onPress={() => { setDraft(displayName(character)); setEditing(character.id); }} style={s.editButton}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} onPress={() => { tapHaptic(); setDraft(displayName(character)); setEditing(character.id); }} style={s.editButton}>
             <Svg width={20} height={20} viewBox="0 0 24 24" accessible={false}><Path d="M4 16L16.5 3.5L20.5 7.5L8 20L3 21Z M14.5 5.5L18.5 9.5 M4 16L8 20" fill="none" stroke={ink} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" /></Svg>
           </Pressable>
         </View>}
         <ThemedText style={[s.description, { color: muted }]}>{t(character.description)}</ThemedText>
-        <View style={s.previews}>{character.preview.map(scene => <ComicSceneImage key={scene.id} imageKey={`${scene.id}:small`} source={COMIC_SCENE_THUMBNAILS[scene.id].small} style={s.preview} />)}</View>
+        <View style={s.previews}>{character.preview.map(scene => <ComicSceneImage key={scene.id} imageKey={`${scene.id}:small`} source={COMIC_SCENE_THUMBNAILS[scene.id].small} fallbackSource={scene.source} style={s.preview} />)}</View>
         <ThemedText style={[s.count, { color: muted }]}>{t('comicDay.sceneCount', { count: character.scenes.length })}</ThemedText>
         <HanddrawnFrame color={selected.id === character.id ? '#78BDA9' : muted} />
       </Pressable>)}
@@ -63,7 +64,7 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark }: { onStart
     </ScrollView>
     <View style={[s.footer, { borderColor: muted }]}>
       <ThemedText style={{ color: muted, textAlign: 'center', fontSize: 12 }}>{t('comicDay.character.selected', { name: displayName(selected) })}</ThemedText>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.startWithName', { name: displayName(selected) })} onPress={() => onStart(selected)} style={({ pressed }) => [s.start, pressed && { opacity: 0.75, transform: [{ translateY: 1 }] }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.startWithName', { name: displayName(selected) })} onPress={() => { tapHaptic(); onStart(selected); }} style={({ pressed }) => [s.start, pressed && { opacity: 0.75, transform: [{ translateY: 1 }] }]}>
         <PaperGrain opacity={0.32} /><HanddrawnFrame color="#52645B" />
         <ThemedText style={{ color: '#202020', fontSize: 14, lineHeight: 20, flexShrink: 1 }}>{t('comicDay.character.startWithName', { name: displayName(selected) })}</ThemedText>
         <Svg width={21} height={18} viewBox="0 0 30 24" accessible={false}><Path d="M3 12.4L25.4 11.8 M18.5 5.3L26 11.9L18.7 18.5 M4.1 13.1L24.1 12.8" fill="none" stroke="#202020" strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" /></Svg>

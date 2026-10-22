@@ -1,8 +1,10 @@
+import { COMIC_SCENES } from '../lib/comicSceneImages';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { ComicSceneImage } from './ComicSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/comicSceneThumbnails';
 import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Pressable, FlatList, StyleSheet, View } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import type { ComicDayScene } from '../lib/comicDayStorage';
@@ -43,7 +45,7 @@ export function ComicSceneSequence({ scenes, onChange, onStart }: { scenes: Comi
     <View style={s.heading}>
       <ThemedText numberOfLines={1} style={s.title}>{t('comicDay.sequenceTitle')}</ThemedText>
       <ThemedText style={s.count}>{t('comicDay.sceneCount', { count: scenes.length })}</ThemedText>
-      {onStart ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.startDay')} onPress={onStart} style={s.start}><HanddrawnFrame color="#52645B" /><ThemedText style={{ color: '#202020', fontSize: 12, lineHeight: 18 }}>{t('comicDay.startDay')} →</ThemedText></Pressable> : null}
+      {onStart ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.startDay')} onPress={() => { tapHaptic(); onStart(); }} style={s.start}><HanddrawnFrame color="#52645B" /><ThemedText style={{ color: '#202020', fontSize: 12, lineHeight: 18 }}>{t('comicDay.startDay')} →</ThemedText></Pressable> : null}
     </View>
     {scenes.length > 0 ? <>
     <View {...responder.panHandlers} onTouchEnd={() => { if (!drag.current?.moving) reset(); }}>
@@ -53,12 +55,12 @@ export function ComicSceneSequence({ scenes, onChange, onStart }: { scenes: Comi
             <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.reorderScene', { label: scene.title })}
               accessibilityActions={[{ name: 'increment', label: t('comicDay.moveLater') }, { name: 'decrement', label: t('comicDay.moveEarlier') }]}
               onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'increment') onChange(moveComicScene(scenes, index, index + 1)); if (event.nativeEvent.actionName === 'decrement') onChange(moveComicScene(scenes, index, index - 1)); }}
-              delayLongPress={350} onLongPress={() => { drag.current = { id: scene.id, moving: false }; setDragId(scene.id); }}>
+              delayLongPress={350} onLongPress={() => { tapHaptic('select'); drag.current = { id: scene.id, moving: false }; setDragId(scene.id); }}>
               <View style={s.number}><ThemedText style={s.ink}>{String(index + 1).padStart(2, '0')}</ThemedText></View>
-              <ComicSceneImage imageKey={`${scene.image}:small`} source={COMIC_SCENE_THUMBNAILS[scene.image].small} style={s.image} />
+              <ComicSceneImage imageKey={`${scene.image}:small`} source={COMIC_SCENE_THUMBNAILS[scene.image].small} fallbackSource={COMIC_SCENES.find(item => item.id === scene.image)!.source} style={s.image} />
               <ThemedText numberOfLines={1} style={s.caption}>{scene.title}</ThemedText>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.removeFromSequence', { label: scene.title })} onPress={() => onChange(scenes.filter(item => item.id !== scene.id))} hitSlop={5} style={s.remove}><ThemedText style={s.ink}>×</ThemedText></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.removeFromSequence', { label: scene.title })} onPress={() => { tapHaptic('warn'); onChange(scenes.filter(item => item.id !== scene.id)); }} hitSlop={5} style={s.remove}><ThemedText style={s.ink}>×</ThemedText></Pressable>
           </View>
           {index < scenes.length - 1 ? <ThemedText style={s.arrow}>↝</ThemedText> : null}
         </View>} />

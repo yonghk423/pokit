@@ -5,6 +5,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { PaperGrain } from '@shared/ui/paper-grain';
@@ -54,16 +55,16 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = COMIC_SC
     <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <PaperGrain opacity={0.2} />
       <View style={s.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} style={s.touch}><ThemedText style={s.back}>‹</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.back}>‹</ThemedText></Pressable>
         <ThemedText style={s.title}>{t('comicDay.sequencePickerTitle')}</ThemedText>
-        <Pressable accessibilityRole="button" onPress={onClose} style={s.touch}><ThemedText style={s.ink}>{t('comicDay.pickerClose')}</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.ink}>{t('comicDay.pickerClose')}</ThemedText></Pressable>
       </View>
       <View style={s.controls}>
         <ThemedTextInput accessibilityLabel={t('comicDay.search')} placeholder={t('comicDay.search')} placeholderTextColor="#777" value={query} onChangeText={setQuery} style={s.search} clearButtonMode="while-editing" />
         <ScrollView horizontal style={{ height: 32, flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRow}>
-          {COMIC_SCENE_CATEGORIES.map(item => <Pressable key={item.id} accessibilityRole="tab" accessibilityLabel={t(item.label)} accessibilityState={{ selected: category === item.id }} onPress={() => setCategory(item.id)} style={[s.categoryChip, category === item.id && s.active]}><ThemedText numberOfLines={1} style={s.ink}>{t(item.label)}</ThemedText><ThemedText style={s.categoryCount}>{categoryCounts[item.id]}</ThemedText></Pressable>)}
+          {COMIC_SCENE_CATEGORIES.map(item => <Pressable key={item.id} accessibilityRole="tab" accessibilityLabel={t(item.label)} accessibilityState={{ selected: category === item.id }} onPress={() => { tapHaptic('select'); setCategory(item.id); }} style={[s.categoryChip, category === item.id && s.active]}><ThemedText numberOfLines={1} style={s.ink}>{t(item.label)}</ThemedText><ThemedText style={s.categoryCount}>{categoryCounts[item.id]}</ThemedText></Pressable>)}
         </ScrollView>
-        <View style={s.viewModes}>{modes.map((mode, index) => <Pressable key={mode} accessibilityRole="tab" accessibilityLabel={t(modeLabels[index])} accessibilityState={{ selected: columns === mode }} onPress={() => { setColumns(mode); localStorageClient.setItemRaw(VIEW_KEY, String(mode)); }} style={[s.viewMode, columns === mode && s.active]}><GridIcon columns={mode} ink="#202020" /></Pressable>)}</View>
+        <View style={s.viewModes}>{modes.map((mode, index) => <Pressable key={mode} accessibilityRole="tab" accessibilityLabel={t(modeLabels[index])} accessibilityState={{ selected: columns === mode }} onPress={() => { tapHaptic('select'); setColumns(mode); localStorageClient.setItemRaw(VIEW_KEY, String(mode)); }} style={[s.viewMode, columns === mode && s.active]}><GridIcon columns={mode} ink="#202020" /></Pressable>)}</View>
       </View>
       <View style={s.gallery} onLayout={event => setGridWidth(event.nativeEvent.layout.width)}>
         <FlatList key={columns} data={filtered} extraData={orders} numColumns={columns} initialNumToRender={Math.min(9, columns * 3)} maxToRenderPerBatch={columns * 2} windowSize={5} updateCellsBatchingPeriod={40} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}

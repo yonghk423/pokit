@@ -304,6 +304,7 @@ export function MedicineSettings({
   };
 
   const handleSlotNotifyChange = (slotKey: 'morning' | 'lunch' | 'dinner', enabled: boolean) => {
+    void Haptics.selectionAsync();
     const next = setSlotNotify(draft, slotKey, enabled);
     setDraft(next);
     if (previewMode) return;

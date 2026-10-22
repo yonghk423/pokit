@@ -10,7 +10,6 @@ import {
 type DayPlanChromeSettingsState = {
   settings: DayPlanChromeSettings;
   hydrate: () => void;
-  setHideLayoutIcons: (hide: boolean) => void;
   setHideDailyQuote: (hide: boolean) => void;
   setCompleteInAccordion: (enabled: boolean) => void;
   setShowTopAnnouncementsButton: (show: boolean) => void;
@@ -20,7 +19,6 @@ type DayPlanChromeSettingsState = {
 
 function chromeSettingsEqual(a: DayPlanChromeSettings, b: DayPlanChromeSettings): boolean {
   return (
-    a.hideLayoutIcons === b.hideLayoutIcons &&
     a.hideDailyQuote === b.hideDailyQuote &&
     a.completeInAccordion === b.completeInAccordion &&
     a.showTopAnnouncementsButton === b.showTopAnnouncementsButton &&
@@ -34,11 +32,6 @@ export const useDayPlanChromeSettingsStore = create<DayPlanChromeSettingsState>(
   hydrate: () => {
     const next = loadDayPlanChromeSettings();
     if (chromeSettingsEqual(get().settings, next)) return;
-    set({ settings: next });
-  },
-  setHideLayoutIcons: (hide) => {
-    const next = { ...get().settings, hideLayoutIcons: hide };
-    saveDayPlanChromeSettings(next);
     set({ settings: next });
   },
   setHideDailyQuote: (hide) => {

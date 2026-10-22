@@ -224,6 +224,7 @@ export function PriorityBagRowAccordionPanel({
   const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSummaryCommitRef = useRef<(() => void) | null>(null);
   const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reminderNotifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isWeekTour = isPokitWeekTourFlowId(categoryKey);
@@ -259,6 +260,8 @@ export function PriorityBagRowAccordionPanel({
       if (summaryPersistTimerRef.current) {
         clearTimeout(summaryPersistTimerRef.current);
       }
+      pendingSummaryCommitRef.current?.();
+      pendingSummaryCommitRef.current = null;
       if (medicineReminderSyncTimerRef.current) {
         clearTimeout(medicineReminderSyncTimerRef.current);
       }
@@ -393,35 +396,28 @@ export function PriorityBagRowAccordionPanel({
     [categoryKey, checklistTemplate, rawConfig],
   );
 
-  const persistSummary = useCallback(
-    (nextSummary: string) => {
-      if (!checklistTemplate) return;
-      const base =
-        rawConfig && typeof rawConfig === 'object'
-          ? { ...(rawConfig as Record<string, unknown>) }
-          : {};
-      saveGoalDetailCategoryConfig(categoryKey, {
-        ...base,
-        templateKey: checklistTemplate,
-        summary: nextSummary,
-      });
-      setRevision((n) => n + 1);
-    },
-    [categoryKey, checklistTemplate, rawConfig],
-  );
-
   const handleSummaryChange = useCallback(
     (next: string) => {
       setSummaryDraft(next);
       if (summaryPersistTimerRef.current) {
         clearTimeout(summaryPersistTimerRef.current);
       }
+      // Closing the card before the debounce expires must not discard the last edit.
+      pendingSummaryCommitRef.current = () => {
+        const latest = loadGoalDetailCategoryConfig(categoryKey);
+        saveGoalDetailCategoryConfig(categoryKey, {
+          ...(latest && typeof latest === 'object' ? latest : {}),
+          templateKey: checklistTemplate,
+          summary: next,
+        });
+      };
       summaryPersistTimerRef.current = setTimeout(() => {
         summaryPersistTimerRef.current = null;
-        persistSummary(next);
+        pendingSummaryCommitRef.current?.();
+        pendingSummaryCommitRef.current = null;
       }, 350);
     },
-    [persistSummary],
+    [categoryKey, checklistTemplate],
   );
 
   const toggleTask = useCallback(

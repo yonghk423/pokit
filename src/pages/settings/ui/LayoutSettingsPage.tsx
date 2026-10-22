@@ -26,8 +26,6 @@ export function LayoutSettingsPage() {
   const isDark = useColorScheme() === 'dark';
   const p = buildSettingsPalette(isDark);
   const insets = useSafeAreaInsets();
-  const hideLayoutIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
-  const setHideLayoutIcons = useDayPlanChromeSettingsStore((s) => s.setHideLayoutIcons);
   const hideDailyQuote = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const setHideDailyQuote = useDayPlanChromeSettingsStore((s) => s.setHideDailyQuote);
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
@@ -78,39 +76,6 @@ export function LayoutSettingsPage() {
 
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <View style={[chrome.item, styles.firstItem, { borderTopColor: p.border }]}>
-              <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="figure.run"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.iconBorder}
-                  shadow={p.shadow}
-                />
-                <View style={chrome.itemTextWrap}>
-                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>
-                    {t('settings.layout.hideIcons')}
-                  </ThemedText>
-                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>
-                    {t('settings.layout.hideIconsDesc')}
-                  </ThemedText>
-                </View>
-              </View>
-              <HanddrawnToggle
-                isDark={isDark}
-                checkedColor="#AADBD5"
-                checked={hideLayoutIcons}
-                onChange={(next) => {
-                  void Haptics.selectionAsync();
-                  setHideLayoutIcons(next);
-                }}
-                label={t('settings.layout.hideIconsA11y', {
-                  action: hideLayoutIcons
-                    ? t('settings.dayPlanView.toggleOff')
-                    : t('settings.dayPlanView.toggleOn'),
-                })}
-              />
-            </View>
-            <View style={[chrome.item, { borderTopColor: p.border }]}>
               <View style={chrome.itemLeft}>
                 <SettingsRowIcon
                   name="megaphone.fill"

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -74,7 +75,7 @@ function ToolBtn({
       accessibilityLabel={label}
       disabled={disabled}
       onPressIn={onRetainKeyboardFocus}
-      onPress={onPress}
+      onPress={() => { tapHaptic('select'); onPress(); }}
       style={[
         styles.toolBtn,
         {
@@ -112,6 +113,7 @@ function LabelToolBtn({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPressIn={() => {
+        tapHaptic('select');
         onRetainKeyboardFocus?.();
         onPress();
       }}

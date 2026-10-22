@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { Pressable, StyleSheet, View, type ViewProps } from 'react-native';
 
@@ -16,7 +17,7 @@ export function TopAppBar({ title, onPressBrand, style, ...rest }: Props) {
     <ThemedView style={[styles.root, style]} {...rest}>
       <Pressable
         accessibilityRole={onPressBrand ? 'button' : undefined}
-        onPress={onPressBrand}
+        onPress={onPressBrand ? () => { tapHaptic(); onPressBrand(); } : undefined}
         style={styles.brand}>
         <IconSymbol name="lock.open" size={22} color="rgba(0,0,0,0.9)" />
         <ThemedText type="defaultSemiBold" style={styles.brandText}>

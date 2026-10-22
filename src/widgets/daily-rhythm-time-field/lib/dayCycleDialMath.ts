@@ -10,6 +10,7 @@ export const CYCLE_MINUTES = 48 * 60;
 
 /** 사이클 분 스냅. 기본 5분 */
 export function snapCycleMinutes(total: number, step = 5): number {
+  'worklet';
   const s = Number.isFinite(step) && step > 0 ? Math.floor(step) : 5;
   const m = Math.round(total / s) * s;
   const wrapped = ((m % CYCLE_MINUTES) + CYCLE_MINUTES) % CYCLE_MINUTES;
@@ -224,6 +225,7 @@ export type DialHandleKind = 'start' | 'end' | 'wake';
  * 시작보다 앞(또는 같음)이면 +CYCLE 해서 시계방향 활동 구간으로 해석.
  */
 export function resolveEndCycleMinutes(rawCycle: number, startCycle: number): number {
+  'worklet';
   const raw = ((rawCycle % CYCLE_MINUTES) + CYCLE_MINUTES) % CYCLE_MINUTES;
   const start = ((startCycle % CYCLE_MINUTES) + CYCLE_MINUTES) % CYCLE_MINUTES;
   // 12시 방향(0)은 48시간 끝이 아니라 첫째 자정.
@@ -241,9 +243,12 @@ export function clampDialHandle(
   nextMinutes: number,
   startMinutes: number,
   endMinutes: number,
-  minSpan = MIN_ACTIVITY_SPAN_MINUTES,
+  minSpan?: number,
   snapStep = 5,
 ): { start: number; end: number } {
+  'worklet';
+  // 본문에서 읽어야 워크릿이 상수를 UI 스레드로 가져간다. 기본 인자에만 두면 드래그 중 참조 오류가 난다.
+  const gap = minSpan ?? MIN_ACTIVITY_SPAN_MINUTES;
   const start0 = Math.min(
     DAY_MINUTES - snapStep,
     Math.max(0, snapCycleMinutes(startMinutes, snapStep) % CYCLE_MINUTES),
@@ -251,11 +256,11 @@ export function clampDialHandle(
   // end는 언랩(시작 이후). 표시 위치는 % CYCLE
   let endU =
     endMinutes > start0 ? endMinutes : resolveEndCycleMinutes(endMinutes, start0);
-  endU = Math.max(start0 + minSpan, endU);
+  endU = Math.max(start0 + gap, endU);
 
   if (kind === 'wake') {
     // 둘째 해 = 시작+24h 미러. 드래그하면 시작 시각만 이동
-    return clampDialHandle('start', nextMinutes, startMinutes, endMinutes, minSpan, snapStep);
+    return clampDialHandle('start', nextMinutes, startMinutes, endMinutes, gap, snapStep);
   }
 
   if (kind === 'start') {
@@ -264,11 +269,11 @@ export function clampDialHandle(
     if (next >= DAY_MINUTES) next = next % DAY_MINUTES;
     next = Math.min(DAY_MINUTES - snapStep, Math.max(0, next));
     let end = endU;
-    if (end - next < minSpan) {
-      end = next + minSpan;
+    if (end - next < gap) {
+      end = next + gap;
     }
     // 활동 상한: 거의 48h
-    const maxEnd = next + CYCLE_MINUTES - minSpan;
+    const maxEnd = next + CYCLE_MINUTES - gap;
     if (end > maxEnd) end = maxEnd;
     return { start: next, end };
   }
@@ -277,8 +282,8 @@ export function clampDialHandle(
   const raw = snapCycleMinutes(nextMinutes, snapStep) % CYCLE_MINUTES;
   let nextEnd = resolveEndCycleMinutes(raw, start0);
   nextEnd = Math.round(nextEnd / snapStep) * snapStep;
-  const minEnd = start0 + minSpan;
-  const maxEnd = start0 + CYCLE_MINUTES - minSpan;
+  const minEnd = start0 + gap;
+  const maxEnd = start0 + CYCLE_MINUTES - gap;
   if (nextEnd < minEnd) nextEnd = minEnd;
   if (nextEnd > maxEnd) nextEnd = maxEnd;
   return { start: start0, end: nextEnd };

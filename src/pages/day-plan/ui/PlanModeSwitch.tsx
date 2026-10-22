@@ -1,12 +1,12 @@
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
-import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { HeaderIcon, type HeaderIconName } from '@shared/ui/header-icon';
@@ -48,6 +48,7 @@ type Props = {
   description?: string | null;
   /** 상단 행 오른쪽(문의 등) — 좌측 모드 버튼과 동일 베이스라인 */
   trailing?: ReactNode;
+  middle?: ReactNode;
 };
 
 export function PlanModeSwitch({
@@ -58,6 +59,7 @@ export function PlanModeSwitch({
   c,
   description,
   trailing,
+  middle,
 }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
@@ -106,7 +108,10 @@ export function PlanModeSwitch({
             trailing ? styles.rowWithTrailing : null,
           ]}>
           <View style={styles.leftButtonGroup}>
-            {MODE_BUTTONS.map((btn) => {
+            {MODE_BUTTONS.filter((btn) =>
+              (btn.mode !== 'quickMemo' || FEATURE_FLAGS.quickMemoShortcut)
+              && (btn.mode !== 'dayNote' || FEATURE_FLAGS.dayNoteShortcut),
+            ).map((btn) => {
               const active =
                 planMode === btn.mode;
               const label = modeLabels[btn.mode];
@@ -122,23 +127,11 @@ export function PlanModeSwitch({
                     { marginRight: SHADOW, marginBottom: SHADOW },
                     pressed && styles.pressed,
                   ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.shadow,
-                      {
-                        backgroundColor: shadow,
-                        transform: [{ translateX: SHADOW }, { translateY: SHADOW }],
-                      },
-                    ]}
-                  />
+                  <View pointerEvents="none" style={[styles.shadow, { backgroundColor: shadow, transform: [{ translateX: SHADOW }, { translateY: SHADOW }] }]} />
                   <View
                     style={[
                       styles.face,
-                      {
-                        backgroundColor: active ? activeFace : inactiveFace,
-                        borderColor: border,
-                      },
+                      { backgroundColor: active ? activeFace : inactiveFace, borderColor: border },
                     ]}>
                     <PaperGrain opacity={0.25} />
                     <HanddrawnFrame color={border} />
@@ -148,10 +141,8 @@ export function PlanModeSwitch({
               );
             })}
           </View>
+          {middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
           {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
-          <Svg pointerEvents="none" width="100%" height={4} viewBox="0 0 400 4" preserveAspectRatio="none" style={styles.rule} accessible={false}>
-            <Path d="M0 2.2Q58 1.1 109 2.1T211 1.8T310 2.2T400 1.7" fill="none" stroke={border} strokeWidth={0.65} opacity={0.48} />
-          </Svg>
         </View>
       </View>
       {hint != null && hint !== '' ? (
@@ -181,10 +172,11 @@ const styles = StyleSheet.create({
     /** 상단 모드 아이콘 행 — 과한 세로 여백 없이 터치 영역만 유지 */
     minHeight: 40,
   },
-  rule: { position: 'absolute', left: 0, bottom: 0 },
   rowWithTrailing: {
     justifyContent: 'space-between',
   },
+  middle: { flex: 1, minWidth: 0, marginHorizontal: 8 },
+  middleContent: { flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center', paddingVertical: 2, paddingHorizontal: 1 },
   trailing: {
     alignItems: 'center',
     justifyContent: 'center',

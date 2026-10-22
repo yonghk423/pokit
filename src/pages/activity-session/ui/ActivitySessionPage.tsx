@@ -1,4 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -794,6 +795,7 @@ export function ActivitySessionPage() {
                       disabled={!useTaskChecklist}
                       onPress={() => {
                         if (!useTaskChecklist) return;
+                        tapHaptic('select');
                         toggleWorkTaskDone(row.blockId);
                       }}
                       style={workStyles.checkBox}>
@@ -919,6 +921,7 @@ export function ActivitySessionPage() {
                     accessibilityRole="button"
                     accessibilityLabel={externalLinkLabel}
                     onPress={() => {
+                      tapHaptic();
                       if (catalogSource === 'aladin') {
                         void openAladinProductPage(externalLink);
                         return;
@@ -1242,7 +1245,7 @@ export function ActivitySessionPage() {
               accessibilityRole="button"
               accessibilityLabel={t('session.healthIntake.checkA11y', { slot: currentSlotLabel })}
               disabled={isWaitingToStart}
-              onPress={onMedicineDoseCheck}
+              onPress={() => { tapHaptic('select'); onMedicineDoseCheck(); }}
               style={[
                 medScheduleStyles.scheduleCheckBtn,
                 { alignSelf: 'flex-start', marginTop: 12 },
@@ -1453,7 +1456,7 @@ export function ActivitySessionPage() {
                       accessibilityRole="button"
                       accessibilityLabel={t('session.medicine.uncheckA11y', { title: row.title })}
                       disabled={isWaitingToStart}
-                      onPress={onMedicineDoseUndo}
+                      onPress={() => { tapHaptic(); onMedicineDoseUndo(); }}
                       style={[
                         medScheduleStyles.scheduleUndoBtn,
                         isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
@@ -1469,7 +1472,7 @@ export function ActivitySessionPage() {
                     accessibilityRole="button"
                     accessibilityLabel={t('session.medicine.checkA11y', { title: row.title })}
                     disabled={isWaitingToStart}
-                    onPress={onMedicineDoseCheck}
+                    onPress={() => { tapHaptic('select'); onMedicineDoseCheck(); }}
                     style={[
                       medScheduleStyles.scheduleCheckBtn,
                       isWaitingToStart && medScheduleStyles.scheduleCheckBtnDisabled,
@@ -1634,7 +1637,7 @@ export function ActivitySessionPage() {
                   key={ml}
                   accessibilityRole="button"
                   accessibilityLabel={t('session.water.addMlA11y', { ml })}
-                  onPress={() => addWaterIntakeMl(ml)}
+                  onPress={() => { tapHaptic(); addWaterIntakeMl(ml); }}
                   disabled={addIntakeDisabled}
                   style={({ pressed }) => [
                     waterStyles.addChip,

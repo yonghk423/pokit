@@ -1,4 +1,5 @@
 import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -16,6 +17,7 @@ export function RoutineDeleteButton({ onDelete }: { onDelete: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={t('goalDetail.routineDelete')}
       onPress={() => {
+        tapHaptic('warn');
         Alert.alert(t('goalDetail.routineDelete'), t('goalDetail.routineDeleteConfirm'), [
           { text: t('common.cancel'), style: 'cancel' },
           { text: t('common.delete'), style: 'destructive', onPress: onDelete },

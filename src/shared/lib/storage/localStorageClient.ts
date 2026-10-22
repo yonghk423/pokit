@@ -4,6 +4,8 @@ import { Platform } from 'react-native';
 import { migrateLegacyStorageKeys } from './migrateLegacyStorageKeys';
 
 type StorageLike = {
+  readonly length?: number;
+  key?: (index: number) => string | null;
   getItem: (key: string) => string | null;
   setItem: (key: string, value: string) => void;
   removeItem: (key: string) => void;
@@ -129,6 +131,21 @@ export async function flushLocalStorageClientWrites(): Promise<void> {
 }
 
 export const localStorageClient = {
+  /** Synchronous inventory of the already-hydrated cache (and browser storage). */
+  listKeys(prefix = ''): string[] {
+    const keys = new Set(memoryStorage.keys());
+    if (storage) {
+      if (storage.key && typeof storage.length === 'number') {
+        for (let index = 0; index < storage.length; index++) {
+          const key = storage.key(index);
+          if (key) keys.add(key);
+        }
+      } else {
+        for (const key of Object.keys(storage)) keys.add(key);
+      }
+    }
+    return [...keys].filter(key => key.startsWith(prefix));
+  },
   getItemRaw(key: string): string | null {
     try {
       if (!storage) {

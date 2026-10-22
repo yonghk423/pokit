@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -51,7 +52,7 @@ export function PriorityMealSlotSectionHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('dayPlan.mealSlotStartChangeA11y', { title })}
-            onPress={onPressHintTime}
+            onPress={() => { tapHaptic(); onPressHintTime(); }}
             hitSlop={6}
             style={({ pressed }) => [
               styles.timeChip,

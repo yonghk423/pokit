@@ -34,7 +34,9 @@ import {
 } from '@shared/lib/storage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CustomFlowAppearancePicker } from '@shared/ui/custom-flow-appearance-picker';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -42,10 +44,8 @@ import { CatalogRowSpineTimePanel } from './CatalogRowSpineTimePanel';
 import { DayMealSlotTargetChips } from './DayMealSlotTargetChips';
 
 const NAME_MAX = 24;
-/** 하루 밸런스·루틴 탭과 동일 — 옅은 솔리드 음영 */
-const SHEET_SHADOW = 1;
-const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
-const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
+const PENCIL_LIGHT = '#9BA491';
+const PENCIL_DARK = '#A3AE9C';
 
 export type CreateCustomFlowSpineSchedule = {
   startMinutes: number;
@@ -214,9 +214,8 @@ export function CreateCustomFlowSheet({
   const canProceedBasics = trimmedName.length > 0 && placementReady;
   const canCreate = canProceedBasics && selectedTemplateKey.length > 0;
 
-  const cardBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)';
-  const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const inputFaceBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
+  const pencil = isDark ? PENCIL_DARK : PENCIL_LIGHT;
 
   const handleCreate = () => {
     if (!canCreate) return;
@@ -253,16 +252,6 @@ export function CreateCustomFlowSheet({
     setStep('basics');
   };
 
-  const headerTitle = step === 'basics' ? t('createFlow.titleBasics') : t('createFlow.titleSetup');
-  const headerSubtitle =
-    step === 'basics'
-      ? placement?.mode === 'sections'
-        ? t('createFlow.hintSections')
-        : placement?.mode === 'spine'
-          ? t('createFlow.hintSpine')
-          : t('createFlow.hintBag')
-      : t('createFlow.hintSetup');
-
   return (
     <Modal
       visible={visible}
@@ -270,7 +259,8 @@ export function CreateCustomFlowSheet({
       presentationStyle="pageSheet"
       onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: surface }]}>
-        <View style={[styles.header, { borderBottomColor: line, paddingTop: 14 }]}>
+        <PaperGrain opacity={0.35} />
+        <View style={[styles.header, { paddingTop: 14 }]}>
           <View style={styles.headerLeading}>
             {step === 'template' ? (
               <Pressable
@@ -281,11 +271,9 @@ export function CreateCustomFlowSheet({
                 style={styles.headerBackBtn}>
                 <IconSymbol name="chevron.left" size={18} color={ink} />
               </Pressable>
-            ) : null}
-          </View>
-          <View style={styles.headerText}>
-            <ThemedText style={[styles.title, { color: ink }]}>{headerTitle}</ThemedText>
-            <ThemedText style={[styles.subtitle, { color: muted }]}>{headerSubtitle}</ThemedText>
+            ) : (
+              <View style={styles.headerBackBtn} />
+            )}
           </View>
           <Pressable
             accessibilityRole="button"
@@ -307,67 +295,32 @@ export function CreateCustomFlowSheet({
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
           {step === 'basics' ? (
-            <View
-              style={[
-                styles.basicsShell,
-                { marginRight: SHEET_SHADOW, marginBottom: SHEET_SHADOW },
-              ]}>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.basicsShadow,
-                  {
-                    backgroundColor: shadowInk,
-                    transform: [{ translateX: SHEET_SHADOW }, { translateY: SHEET_SHADOW }],
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.basicsFace,
-                  {
-                    borderColor: isDark ? line : 'rgba(0,0,0,0.14)',
-                    backgroundColor: isDark ? cardBg : '#FFFFFF',
-                  },
-                ]}>
+            <View style={styles.basicsFace}>
               <View style={styles.sectionInner}>
-                <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.nameLabel')}</ThemedText>
-                <View
-                  style={[
-                    styles.inputShell,
-                    { marginRight: SHEET_SHADOW, marginBottom: SHEET_SHADOW },
-                  ]}>
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.inputShadow,
-                      {
-                        backgroundColor: shadowInk,
-                        transform: [{ translateX: SHEET_SHADOW }, { translateY: SHEET_SHADOW }],
-                      },
-                    ]}
-                  />
+                <View style={[styles.inputShell, { backgroundColor: inputFaceBg }]}>
+                  <PaperGrain opacity={0.22} />
+                  <HanddrawnFrame color={pencil} />
                   <ThemedTextInput
                     value={name}
                     onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
+                    accessibilityLabel={t('createFlow.nameLabel')}
+                    placeholder=""
                     placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                     maxLength={NAME_MAX}
                     returnKeyType="done"
                     multiline={false}
-                    style={[
-                      styles.input,
-                      { color: ink, backgroundColor: inputFaceBg },
-                    ]}
+                    style={[styles.input, { color: ink }]}
                   />
                 </View>
               </View>
 
-              <View style={[styles.sectionInner, styles.sectionInnerFollow, { borderTopColor: line }]}>
+              <View style={[styles.sectionInner, styles.sectionInnerFollow]}>
                 <CustomFlowAppearancePicker
                   key={`create-appearance-${appearancePickerEpoch}`}
                   icon={selectedIcon}
                   onChangeIcon={setSelectedIcon}
-                  previewLabel={trimmedName.length > 0 ? trimmedName : t('common.preview')}
+                  previewLabel={trimmedName}
+                  hint=""
                   isDark={isDark}
                   ink={ink}
                   muted={muted}
@@ -376,7 +329,7 @@ export function CreateCustomFlowSheet({
               </View>
 
               {placement?.mode === 'sections' ? (
-                <View style={[styles.sectionInner, styles.sectionInnerFollow, { borderTopColor: line }]}>
+                <View style={[styles.sectionInner, styles.sectionInnerFollow]}>
                   <DayMealSlotTargetChips
                     selectedSlot={selectedMealSlot}
                     schedule={placement.mealSlotSchedule}
@@ -390,7 +343,7 @@ export function CreateCustomFlowSheet({
               ) : null}
 
               {placement?.mode === 'spine' ? (
-                <View style={[styles.sectionInner, styles.sectionInnerFollow, { borderTopColor: line }]}>
+                <View style={[styles.sectionInner, styles.sectionInnerFollow]}>
                   <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.timelineTime')}</ThemedText>
                   <ThemedText style={[styles.fieldHint, { color: muted }]}>
                     {t('createFlow.timelineTimeHint')}
@@ -421,7 +374,6 @@ export function CreateCustomFlowSheet({
                   ) : null}
                 </View>
               ) : null}
-              </View>
             </View>
           ) : (
             <>
@@ -553,7 +505,6 @@ export function CreateCustomFlowSheet({
           style={[
             styles.footer,
             {
-              borderTopColor: line,
               paddingBottom:
                 keyboardInset > 0 ? keyboardInset + 12 : Math.max(insets.bottom, 12),
             },
@@ -584,19 +535,17 @@ export function CreateCustomFlowSheet({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
     paddingHorizontal: 20,
     paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerLeading: {
     width: 28,
-    paddingTop: 2,
   },
   headerBackBtn: {
     width: 28,
@@ -604,24 +553,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerText: {
-    flex: 1,
-    gap: 6,
-  },
   headerClose: {
-    marginTop: 6,
     marginRight: 4,
     padding: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '500',
   },
   scroll: {
     flex: 1,
@@ -633,28 +567,15 @@ const styles = StyleSheet.create({
     gap: 12,
     overflow: 'visible',
   },
-  basicsShell: {
-    position: 'relative',
-    zIndex: 1,
-  },
-  basicsShadow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 0,
-    zIndex: 0,
-  },
   basicsFace: {
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
-    zIndex: 1,
     overflow: 'hidden',
   },
   sectionInner: {
     padding: 14,
     gap: 10,
   },
-  sectionInnerFollow: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
+  sectionInnerFollow: {},
   fieldLabel: {
     fontSize: 14,
     fontWeight: '700',
@@ -668,10 +589,7 @@ const styles = StyleSheet.create({
   },
   inputShell: {
     position: 'relative',
-  },
-  inputShadow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 0,
+    overflow: 'hidden',
   },
   input: {
     borderWidth: 0,
@@ -690,7 +608,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   routineNamePreview: {
     fontSize: 18,

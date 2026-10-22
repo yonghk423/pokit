@@ -1,4 +1,5 @@
 import { openBrowserAsync } from 'expo-web-browser';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -122,7 +123,7 @@ export function WebViewScreen({
             <BrutalConfirmButton
               label={t('common.retry')}
               accessibilityLabel={t('common.retry')}
-              onPress={handleRetry}
+              onPress={() => { tapHaptic(); handleRetry(); }}
             />
           </View>
         ) : (

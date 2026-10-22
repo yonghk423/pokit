@@ -1,3 +1,23 @@
+jest.mock('react-native-gesture-handler', () => ({
+  GestureHandlerRootView: jest.requireActual('react-native').View,
+  GestureDetector: ({ children }: { children: unknown }) => children,
+  Gesture: {
+    Native: () => ({ kind: 'native-scroll' }),
+    Pan: () => {
+      const gesture: Record<string, unknown> = { handlers: {} };
+      for (const key of ['minDistance', 'maxPointers', 'shouldCancelWhenOutside', 'blocksExternalGesture']) gesture[key] = (value: unknown) => { gesture[key + 'Value'] = value; return gesture; };
+      for (const key of ['onBegin', 'onUpdate', 'onFinalize']) gesture[key] = (callback: unknown) => { (gesture.handlers as Record<string, unknown>)[key] = callback; return gesture; };
+      return gesture;
+    },
+  },
+}));
+jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: { View: jest.requireActual('react-native').View },
+  useSharedValue: (value: number) => jest.requireActual('react').useRef({ value, get() { return this.value; }, set(next: number) { this.value = next; } }).current,
+  useAnimatedStyle: (fn: () => unknown) => fn(),
+  runOnJS: (fn: unknown) => fn,
+}));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ComicRhythmTimeLayout } from './ComicRhythmTimeLayout';
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -44,4 +64,61 @@ it('edits the existing time window from compact controls and retains the primary
   act(() => { tree.unmount(); });
   expect(errors.mock.calls.filter(args => args.some(arg => typeof arg === 'string' && arg.includes('same key')))).toHaveLength(0);
   errors.mockRestore();
+});
+
+it('previews drag changes locally and commits the latest position only once on release', () => {
+  jest.useFakeTimers();
+  const onChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicRhythmTimeLayout start="07:00" end="23:00" nextDay={false} onChange={onChange} endDateControls={null} primaryLabel="Save" onPrimary={jest.fn()} />); });
+  const sun = () => tree.root.findAll(node => typeof node.props.onMinute === 'function' && node.props.kind === 'sun')[0];
+  act(() => { sun().props.onDragging(true); });
+  act(() => { sun().props.onMinute(480); sun().props.onMinute(485); sun().props.onMinute(490); });
+  expect(onChange).not.toHaveBeenCalled();
+  act(() => { jest.advanceTimersByTime(20); });
+  expect(sun().props.minutes).toBe(490);
+  expect(onChange).not.toHaveBeenCalled();
+  // Release before another preview frame; its final position must not be lost.
+  act(() => { sun().props.onMinute(495); sun().props.onDragging(false); });
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenCalledWith('08:15', '23:00', false);
+  act(() => { jest.advanceTimersByTime(50); });
+  expect(onChange).toHaveBeenCalledTimes(1);
+  act(() => { tree.unmount(); });
+  jest.useRealTimers();
+});
+
+it('does not commit an unchanged tap and cancels pending preview work on unmount', () => {
+  jest.useFakeTimers();
+  const onChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicRhythmTimeLayout start="07:00" end="23:00" nextDay={false} onChange={onChange} endDateControls={null} primaryLabel="Save" onPrimary={jest.fn()} />); });
+  const moon = () => tree.root.findAll(node => typeof node.props.onMinute === 'function' && node.props.kind === 'moon')[0];
+  act(() => { moon().props.onDragging(true); moon().props.onDragging(false); });
+  expect(onChange).not.toHaveBeenCalled();
+  act(() => { moon().props.onDragging(true); moon().props.onMinute(1385); });
+  act(() => { tree.unmount(); jest.advanceTimersByTime(50); });
+  expect(onChange).not.toHaveBeenCalled();
+  jest.useRealTimers();
+});
+
+it('claims native touches immediately, blocks the outer scroll and flushes the final native drag', () => {
+  jest.useFakeTimers();
+  const { comicRhythmPoint } = jest.requireActual('./../lib/comicRhythmMath');
+  const onChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicRhythmTimeLayout start="07:00" end="23:00" nextDay={false} onChange={onChange} endDateControls={null} primaryLabel="Save" onPrimary={jest.fn()} />); });
+  const pan = tree.root.findAll(node => node.props.gesture?.handlers?.onUpdate)[0].props.gesture;
+  expect(pan.minDistanceValue).toBe(0);
+  expect(pan.blocksExternalGestureValue).toEqual({ kind: 'native-scroll' });
+  const from = comicRhythmPoint(420, 320, 164), to = comicRhythmPoint(480, 320, 164);
+  const event = { translationX: to.x - from.x, translationY: to.y - from.y };
+  act(() => { pan.handlers.onBegin(); });
+  act(() => { pan.handlers.onUpdate(event); });
+  expect(onChange).not.toHaveBeenCalled();
+  act(() => { pan.handlers.onFinalize(event, true); });
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenCalledWith('08:00', '23:00', false);
+  act(() => { tree.unmount(); });
+  jest.useRealTimers();
 });

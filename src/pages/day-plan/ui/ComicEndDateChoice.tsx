@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -11,7 +12,7 @@ export function ComicEndDateChoice({ value, onChange, options }: {
 }) {
   return <View style={styles.row}>{options.map((option, index) => {
     const selected = option.value === value;
-    return <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={option.accessibilityLabel} onPress={() => onChange(option.value)} style={[styles.slip, { transform: [{ rotate: index === 0 ? '-0.6deg' : '0.5deg' }] }, selected && styles.selected]}>
+    return <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={option.accessibilityLabel} onPress={() => { tapHaptic('select'); onChange(option.value); }} style={[styles.slip, { transform: [{ rotate: index === 0 ? '-0.6deg' : '0.5deg' }] }, selected && styles.selected]}>
       <PaperGrain opacity={0.3} />
       <HanddrawnFrame color={selected ? '#82775E' : '#9A9B91'} bold={selected} />
       <ThemedText style={[styles.label, !selected && styles.muted]}>{option.label}</ThemedText>

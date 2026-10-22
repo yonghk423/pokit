@@ -68,15 +68,18 @@ describe('localStorageClient (native memory cache)', () => {
 describe('initLocalStorageClient', () => {
   it('hydrates memory cache from AsyncStorage on native', async () => {
     jest.resetModules();
-    await AsyncStorage.clear();
-    await AsyncStorage.setItem('pokit:boot', 'loaded');
-
     let mod: typeof import('./localStorageClient');
+    let isolatedStorage!: typeof AsyncStorage;
     jest.isolateModules(() => {
+      isolatedStorage = require('@react-native-async-storage/async-storage').default;
       mod = require('./localStorageClient');
     });
+    // Seed the same isolated AsyncStorage instance that the client reads.
+    await isolatedStorage.clear();
+    await isolatedStorage.setItem('pokit:boot', 'loaded');
     await mod!.initLocalStorageClient();
     expect(mod!.localStorageClient.getItemRaw('pokit:boot')).toBe('loaded');
+    expect(mod!.localStorageClient.listKeys('pokit:boot')).toEqual(['pokit:boot']);
     await mod!.initLocalStorageClient();
   });
 

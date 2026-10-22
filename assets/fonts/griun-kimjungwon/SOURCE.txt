@@ -1,0 +1,10 @@
+그리운 김정원 (Griun Kimjungwon) — 이경환 X 그리운
+눈누: https://noonnu.cc/font_page/1624
+제작: https://www.griun.co.kr/
+가져온 날짜: 2026-10-22
+원본 웹폰트(WOFF2)를 TTF로 변환해 Expo(React Native) 임베딩용으로 포함합니다.
+글리프·메트릭은 변경하지 않았습니다.
+
+라이선스: 폰트 파일의 수정·개작·유상 판매를 제외하고 제한 없이 사용 가능합니다.
+인쇄·웹·포장·영상·앱 임베딩·BI/CI 등 상업적 사용이 허용됩니다.
+(참고) SIL Open Font License 1.1 계열로 안내되는 경우가 있으며, 단독 폰트 파일 판매는 금지됩니다.

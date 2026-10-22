@@ -1,3 +1,5 @@
+let mockRhythmWindowEnabled = true;
+jest.mock('@shared/config/featureFlags', () => ({ FEATURE_FLAGS: { get dailyRhythmWindow() { return mockRhythmWindowEnabled; } } }));
 const mockScheduleDailyLocalNotification = jest.fn();
 const mockCancelScheduledNotificationByIdentifier = jest.fn();
 const mockCancelScheduledNotificationsByEventType = jest.fn();
@@ -160,4 +162,18 @@ describe('priorityDayStartAlarmScheduler', () => {
       notificationId: PRIORITY_DAY_START_NOTIFICATION_ID,
     });
   });
+});
+
+
+it('cancels paused daily rhythm alarms without changing saved preferences', async () => {
+  jest.resetModules();
+  jest.clearAllMocks();
+  mockRhythmWindowEnabled = false;
+  try {
+    const { syncPriorityDayStartAlarm } = loadScheduler();
+    await syncPriorityDayStartAlarm({ enabled: true, startHhmm: '09:00' });
+    expect(mockCancelScheduledNotificationByIdentifier).toHaveBeenCalled();
+    expect(mockScheduleDailyLocalNotification).not.toHaveBeenCalled();
+    expect(mockSavePriorityDayStartAlarm).not.toHaveBeenCalled();
+  } finally { mockRhythmWindowEnabled = true; }
 });

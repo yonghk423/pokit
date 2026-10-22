@@ -3,8 +3,7 @@ import { View, KeyboardAvoidingView, Platform, Pressable, StyleSheet } from 'rea
 import { AppModal } from '@shared/ui/app-modal';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { StorageKeys } from '@shared/lib/storage/storageKeys';
+import { readRoutineTabLabels, writeRoutineTabLabels } from '../lib/routineTabLabels';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
@@ -51,13 +50,7 @@ export function FixedRoutineSectionTabs({
   isDark,
 }: Props) {
   const { t } = useTranslation();
-  const [labels, setLabels] = useState<Partial<Record<FixedRoutineSection, string>>>(() => {
-    const saved = localStorageClient.getJson<Record<string, unknown>>(StorageKeys.routineTabLabels);
-    return Object.fromEntries(TABS.flatMap(tab => {
-      const value = saved?.[tab.key];
-      return typeof value === 'string' && value.trim() ? [[tab.key, value.trim().slice(0, 16)]] : [];
-    }));
-  });
+  const [labels, setLabels] = useState<Partial<Record<FixedRoutineSection, string>>>(readRoutineTabLabels);
   const [editing, setEditing] = useState<TabDef | null>(null);
   const [draft, setDraft] = useState('');
   const openEditor = (tab: TabDef) => {
@@ -67,7 +60,7 @@ export function FixedRoutineSectionTabs({
   const save = () => {
     if (!editing || !draft.trim()) return;
     const next = { ...labels, [editing.key]: draft.trim().slice(0, 16) };
-    localStorageClient.setJson(StorageKeys.routineTabLabels, next);
+    writeRoutineTabLabels(next);
     setLabels(next);
     setEditing(null);
   };
@@ -143,7 +136,7 @@ export function FixedRoutineSectionTabs({
             accessibilityLabel={t('catalog.renameTabTitle')} returnKeyType="done" onSubmitEditing={save}
             style={{ color: activeText, borderBottomWidth: 1, borderBottomColor: divider, paddingVertical: 10, fontSize: 16 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Pressable accessibilityRole="button" onPress={() => { if (!editing) return; const next = { ...labels }; delete next[editing.key]; localStorageClient.setJson(StorageKeys.routineTabLabels, next); setLabels(next); setEditing(null); }} style={{ paddingVertical: 10 }}>
+            <Pressable accessibilityRole="button" onPress={() => { if (!editing) return; const next = { ...labels }; delete next[editing.key]; writeRoutineTabLabels(next); setLabels(next); setEditing(null); }} style={{ paddingVertical: 10 }}>
               <ThemedText style={{ color: inactiveText }}>{t('catalog.resetTabName')}</ThemedText>
             </Pressable>
             <View style={{ flex: 1 }} />

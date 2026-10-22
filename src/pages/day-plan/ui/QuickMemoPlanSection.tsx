@@ -1,3 +1,4 @@
+import Svg, { Path } from 'react-native-svg';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { RowColorPaletteBridgeProvider, RowColorPaletteDesk } from '@shared/ui/color-palette-tabs';
 import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
@@ -41,7 +42,6 @@ import {
   type PostItInkColorId,
   type QuickMemoFontSizePt,
 } from '@shared/lib/storage';
-import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { PostItCardShell } from '@shared/ui/post-it-card-shell';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -89,12 +89,15 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   const hydratedRef = useRef(false);
   const inputRef = useRef<TextInput | null>(null);
   const keyboardInsetRef = useRef(0);
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
   useEffect(() => {
     if (!isActive) return;
-    const frame = requestAnimationFrame(() => inputRef.current?.focus());
-    return () => cancelAnimationFrame(frame);
+    // 메모 카드는 다른 모드 뒤에 숨긴 채로 먼저 마운트된다.
+    // 보이기 전에 focus 하면 키패드는 올라와도 캐럿 깜빡임이 시작되지 않는다.
+    const timer = setTimeout(() => inputRef.current?.focus(), 48);
+    return () => clearTimeout(timer);
   }, [isActive]);
-  const pill = tabPillColors(isDark);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [faceColorId, setFaceColorId] = useState<PostItFaceColorId>(() =>
     loadPostItFaceColorIdForGroup(QUICK_MEMO_POST_IT_KEY),
@@ -122,15 +125,28 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    let caretTimer: ReturnType<typeof setTimeout> | null = null;
     const showSub = Keyboard.addListener(showEvent, (event) => {
       keyboardInsetRef.current = event.endCoordinates.height;
       setKeyboardInset(event.endCoordinates.height);
+      if (!isActiveRef.current) return;
+      if (caretTimer) clearTimeout(caretTimer);
+      // 키패드 높이만큼 카드가 줄어든 뒤에 캐럿을 다시 잡아야 깜빡임이 남는다.
+      caretTimer = setTimeout(() => {
+        caretTimer = null;
+        if (isActiveRef.current && keyboardInsetRef.current > 0) inputRef.current?.focus();
+      }, 80);
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       keyboardInsetRef.current = 0;
       setKeyboardInset(0);
+      if (caretTimer) {
+        clearTimeout(caretTimer);
+        caretTimer = null;
+      }
     });
     return () => {
+      if (caretTimer) clearTimeout(caretTimer);
       showSub.remove();
       hideSub.remove();
     };
@@ -391,8 +407,13 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
               accessibilityLabel={t('dayPlan.quickMemoPhotoRemoveA11y')}
               hitSlop={8}
               onPress={onClearPhoto}
-              style={[styles.photoRemove, { backgroundColor: pill.activeBg }]}>
-              <IconSymbol name="xmark" size={14} color={pill.activeIcon} />
+              style={({ pressed }) => [styles.photoRemove, { opacity: pressed ? 0.65 : 1 }]}>
+              <PaperGrain opacity={0.24} />
+              <HanddrawnFrame color="#777777" />
+              <Svg width={16} height={16} viewBox="0 0 20 20" accessible={false}>
+                <Path d="M4.4 4.9Q9.5 9 15.3 15.1M15.5 4.3Q10.1 9.2 4.7 15.6" fill="none" stroke="#353535" strokeWidth={1.4} strokeLinecap="round" />
+                <Path d="M5.5 4.9L13.9 14.3M14.9 6L5.4 15.8" fill="none" stroke="#747474" strokeWidth={0.45} opacity={0.55} strokeLinecap="round" />
+              </Svg>
             </Pressable>
           </Animated.View>
         ) : null}
@@ -405,9 +426,12 @@ export const QuickMemoPlanSection = forwardRef(function QuickMemoPlanSection(
           placeholder={t('dayPlan.quickMemoPlaceholder')}
           placeholderTextColor={faceMuted}
           multiline
-          scrollEnabled={false}
+          // iOS는 multiline에서 scrollEnabled={false}이면 키패드가 올라올 때
+          // 캐럿을 클립하고 깜빡임을 멈춘다. 높이는 본문에 맞춰 두어 안쪽 스크롤은 나지 않는다.
+          scrollEnabled
+          cursorColor={faceInk}
+          selectionColor={Platform.OS === 'ios' || faceInk.length !== 7 ? faceInk : `${faceInk}47`}
           textAlignVertical="top"
-          autoFocus={isActive}
           onContentSizeChange={(event) => {
             const next = Math.ceil(event.nativeEvent.contentSize.height);
             setDraftContentHeight((prev) => (Math.abs(prev - next) < 2 ? prev : next));
@@ -699,6 +723,12 @@ const styles = StyleSheet.create({
     right: 6,
     width: 28,
     height: 28,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '-2deg' }],
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
+    shadowOffset: { width: 0.5, height: 1 },
     alignItems: 'center',
     justifyContent: 'center',
   },

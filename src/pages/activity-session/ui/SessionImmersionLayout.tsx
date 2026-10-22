@@ -1,4 +1,5 @@
 import type { SymbolViewProps } from 'expo-symbols';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Keyboard,
@@ -101,7 +102,7 @@ export function SessionImmersionLayout({
             accessibilityLabel={t('settings.back')}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             style={styles.headerBtn}
-            onPress={onBack}>
+            onPress={() => { tapHaptic(); onBack(); }}>
             <IconSymbol name="chevron.left" size={22} color={ui.primary} />
           </Pressable>
           <ThemedText
@@ -180,7 +181,7 @@ export function ImmersionBottomControls({
           disabled ? { opacity: 0.45 } : null,
         ]}
         disabled={disabled}
-        onPress={onEndSession}>
+        onPress={() => { tapHaptic('confirm'); onEndSession(); }}>
         <IconSymbol name="checkmark.circle.fill" size={20} color={fg} />
         <ThemedText style={[styles.completeBtnText, { color: fg }]}>{resolvedCompleteLabel}</ThemedText>
       </Pressable>

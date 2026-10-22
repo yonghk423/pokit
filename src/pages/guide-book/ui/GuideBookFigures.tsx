@@ -81,7 +81,10 @@ function AppTabBar({
         styles.tabBar,
         { backgroundColor: colors.containerBg, borderColor: colors.containerBorder },
       ]}>
-      {APP_TABS.filter((tab) => FEATURE_FLAGS.puzzle || tab.key !== 'puzzle').map((tab) => {
+      {APP_TABS.filter((tab) =>
+        (FEATURE_FLAGS.puzzle || tab.key !== 'puzzle')
+        && (FEATURE_FLAGS.routinesManageTab || tab.key !== 'routine'),
+      ).map((tab) => {
         const on = tab.key === active;
         return (
           <View

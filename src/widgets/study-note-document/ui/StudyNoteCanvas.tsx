@@ -1,3 +1,4 @@
+import { SketchNewPageIcon } from './SketchNewPageIcon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -390,7 +391,7 @@ export function StudyNoteCanvas({ document, onChangeDocument, palette }: Props) 
             onPress={() => addPage(false)}
             hitSlop={8}
             style={styles.headerBtn}>
-            <IconSymbol name="square.and.pencil" size={18} color={palette.onSurface} />
+            <SketchNewPageIcon size={24} color={palette.onSurface} />
           </Pressable>
         </View>
       </View>

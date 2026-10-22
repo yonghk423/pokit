@@ -1,3 +1,5 @@
+import { ComicCheck } from './ComicCheck';
+import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
 import { ComicSceneImage } from './ComicSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/comicSceneThumbnails';
 import { COMIC_BOARD_MODES, comicCardLayout, comicPageLayout, diagonalComicPage, diagonalPanelPath, type ComicPanel, loadComicBoardMode, saveComicBoardMode, type ComicBoardMode } from '../lib/comicBoardLayout';
@@ -7,6 +9,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -21,9 +24,11 @@ function LayoutDiagram({ mode, ink, size = 42 }: { mode: ComicBoardMode; ink: st
 
 type BoardItem = Omit<CircularRoutineItem, 'completed'> & { completed?: boolean; memo?: string };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
-export function ComicDayBoard({ items, ink, muted, isDark, choices, onOpen, onComplete, onAdd, onEditTime, onRemove, characterName, onSelectCharacter, onRenameCharacter }: Common & {
+export function ComicDayBoard({ diaryTitle, items, ink, muted, isDark, choices, onOpen, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
+  diaryTitle?: string;
   items: BoardItem[]; onOpen: (key: string) => void; onComplete?: (key: string) => void;
   onRemove?: (key: string) => void;
+  onRemoveMany?: (keys: string[]) => void;
   characterName?: string; onSelectCharacter?: () => void; onRenameCharacter?: () => void;
   onAdd: () => void; onEditTime?: (key: string, label: string) => void;
 }) {
@@ -32,6 +37,11 @@ export function ComicDayBoard({ items, ink, muted, isDark, choices, onOpen, onCo
   const [menuOpen, setMenuOpen] = useState(false);
   const small = viewMode === 'small';
   const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const selectedKeys = items.filter(item => selectedForDeletion.includes(item.key)).map(item => item.key);
+  const toggleSelected = (key: string) => setSelectedForDeletion(previous => previous.includes(key) ? previous.filter(value => value !== key) : [...previous, key]);
+  const openItem = (key: string) => { if (deleteMode && onRemoveMany) toggleSelected(key); else onOpen(key); };
+  const toggleDeleteMode = () => { setDeleteMode(value => !value); setSelectedForDeletion([]); setMenuOpen(false); };
   const [boardWidth, setBoardWidth] = useState(340);
   const renderCard = (item: BoardItem, index: number, panel?: ComicPanel) => {
     const layout = comicCardLayout(viewMode, index);
@@ -43,26 +53,26 @@ export function ComicDayBoard({ items, ink, muted, isDark, choices, onOpen, onCo
     const time = item.startMinutes == null ? item.timeLabel : `${String(Math.floor(item.startMinutes / 60) % 24).padStart(2, '0')}:${String(item.startMinutes % 60).padStart(2, '0')}`;
     return <View pointerEvents="box-none" key={item.key} style={panel ? { position: 'absolute', left: panel.left, top: panel.top, width: panel.width, height: panel.height } : { width: layout.width }}>
       <View pointerEvents="box-none" style={[s.card, { backgroundColor: item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF'), borderColor: muted }, panel && { height: panel.height }, diagonal && { borderWidth: 0, backgroundColor: 'transparent', overflow: 'visible' }]}>
-        {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} onPress={() => onOpen(item.key)} accessibilityLabel={item.label} /></Svg> : null}
+        {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} onPress={() => { tapHaptic(); openItem(item.key); }} accessibilityLabel={item.label} /></Svg> : null}
         <View pointerEvents="box-none" style={diagonal ? { marginLeft: diagonal.side === 'right' ? diagonal.slant + 2 : 2, marginRight: diagonal.side === 'left' ? diagonal.slant + 2 : 2, paddingTop: 1 } : undefined}>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => onOpen(item.key)} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
-          <ComicSceneImage contentFit="contain" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${resolveComicScene(item.key, item.label, choices).id}:${small ? 'small' : 'large'}`} source={COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id][small ? 'small' : 'large']} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
+        <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
+          <ComicSceneImage contentFit="contain" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${resolveComicScene(item.key, item.label, choices).id}:${small ? 'small' : 'large'}`} source={COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id][small ? 'small' : 'large']} fallbackSource={resolveComicScene(item.key, item.label, choices).source} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
         </Pressable>
         <View style={[s.comicCaption, { borderTopColor: muted, height: captionHeight }]}>
           <View style={s.captionMeta}>
             <ThemedText style={{ color: muted, fontSize: 10, lineHeight: 15 }}>{String(index + 1).padStart(2, '0')}</ThemedText>
-            {onEditTime ? <Pressable accessibilityRole="button" accessibilityLabel={time ? t('todo.timeA11y', { time }) : t('dayPlan.timeUnsetA11y')} onPress={() => onEditTime?.(item.key, item.label)} hitSlop={5} style={s.compactTime}>
+            {onEditTime ? <Pressable accessibilityRole="button" accessibilityLabel={time ? t('todo.timeA11y', { time }) : t('dayPlan.timeUnsetA11y')} onPress={() => { tapHaptic(); onEditTime?.(item.key, item.label); }} hitSlop={5} style={s.compactTime}>
               <ThemedText numberOfLines={1} style={{ color: muted, fontSize: 10, lineHeight: 15 }}>◷ {time ?? t('comicDay.time')}</ThemedText>
             </Pressable> : null}
           </View>
           <View style={s.captionTitleRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => onOpen(item.key)} style={{ flex: 1, minHeight: 27, justifyContent: 'center' }}>
+            <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => { tapHaptic(); openItem(item.key); }} style={{ flex: 1, minHeight: 27, justifyContent: 'center' }}>
               <ThemedText numberOfLines={1} style={{ color: cardInk, fontSize: small ? 11 : wide ? 15 : 12, lineHeight: 20 }}>{item.label}</ThemedText>
             </Pressable>
             {onComplete ? <CompletionRadioButton checked={item.completed ?? false} isDark={isDark} size={20} appearance="ink" motion="gentle" accessibilityLabel={item.label} onPress={() => onComplete(item.key)} /> : null}
-            {onRemove && deleteMode ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.removeFromSequence', { label: item.label })} onPress={() => onRemove(item.key)} hitSlop={5} style={[s.panelRemove, { backgroundColor: isDark ? '#262B28' : '#FFFFFF' }]}><ThemedText style={{ color: ink, fontSize: 17, lineHeight: 22 }}>×</ThemedText></Pressable> : null}
+            {onRemoveMany && deleteMode ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('comicDay.selectForDeletion', { label: item.label })} accessibilityState={{ checked: selectedKeys.includes(item.key) }} onPress={() => { tapHaptic('select'); toggleSelected(item.key); }} style={s.panelRemove}><ComicCheck tone="destructive" checked={selectedKeys.includes(item.key)} size={25} /></Pressable> : onRemove && deleteMode ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.removeFromSequence', { label: item.label })} onPress={() => { tapHaptic('warn'); onRemove(item.key); }} hitSlop={5} style={[s.panelRemove, { backgroundColor: isDark ? '#262B28' : '#FFFFFF' }]}><ThemedText style={{ color: ink, fontSize: 17, lineHeight: 22 }}>×</ThemedText></Pressable> : null}
           </View>
-          {memo ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.memo')} onPress={() => onOpen(item.key)} style={{ minHeight: 17 }}>
+          {memo ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.memo')} onPress={() => { tapHaptic(); openItem(item.key); }} style={{ minHeight: 17 }}>
             <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{ color: cardInk, opacity: 0.75, fontSize: small ? 10 : 11, lineHeight: 16 }}>{memo}</ThemedText>
           </Pressable> : null}
         </View>
@@ -71,19 +81,19 @@ export function ComicDayBoard({ items, ink, muted, isDark, choices, onOpen, onCo
     </View>;
 
   };
-  return <View style={{ flex: 1 }}>
+  return <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F5F0E6' }}>
   <ScrollView onScrollBeginDrag={() => setMenuOpen(false)} showsVerticalScrollIndicator={false} contentContainerStyle={s.board}>
     <View style={s.headingRow}>
       <View style={s.titleGroup}>
         <ThemedText numberOfLines={1} style={[s.heading, { color: ink }]}>{t('comicDay.title')}</ThemedText>
-        {characterName ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} onPress={onRenameCharacter ?? onSelectCharacter} style={s.characterName}><ThemedText numberOfLines={1} style={{ color: muted, fontSize: 12, lineHeight: 18 }}>{characterName}</ThemedText></Pressable> : null}
+        {characterName ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} onPress={() => { tapHaptic(); (onRenameCharacter ?? onSelectCharacter)?.(); }} style={s.characterName}><ThemedText numberOfLines={1} style={{ color: muted, fontSize: 12, lineHeight: 18 }}>{characterName}</ThemedText></Pressable> : null}
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.boardView')} accessibilityState={{ expanded: menuOpen }} onPress={() => setMenuOpen(value => !value)} style={[s.deleteToggle, menuOpen && { backgroundColor: '#C8EBDD' }]}><LayoutDiagram mode={viewMode} ink={ink} size={26} /></Pressable>
-      {onRemove ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.toggleDelete')} accessibilityState={{ selected: deleteMode }} onPress={() => setDeleteMode(value => !value)} style={[s.deleteToggle, deleteMode && { backgroundColor: '#C8EBDD' }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.boardView')} accessibilityState={{ expanded: menuOpen }} onPress={() => { tapHaptic('select'); setMenuOpen(value => !value); }} style={[s.deleteToggle, menuOpen && { backgroundColor: '#C8EBDD' }]}><LayoutDiagram mode={viewMode} ink={ink} size={26} /></Pressable>
+      {onRemove || onRemoveMany ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.toggleDelete')} accessibilityState={{ selected: deleteMode }} onPress={() => { tapHaptic('select'); toggleDeleteMode(); }} style={[s.deleteToggle, deleteMode && { backgroundColor: '#F6DAD6' }]}>
         <Image source={require('../../../../assets/control-illustrations/trash.webp')} style={{ width: 29, height: 29 }} contentFit="contain" accessible={false} />
       </Pressable> : null}
     </View>
-    <ThemedText style={[s.hint, { color: muted }]}>{t('comicDay.hint')}</ThemedText>
+    <ThemedText style={[s.hint, { color: muted }]}>{t(diaryTitle ? 'comicDiary.sceneCount' : 'comicDay.hint', { count: items.length })}</ThemedText>
     <View style={s.grid} onLayout={event => setBoardWidth(event.nativeEvent.layout.width)}>
       {viewMode === 'hero' || viewMode === 'page' || viewMode === 'diagonal' ? Array.from({ length: Math.ceil(items.length / (viewMode === 'hero' ? 3 : 4)) }, (_, pageIndex) => {
         const groupSize = viewMode === 'hero' ? 3 : 4;
@@ -93,17 +103,25 @@ export function ComicDayBoard({ items, ink, muted, isDark, choices, onOpen, onCo
       }) : items.map((item, index) => renderCard(item, index))}
     </View>
     {!items.length ? <ThemedText style={[s.empty, { color: muted }]}>{t('comicDay.empty')}</ThemedText> : null}
-    <Pressable accessibilityRole="button" onPress={onAdd} style={[s.add, { borderColor: muted }]}>
-      <ThemedText style={{ color: ink }}>＋ {t('comicDay.add')}</ThemedText>
-    </Pressable>
+    <SketchPaperButton label={t('comicDay.add')} ink={ink} onPress={onAdd} style={s.add} />
   </ScrollView>
+  {deleteMode && onRemoveMany ? <View style={[s.selectionBar, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: muted }]}>
+    <View style={s.selectionActions}>
+      <ThemedText style={{ color: ink, fontSize: 13 }}>{t('comicDay.selectedSceneCount', { count: selectedKeys.length })}</ThemedText>
+      <Pressable accessibilityRole="button" accessibilityLabel={t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')} onPress={() => setSelectedForDeletion(selectedKeys.length === items.length ? [] : items.map(item => item.key))} style={s.selectionTouch}><ThemedText style={{ color: ink, fontSize: 13 }}>{t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={toggleDeleteMode} style={s.selectionTouch}><ThemedText style={{ color: ink, fontSize: 13 }}>{t('common.cancel')}</ThemedText></Pressable>
+    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.deleteSelected', { count: selectedKeys.length })} accessibilityState={{ disabled: !selectedKeys.length }} disabled={!selectedKeys.length} onPress={() => { tapHaptic('warn'); onRemoveMany(selectedKeys); }} style={[s.bulkDelete, { opacity: selectedKeys.length ? 1 : 0.35 }]}>
+      <HanddrawnFrame color={muted} /><ThemedText style={{ color: ink, fontSize: 15 }}>{t('comicDay.deleteSelected', { count: selectedKeys.length })}</ThemedText>
+    </Pressable>
+  </View> : null}
   {menuOpen ? <>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)} />
+    <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); setMenuOpen(false); }} />
     <View accessibilityViewIsModal style={[s.viewMenu, { backgroundColor: isDark ? '#262B28' : '#FFFFFF' }]}>
       <PaperGrain opacity={0.2} /><HanddrawnFrame color={muted} />
       <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={s.menuContent} showsVerticalScrollIndicator={false}>
       <ThemedText style={{ color: ink, fontSize: 17, marginBottom: 10 }}>{t('comicDay.boardView')}</ThemedText>
-      <View style={s.menuGrid}>{COMIC_BOARD_MODES.map(mode => <Pressable key={mode} accessibilityRole="button" accessibilityLabel={t(modeLabels[mode])} accessibilityState={{ selected: viewMode === mode }} onPress={() => { setViewMode(mode); saveComicBoardMode(mode); setMenuOpen(false); }} style={[s.modeOption, { borderColor: muted }, viewMode === mode && { backgroundColor: '#C8EBDD' }]}>
+      <View style={s.menuGrid}>{COMIC_BOARD_MODES.map(mode => <Pressable key={mode} accessibilityRole="button" accessibilityLabel={t(modeLabels[mode])} accessibilityState={{ selected: viewMode === mode }} onPress={() => { tapHaptic('select'); setViewMode(mode); saveComicBoardMode(mode); setMenuOpen(false); }} style={[s.modeOption, { borderColor: muted }, viewMode === mode && { backgroundColor: '#C8EBDD' }]}>
         <LayoutDiagram mode={mode} ink={viewMode === mode ? '#202020' : ink} />
       </Pressable>)}</View>
       </ScrollView>
@@ -118,13 +136,13 @@ export function ComicSceneDetail({ item, choices, ink, muted, onChoose, onEditTi
   const { t } = useTranslation();
   const current = resolveComicScene(item.key, item.label, choices);
   return <View style={s.hero}>
-    {onEditTime ? <Pressable accessibilityRole="button" onPress={() => onEditTime(item.key, item.label)} style={s.time}>
+    {onEditTime ? <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); onEditTime(item.key, item.label); }} style={s.time}>
       <ThemedText style={{ color: ink }}>◷ {item.timeLabel ?? t('dayPlan.timeUnsetHint')}</ThemedText>
     </Pressable> : null}
     <Image source={current.source} style={{ width: '100%', aspectRatio: 1.5 }} contentFit="cover" transition={150} />
     <ThemedText style={{ color: ink, fontSize: 13 }}>{t('comicDay.change')}</ThemedText>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-      {COMIC_SCENES.map(scene => <Pressable key={scene.id} accessibilityRole="button" accessibilityLabel={t(scene.label)} accessibilityState={{ selected: current.id === scene.id }} onPress={() => onChoose(scene.id)} style={[s.thumbnail, { borderColor: current.id === scene.id ? '#79BFB5' : 'transparent' }]}>
+      {COMIC_SCENES.map(scene => <Pressable key={scene.id} accessibilityRole="button" accessibilityLabel={t(scene.label)} accessibilityState={{ selected: current.id === scene.id }} onPress={() => { tapHaptic('select'); onChoose(scene.id); }} style={[s.thumbnail, { borderColor: current.id === scene.id ? '#79BFB5' : 'transparent' }]}>
         <Image source={scene.source} style={{ width: 64, height: 44 }} contentFit="cover" />
         <ThemedText style={{ color: muted, fontSize: 11, textAlign: 'center' }}>{t(scene.label)}</ThemedText>
       </Pressable>)}
@@ -132,6 +150,10 @@ export function ComicSceneDetail({ item, choices, ink, muted, onChoose, onEditTi
   </View>;
 }
 const s = StyleSheet.create({
+  selectionBar: { padding: 12, gap: 8, borderTopWidth: 0.5 },
+  selectionActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  selectionTouch: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 8 },
+  bulkDelete: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   viewMenu: { position: 'absolute', right: 16, top: 52, width: 226, maxWidth: '90%', maxHeight: '80%', borderRadius: 5, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
   menuContent: { padding: 16 },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
@@ -141,14 +163,14 @@ const s = StyleSheet.create({
   deleteToggle: { width: 44, height: 44, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   titleGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
   characterName: { flexShrink: 1, maxWidth: 90, minHeight: 36, justifyContent: 'center' },
-  heading: { fontSize: 21 }, hint: { fontSize: 12, marginBottom: 8 },
+  heading: { fontSize: 18 }, hint: { fontSize: 12, marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
   comicCaption: { height: 52, paddingHorizontal: 7, paddingTop: 3, paddingBottom: 2, borderTopWidth: 0.5 },
   captionMeta: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 17 }, compactTime: { flex: 1, alignItems: 'flex-end' }, captionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   panelRemove: { minWidth: 27, minHeight: 27, alignItems: 'center', justifyContent: 'center', borderRadius: 3 },
   card: { borderWidth: 0.8, overflow: 'hidden', borderRadius: 1 },
   time: { minHeight: 44, justifyContent: 'center', flexShrink: 1 },
-  add: { marginTop: 22, borderWidth: 1, borderStyle: 'dashed', padding: 20, alignItems: 'center' },
+  add: { marginTop: 20, marginBottom: 8 },
   empty: { textAlign: 'center', paddingVertical: 40 }, hero: { gap: 10, marginBottom: 24 },
   thumbnail: { padding: 3, borderWidth: 2 },
 });

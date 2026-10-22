@@ -6,11 +6,23 @@ import type { AppFontId } from './appFontIds';
  */
 export const APP_FONT_OPTICAL_SCALE: Record<AppFontId, number> = {
   hiMelody: 1,
-  /** Hi Melody의 체감 크기에 맞춰 표시 크기를 보정 */
-  hanken: 0.8,
-  sebangGothic2: 0.84,
+  /** 붓펜 손글씨 — Hi Melody와 비슷한 체감으로 맞춤 */
+  kimJungWon: 0.92,
+  /** 동글동글 또박또박 손글씨 */
+  corncorn: 0.95,
 };
 
 export function resolveAppFontOpticalScale(fontId: AppFontId): number {
   return APP_FONT_OPTICAL_SCALE[fontId] ?? 1;
+}
+
+/** 글씨체별 최소 lineHeight / fontSize — 이보다 좁으면 iOS가 글자 위아래를 잘라낸다. */
+const APP_FONT_MIN_LINE_HEIGHT_RATIO: Partial<Record<AppFontId, number>> = {
+  kimJungWon: 1.22,
+  corncorn: 1.2,
+};
+
+export function resolveAppFontMinLineHeight(fontId: AppFontId, fontSize: number): number {
+  const ratio = APP_FONT_MIN_LINE_HEIGHT_RATIO[fontId];
+  return ratio ? Math.ceil(fontSize * ratio) : 0;
 }

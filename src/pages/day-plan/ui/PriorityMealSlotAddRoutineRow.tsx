@@ -1,8 +1,6 @@
-import { Pressable, StyleSheet } from 'react-native';
 
 import { useTranslation } from '@shared/lib/i18n';
-import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
-import { ThemedText } from '@shared/ui/themed-text';
+import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
 
 type Props = {
   label?: string;
@@ -14,7 +12,7 @@ type Props = {
   onPress: () => void;
 };
 
-/** 루틴 추가/더 추가 — 아이콘+라벨만 */
+/** 루틴 추가/더 추가 — 흰 종이와 연필 테두리 버튼 */
 export function PriorityMealSlotAddRoutineRow({
   label,
   ink,
@@ -23,34 +21,5 @@ export function PriorityMealSlotAddRoutineRow({
   const { t } = useTranslation();
   const resolvedLabel = label ?? t('dayPlan.confirmLink');
 
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={resolvedLabel}
-      onPress={onPress}
-      style={({ pressed }) => [styles.root, pressed && styles.pressed]}>
-      <RoutineActionIcon name="adjust" size={22} color={ink} />
-      <ThemedText style={[styles.label, { color: ink }]}>{resolvedLabel}</ThemedText>
-    </Pressable>
-  );
+  return <SketchPaperButton label={resolvedLabel} onPress={onPress} ink={ink} labelSize={12} style={{ marginVertical: 5 }} />;
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 2,
-  },
-  pressed: {
-    opacity: 0.78,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-});

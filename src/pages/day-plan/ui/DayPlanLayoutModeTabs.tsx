@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import { tabPillColors } from '@shared/lib/ui/tabPillColors';
 import { IconSymbol } from '@shared/ui/icon-symbol';
@@ -57,23 +58,11 @@ function ChromeShadowTab({
         { marginRight: CHROME_SHADOW, marginBottom: CHROME_SHADOW },
         pressed && styles.pressed,
       ]}>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.chromeShadow,
-          {
-            backgroundColor: shadowColor,
-            transform: [{ translateX: CHROME_SHADOW }, { translateY: CHROME_SHADOW }],
-          },
-        ]}
-      />
+      <View pointerEvents="none" style={[styles.chromeShadow, { backgroundColor: shadowColor, transform: [{ translateX: CHROME_SHADOW }, { translateY: CHROME_SHADOW }] }]} />
       <View
         style={[
           labeled ? styles.labeledTab : styles.tab,
-          {
-            backgroundColor: active ? activeBg : inactiveBg,
-            borderColor,
-          },
+          { backgroundColor: active ? activeBg : inactiveBg, borderColor },
         ]}>
         <PaperGrain opacity={0.25} />
         <HanddrawnFrame color={borderColor} />
@@ -147,6 +136,8 @@ type Props = {
   showCircularTimetable?: boolean;
   circularActive?: boolean;
   comicActive?: boolean;
+  cardsActive?: boolean;
+  onSelectCards?: () => void;
   onSelectComic?: () => void;
   onSelectCircular?: () => void;
 };
@@ -164,6 +155,8 @@ export function DayPlanLayoutModeTabs({
   showCircularTimetable = false,
   circularActive = false,
   comicActive = false,
+  cardsActive = false,
+  onSelectCards,
   onSelectComic,
   onSelectCircular,
 }: Props) {
@@ -173,9 +166,9 @@ export function DayPlanLayoutModeTabs({
   const tabs = TABS.filter((item) => ENABLED_LAYOUT_MODES.includes(item.key)).filter((item) =>
     visibleModes ? visibleModes.includes(item.key) : true,
   );
-  const layoutTabs = tabs;
+  const layoutTabs = showCircularTimetable && !FEATURE_FLAGS.basicRoutineListLayout ? [] : tabs;
 
-  if (layoutTabs.length === 0) return null;
+  if (layoutTabs.length === 0 && !showCircularTimetable) return null;
 
   if (attached && showLabels) {
     if (layoutTabs.length === 0) return null;
@@ -186,8 +179,8 @@ export function DayPlanLayoutModeTabs({
 
     return (
       <View style={[styles.attachedRoot, { backgroundColor: trackBg }]}>
-        {layoutTabs.map((item) => {
-          const active = !circularActive && !comicActive && mode === item.key;
+      {layoutTabs.map((item) => {
+          const active = !circularActive && !comicActive && !cardsActive && mode === item.key;
           const label = layoutModeLabel(t, item.key);
           return (
             <Pressable
@@ -239,15 +232,15 @@ export function DayPlanLayoutModeTabs({
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
       {showCircularTimetable ? (
         <Pressable
-          onPress={onSelectComic}
+          onPress={() => {
+            if (comicActive) return;
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSelectComic?.();
+          }}
           accessibilityState={{ selected: comicActive }}
           accessibilityRole="tab"
-          accessibilityLabel={t('layoutMode.a11y.activityIllustrations')}
+          accessibilityLabel={t('comicDiary.title')}
           style={[styles.chromeShell, { marginRight: CHROME_SHADOW, marginBottom: CHROME_SHADOW }]}>
-          <View pointerEvents="none" style={[styles.chromeShadow, {
-            backgroundColor: chromeShadow,
-            transform: [{ translateX: CHROME_SHADOW }, { translateY: CHROME_SHADOW }],
-          }]} />
           <View style={[styles.tab, { backgroundColor: comicActive ? pill.activeBg : isDark ? pill.inactiveBg : '#FFFFFF' }]}>
             <PaperGrain opacity={0.25} />
             <Image
@@ -262,9 +255,13 @@ export function DayPlanLayoutModeTabs({
           </View>
         </Pressable>
       ) : null}
-      {showCircularTimetable ? (
+      {showCircularTimetable && FEATURE_FLAGS.circularRoutineLayout ? (
         <Pressable
-          onPress={onSelectCircular}
+          onPress={() => {
+            if (circularActive) return;
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSelectCircular?.();
+          }}
           accessibilityRole="tab"
           accessibilityState={{ selected: circularActive }}
           accessibilityLabel={t('layoutMode.a11y.circularTimetable')}
@@ -288,8 +285,19 @@ export function DayPlanLayoutModeTabs({
           </View>
         </Pressable>
       ) : null}
+      {showCircularTimetable && onSelectCards ? <ChromeShadowTab active={cardsActive} activeBg={pill.activeBg} inactiveBg={isDark ? pill.inactiveBg : '#FFFFFF'} shadowColor={chromeShadow} borderColor={chromeBorder} accessibilityLabel={t('layoutMode.cards')} accessibilityState={{ selected: cardsActive }} onPress={() => {
+        if (cardsActive) return;
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onSelectCards();
+      }}>
+        <Svg width={26} height={26} viewBox="0 0 30 30" accessible={false}>
+          <Path d="M10 3L25 4L26 21L12 22ZM6 7L21 6L23 25L7 26Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={isDark ? '#D7D9D0' : '#555B53'} strokeWidth={1} strokeLinejoin="round" />
+          <Path d="M3 11L18 10L20 28L4 28Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={isDark ? '#D7D9D0' : '#555B53'} strokeWidth={1.1} strokeLinejoin="round" />
+          <Path d="M7 15L12 14L12 18L7 18ZM7 22L16 21M8 25L14 24M15 13L16 16" fill="none" stroke={isDark ? '#D7D9D0' : '#555B53'} strokeWidth={0.8} strokeLinecap="round" />
+        </Svg>
+      </ChromeShadowTab> : null}
       {layoutTabs.map((item) => {
-        const active = !circularActive && !comicActive && mode === item.key;
+        const active = !circularActive && !comicActive && !cardsActive && mode === item.key;
         const label = layoutModeLabel(t, item.key);
         return (
           <ChromeShadowTab

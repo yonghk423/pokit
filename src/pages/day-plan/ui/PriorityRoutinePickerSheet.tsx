@@ -1,8 +1,7 @@
-import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +10,13 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -34,10 +40,53 @@ import {
   saveSpineDefaultBlockMinutes,
   SPINE_GAP_BLOCK_MINUTE_OPTIONS,
 } from '@shared/lib/storage';
-import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
+import { RoutineWheelAddButton } from '@shared/ui/routine-wheel-add-button';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { activeIconColorByCategory } from '@widgets/day-plan-priority-order';
+
+const SELECT_IDLE = 'rgba(0,0,0,0)';
+const SELECT_MINT_LIGHT = '#C8EBDD';
+const SELECT_MINT_DARK = 'rgba(168,218,220,0.28)';
+const SELECT_EASE = Easing.out(Easing.cubic);
+
+/** Soft mint fill when a rhythm row is checked. */
+function MintSelectRow({
+  selected,
+  isDark,
+  onPress,
+  accessibilityLabel,
+  children,
+}: {
+  selected: boolean;
+  isDark: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+  children: ReactNode;
+}) {
+  const progress = useSharedValue(selected ? 1 : 0);
+  useEffect(() => {
+    progress.value = withTiming(selected ? 1 : 0, { duration: 240, easing: SELECT_EASE });
+  }, [progress, selected]);
+  const faceStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [SELECT_IDLE, isDark ? SELECT_MINT_DARK : SELECT_MINT_LIGHT],
+    ),
+  }));
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [pressed && { transform: [{ translateY: 1 }] }]}>
+      <Animated.View style={[styles.pickRow, faceStyle]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
 
 import {
   flattenAddablePriorityCatalogItems,
@@ -68,7 +117,6 @@ export type SpineGapAddConfig = {
 
 type Props = {
   visible: boolean;
-  title: string;
   sections: AddablePriorityCatalogSection[];
   isDark: boolean;
   ink: string;
@@ -138,7 +186,6 @@ function buildSchedulesForSelectedKeys(
 /** 담기·구간 연결·타임라인 갭 추가용 다중 선택 시트 (레거시 그룹 헤더 없이 평면 목록) */
 export function PriorityRoutinePickerSheet({
   visible,
-  title,
   sections,
   isDark,
   ink,
@@ -305,9 +352,20 @@ export function PriorityRoutinePickerSheet({
         style={styles.root}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 12 : 0}>
-        <View style={{ flex: 1, backgroundColor: surface, paddingTop: insets.top + 12 }}>
+        <View style={[styles.sheet, { backgroundColor: surface, paddingTop: insets.top + 12 }]}>
+        <PaperGrain opacity={0.35} />
         <View style={[styles.header, { borderBottomColor: sectionLine }]}>
-          <ThemedText style={[styles.title, { color: ink }]}>{title}</ThemedText>
+          {onCreateCustom ? (
+            <RoutineWheelAddButton
+              icon="createCard"
+              size={42}
+              label={t('fixedRoutine.createNew')}
+              invite
+              onPress={onCreateCustom}
+            />
+          ) : (
+            <View style={styles.createButtonSpacer} />
+          )}
           <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
@@ -356,19 +414,6 @@ export function PriorityRoutinePickerSheet({
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive">
-          {onCreateCustom ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('fixedRoutine.createNew')}
-              onPress={() => {
-                // 부모에서 픽커만 닫고 슬롯/갭 타깃은 유지한 채 생성 시트를 연다.
-                onCreateCustom();
-              }}
-              style={({ pressed }) => [styles.createRow, pressed && { opacity: 0.72 }]}>
-              <RoutineActionIcon name="adjust" size={22} color={ink} />
-              <ThemedText style={[styles.rowLabel, { color: ink }]}>{t('fixedRoutine.createNew')}</ThemedText>
-            </Pressable>
-          ) : null}
           {flatItems.map((cat) => {
             const selected = selectedKeys.has(cat.key);
             const schedule = scheduleByKey[cat.key];
@@ -377,22 +422,11 @@ export function PriorityRoutinePickerSheet({
 
             return (
               <View key={cat.key} style={[styles.pickRowWrap, { borderBottomColor: line }]}>
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
+                <MintSelectRow
+                  selected={selected}
+                  isDark={isDark}
                   accessibilityLabel={`${cat.label} ${selected ? t('common.selected') : t('common.select')}`}
-                  onPress={() => toggleSelection(cat.key)}
-                  style={({ pressed }) => [
-                    styles.pickRow,
-                    {
-                      backgroundColor: selected
-                        ? isDark
-                          ? 'rgba(255,255,255,0.08)'
-                          : 'rgba(0,0,0,0.04)'
-                        : 'transparent',
-                    },
-                    pressed && { opacity: 0.72 },
-                  ]}>
+                  onPress={() => toggleSelection(cat.key)}>
                   <IconSymbol
                     name={resolveCategoryCatalogIcon(cat.key) as 'drop.fill'}
                     size={18}
@@ -449,7 +483,7 @@ export function PriorityRoutinePickerSheet({
                       />
                     </Pressable>
                   ) : null}
-                </Pressable>
+                </MintSelectRow>
                 {spineTimeEnabled && selected && isTimeExpanded && schedule && spineGapAdd ? (
                   <View
                     style={[
@@ -494,19 +528,11 @@ export function PriorityRoutinePickerSheet({
             {
               borderTopColor: sectionLine,
               paddingBottom: Math.max(insets.bottom, 12),
-              backgroundColor: surface,
             },
           ]}>
-          <BrutalConfirmButton
+          <RoutineWheelAddButton
+            icon="confirmAdd"
             label={
-              canConfirm
-                ? t('dayPlan.confirmRoutineCount', {
-                    count: selectedCount,
-                    action: resolvedConfirmLabel,
-                  })
-                : t('dayPlan.pickRoutineHint')
-            }
-            accessibilityLabel={
               canConfirm
                 ? t('dayPlan.confirmRoutineCountA11y', {
                     count: selectedCount,
@@ -514,9 +540,9 @@ export function PriorityRoutinePickerSheet({
                   })
                 : t('dayPlan.pickRoutineHint')
             }
-            labelColor={ink}
-            align="stretch"
+            style={{ alignSelf: 'flex-end' }}
             disabled={!canConfirm}
+            invite
             onPress={handleConfirm}
           />
         </View>
@@ -528,6 +554,7 @@ export function PriorityRoutinePickerSheet({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  sheet: { flex: 1, overflow: 'hidden' },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, gap: 2 },
   header: {
@@ -538,10 +565,9 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+  createButtonSpacer: {
+    width: 40,
+    height: 40,
   },
   defaultDurationSection: {
     paddingHorizontal: 20,
@@ -569,12 +595,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.1,
-  },
-  createRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
   },
   pickRowWrap: {
     borderBottomWidth: StyleSheet.hairlineWidth,

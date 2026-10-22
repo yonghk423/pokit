@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { AppModal as Modal } from '@shared/ui/app-modal';
@@ -315,7 +316,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.bookSearch.backToResults')}
-              onPress={handleBackToSearch}
+              onPress={() => { tapHaptic(); handleBackToSearch(); }}
               hitSlop={10}
               style={styles.headerBackBtn}>
               <IconSymbol name="chevron.left" size={18} color={ink} />
@@ -324,7 +325,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
           <ThemedText style={[styles.title, { color: ink }]}>
             {mode === 'detail' ? t('goalDetail.bookSearch.detailTitle') : t('goalDetail.bookSearch.searchTitle')}
           </ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('dayPlan.close')} onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('dayPlan.close')} onPress={() => { tapHaptic(); onClose(); }} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -395,7 +396,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     accessibilityRole="button"
                     accessibilityLabel={t('goalDetail.bookSearch.searchTitle')}
                     disabled={loading}
-                    onPress={() => void runSearch()}
+                    onPress={() => { tapHaptic(); void runSearch(); }}
                     style={[
                       styles.searchSubmitBtn,
                       {
@@ -437,7 +438,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     key={item.key}
                     accessibilityRole="button"
                     accessibilityLabel={t('goalDetail.bookSearch.detailA11y', { title: item.title })}
-                    onPress={() => void openDetail(item)}
+                    onPress={() => { tapHaptic(); void openDetail(item); }}
                     style={({ pressed }) => [
                       styles.resultRow,
                       { borderBottomColor: line },
@@ -545,7 +546,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={externalLinkLabel}
-                      onPress={openExternalLink}
+                      onPress={() => { tapHaptic(); openExternalLink(); }}
                       style={({ pressed }) => [
                         styles.secondaryBtn,
                         {
@@ -596,7 +597,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                       accessibilityLabel={t('goalDetail.bookSearch.selectA11y')}
                       fill={READING_ACCENT}
                       labelColor={READING_ACCENT_ON}
-                      onPress={() => void handleConfirmSelect()}
+                      onPress={() => { tapHaptic('confirm'); void handleConfirmSelect(); }}
                     />
                   )}
                 </>
@@ -630,7 +631,7 @@ export function BookSearchSheet({ visible, ink, muted, surface, line, onClose, o
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={t('goalDetail.bookSearch.backToResults')}
-                      onPress={handleBackToSearch}
+                      onPress={() => { tapHaptic(); handleBackToSearch(); }}
                       style={({ pressed }) => [
                         styles.secondaryBtn,
                         {

@@ -44,11 +44,11 @@ export const Colors = {
 };
 
 export const Fonts = {
-  sans: 'HankenGrotesk_400Regular',
-  sansMedium: 'HankenGrotesk_500Medium',
-  sansSemiBold: 'HankenGrotesk_600SemiBold',
-  sansBold: 'HankenGrotesk_700Bold',
-  sansExtraBold: 'HankenGrotesk_800ExtraBold',
+  sans: 'HiMelody_400Regular',
+  sansMedium: 'HiMelody_400Regular',
+  sansSemiBold: 'HiMelody_400Regular',
+  sansBold: 'HiMelody_400Regular',
+  sansExtraBold: 'HiMelody_400Regular',
   serif: 'ui-serif',
   rounded: 'ui-rounded',
   mono: 'ui-monospace',

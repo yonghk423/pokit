@@ -1,4 +1,5 @@
 import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -191,7 +192,7 @@ export function FlowReviewPage() {
     <ThemedView style={styles.screen} darkColor={BG} lightColor={BG}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.headerBar}>
-          <Pressable hitSlop={10} onPress={handleBackToEdit} style={styles.headerBtn}>
+          <Pressable hitSlop={10} onPress={() => { tapHaptic(); handleBackToEdit(); }} style={styles.headerBtn}>
             <IconSymbol name="chevron.left" size={22} color={TEXT} />
           </Pressable>
           <View style={styles.headerCenter} />
@@ -217,7 +218,7 @@ export function FlowReviewPage() {
               return (
                 <Pressable
                   key={row.block.id}
-                  onPress={() => handlePressCard(row)}
+                  onPress={() => { tapHaptic(); handlePressCard(row); }}
                   style={({ pressed }) => [
                     styles.card,
                     pressed && styles.cardPressed,
@@ -269,6 +270,7 @@ export function FlowReviewPage() {
                         hitSlop={8}
                         onPress={(e) => {
                           e.stopPropagation();
+                          tapHaptic('warn');
                           handleRemoveFlow(row);
                         }}
                         style={({ pressed }) => [styles.removeBtn, pressed && styles.removeBtnPressed]}>
@@ -284,10 +286,10 @@ export function FlowReviewPage() {
         </ScrollView>
 
         <View style={styles.bottomActions}>
-          <Pressable style={styles.primaryButton} onPress={handleStartTodayFlow}>
+          <Pressable style={styles.primaryButton} onPress={() => { tapHaptic(); handleStartTodayFlow(); }}>
             <ThemedText style={styles.primaryButtonText}>{t('flowReview.startToday')}</ThemedText>
           </Pressable>
-          <Pressable onPress={handleBackToEdit} style={styles.secondaryAction}>
+          <Pressable onPress={() => { tapHaptic(); handleBackToEdit(); }} style={styles.secondaryAction}>
             <ThemedText style={styles.secondaryActionText}>{t('flowReview.editRoutines')}</ThemedText>
           </Pressable>
         </View>

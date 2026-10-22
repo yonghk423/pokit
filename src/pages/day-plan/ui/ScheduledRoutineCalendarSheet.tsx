@@ -261,9 +261,6 @@ export function ScheduledRoutineCalendarSheet({
             ]}
           />
           <View style={styles.header}>
-            <ThemedText style={[styles.title, { color: ink }]}>
-              {t('dayPlan.scheduledRoutine.title')}
-            </ThemedText>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('common.close')}
@@ -272,16 +269,8 @@ export function ScheduledRoutineCalendarSheet({
               <IconSymbol name="xmark" size={20} color={muted} />
             </Pressable>
           </View>
-          <ThemedText style={[styles.hint, { color: muted }]}>
-            {t('dayPlan.scheduledRoutine.hint')}
-          </ThemedText>
 
-          <ScrollView
-            style={styles.bodyScroll}
-            contentContainerStyle={styles.bodyScrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator
-            nestedScrollEnabled>
+          <View style={styles.calendarBlock}>
             <View style={styles.monthHeader}>
               <Pressable
                 style={[styles.monthNavBtn, { borderColor: line }]}
@@ -386,14 +375,20 @@ export function ScheduledRoutineCalendarSheet({
                 })}
               </View>
             </View>
+          </View>
 
-            <ThemedText style={[styles.selectedLabel, { color: ink }]}>
-              {t('dayPlan.scheduledRoutine.selectedDate', { date: selectedLabel })}
-              {selectedCount > 0
-                ? ` · ${t('dayPlan.scheduledRoutine.selectedCount', { count: selectedCount })}`
-                : ''}
-            </ThemedText>
+          <ThemedText style={[styles.selectedLabel, { color: ink }]}>
+            {t('dayPlan.scheduledRoutine.selectedDate', { date: selectedLabel })}
+            {selectedCount > 0
+              ? ` · ${t('dayPlan.scheduledRoutine.selectedCount', { count: selectedCount })}`
+              : ''}
+          </ThemedText>
 
+          <ScrollView
+            style={styles.bodyScroll}
+            contentContainerStyle={styles.bodyScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator>
             {catalogItems.length === 0 ? (
               <ThemedText style={[styles.empty, { color: muted }]}>
                 {t('dayPlan.scheduledRoutine.emptyCatalog')}
@@ -450,12 +445,16 @@ const styles = StyleSheet.create({
     gap: 8,
     overflow: 'hidden',
   },
+  calendarBlock: {
+    gap: 10,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   bodyScroll: {
     flex: 1,
     minHeight: 0,
   },
   bodyScrollContent: {
-    gap: 10,
     paddingBottom: 12,
     flexGrow: 1,
   },
@@ -469,20 +468,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  title: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  hint: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-    marginTop: -2,
+    justifyContent: 'flex-end',
   },
   monthHeader: {
     flexDirection: 'row',
@@ -572,7 +558,8 @@ const styles = StyleSheet.create({
   selectedLabel: {
     fontSize: 14,
     fontWeight: '700',
-    marginTop: 4,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   empty: {
     fontSize: 13,

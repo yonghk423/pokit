@@ -1,4 +1,5 @@
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 import { cityPopFont } from '@shared/config/retroFlat';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -113,7 +114,7 @@ export function ScrapTapeLabel({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? text}
-      onPress={onPress}
+      onPress={() => { tapHaptic(); onPress(); }}
       style={({ pressed }) => [pressed && !flat && styles.pressed]}>
       {body}
     </Pressable>

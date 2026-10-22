@@ -20,18 +20,29 @@ type LocaleMatchKey =
   | 'fixedRoutine.presetWeekend';
 
 /** Older built-in names remain recognizable without renaming user-created labels. */
-const LEGACY_KOREAN_DEFAULTS: Partial<Record<LocaleMatchKey, string>> = {
-  'catalog.groupDailyLife': '일상 루틴',
-  'catalog.groupAbstain': '금지 루틴',
-  'fixedRoutine.presetDaily': '데일리 고정 루틴',
-  'fixedRoutine.presetWeekend': '주말 고정 루틴',
+const LEGACY_KOREAN_DEFAULTS: Partial<Record<LocaleMatchKey, readonly string[]>> = {
+  'catalog.groupDailyLife': ['일상 루틴'],
+  'catalog.groupAbstain': ['금지 루틴'],
+  'fixedRoutine.presetDaily': [
+    '데일리 고정 루틴',
+    '매일 만나는 오늘의 주인공',
+    'Daily fixed routines',
+    'デイリー固定ルーチン',
+  ],
+  'fixedRoutine.presetWeekend': [
+    '주말 고정 루틴',
+    '주말의 오늘의 주인공',
+    'Weekend fixed routines',
+    '週末固定ルーチン',
+  ],
 };
 
 function matchesAnyLocaleDefault(value: string, key: LocaleMatchKey): boolean {
   const trimmed = value.trim();
   if (!trimmed) return true;
+  const legacy = LEGACY_KOREAN_DEFAULTS[key] ?? [];
   return (
-    trimmed === LEGACY_KOREAN_DEFAULTS[key] ||
+    legacy.includes(trimmed) ||
     trimmed === t(key, 'ko') || trimmed === t(key, 'en') || trimmed === t(key, 'ja')
   );
 }

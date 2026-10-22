@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import {
@@ -85,7 +86,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('goalDetail.study.prevWeek')}
-          onPress={() => setSelectedDateKey((key) => shiftDateKey(key, -7))}
+          onPress={() => { tapHaptic(); setSelectedDateKey((key) => shiftDateKey(key, -7)); }}
           hitSlop={8}
           style={styles.navBtn}>
           <IconSymbol name="chevron.left" size={14} color={palette.onSurface} />
@@ -94,7 +95,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('goalDetail.study.nextWeek')}
-          onPress={() => setSelectedDateKey((key) => shiftDateKey(key, 7))}
+          onPress={() => { tapHaptic(); setSelectedDateKey((key) => shiftDateKey(key, 7)); }}
           hitSlop={8}
           style={styles.navBtn}>
           <IconSymbol name="chevron.right" size={14} color={palette.onSurface} />
@@ -122,7 +123,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
               accessibilityRole="button"
               accessibilityState={{ selected }}
               accessibilityLabel={t('goalDetail.fasting.selectDateA11y', { date: formatDateKeyDisplayKo(dateKey) })}
-              onPress={() => setSelectedDateKey(dateKey)}
+              onPress={() => { tapHaptic('select'); setSelectedDateKey(dateKey); }}
               style={[
                 styles.dayCell,
                 selected && { backgroundColor: 'rgba(0,0,0,0.08)', borderColor: PRIMARY },
@@ -158,7 +159,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
             placeholderTextColor={palette.outline}
             style={[styles.addInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
           />
-          <Pressable onPress={addEvent} style={styles.addBtn}>
+          <Pressable onPress={() => { tapHaptic(); addEvent(); }} style={styles.addBtn}>
             <IconSymbol name="plus" size={13} color="#fff" />
           </Pressable>
         </View>
@@ -184,7 +185,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
                 </View>
               </View>
               <Pressable
-                onPress={() => removeEvent(event.id)}
+                onPress={() => { tapHaptic('warn'); removeEvent(event.id); }}
                 hitSlop={8}
                 accessibilityLabel={t('goalDetail.study.deleteDdayA11y')}
                 style={styles.removeBtn}>

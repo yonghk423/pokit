@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import {
@@ -97,7 +98,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
               key={label}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              onPress={() => setSelectedWeekday(weekday)}
+              onPress={() => { tapHaptic('select'); setSelectedWeekday(weekday); }}
               style={[
                 styles.weekdayChip,
                 {
@@ -143,7 +144,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
                 ) : null}
               </View>
               <Pressable
-                onPress={() => removeSlot(slot.id)}
+                onPress={() => { tapHaptic('warn'); removeSlot(slot.id); }}
                 hitSlop={8}
                 accessibilityLabel={t('goalDetail.study.deleteEntryA11y')}
                 style={styles.removeBtn}>
@@ -202,7 +203,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
           placeholderTextColor={palette.outline}
           style={[styles.fieldInput, { color: palette.onSurface, borderColor: palette.outlineVariant }]}
         />
-        <Pressable onPress={addSlot} style={styles.addBtn}>
+        <Pressable onPress={() => { tapHaptic(); addSlot(); }} style={styles.addBtn}>
           <ThemedText style={styles.addBtnText}>{t('goalDetail.study.addTimetable')}</ThemedText>
         </Pressable>
       </View>

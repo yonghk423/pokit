@@ -2,32 +2,20 @@ import type { TextStyle } from 'react-native';
 
 import type { AppFontId, AppFontWeight } from './appFontIds';
 
-const HANKEN: Record<AppFontWeight, string> = {
-  '400': 'HankenGrotesk_400Regular',
-  '500': 'HankenGrotesk_500Medium',
-  '600': 'HankenGrotesk_600SemiBold',
-  '700': 'HankenGrotesk_700Bold',
-  '800': 'HankenGrotesk_800ExtraBold',
-};
-
-const SEBANG_GOTHIC_2: Record<AppFontWeight, string> = {
-  '400': 'SebangGothic2_Regular',
-  '500': 'SebangGothic2_Regular',
-  '600': 'SebangGothic2_Bold',
-  '700': 'SebangGothic2_Bold',
-  '800': 'SebangGothic2_Bold',
-};
-
 const HI_MELODY = 'HiMelody_400Regular';
+/** useFonts 키와 동일 — 그리운 김정원 Regular */
+const KIM_JUNG_WON = 'GriunKimjungwon_400Regular';
+/** useFonts 키와 동일 — 온글잎 콘콘체 Regular */
+const CORNCORN = 'OwnglyphCorncorn_400Regular';
 
 /** 선택 폰트 + weight → fontFamily */
 export function resolveAppFontFamily(
   fontId: AppFontId,
-  weight: AppFontWeight = '400',
+  _weight: AppFontWeight = '400',
 ): string | undefined {
-  if (fontId === 'sebangGothic2') return SEBANG_GOTHIC_2[weight];
-  if (fontId === 'hiMelody') return HI_MELODY;
-  return HANKEN[weight];
+  if (fontId === 'kimJungWon') return KIM_JUNG_WON;
+  if (fontId === 'corncorn') return CORNCORN;
+  return HI_MELODY;
 }
 
 export function appFontStyle(

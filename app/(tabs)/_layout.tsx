@@ -4,6 +4,7 @@ import { DynamicColorIOS, Image, Platform, StyleSheet, View } from 'react-native
 import type { ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
@@ -18,6 +19,13 @@ import {
 import { HapticTab } from '@shared/ui/haptic-tab/HapticTab';
 
 const TAB_ICON_SIZE = 26;
+
+/** iOS 네이티브 탭은 HapticTab을 타지 않는다. 누를 때마다 가벼운 충격을 준다. */
+const nativeTabListeners = {
+  tabPress: () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  },
+};
 
 function tabIconSource(asset: ImageSourcePropType): ImageSourcePropType {
   // NativeTabs uses the source's point size rather than an Image style.
@@ -49,32 +57,36 @@ export default function TabLayout() {
 
 function IosTabLayout() {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
   const foreground = DynamicColorIOS({ light: '#151518', dark: '#FAFAFA' });
+  const tabBarBg = isDark ? '#262B28' : '#F5F0E6';
 
   return (
     <NativeTabs
-      backgroundColor="transparent"
+      backgroundColor={tabBarBg}
       blurEffect="none"
+      disableTransparentOnScrollEdge
       shadowColor="transparent"
       tintColor={foreground}
       labelStyle={{ fontSize: 10, color: foreground }}
-      minimizeBehavior="never">
-      <NativeTabs.Trigger name="day-plan" accessibilityLabel={t('tabs.dayPlan')} disableAutomaticContentInsets>
+      minimizeBehavior="never"
+      unstable_nativeProps={{ nativeContainerStyle: { backgroundColor: tabBarBg } }}>
+      <NativeTabs.Trigger name="day-plan" accessibilityLabel={t('tabs.dayPlan')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
         {/* <NativeTabs.Trigger.Label>{t('tabs.dayPlan')}</NativeTabs.Trigger.Label> */}
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['day-plan']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="fixed-routines" accessibilityLabel={t('tabs.routines')} disableAutomaticContentInsets>
+      <NativeTabs.Trigger hidden={!FEATURE_FLAGS.routinesManageTab} name="fixed-routines" accessibilityLabel={t('tabs.routines')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
         {/* <NativeTabs.Trigger.Label>{t('tabs.routines')}</NativeTabs.Trigger.Label> */}
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['fixed-routines']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger hidden={!FEATURE_FLAGS.puzzle} name="puzzle-history" accessibilityLabel={t('tabs.puzzle')} disableAutomaticContentInsets>
+      <NativeTabs.Trigger hidden={!FEATURE_FLAGS.puzzle} name="puzzle-history" accessibilityLabel={t('tabs.puzzle')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
         {/* <NativeTabs.Trigger.Label>{t('tabs.puzzle')}</NativeTabs.Trigger.Label> */}
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['puzzle-history']} renderingMode="original" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="pokit-story" accessibilityLabel={t('tabs.story')} disableAutomaticContentInsets>
+      <NativeTabs.Trigger name="pokit-story" accessibilityLabel={t('tabs.story')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
         {/* <NativeTabs.Trigger.Label>{t('tabs.story')}</NativeTabs.Trigger.Label> */}
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['pokit-story']} renderingMode="original" />
@@ -111,6 +123,7 @@ function FloatingTabLayout() {
           tabBarStyle: [
             styles.tabBar,
             {
+              backgroundColor: isDark ? '#262B28' : '#F5F0E6',
               height: TAB_BAR_TOP_GAP + TAB_BAR_HEIGHT + bottomSpace,
               paddingBottom: bottomSpace + 5,
               paddingLeft: Math.max(insets.left, 16) + 7,
@@ -147,7 +160,7 @@ function FloatingTabLayout() {
           },
         })}>
         <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
-        <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines') }} />
+        <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }} />
         <Tabs.Screen name="puzzle-history" options={{ title: t('tabs.puzzle'), href: FEATURE_FLAGS.puzzle ? undefined : null }} />
         <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
     </Tabs>

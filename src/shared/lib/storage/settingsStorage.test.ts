@@ -119,32 +119,33 @@ describe('settingsStorage', () => {
   });
 
   it('persists app font id', () => {
-    expect(loadAppFontId()).toBe('hiMelody');
-    saveAppFontId('sebangGothic2');
-    expect(loadAppFontId()).toBe('sebangGothic2');
-    saveAppFontId('hanken');
-    expect(loadAppFontId()).toBe('hanken');
+    expect(loadAppFontId()).toBe('kimJungWon');
+    saveAppFontId('corncorn');
+    expect(loadAppFontId()).toBe('corncorn');
     saveAppFontId('hiMelody');
     expect(loadAppFontId()).toBe('hiMelody');
+    saveAppFontId('kimJungWon');
+    expect(loadAppFontId()).toBe('kimJungWon');
   });
 
   it('ignores invalid app font id', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gaegu' });
-    expect(loadAppFontId()).toBe('hiMelody');
+    expect(loadAppFontId()).toBe('kimJungWon');
   });
 
-  it('replaces the retired Gothic A1 selection with Sebang Gothic 2.0', () => {
+  it('migrates retired font ids to kimJungWon', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gothicA1' });
-    expect(loadAppFontId()).toBe('sebangGothic2');
-  });
-
-  it('migrates legacy font ids to hiMelody', () => {
+    expect(loadAppFontId()).toBe('kimJungWon');
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'sebangGothic2' });
+    expect(loadAppFontId()).toBe('kimJungWon');
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'hanken' });
+    expect(loadAppFontId()).toBe('kimJungWon');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'jua' });
-    expect(loadAppFontId()).toBe('hiMelody');
+    expect(loadAppFontId()).toBe('kimJungWon');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'doHyeon' });
-    expect(loadAppFontId()).toBe('hiMelody');
+    expect(loadAppFontId()).toBe('kimJungWon');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'system' });
-    expect(loadAppFontId()).toBe('hiMelody');
+    expect(loadAppFontId()).toBe('kimJungWon');
   });
 
   it('persists app font size id with sm default', () => {

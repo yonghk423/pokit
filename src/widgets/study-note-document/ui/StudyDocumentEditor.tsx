@@ -1,3 +1,4 @@
+import { SketchNewPageIcon } from './SketchNewPageIcon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -2722,7 +2723,7 @@ export function StudyDocumentEditor({
             }}
             hitSlop={8}
             style={({ pressed }) => [styles.headerActionBtn, pressed && { opacity: 0.65 }]}>
-            <IconSymbol name="square.and.pencil" size={18} color={palette.onSurface} />
+            <SketchNewPageIcon size={24} color={palette.onSurface} />
           </Pressable>
         </View>
       </View>
@@ -2780,7 +2781,7 @@ export function StudyDocumentEditor({
               useFlexCanvas ? styles.emptyCanvasFlex : null,
               { minHeight: canvasMinHeight, borderColor: palette.outlineVariant },
             ]}>
-            <IconSymbol name="square.and.pencil" size={24} color={palette.onVariant} />
+            <SketchNewPageIcon size={28} color={palette.onVariant} />
             <ThemedText style={[styles.emptyTitle, { color: palette.onSurface }]}>
               {t('studyNote.emptyTitle')}
             </ThemedText>

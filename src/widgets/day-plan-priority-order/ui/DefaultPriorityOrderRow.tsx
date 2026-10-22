@@ -130,7 +130,6 @@ function DefaultPriorityOrderRowInner({
   const categoryLabelEpoch = useGoalDetailSettingsStore((s) => s.revision);
   void categoryLabelEpoch;
   const icon = resolveCategoryCatalogIcon(categoryKey);
-  const hideCategoryIcons = useDayPlanChromeSettingsStore((s) => s.settings.hideLayoutIcons);
   const completeInAccordion = useDayPlanChromeSettingsStore((s) => s.settings.completeInAccordion);
   const rowFaceBg = itemFaceColor ? resolvePostItFaceColor(itemFaceColor, isDark) : undefined;
   const customInk = Boolean(itemInkColor || itemFaceColor);
@@ -288,8 +287,7 @@ function DefaultPriorityOrderRowInner({
 
   const rankIconTitleBlock = (
     <>
-      {hideCategoryIcons ? null : (
-        <View
+      <View
           style={styles.orderIconBoxShell}>
           <View
             style={[
@@ -311,7 +309,6 @@ function DefaultPriorityOrderRowInner({
             </Animated.View>
           </View>
         </View>
-      )}
       <View style={styles.orderRowRomanText}>
         <View style={styles.orderRowTitleMark}>
           <PenStruckBlock struck={Boolean(isCompleted)} strikeColor={rowInk}>

@@ -2,9 +2,30 @@
  * 저장된 사진·진행 기록은 유지하며 메뉴, 가이드, 직접 접근과 자동 동기화만 중단한다.
  */
 export const FEATURE_FLAGS = {
+  /** 오늘 화면의 원형·기본 리스트 보기를 임시로 숨긴다. */
+  circularRoutineLayout: false,
+  basicRoutineListLayout: false,
+  /** 오늘 화면의 날짜 헤더 줄을 임시로 숨긴다. */
+  dailyPlanDateHeader: false,
+  /** 하루 활동 시간 범위 설정을 보류한다. 저장된 시간·알림 설정은 보존한다. */
+  dailyRhythmWindow: false,
+  /** 잠금화면 메모는 기능·저장 내용을 유지하고 상단 진입 아이콘만 임시로 숨긴다. */
+  quickMemoShortcut: false,
+  /** 오늘 노트는 기능·저장 내용을 유지하고 상단 진입 아이콘만 임시로 숨긴다. */
+  dayNoteShortcut: false,
   puzzle: false,
   /** 루틴 템플릿은 기능과 데이터를 보존한 채 탭을 숨긴다. */
   routineTemplates: false,
   /** 오늘의 한 줄은 데이터·설정을 보존한 채 임시로 숨긴다. */
   dailyQuote: false,
+  /**
+   * 카드 루틴 시간 표시·편집을 임시로 끈다.
+   * 스케줄 데이터·모달·콜백 코드는 유지하고, 카드 UI만 가린다.
+   */
+  cardRoutineTimeEdit: false,
+  /**
+   * 하단 「오늘의 주인공」(루틴 관리) 탭을 임시로 숨긴다.
+   * FixedRoutinePage·카탈로그·저장 데이터는 유지한다.
+   */
+  routinesManageTab: false,
 };

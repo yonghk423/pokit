@@ -1634,7 +1634,9 @@ function RoutineSetCreateCard({
               ]}
             />
             <View style={[styles.addGroupPlusFace, { backgroundColor: plusRest }]}>
-              <IconSymbol name="plus" size={13} color={ink} />
+              <PaperGrain opacity={0.24} />
+              <HanddrawnFrame color={ink} />
+              <RoutineActionIcon name="adjust" size={21} color={ink} />
             </View>
           </View>
         </View>
@@ -3124,8 +3126,10 @@ const styles = StyleSheet.create({
   },
   addGroupPlusShadow: {
     ...StyleSheet.absoluteFill,
+    opacity: 0.15,
   },
   addGroupPlusFace: {
+    transform: [{ rotate: '-1.5deg' }],
     width: 26,
     height: 26,
     alignItems: 'center',

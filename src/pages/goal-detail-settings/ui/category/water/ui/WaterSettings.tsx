@@ -1,4 +1,5 @@
 import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
@@ -407,7 +408,7 @@ export function WaterSettings({
               key={ml}
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.water.addMlA11y', { ml })}
-              onPress={() => addDrankMl(ml)}
+              onPress={() => { tapHaptic(); addDrankMl(ml); }}
               style={({ pressed }) => [
                 styles.intakeChip,
                 isNote && styles.intakeChipNote,
@@ -420,7 +421,7 @@ export function WaterSettings({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.water.addPresetA11y')}
-              onPress={() => setShowAddPresetInput(true)}
+              onPress={() => { tapHaptic(); setShowAddPresetInput(true); }}
               style={({ pressed }) => [
                 styles.intakeAddChip,
                 isNote && styles.intakeAddChipNote,
@@ -432,7 +433,7 @@ export function WaterSettings({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('goalDetail.water.resetIntakeA11y')}
-            onPress={() => setDrankMl(0)}
+            onPress={() => { tapHaptic(); setDrankMl(0); }}
             style={({ pressed }) => [
               styles.intakeResetChip,
               isNote && styles.intakeResetChipNote,
@@ -455,7 +456,7 @@ export function WaterSettings({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.water.savePresetA11y')}
-              onPress={confirmAddQuickPreset}
+              onPress={() => { tapHaptic('confirm'); confirmAddQuickPreset(); }}
               style={({ pressed }) => [styles.addPresetConfirmBtn, pressed && { opacity: 0.75 }]}>
               <Text style={styles.addPresetConfirmText}>{t('goalDetail.add')}</Text>
             </Pressable>
@@ -463,6 +464,7 @@ export function WaterSettings({
               accessibilityRole="button"
               accessibilityLabel={t('goalDetail.water.cancelPresetA11y')}
               onPress={() => {
+                tapHaptic();
                 setShowAddPresetInput(false);
                 setAddPresetDraft('');
               }}
@@ -511,7 +513,7 @@ export function WaterSettings({
               return (
                 <Pressable
                   key={p.ml}
-                  onPress={() => onPickPresetMl(p.ml)}
+                  onPress={() => { tapHaptic('select'); onPickPresetMl(p.ml); }}
                   style={[
                     styles.presetChip,
                     isNote && styles.presetChipNote,
@@ -577,7 +579,7 @@ export function WaterSettings({
                     </View>
                     {reminderTimes.length > 1 ? (
                       <Pressable
-                        onPress={() => removeTimeAt(index)}
+                        onPress={() => { tapHaptic('warn'); removeTimeAt(index); }}
                         accessibilityRole="button"
                         accessibilityLabel={t('goalDetail.water.removeTimeA11y', { index: index + 1 })}
                         hitSlop={8}
@@ -591,7 +593,7 @@ export function WaterSettings({
 
               {reminderTimes.length < MAX_TIME_SLOTS ? (
                 <Pressable
-                  onPress={addTimeSlot}
+                  onPress={() => { tapHaptic(); addTimeSlot(); }}
                   accessibilityRole="button"
                   accessibilityLabel={t('goalDetail.water.addTimeA11y')}
                   style={({ pressed }) => [styles.addLink, pressed && { opacity: 0.75 }]}>
@@ -619,7 +621,7 @@ export function WaterSettings({
                   return (
                     <Pressable
                       key={row.key}
-                      onPress={() => setReminderPreset(row.key)}
+                      onPress={() => { tapHaptic('select'); setReminderPreset(row.key); }}
                       style={styles.reminderBtn}>
                       <Text style={[styles.reminderBtnText, selected && styles.reminderBtnTextOn]}>
                         {row.label}
@@ -645,7 +647,7 @@ export function WaterSettings({
                 </View>
               ) : null}
               <Pressable
-                onPress={fillTimesFromInterval}
+                onPress={() => { tapHaptic(); fillTimesFromInterval(); }}
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.water.bulkFillBtnA11y')}
                 style={({ pressed }) => [

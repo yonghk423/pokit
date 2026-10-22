@@ -121,7 +121,10 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             styles.container,
             { backgroundColor: colors.containerBg },
           ]}>
-          {TABS.filter((tab) => FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history').map((tab) => {
+          {TABS.filter((tab) =>
+            (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
+            && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines'),
+          ).map((tab) => {
             const isFocused =
               focusedRoute === tab.route ||
               (tab.route === 'day-plan' && focusedRoute === 'index');

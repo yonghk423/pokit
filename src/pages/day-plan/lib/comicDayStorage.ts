@@ -9,13 +9,20 @@ export type ComicDayScene = {
 // Keep the original key for the existing character so no saved scenes are lost.
 const key = (date: string, characterId: string) => characterId === DEFAULT_COMIC_CHARACTER_ID ? `pokit:comic-day:${date}` : `pokit:comic-day:${characterId}:${date}`;
 export function loadComicDay(date: string, characterId: string = DEFAULT_COMIC_CHARACTER_ID): ComicDayScene[] {
-  const value = localStorageClient.getJson<unknown>(key(date, characterId));
+  return normalizeComicScenes(localStorageClient.getJson<unknown>(key(date, characterId)));
+}
+export function normalizeComicScenes(value: unknown): ComicDayScene[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is ComicDayScene => item && typeof item.id === 'string'
-    && typeof item.title === 'string' && typeof item.memo === 'string' && typeof item.time === 'string'
-    && typeof item.paper === 'string' && typeof item.pen === 'string'
-    && COMIC_SCENES.some(scene => scene.id === item.image) && Array.isArray(item.todos)
-    && item.todos.every((todo: ComicDayScene['todos'][number]) => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean'));
+  const seen = new Set<string>();
+  return value.filter((item): item is ComicDayScene => {
+    if (!item || typeof item.id !== 'string' || seen.has(item.id)) return false;
+    const ok = typeof item.title === 'string' && typeof item.memo === 'string' && typeof item.time === 'string'
+      && typeof item.paper === 'string' && typeof item.pen === 'string'
+      && COMIC_SCENES.some(scene => scene.id === item.image) && Array.isArray(item.todos)
+      && item.todos.every((todo: ComicDayScene['todos'][number]) => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean');
+    if (ok) seen.add(item.id);
+    return ok;
+  });
 }
 export function saveComicDay(date: string, scenes: ComicDayScene[], characterId: string = DEFAULT_COMIC_CHARACTER_ID) { localStorageClient.setJson(key(date, characterId), scenes); }
 export function newComicScene(title: string): ComicDayScene {

@@ -37,7 +37,7 @@ export type SettingsPalette = {
 export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
-    bg: c.bg,
+    bg: isDark ? '#262B28' : '#F5F0E6',
     surface: c.bg,
     /** 행 구분 — 순검정 2px 대신 연한 구분선 */
     border: isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)',

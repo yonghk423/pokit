@@ -3,6 +3,7 @@ import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 import {
   useEffectiveAppFontId,
   resolveAppFontFamily,
+  resolveAppFontMinLineHeight,
   isSingleFaceAppFont,
   useAppFontSizeScale,
   scaleTypeSize,
@@ -79,7 +80,13 @@ export function ThemedText({
     singleFace || !fontFamily ? { fontWeight: '400' as const } : { fontWeight: weight },
   ]) as TextStyle;
 
-  return <Text style={applyFontSizeScale(resolved, sizeScale)} {...rest} />;
+  const scaled = applyFontSizeScale(resolved, sizeScale);
+  if (typeof scaled.lineHeight === 'number' && typeof scaled.fontSize === 'number') {
+    const minLineHeight = resolveAppFontMinLineHeight(fontId, scaled.fontSize);
+    if (scaled.lineHeight < minLineHeight) scaled.lineHeight = minLineHeight;
+  }
+
+  return <Text style={scaled} {...rest} />;
 }
 
 const styles = StyleSheet.create({

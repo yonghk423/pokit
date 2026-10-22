@@ -12,6 +12,8 @@ import {
 
 export type ThemedTextInputProps = TextInputProps & {
   ref?: Ref<TextInput>;
+  /** Override when a lined editor has already scaled text and ruling together. */
+  typographyScale?: number;
 };
 
 function weightFromStyle(fontWeight: TextStyle['fontWeight']): AppFontWeight {
@@ -39,6 +41,7 @@ export function ThemedTextInput({
   style,
   underlineColorAndroid = 'transparent',
   ref,
+  typographyScale,
   ...rest
 }: ThemedTextInputProps) {
   const fontId = useEffectiveAppFontId();
@@ -57,7 +60,7 @@ export function ThemedTextInput({
       ...(fontFamily ? { fontFamily } : null),
       ...(singleFace || !fontFamily ? { fontWeight: '400' as const } : { fontWeight: weight }),
     },
-    sizeScale,
+    typographyScale ?? sizeScale,
   );
 
   return (

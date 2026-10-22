@@ -85,8 +85,8 @@ const SHOW_APPEARANCE_SETTINGS = false;
 const SHOW_NOTIFICATION_SETTINGS = true;
 
 function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
-  if (fontId === 'sebangGothic2') return t('settings.font.sebangGothic2', locale);
-  if (fontId === 'hanken') return t('settings.font.hanken', locale);
+  if (fontId === 'kimJungWon') return t('settings.font.kimJungWon', locale);
+  if (fontId === 'corncorn') return t('settings.font.corncorn', locale);
   return t('settings.font.hiMelody', locale);
 }
 
@@ -407,6 +407,7 @@ export function SettingsPage() {
               {t('settings.section.dayPlan', locale)}
             </ThemedText>
 
+          {FEATURE_FLAGS.dailyRhythmWindow ? (
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}
             onPress={() => {
@@ -435,6 +436,7 @@ export function SettingsPage() {
             </View>
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
+          ) : null}
 
           <Pressable
             style={[chrome.item, { borderTopColor: p.border }]}

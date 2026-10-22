@@ -1,4 +1,5 @@
-import { comicRhythmBalance, comicRhythmMinutes, comicRhythmPoint, comicRhythmDrag } from './comicRhythmMath';
+import { comicRhythmBalance, comicRhythmMinutes, comicRhythmPoint, comicRhythmDrag, comicRhythmDialLabels, comicRhythmHandleBoxes, COMIC_RHYTHM_DIAL_PAD, type RhythmBox } from './comicRhythmMath';
+const overlaps = (a: RhythmBox, b: RhythmBox) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 it('computes normal, overnight, full-day and extended windows without losing day offsets', () => {
   expect(comicRhythmBalance('07:00', '23:00', false)).toMatchObject({ activity: 960, sleep: 480, fraction: 1 / 3 });
   expect(comicRhythmBalance('22:00', '06:00', true)).toMatchObject({ activity: 480, sleep: 960 });
@@ -11,6 +12,23 @@ it('maps dragging around a 48-hour circle consistently on different screen sizes
     const point = comicRhythmPoint(minute, size);
     expect(comicRhythmMinutes(point.x, point.y, size)).toBe(minute);
   }
+});
+
+it('keeps day captions and hour numerals off the evening moon', () => {
+  const size = 320;
+  const balance = comicRhythmBalance('07:00', '23:00', false);
+  const handles = [balance.startMinutes, balance.endAbsolute, balance.wakeMinutes];
+  const labels = comicRhythmDialLabels(size, handles);
+  const obstacles = handles.flatMap(minute => comicRhythmHandleBoxes(minute, size));
+  const captions = [...labels.hours, labels.today, labels.nextDay];
+  for (const caption of captions) for (const obstacle of obstacles) expect(overlaps(caption, obstacle)).toBe(false);
+  for (const box of [...captions, ...obstacles]) {
+    expect(box.x).toBeGreaterThanOrEqual(-COMIC_RHYTHM_DIAL_PAD);
+    expect(box.y).toBeGreaterThanOrEqual(-COMIC_RHYTHM_DIAL_PAD);
+    expect(box.x + box.w).toBeLessThanOrEqual(size + COMIC_RHYTHM_DIAL_PAD);
+    expect(box.y + box.h).toBeLessThanOrEqual(size + COMIC_RHYTHM_DIAL_PAD);
+  }
+  expect(labels.nextDay.y).toBeGreaterThan(size * 0.7);
 });
 
 it('keeps the two suns one day apart and mirrors next-day wake dragging without moving wrap-up', () => {

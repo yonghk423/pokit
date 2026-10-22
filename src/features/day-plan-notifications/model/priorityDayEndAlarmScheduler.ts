@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { formatHhmmClockKo, parseHHmmToMinutes } from '@entities/day-plan';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
@@ -37,6 +38,11 @@ async function performSync(input: {
   reminderHhmm: string;
   reminderNextDay: boolean;
 }): Promise<boolean> {
+  if (!FEATURE_FLAGS.dailyRhythmWindow) {
+    lastSyncedAlarmKey = '';
+    await cancelAllPriorityDayEndNotifications();
+    return true;
+  }
   const reminderHhmm = input.reminderHhmm.trim();
   const reminderNextDay = Boolean(input.reminderNextDay);
   const syncKey = buildSyncKey(input.enabled, reminderHhmm, reminderNextDay);

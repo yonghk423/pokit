@@ -22,12 +22,10 @@ import { getRoutineIllustration } from '@shared/lib/routineIllustrationCatalog';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
-
-/** 하루 밸런스·루틴 탭과 동일 offset */
-const CHIP_SHADOW = 1;
 const ICON_LIST_MAX_H = 220;
 const ICON_COLS = 8;
 /** 한 번에 그리는 아이콘 수 (8열 × 5행) */
@@ -38,10 +36,9 @@ const AVAILABLE_ICON_CATEGORIES = CUSTOM_FLOW_ICON_CATEGORY_IDS.filter(
 );
 const SKELETON_COUNT = ICON_COLS * 2;
 const LOAD_MORE_DELAY_MS = 140;
-/** 설정 탭과 같은 옅은 솔리드 음영 — 순검정 대신 */
-const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
-const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
-
+const PENCIL_LIGHT = '#9BA491';
+const PENCIL_DARK = '#A3AE9C';
+const MINT_WASH = '#C8EBDD';
 
 export type CustomFlowAppearancePickerProps = {
   icon: CustomFlowIconOption;
@@ -69,7 +66,7 @@ export function CustomFlowAppearancePicker({
   isDark,
   ink,
   muted,
-  line,
+  line: _line,
   hint,
   compact = false,
 }: CustomFlowAppearancePickerProps) {
@@ -80,17 +77,16 @@ export function CustomFlowAppearancePicker({
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
   const loadMoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resolvedPreviewLabel = previewLabel ?? t('common.preview');
-  const resolvedHint = hint ?? t('appearance.hint');
-  const border = line ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
-  const cardBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
+  const resolvedPreviewLabel = previewLabel ?? '';
+  /** 기본은 라벨·힌트 없음 — 필요 시 `hint`만 명시적으로 넘긴다. */
+  const resolvedHint = (hint ?? '').trim();
+  const showPreviewLabel = resolvedPreviewLabel.trim().length > 0;
+  const paperBg = isDark ? '#30362E' : '#FAF9F4';
+  const faceBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const controlInk = isDark ? '#FAFAFA' : '#252525';
   const controlMuted = isDark ? 'rgba(250,250,250,0.62)' : 'rgba(37,37,37,0.6)';
-  const chipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
-  const shadowInk = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
+  const pencil = isDark ? PENCIL_DARK : PENCIL_LIGHT;
   const skeletonFace = isDark ? RetroFlatColors.dark.surfaceAlt : '#F3F3F5';
-  const skeletonBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
-  const categoryChipIdleBg = isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF';
   const filteredIcons = useMemo(
     () => filterCustomFlowIcons(iconQuery, { category: iconCategory }),
     [iconQuery, iconCategory],
@@ -162,106 +158,72 @@ export function CustomFlowAppearancePicker({
 
   return (
     <View style={[styles.root, compact && styles.rootCompact]}>
-      <ThemedText style={[styles.fieldLabel, compact && styles.fieldLabelCompact, { color: ink }]}>
-        {t('appearance.icon')}
-      </ThemedText>
       {resolvedHint.length > 0 ? (
         <ThemedText style={[styles.fieldHint, { color: muted }]}>{resolvedHint}</ThemedText>
       ) : null}
 
       <View
         style={[
-          styles.previewShell,
-          { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
+          styles.previewCard,
+          compact && styles.previewCardCompact,
+          !showPreviewLabel && !onChangePreviewLabel && styles.previewCardIconOnly,
+          { backgroundColor: paperBg },
         ]}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.solidShadow,
-            {
-              backgroundColor: shadowInk,
-              transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
-            },
-          ]}
-        />
+        <PaperGrain opacity={0.28} />
+        <HanddrawnFrame color={pencil} />
         <View
           style={[
-            styles.previewCard,
-            compact && styles.previewCardCompact,
-            { backgroundColor: cardBg },
+            styles.previewIconWrap,
+            compact && styles.previewIconWrapCompact,
+            { backgroundColor: faceBg },
           ]}>
-          <View
-            style={[
-              styles.previewIconWrap,
-              compact && styles.previewIconWrapCompact,
-              { backgroundColor: 'transparent' },
-            ]}>
-            <IconSymbol name={icon} size={compact ? 18 : 22} color={controlInk} />
-          </View>
-          {onChangePreviewLabel ? (
-            <ThemedTextInput
-              value={resolvedPreviewLabel}
-              onChangeText={onChangePreviewLabel}
-              onFocus={onPreviewLabelFocus}
-              onBlur={onPreviewLabelBlur}
-              accessibilityLabel={t('appearance.renameA11y')}
-              placeholder={t('appearance.renameA11y')}
-              placeholderTextColor={controlMuted}
-              maxLength={40}
-              returnKeyType="done"
-              style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: controlInk }]}
-            />
-          ) : (
-            <ThemedText
-              style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: controlInk }]}
-              numberOfLines={1}>
-              {resolvedPreviewLabel}
-            </ThemedText>
-          )}
+          <PaperGrain opacity={0.2} />
+          <HanddrawnFrame color={pencil} />
+          <IconSymbol name={icon} size={compact ? 18 : 22} color={controlInk} />
         </View>
+        {onChangePreviewLabel ? (
+          <ThemedTextInput
+            value={resolvedPreviewLabel}
+            onChangeText={onChangePreviewLabel}
+            onFocus={onPreviewLabelFocus}
+            onBlur={onPreviewLabelBlur}
+            accessibilityLabel={t('appearance.renameA11y')}
+            placeholder=""
+            placeholderTextColor={controlMuted}
+            maxLength={40}
+            returnKeyType="done"
+            style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: controlInk }]}
+          />
+        ) : showPreviewLabel ? (
+          <ThemedText
+            style={[styles.previewLabel, compact && styles.previewLabelCompact, { color: controlInk }]}
+            numberOfLines={1}>
+            {resolvedPreviewLabel}
+          </ThemedText>
+        ) : null}
       </View>
 
       <View style={[styles.editorBody, compact && styles.editorBodyCompact]}>
         <View style={styles.iconSection}>
-          <View
-            style={[
-              styles.iconSearchShell,
-              { marginRight: CHIP_SHADOW, marginBottom: CHIP_SHADOW },
-            ]}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.solidShadow,
-                {
-                  backgroundColor: shadowInk,
-                  transform: [{ translateX: CHIP_SHADOW }, { translateY: CHIP_SHADOW }],
-                },
-              ]}
+          <View style={[styles.iconSearchRow, { backgroundColor: faceBg }]}>
+            <PaperGrain opacity={0.22} />
+            <HanddrawnFrame color={pencil} />
+            <IconSymbol name="magnifyingglass" size={16} color={controlMuted} style={styles.iconSearchGlyph} />
+            <ThemedTextInput
+              value={iconQuery}
+              onChangeText={(query) => {
+                resetIconPagination();
+                setIconQuery(query);
+              }}
+              placeholder=""
+              placeholderTextColor={controlMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+              returnKeyType="search"
+              style={[styles.iconSearchInput, { color: controlInk }]}
+              accessibilityLabel={t('appearance.iconSearchA11y')}
             />
-            <View
-              style={[
-                styles.iconSearchRow,
-                {
-                  backgroundColor: isDark ? RetroFlatColors.dark.surfaceAlt : '#FFFFFF',
-                },
-              ]}>
-              <IconSymbol name="magnifyingglass" size={16} color={controlMuted} style={styles.iconSearchGlyph} />
-              <ThemedTextInput
-                value={iconQuery}
-                onChangeText={(query) => {
-                  resetIconPagination();
-                  setIconQuery(query);
-                }}
-                placeholder={t('appearance.iconSearchPlaceholder')}
-                placeholderTextColor={controlMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                clearButtonMode="while-editing"
-                returnKeyType="search"
-                style={[styles.iconSearchInput, { color: controlInk }]}
-                accessibilityLabel={t('appearance.iconSearchA11y')}
-              />
-            </View>
           </View>
           <ScrollView
             horizontal
@@ -284,11 +246,10 @@ export function CustomFlowAppearancePicker({
                   }}
                   style={[
                     styles.categoryChip,
-                    {
-                      backgroundColor: categoryChipIdleBg,
-                      borderColor: selected ? controlInk : border,
-                    },
+                    { backgroundColor: selected ? MINT_WASH : faceBg },
                   ]}>
+                  <PaperGrain opacity={0.2} />
+                  <HanddrawnFrame color={selected ? controlInk : pencil} bold={selected} />
                   <ThemedText
                     style={[
                       styles.categoryChipText,
@@ -318,42 +279,25 @@ export function CustomFlowAppearancePicker({
                     total: filteredIcons.length,
                   })}
           </ThemedText>
-          <ScrollView
-            style={{ maxHeight: ICON_LIST_MAX_H }}
-            nestedScrollEnabled
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onScroll={handleIconScroll}
-            onContentSizeChange={handleIconContentSizeChange}>
-            <View style={styles.iconGrid}>
-              {visibleIcons.map((iconName) => {
-                const selected = icon === iconName;
-                return (
-                  <View
-                    key={iconName}
-                    style={[
-                      styles.iconChipShell,
-                      {
-                        width: `${100 / ICON_COLS}%`,
-                        paddingRight: CHIP_SHADOW,
-                        paddingBottom: CHIP_SHADOW,
-                      },
-                    ]}>
-                    <View style={styles.chipSlot}>
-                      <View
-                        pointerEvents="none"
-                        style={[
-                          styles.solidShadow,
-                          {
-                            backgroundColor: shadowInk,
-                            transform: [
-                              { translateX: CHIP_SHADOW },
-                              { translateY: CHIP_SHADOW },
-                            ],
-                          },
-                        ]}
-                      />
+          <View style={styles.iconGridFrame}>
+            <ScrollView
+              style={{ maxHeight: ICON_LIST_MAX_H }}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              scrollEventThrottle={16}
+              onScroll={handleIconScroll}
+              onContentSizeChange={handleIconContentSizeChange}>
+              <View style={styles.iconGrid}>
+                {visibleIcons.map((iconName) => {
+                  const selected = icon === iconName;
+                  return (
+                    <View
+                      key={iconName}
+                      style={[
+                        styles.iconChipShell,
+                        { width: `${100 / ICON_COLS}%` },
+                      ]}>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -362,10 +306,10 @@ export function CustomFlowAppearancePicker({
                         style={[
                           styles.iconChip,
                           {
-                            backgroundColor: chipIdleBg,
+                            backgroundColor: selected ? MINT_WASH : faceBg,
                           },
                         ]}>
-                        {selected ? <HanddrawnFrame color={controlInk} bold /> : null}
+                        <HanddrawnFrame color={selected ? controlInk : pencil} bold={selected} />
                         <IconSymbol
                           name={iconName}
                           size={24}
@@ -373,44 +317,35 @@ export function CustomFlowAppearancePicker({
                         />
                       </Pressable>
                     </View>
-                  </View>
-                );
-              })}
-              {loadingMore
-                ? Array.from({ length: SKELETON_COUNT }, (_, index) => (
-                    <View
-                      key={`skeleton-${index}`}
-                      style={[
-                        styles.iconChipShell,
-                        {
-                          width: `${100 / ICON_COLS}%`,
-                          paddingRight: CHIP_SHADOW,
-                          paddingBottom: CHIP_SHADOW,
-                        },
-                      ]}>
+                  );
+                })}
+                {loadingMore
+                  ? Array.from({ length: SKELETON_COUNT }, (_, index) => (
                       <View
+                        key={`skeleton-${index}`}
                         style={[
-                          styles.chipSlot,
-                          styles.skeletonSlot,
-                          {
-                            backgroundColor: skeletonFace,
-                            borderColor: skeletonBorder,
-                          },
-                        ]}
-                      />
-                    </View>
-                  ))
-                : null}
-            </View>
-            {filteredIcons.length === 0 ? (
-              <ThemedText style={[styles.emptyIcons, { color: controlMuted }]}>
-                {t('appearance.iconSearchEmpty')}
-              </ThemedText>
-            ) : null}
-          </ScrollView>
+                          styles.iconChipShell,
+                          { width: `${100 / ICON_COLS}%` },
+                        ]}>
+                        <View
+                          style={[
+                            styles.skeletonSlot,
+                            { backgroundColor: skeletonFace },
+                          ]}>
+                          <HanddrawnFrame color={pencil} />
+                        </View>
+                      </View>
+                    ))
+                  : null}
+              </View>
+              {filteredIcons.length === 0 ? (
+                <ThemedText style={[styles.emptyIcons, { color: controlMuted }]}>
+                  {t('appearance.iconSearchEmpty')}
+                </ThemedText>
+              ) : null}
+            </ScrollView>
+          </View>
         </View>
-
-
       </View>
     </View>
   );
@@ -423,37 +358,24 @@ const styles = StyleSheet.create({
   rootCompact: {
     gap: 6,
   },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.15,
-  },
-  fieldLabelCompact: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
   fieldHint: {
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
     marginTop: -4,
   },
-  previewShell: {
-    position: 'relative',
-  },
-  solidShadow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 0,
-  },
   previewCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    zIndex: 1,
+    overflow: 'hidden',
+  },
+  previewCardIconOnly: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
   },
   previewCardCompact: {
     gap: 8,
@@ -464,9 +386,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 0,
-    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   previewIconWrapCompact: {
     width: 34,
@@ -491,18 +413,14 @@ const styles = StyleSheet.create({
   iconSection: {
     gap: 8,
   },
-  iconSearchShell: {
-    position: 'relative',
-  },
   iconSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderWidth: 0,
     borderRadius: 0,
     paddingHorizontal: 12,
     height: 44,
-    zIndex: 1,
+    overflow: 'hidden',
   },
   iconSearchGlyph: {
     marginTop: 1,
@@ -526,15 +444,20 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   categoryChip: {
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 7,
+    overflow: 'hidden',
   },
   categoryChipText: {
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  iconGridFrame: {
+    borderRadius: 0,
+    paddingVertical: 2,
+    overflow: 'hidden',
   },
   iconGrid: {
     flexDirection: 'row',
@@ -542,25 +465,21 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   iconChipShell: {
-    overflow: 'visible',
-  },
-  chipSlot: {
-    position: 'relative',
-    width: '100%',
     aspectRatio: 1,
+    padding: 2,
   },
   skeletonSlot: {
-    borderWidth: StyleSheet.hairlineWidth,
+    flex: 1,
     borderRadius: 0,
     opacity: 0.9,
+    overflow: 'hidden',
   },
   iconChip: {
-    ...StyleSheet.absoluteFill,
+    flex: 1,
     borderRadius: 0,
-    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
+    overflow: 'hidden',
   },
   emptyIcons: {
     fontSize: 12,

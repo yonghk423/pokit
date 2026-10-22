@@ -4,7 +4,7 @@
   "version": "1.9.17",
   "scripts": {
     "start": "expo start",
-    "postinstall": "node ./scripts/patch-debugger-locale.js && node ./scripts/patch-webview-statusbar.js",
+    "postinstall": "node ./scripts/patch-debugger-locale.js && node ./scripts/patch-webview-statusbar.js && node ./scripts/patch-tab-bar-cream.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -19,7 +19,6 @@
     "sync-app-icons": "node ./scripts/sync-app-icons.mjs"
   },
   "dependencies": {
-    "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo-google-fonts/hi-melody": "^0.4.1",
     "@expo/config-plugins": "^57.0.10",
     "@expo/vector-icons": "^15.0.3",

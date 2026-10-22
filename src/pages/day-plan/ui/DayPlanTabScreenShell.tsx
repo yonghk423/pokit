@@ -1,17 +1,19 @@
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import { consumePendingWidgetPlanMode, useDayPlanDraftStore } from '@entities/day-plan';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 
 import type { PlanMode } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
 import { PlanModeSwitch } from './PlanModeSwitch';
 import { SettingsTopBarButton } from './SettingsTopBarButton';
+import { DayPlanHeaderActionsContext } from '../model/dayPlanHeaderActions';
 
 const WIDGET_PLAN_MODES: readonly PlanMode[] = [
   'priority',
@@ -20,15 +22,25 @@ const WIDGET_PLAN_MODES: readonly PlanMode[] = [
   'dayNote',
 ];
 
+function isPlanModeAllowed(mode: PlanMode): boolean {
+  if (mode === 'quickMemo' && !FEATURE_FLAGS.quickMemoShortcut) return false;
+  if (mode === 'dayNote' && !FEATURE_FLAGS.dayNoteShortcut) return false;
+  return true;
+}
+
 function planModeFromWidgetParam(value: string | string[] | undefined): PlanMode | null {
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw) return null;
-  return WIDGET_PLAN_MODES.includes(raw as PlanMode) ? (raw as PlanMode) : null;
+  if (!WIDGET_PLAN_MODES.includes(raw as PlanMode)) return null;
+  const mode = raw as PlanMode;
+  return isPlanModeAllowed(mode) ? mode : null;
 }
 
 function planModeFromPending(value: string | null): PlanMode | null {
   if (!value) return null;
-  return WIDGET_PLAN_MODES.includes(value as PlanMode) ? (value as PlanMode) : null;
+  if (!WIDGET_PLAN_MODES.includes(value as PlanMode)) return null;
+  const mode = value as PlanMode;
+  return isPlanModeAllowed(mode) ? mode : null;
 }
 
 type Props = {
@@ -41,6 +53,7 @@ type Props = {
  * 탭 전환 시 상단 점프를 막는다.
  */
 export function DayPlanTabScreenShell({ children }: Props) {
+  const [headerActions, setHeaderActions] = useState<ReactNode>(null);
   const router = useRouter();
   const segments = useSegments();
   const params = useLocalSearchParams<{ planMode?: string | string[] }>();
@@ -48,13 +61,20 @@ export function DayPlanTabScreenShell({ children }: Props) {
   const isDayPlanTab = segments.some((segment) => segment === 'day-plan');
   const isDark = useColorScheme() === 'dark';
   const c = palette(isDark);
-  const shellBg = c.containerLow;
+  /** 카드 면과 같은 크림 — 상단 상태바·헤더가 흰 띠로 남지 않게 */
+  const shellBg = isDark ? c.containerLow : '#F5F0E6';
+  const shellPalette = { ...c, containerLow: shellBg, bg: shellBg, headerBg: shellBg };
   const { planMode, setPlanMode } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
       setPlanMode: s.setPlanMode,
     })),
   );
+
+  useEffect(() => {
+    if (isPlanModeAllowed(planMode)) return;
+    setPlanMode('priority');
+  }, [planMode, setPlanMode]);
 
   useEffect(() => {
     const next = planModeFromWidgetParam(params.planMode);
@@ -85,6 +105,7 @@ export function DayPlanTabScreenShell({ children }: Props) {
 
   const handleSelectMode = useCallback(
     (mode: PlanMode) => {
+      if (!isPlanModeAllowed(mode)) return;
       setPlanMode(mode);
       if (
         (mode === 'quickMemo' ||
@@ -99,19 +120,22 @@ export function DayPlanTabScreenShell({ children }: Props) {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: shellBg, paddingTop: insets.top }]}>
-      <View style={styles.stickyTopBar}>
-        <PlanModeSwitch
-          planMode={planMode}
-          onSelectMode={handleSelectMode}
-          c={c}
-          /** 빠른메모 힌트는 오늘 탭에서만 — 루틴/퍼즐 등에서 planMode 잔상으로 비치지 않게 */
-          description={isDayPlanTab ? undefined : null}
-          trailing={<SettingsTopBarButton c={c} />}
-        />
+    <DayPlanHeaderActionsContext.Provider value={setHeaderActions}>
+      <View style={[styles.root, { backgroundColor: shellBg, paddingTop: insets.top }]}>
+        <View style={styles.stickyTopBar}>
+          <PlanModeSwitch
+            planMode={planMode}
+            onSelectMode={handleSelectMode}
+            c={shellPalette}
+            /** 빠른메모 힌트는 오늘 탭에서만 — 루틴/퍼즐 등에서 planMode 잔상으로 비치지 않게 */
+            description={isDayPlanTab ? undefined : null}
+            middle={isDayPlanTab && planMode === 'priority' ? headerActions : null}
+            trailing={<SettingsTopBarButton c={c} />}
+          />
+        </View>
+        <View style={styles.body}>{children}</View>
       </View>
-      <View style={styles.body}>{children}</View>
-    </View>
+    </DayPlanHeaderActionsContext.Provider>
   );
 }
 

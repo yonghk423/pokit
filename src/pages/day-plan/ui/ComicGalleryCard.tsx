@@ -1,18 +1,19 @@
 import { memo } from 'react';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
 import { COMIC_CHECK_MINT } from './ComicCheck';
 import { ComicSceneImage } from './ComicSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/comicSceneThumbnails';
-import type { ComicSceneId } from '../lib/comicSceneImages';
+import { COMIC_SCENES, type ComicSceneId } from '../lib/comicSceneImages';
 
 export const ComicGalleryCard = memo(function ComicGalleryCard({ id, label, width, columns, order, onToggle }: {
   id: ComicSceneId; label: string; width: number; columns: number; order: number; onToggle: (id: ComicSceneId) => void;
 }) {
   const source = columns === 1 ? COMIC_SCENE_THUMBNAILS[id].large : COMIC_SCENE_THUMBNAILS[id].small;
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: order > 0 }} onPress={() => onToggle(id)} style={{ width }}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: order > 0 }} onPress={() => { tapHaptic('select'); onToggle(id); }} style={{ width }}>
     <View style={[s.photo, order > 0 && s.selected]}>
-      <ComicSceneImage imageKey={`${id}:${columns === 1 ? 'large' : 'small'}`} source={source} style={{ width: '100%', aspectRatio: columns === 3 ? 1 : 1.5 }} />
+      <ComicSceneImage imageKey={`${id}:${columns === 1 ? 'large' : 'small'}`} source={source} fallbackSource={COMIC_SCENES.find(scene => scene.id === id)!.source} style={{ width: '100%', aspectRatio: columns === 3 ? 1 : 1.5 }} />
       <View style={[s.check, order > 0 && { backgroundColor: COMIC_CHECK_MINT }]}><ThemedText style={{ color: '#202020', fontSize: 15 }}>{order || ''}</ThemedText></View>
     </View>
     {columns < 3 ? <ThemedText numberOfLines={1} style={s.caption}>{label}</ThemedText> : null}

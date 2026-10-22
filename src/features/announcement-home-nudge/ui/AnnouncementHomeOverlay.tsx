@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Announcement } from '@entities/announcement';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { AppModal } from '@shared/ui/app-modal';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -25,7 +26,7 @@ export function AnnouncementHomeOverlay({ announcement, onDismiss, onUpdatePress
   return (
     <AppModal visible={focused && announcement != null} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={[styles.root, { paddingTop: Math.max(24, insets.top), paddingBottom: Math.max(24, insets.bottom) }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} accessibilityRole="button" accessibilityLabel={t('common.close')} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); onDismiss(); }} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         {announcement ? (
           <View style={[styles.card, { backgroundColor: isDark ? '#262B28' : '#FCFBF7' }]} accessibilityViewIsModal>
             <PaperGrain />

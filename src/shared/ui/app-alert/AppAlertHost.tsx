@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { activeAlertScope, useAppAlertStore, type AppAlertRequest } from '@shared/lib/app-alert';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -65,7 +66,7 @@ function PaperAlert({ request, onPress, onDismiss }: {
       <Pressable
         style={StyleSheet.absoluteFill}
         accessible={false}
-        onPress={onDismiss}
+        onPress={() => { tapHaptic(); onDismiss(); }}
       />
       <Animated.View style={[
         styles.panel,
@@ -101,7 +102,7 @@ function PaperAlert({ request, onPress, onDismiss }: {
                   key={`${request.id}-${index}`}
                   accessibilityRole="button"
                   accessibilityLabel={button.text ?? t('common.confirm')}
-                  onPress={() => onPress(index)}
+                  onPress={() => { tapHaptic(isDanger ? 'warn' : button.style === 'cancel' ? 'press' : 'confirm'); onPress(index); }}
                   style={({ pressed }) => [
                     styles.button,
                     buttons.length > 2 && styles.buttonStack,

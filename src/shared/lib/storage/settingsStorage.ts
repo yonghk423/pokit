@@ -60,10 +60,7 @@ export type RoutineStartNotifyScheduledRow = {
 export type AppearanceMode = 'light' | 'dark';
 
 /** 앱 글씨체 — ko/en/ja 공통 (한글·라틴 위주 디스플레이 폰트) */
-export type AppFontId =
-  | 'sebangGothic2'
-  | 'hiMelody'
-  | 'hanken';
+export type AppFontId = 'hiMelody' | 'kimJungWon' | 'corncorn';
 
 /** 글씨 크기 — 작게부터 크게까지 5단계 */
 export type AppFontSizeId = 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg';
@@ -385,16 +382,9 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
 }
 
 function parseAppFontId(value: unknown): AppFontId {
-  if (value === 'gothicA1') return 'sebangGothic2';
-  if (
-    value === 'hiMelody' ||
-    value === 'hanken' ||
-    value === 'sebangGothic2'
-  ) {
-    return value;
-  }
-  // 미설정·레거시 → 기본(Hi Melody)
-  return 'hiMelody';
+  if (value === 'hiMelody' || value === 'kimJungWon' || value === 'corncorn') return value;
+  // 미설정·hanken·sebangGothic2 등 레거시 → 기본(그리운 김정원)
+  return 'kimJungWon';
 }
 
 export function loadAppFontId(): AppFontId {

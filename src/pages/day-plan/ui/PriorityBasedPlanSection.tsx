@@ -1,4 +1,5 @@
-import { IndependentComicPlanner } from './IndependentComicPlanner';
+import { ComicDiaryMenuButton } from './ComicDiaryMenuButton';
+import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentComicPlanner';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { RowColorPaletteBridgeProvider, RowColorPaletteFallbackHost } from '@shared/ui/color-palette-tabs';
 import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
@@ -10,7 +11,7 @@ import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   AppState,
   Keyboard,
@@ -120,6 +121,7 @@ import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { HeaderIcon } from '@shared/ui/header-icon';
+import { useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
@@ -154,7 +156,7 @@ import {
 } from '../lib/dayPlanEditorShared';
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 import { buildAddablePriorityCatalogSections } from '../lib/priorityCatalog';
-import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, getDayMealSlotLabel, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
+import { buildCategoryMealSlotOverrides, clampMealSlotSectionsToWindow, flattenPriorityMealSlotSectionEntries, hasExplicitMealSlotAssignments, reorderFlatKeys, reorderMealSlotSectionEntries, splitPriorityMealSlotSections } from '../lib/priorityMealSlotSections';
 import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CatalogRowSpineTimePanel, type CatalogRowSpineTimePanelHandle } from './CatalogRowSpineTimePanel';
 import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
@@ -442,7 +444,13 @@ export function PriorityBasedPlanSection({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [circularTimetableOpen, setCircularTimetableOpen] = useState(false);
+  const [cardsOpen, setCardsOpen] = useState(false);
   const [comicDayOpen, setComicDayOpen] = useState(false);
+  // Saved or already-mounted legacy views fall back to cards while their entry points are paused.
+  const showCards = !comicDayOpen && (cardsOpen || (circularTimetableOpen ? !FEATURE_FLAGS.circularRoutineLayout : !FEATURE_FLAGS.basicRoutineListLayout));
+  const showTimetable = circularTimetableOpen || showCards;
+  const comicPlannerRef = useRef<ComicDiaryHandle>(null);
+  const [diaryTitle, setDiaryTitle] = useState<string | null>(null);
   useEffect(() => { onComicModeChange?.(comicDayOpen); }, [comicDayOpen, onComicModeChange]);
   const hideDailyQuoteSetting = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideDailyQuote = !FEATURE_FLAGS.dailyQuote || hideDailyQuoteSetting;
@@ -466,8 +474,6 @@ export function PriorityBasedPlanSection({
     endsNextCalendarDay: boolean;
   } | null>(null);
   const [bagRowTimeModalKey, setBagRowTimeModalKey] = useState(0);
-  /** 피커 「확인」 후에만 하단 저장 활성 */
-  const [bagRowTimeConfirmed, setBagRowTimeConfirmed] = useState(false);
   const bagRowTimePanelRef = useRef<CatalogRowSpineTimePanelHandle>(null);
   const spinePastAlertQuietUntilRef = useRef(0);
   const [monthCursor, setMonthCursor] = useState(() => toMonthStart(new Date()));
@@ -1398,14 +1404,6 @@ export function PriorityBasedPlanSection({
     ],
   );
 
-  const addRoutineSheetTitle = useMemo(
-    () =>
-      addRoutineTargetSlot
-        ? t('dayPlan.linkRoutine', { slot: getDayMealSlotLabel(addRoutineTargetSlot) })
-        : t('dayPlan.addRoutine'),
-    [addRoutineTargetSlot, t],
-  );
-
   const addRoutineSheetConfirmLabel = addRoutineTargetSlot
     ? t('dayPlan.confirmLink')
     : t('dayPlan.confirmAdd');
@@ -1715,7 +1713,7 @@ export function PriorityBasedPlanSection({
         [
           { text: t('common.cancel'), style: 'cancel' },
           {
-            text: t('dayPlan.endTodayConfirm'),
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => {
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1891,6 +1889,16 @@ export function PriorityBasedPlanSection({
     void mealSlotNowTick;
     return getLocalMinutesOfDayNow();
   }, [mealSlotNowTick]);
+
+  const rhythmTimeEnded = useMemo(() => {
+    if (!FEATURE_FLAGS.dailyRhythmWindow) return false;
+    const endMinutes = parseHHmmToMinutes(priorityEnd.trim());
+    if (endMinutes === null) return false;
+    const { lo, hi } = sortedPlanDateRange(priorityPlanDateKey, priorityPlanDateKeyEnd);
+    const endDate = priorityClockCaptionDateKeyEnd(lo, hi, priorityStart, priorityEnd);
+    const nowDate = getLocalDateKey();
+    return nowDate > endDate || (nowDate === endDate && spineNowMinutes >= endMinutes % 1440);
+  }, [priorityEnd, priorityStart, priorityPlanDateKey, priorityPlanDateKeyEnd, spineNowMinutes]);
 
   const spineAnchorDateCaptions = useMemo(() => {
     const explicit = priorityPlanExplicitMultiDay;
@@ -2223,6 +2231,7 @@ export function PriorityBasedPlanSection({
   );
 
   const openPriorityTimeEditor = useCallback(() => {
+    if (!FEATURE_FLAGS.dailyRhythmWindow) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (emphasizePriorityWindowChipTimerRef.current) {
       clearTimeout(emphasizePriorityWindowChipTimerRef.current);
@@ -2251,7 +2260,6 @@ export function PriorityBasedPlanSection({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const schedule = resolveBagRowSpineSchedule(input.categoryKey);
       setBagRowTimeModalKey((k) => k + 1);
-      setBagRowTimeConfirmed(false);
       setBagRowTimeEdit({
         rowKey: input.rowKey,
         categoryKey: resolvePriorityRoutineCategoryKey(input.categoryKey),
@@ -2356,7 +2364,6 @@ export function PriorityBasedPlanSection({
 
   const closeBagRowTimeModal = useCallback(() => {
     Keyboard.dismiss();
-    setBagRowTimeConfirmed(false);
     setBagRowTimeEdit(null);
   }, []);
 
@@ -2437,7 +2444,6 @@ export function PriorityBasedPlanSection({
       void scheduleSaved;
       await flushLocalStorageClientWrites();
 
-      setBagRowTimeConfirmed(false);
       setBagRowTimeEdit(null);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
@@ -2481,7 +2487,6 @@ export function PriorityBasedPlanSection({
     notifyFixedFlowApplyScheduleChanged();
     await flushLocalStorageClientWrites();
 
-    setBagRowTimeConfirmed(false);
     setBagRowTimeEdit(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [
@@ -2495,6 +2500,41 @@ export function PriorityBasedPlanSection({
 
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
   const surfaceBg = c.containerLow;
+
+  const registerHeaderActions = useDayPlanHeaderActions();
+  const headerLayoutActions = useMemo(() => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      {!comicDayOpen ? <Pressable
+        onPress={() => { void Haptics.selectionAsync(); setScheduledRoutineSheetOpen(true); }}
+        accessibilityRole="button"
+        accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
+        hitSlop={2}
+        style={({ pressed }) => [{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' }, pressed && { opacity: 0.7, transform: [{ translateY: 1 }] }]}>
+        <PaperGrain opacity={0.2} />
+        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#929B8B'} />
+        <HeaderIcon name="calendar" size={20} />
+      </Pressable> : null}
+      {(visibleLayoutModes?.length ?? 3) > 0 ? <DayPlanLayoutModeTabs
+      showCircularTimetable
+      circularActive={circularTimetableOpen && !showCards}
+      cardsActive={showCards}
+      onSelectCards={() => { setComicDayOpen(false); setCircularTimetableOpen(true); setCardsOpen(true); }}
+      comicActive={comicDayOpen}
+      onSelectComic={() => { setCardsOpen(false); setComicDayOpen(true); setCircularTimetableOpen(false); }}
+      onSelectCircular={() => { setCardsOpen(false); setComicDayOpen(false); setCircularTimetableOpen(true); }}
+      mode={layoutMode}
+      onSelectMode={(next) => { setCardsOpen(false); setCircularTimetableOpen(false); setComicDayOpen(false); onSelectLayoutMode(next); }}
+      c={c}
+      isDark={isDark}
+      visibleModes={visibleLayoutModes}
+    /> : null}
+    </View>
+  ), [visibleLayoutModes, circularTimetableOpen, showCards, comicDayOpen, layoutMode, onSelectLayoutMode, c, isDark, t]);
+  useLayoutEffect(() => {
+    registerHeaderActions?.(listPaintActive ? headerLayoutActions : null);
+  }, [registerHeaderActions, listPaintActive, headerLayoutActions]);
+  useLayoutEffect(() => () => { registerHeaderActions?.(null); }, [registerHeaderActions]);
+
 
   return (
     <View style={[styles.prioritySectionRoot, { backgroundColor: surfaceBg }]}>
@@ -2797,10 +2837,6 @@ export function PriorityBasedPlanSection({
                       })}
                       startFieldHint={t('dayPlan.routineNamedStartHint')}
                       dayChoiceQuestion={t('dayPlan.routineStartDayQuestion')}
-                      onConfirmSuccess={() => setBagRowTimeConfirmed(true)}
-                      onPickerExpandedChange={(expanded) => {
-                        if (expanded) setBagRowTimeConfirmed(false);
-                      }}
                       onScheduleChange={applyBagRowTimeFromPanel}
                     />
                   </>
@@ -2829,9 +2865,7 @@ export function PriorityBasedPlanSection({
                         isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'
                       }
                       style={styles.timeModalSaveBtn}
-                      disabled={!bagRowTimeConfirmed}
                       onPress={() => {
-                        if (!bagRowTimeConfirmed) return;
                         const next = bagRowTimePanelRef.current?.commitPendingSchedule();
                         if (!next) return;
                         applyBagRowTimeFromPanel(
@@ -2915,26 +2949,28 @@ export function PriorityBasedPlanSection({
         }
       />
 
-      <View style={[styles.bookOuter, { backgroundColor: surfaceBg, flex: 1, minHeight: 0 }]}>
+      <View style={[styles.bookOuter, { backgroundColor: comicDayOpen && !isDark ? '#F5F0E6' : surfaceBg, flex: 1, minHeight: 0 }]}>
         {/* 기간·집중 구간 — 다일 타임라인 카드 (달력·시계는 각각 모달) */}
         <View style={styles.priorityTimelineOuter}>
           <View
             style={[
               styles.priorityTimelineCard,
               {
-                backgroundColor: editorial.surface,
+                backgroundColor: comicDayOpen && !isDark ? '#F5F0E6' : editorial.surface,
               },
             ]}>
-            <View
+            {comicDayOpen || FEATURE_FLAGS.dailyPlanDateHeader ? <View
               style={[
                 styles.priorityTimelineHeader,
+                comicDayOpen && { alignItems: 'center', paddingTop: 8, paddingBottom: 8 },
                 {
                   borderBottomColor: editorial.line,
-                  backgroundColor: editorial.surface,
+                  backgroundColor: comicDayOpen && !isDark ? '#F5F0E6' : editorial.surface,
                 },
               ]}>
+              {comicDayOpen ? <ComicDiaryMenuButton onPress={() => comicPlannerRef.current?.openLibrary()} /> : null}
               <View style={styles.priorityTimelineHeaderText}>
-                {comicDayOpen ? null : layoutMode === 'sections' ? (
+                {comicDayOpen ? <Pressable accessibilityRole="button" accessibilityLabel={t(diaryTitle ? 'comicDiary.rename' : 'comicDiary.library')} onPress={() => diaryTitle ? comicPlannerRef.current?.renameDiary() : comicPlannerRef.current?.openLibrary()} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: editorial.ink, fontSize: 19, lineHeight: 27 }}>{diaryTitle ?? t('comicDiary.title')}</ThemedText></Pressable> : layoutMode === 'sections' ? (
                   <>
                     <View style={styles.priorityTimelineTitleRow}>
                       <ThemedText
@@ -2944,23 +2980,7 @@ export function PriorityBasedPlanSection({
                         numberOfLines={2}>
                         {formatTimelineHeaderDate(todayKey, locale)}
                       </ThemedText>
-                      <Pressable
-                        onPress={() => {
-                          void Haptics.selectionAsync();
-                          setScheduledRoutineSheetOpen(true);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
-                        hitSlop={10}
-                        style={({ pressed }) => [
-                          styles.priorityTimelineCalendarIcon,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' },
-                          pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
-                        ]}>
-                        <PaperGrain opacity={0.2} />
-                        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#B2B4A7'} />
-                        <HeaderIcon name="calendar" size={20} />
-                      </Pressable>
+
                       <MealSlotScheduleEditButton
                         palette={spineTimelinePalette}
                         isDark={isDark}
@@ -2969,7 +2989,7 @@ export function PriorityBasedPlanSection({
                         onPress={() => openMealSlotScheduleEditor()}
                       />
                     </View>
-                    <View style={styles.priorityTimelineSubRow}>
+                    {FEATURE_FLAGS.dailyRhythmWindow ? <View style={styles.priorityTimelineSubRow}>
                       <ThemedText
                         style={[styles.priorityTimelineSub, { color: editorial.muted }]}
                         lightColor={editorial.muted}
@@ -2985,7 +3005,7 @@ export function PriorityBasedPlanSection({
                           onPress={openPriorityTimeEditor}
                         />
                       </View>
-                    </View>
+                    </View> : null}
                   </>
                 ) : (
                   <>
@@ -2997,25 +3017,9 @@ export function PriorityBasedPlanSection({
                         numberOfLines={2}>
                         {formatTimelineHeaderDate(todayKey, locale)}
                       </ThemedText>
-                      <Pressable
-                        onPress={() => {
-                          void Haptics.selectionAsync();
-                          setScheduledRoutineSheetOpen(true);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('dayPlan.scheduledRoutine.calendarA11y')}
-                        hitSlop={10}
-                        style={({ pressed }) => [
-                          styles.priorityTimelineCalendarIcon,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF' },
-                          pressed && { opacity: 0.7, transform: [{ translateY: 1 }] },
-                        ]}>
-                        <PaperGrain opacity={0.2} />
-                        <HanddrawnFrame color={isDark ? '#A3AE9C' : '#B2B4A7'} />
-                        <HeaderIcon name="calendar" size={20} />
-                      </Pressable>
+
                     </View>
-                    <View style={styles.priorityTimelineSubRow}>
+                    {FEATURE_FLAGS.dailyRhythmWindow ? <View style={styles.priorityTimelineSubRow}>
                       <ThemedText
                         style={[styles.priorityTimelineSub, { color: editorial.muted }]}
                         lightColor={editorial.muted}
@@ -3031,33 +3035,20 @@ export function PriorityBasedPlanSection({
                           onPress={openPriorityTimeEditor}
                         />
                       </View>
-                    </View>
+                    </View> : null}
                   </>
                 )}
               </View>
-              <View style={styles.priorityTimelineHeaderActions}>
-                {(visibleLayoutModes?.length ?? 3) > 0 ? (
-                  <DayPlanLayoutModeTabs
-                    showCircularTimetable
-                    circularActive={circularTimetableOpen}
-                    comicActive={comicDayOpen}
-                    onSelectComic={() => { setComicDayOpen(true); setCircularTimetableOpen(false); }}
-                    onSelectCircular={() => { setComicDayOpen(false); setCircularTimetableOpen(true); }}
-                    mode={layoutMode}
-                    onSelectMode={(next) => { setCircularTimetableOpen(false); setComicDayOpen(false); onSelectLayoutMode(next); }}
-                    c={c}
-                    isDark={isDark}
-                    visibleModes={visibleLayoutModes}
-                  />
-                ) : null}
-              </View>
-            </View>
-            {comicDayOpen ? <IndependentComicPlanner key={todayKey} date={todayKey} ink={editorial.ink} muted={editorial.muted} isDark={isDark} /> : circularTimetableOpen ? (
+              {!registerHeaderActions ? <View style={styles.priorityTimelineHeaderActions}>{headerLayoutActions}</View> : null}
+            </View> : null}
+            {comicDayOpen ? <IndependentComicPlanner ref={comicPlannerRef} onTitleChange={setDiaryTitle} key={todayKey} date={todayKey} ink={editorial.ink} muted={editorial.muted} isDark={isDark} /> : showTimetable ? (
               <View style={{ flex: 1, minHeight: 0 }}>
                 {!hideDailyQuote ? (
                   <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}><DailyQuoteCard dateKey={todayKey} isDark={isDark} /></View>
                 ) : null}
               <CircularRoutineTimetable
+                presentation={showCards ? 'cards' : 'circle'}
+                timeEnded={rhythmTimeEnded}
                 ink={editorial.ink}
                 muted={editorial.muted}
                 isDark={isDark}
@@ -3067,6 +3058,8 @@ export function PriorityBasedPlanSection({
                   const inkId = priorityCategoryInkColor[cat.key] ?? null;
                   return {
                     key: cat.key, label: cat.label, icon: cat.icon,
+                    dateKey: schedule.startsNextCalendarDay ? addDaysToLocalDateKey(todayKey, 1) : todayKey,
+                    summary: resolveRoutineSummaryForDisplay(resolvePriorityRoutineCategoryKey(cat.key), readRoutineSummaryFromConfig(loadGoalDetailCategoryConfig(resolvePriorityRoutineCategoryKey(cat.key)))),
                     faceColor: faceId ? resolvePostItFaceColor(faceId, isDark) : undefined,
                     inkColor: faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : undefined,
                     completed: isPriorityRowCompleted(cat.key),
@@ -3083,7 +3076,7 @@ export function PriorityBasedPlanSection({
                   const schedule = resolveBagRowSpineSchedule(item.key);
                   const faceId = priorityCategoryFaceColor[item.key] ?? null;
                   const inkId = priorityCategoryInkColor[item.key] ?? null;
-                  const ink = faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : editorial.ink;
+                  const ink = item.inkColor ?? (faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : editorial.ink);
                   const muted = resolvePostItInkMuted(ink);
                   const tabs = [
                     { id: 'face' as const, label: t('dayPlan.colorTab.face'),
@@ -3101,7 +3094,7 @@ export function PriorityBasedPlanSection({
                     endMinutes={schedule.isSuggested ? undefined : schedule.endMinutes}
                     ink={ink}
                     muted={resolvePostItInkMuted(ink)}
-                    surface={faceId ? resolvePostItFaceColor(faceId, isDark) : undefined}
+                    surface={item.faceColor ?? (faceId ? resolvePostItFaceColor(faceId, isDark) : undefined)}
                     isDark={isDark}
                   />
                   <RowColorPaletteFallbackHost />
@@ -3608,7 +3601,6 @@ export function PriorityBasedPlanSection({
 
       <PriorityRoutinePickerSheet
         visible={addRoutineSheetOpen}
-        title={addRoutineSheetTitle}
         confirmLabel={addRoutineSheetConfirmLabel}
         sections={addableRoutineSections}
         spineGapAdd={spineGapAddConfig}

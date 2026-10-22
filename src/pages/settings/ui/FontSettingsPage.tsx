@@ -44,19 +44,19 @@ const FONT_OPTIONS: {
   descKey: I18nKey;
 }[] = [
   {
+    key: 'kimJungWon',
+    labelKey: 'settings.font.kimJungWon',
+    descKey: 'settings.font.kimJungWonDesc',
+  },
+  {
+    key: 'corncorn',
+    labelKey: 'settings.font.corncorn',
+    descKey: 'settings.font.corncornDesc',
+  },
+  {
     key: 'hiMelody',
     labelKey: 'settings.font.hiMelody',
     descKey: 'settings.font.hiMelodyDesc',
-  },
-  {
-    key: 'hanken',
-    labelKey: 'settings.font.hanken',
-    descKey: 'settings.font.hankenDesc',
-  },
-  {
-    key: 'sebangGothic2',
-    labelKey: 'settings.font.sebangGothic2',
-    descKey: 'settings.font.sebangGothic2Desc',
   },
 ];
 
@@ -108,7 +108,7 @@ export function FontSettingsPage() {
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: rf.bg }]} darkColor={rf.bg} lightColor={rf.bg}>
+    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#262B28' : '#F5F0E6' }]} darkColor="#262B28" lightColor="#F5F0E6">
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.topBar}>
           <Pressable

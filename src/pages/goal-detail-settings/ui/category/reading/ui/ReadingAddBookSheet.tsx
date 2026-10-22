@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import { useEffect, useState } from 'react';
 import {
@@ -77,7 +78,7 @@ export function ReadingAddBookSheet({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.kavRoot}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('dayPlan.close')} />
+        <Pressable style={styles.backdrop} onPress={() => { tapHaptic(); onClose(); }} accessibilityLabel={t('dayPlan.close')} />
         <View
           style={[
             styles.sheet,
@@ -118,7 +119,7 @@ export function ReadingAddBookSheet({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.reading.addBook')}
-                onPress={submit}
+                onPress={() => { tapHaptic('confirm'); submit(); }}
                 style={[styles.addBtn, { backgroundColor: READING_ACCENT }]}>
                 <IconSymbol name="plus" size={14} color={READING_ACCENT_ON} />
               </Pressable>
@@ -139,7 +140,7 @@ export function ReadingAddBookSheet({
               />
               <Pressable
                 accessibilityRole="button"
-                onPress={openSearch}
+                onPress={() => { tapHaptic(); openSearch(); }}
                 style={[styles.searchBtn, { backgroundColor: faceBg, borderColor: lineColor }]}>
                 <IconSymbol name="magnifyingglass" size={14} color={READING_ACCENT} />
                 <ThemedText style={[styles.searchBtnText, { color: READING_ACCENT }]}>

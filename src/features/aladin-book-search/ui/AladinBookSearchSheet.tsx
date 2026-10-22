@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -155,7 +156,7 @@ export function AladinBookSearchSheet({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('aladin.backToSearch')}
-              onPress={handleBackToSearch}
+              onPress={() => { tapHaptic(); handleBackToSearch(); }}
               hitSlop={10}
               style={styles.headerBackBtn}>
               <IconSymbol name="chevron.left" size={18} color={ink} />
@@ -164,7 +165,7 @@ export function AladinBookSearchSheet({
           <ThemedText style={[styles.title, { color: ink }]}>
             {mode === 'detail' ? t('aladin.titleDetail') : t('aladin.titleSearch')}
           </ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} hitSlop={10}>
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
@@ -196,7 +197,7 @@ export function AladinBookSearchSheet({
                   accessibilityRole="button"
                   accessibilityLabel={t('common.search')}
                   disabled={loading}
-                  onPress={() => void runSearch()}
+                  onPress={() => { tapHaptic(); void runSearch(); }}
                   style={({ pressed }) => [
                     styles.searchSubmitBtn,
                     { borderColor: ink, backgroundColor: ink },
@@ -226,7 +227,7 @@ export function AladinBookSearchSheet({
                     key={item.itemId}
                     accessibilityRole="button"
                     accessibilityLabel={t('aladin.detailA11y', { title: item.title })}
-                    onPress={() => void openDetail(item)}
+                    onPress={() => { tapHaptic(); void openDetail(item); }}
                     style={({ pressed }) => [
                       styles.resultRow,
                       { borderBottomColor: line },
@@ -311,7 +312,7 @@ export function AladinBookSearchSheet({
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('aladin.viewOnAladin')}
-                    onPress={() => void openAladinProductPage(previewDetail.link)}
+                    onPress={() => { tapHaptic(); void openAladinProductPage(previewDetail.link); }}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
                     <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{t('aladin.viewOnAladin')}</ThemedText>
                   </Pressable>
@@ -320,7 +321,7 @@ export function AladinBookSearchSheet({
                     accessibilityRole="button"
                     accessibilityLabel={t('aladin.selectBook')}
                     disabled={confirming}
-                    onPress={() => void handleConfirmSelect()}
+                    onPress={() => { tapHaptic('confirm'); void handleConfirmSelect(); }}
                     style={({ pressed }) => [
                       styles.primaryBtn,
                       { borderColor: ink, backgroundColor: ink },
@@ -341,7 +342,7 @@ export function AladinBookSearchSheet({
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('aladin.backToSearch')}
-                    onPress={handleBackToSearch}
+                    onPress={() => { tapHaptic(); handleBackToSearch(); }}
                     style={({ pressed }) => [styles.secondaryBtn, { borderColor: line }, pressed && { opacity: 0.72 }]}>
                     <ThemedText style={[styles.secondaryBtnText, { color: ink }]}>{t('aladin.backToSearch')}</ThemedText>
                   </Pressable>
