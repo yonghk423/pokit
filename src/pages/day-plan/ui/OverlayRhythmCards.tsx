@@ -64,7 +64,7 @@ function OverlayCard({ item, index, colorSlot, width, height, progress, mountedW
       <PaperGrain opacity={0.2} />
     </View>
     <Animated.View style={[s.body, contentMotion]}>
-    <Pressable disabled={!active} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={t('dayPlan.cardOpenHint')} onPress={onPress} style={[s.body, { padding: 30 * scale }]}>
+    <Pressable disabled={!active} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={t('dayPlan.cardOpenHint')} onPress={onPress} style={[s.body, { paddingHorizontal: 30 * scale, paddingBottom: 30 * scale, paddingTop: 62 * scale }]}>
       <View style={s.cardHead}><IconSymbol name={item.icon} size={(hasSummary ? 100 : 140) * scale} color={colors.ink} /><CardDate dateKey={item.dateKey} ink={colors.ink} scale={scale} /></View>
       <ThemedText numberOfLines={2} adjustsFontSizeToFit style={{ color: colors.ink, fontSize: (hasSummary ? 30 : 42) * scale, lineHeight: (hasSummary ? 37 : 51) * scale, marginTop: (hasSummary ? 23 : 30) * scale }}>{item.label}</ThemedText>
       {SHOW_CARD_ROUTINE_TIME ? (
