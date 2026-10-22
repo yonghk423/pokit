@@ -1,14 +1,21 @@
 /* Widget gallery & Edit Widget — English (development language)
    Keys are stable ASCII ids (not full English sentences) so lookup never breaks on curly quotes. */
 
-"widget.routine.name" = "Routine";
-"widget.routine.galleryDescription" = "Pick a routine for each widget and show it like a post-it.";
-"widget.routine.intentDescription" = "Choose which routine to show on the Home Screen. Each widget can be different.";
-"widget.routine.pick" = "Expand routine";
+"widget.routine.name" = "To-do";
+"widget.routine.galleryDescription" = "Pick one task and see it on a post-it card.";
+"widget.routine.intentDescription" = "Choose one task to show on the Home Screen. Each widget can be different.";
+"widget.routine.pick" = "Choose a task";
 
-"widget.bookstore.name" = "Bookstore";
-"widget.bookstore.galleryDescription" = "In Edit Widget, tap “Tap to pick a book” to choose a title from the bookstore.";
-"widget.bookstore.intentDescription" = "In Edit Widget, tap “Tap to pick a book” to open the bookstore list.";
+"widget.comic.name" = "Comic Diary";
+"widget.comic.galleryDescription" = "Choose one scene from your comic diary to feature.";
+"widget.comic.intentDescription" = "Choose a comic diary scene to show on the Home Screen.";
+"widget.comic.pick" = "Choose a scene";
+"widget.comic.untitled" = "Untitled scene";
+"widget.comic.emptyMessage" = "Start a comic diary in the app first.";
+
+"widget.bookstore.name" = "Reading";
+"widget.bookstore.galleryDescription" = "In Edit Widget, tap “Tap to pick a book” to choose a title from Reading.";
+"widget.bookstore.intentDescription" = "In Edit Widget, tap “Tap to pick a book” to open the Reading list.";
 "widget.bookstore.pick" = "Tap to pick a book";
 "widget.bookstore.emptyMessage" = "No books to show on this widget yet";
 "widget.bookstore.untitled" = "Untitled book";

@@ -35,6 +35,13 @@ class PokitWidgetSync: NSObject {
     WidgetCenter.shared.reloadTimelines(ofKind: "PokitNoteWidget")
   }
 
+  @objc func syncComicSceneWidgetJson(_ json: String) {
+    guard let ud = UserDefaults(suiteName: PokitAppGroup.identifier) else { return }
+    ud.set(json, forKey: PokitAppGroup.comicSceneWidgetJsonKey)
+    ud.synchronize()
+    WidgetCenter.shared.reloadTimelines(ofKind: "PokitComicSceneWidget")
+  }
+
   /// 위젯 탭으로 남겨 둔 planMode를 한 번 읽고 지운다.
   @objc func consumePendingPlanMode(
     _ resolve: RCTPromiseResolveBlock,

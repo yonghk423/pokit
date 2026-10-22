@@ -44,7 +44,7 @@ export const COUNTER_ACTIVITY_PRESETS: readonly CounterActivityPreset[] = [
   },
   {
     id: 'read',
-    activityLabel: '독서',
+    activityLabel: '책읽기',
     unitKey: 'page',
     goalCount: 30,
     stepSize: 5,

@@ -70,6 +70,7 @@ export type PinnedRoutineWidgetPayload = {
   categoryKey: string | null;
   title: string;
   iconName: string;
+  illustrationId?: string;
   /** @deprecated 위젯에서는 요약글 미표시 — 호환용으로 빈 문자열 유지 */
   summary: string;
   detailLines: string[];
@@ -455,6 +456,7 @@ function buildPinnedBase(
     categoryKey,
     title: resolvePinnedTitle(categoryKey),
     iconName: toRoutineWidgetSymbol(resolveCategoryCatalogIcon(categoryKey)),
+    illustrationId: resolveCategoryCatalogIcon(categoryKey),
     summary: '',
     faceHex: appearance.faceHex,
     inkHex: appearance.inkHex,

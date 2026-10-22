@@ -58,10 +58,11 @@ export function RoutineCardCreateIcon({ size = 32, ink = INK_DEFAULT }: { size?:
     <Path d="M20.7 7L20.9 11.8L25.6 11.7" fill="#F2F3EE" stroke={ink} strokeWidth={1.05} strokeLinecap="round" strokeLinejoin="round" />
     <Path d="M10.2 11.6L15 11.4L15.1 16L10.3 16.2Z" fill="none" stroke={ink} strokeWidth={0.95} strokeLinecap="round" strokeLinejoin="round" />
     <Path d="M10.4 20.2L20.6 19.8M10.6 23.8L17.4 23.5" fill="none" stroke={ink} strokeWidth={0.95} strokeLinecap="round" />
-    <Path d="M13.6 26.4L13.5 30.8M11.3 28.6L15.8 28.5" fill="none" stroke={ink} strokeWidth={1.45} strokeLinecap="round" />
     <Path d="M22.2 25.8L31.8 13.6Q32.6 12.6 33.9 13.6L35.4 14.8Q36.3 15.6 35.5 16.7L25.8 28.8L20.4 31.4Z" fill="#F4F4EE" stroke={ink} strokeWidth={1.2} strokeLinejoin="round" />
     <Path d="M30.4 15.4L34.1 18.4M22.2 25.8L25.8 28.8" fill="none" stroke={ink} strokeWidth={0.8} strokeLinecap="round" />
     <Path d="M20.6 31.2L22.5 30.2L21.5 29.4Z" fill={ink} />
+    <Path d="M27.2 3.6L27.4 12.2M22.8 7.8L31.8 8" fill="none" stroke="#FFFEFA" strokeWidth={4.4} strokeLinecap="round" />
+    <Path d="M27.2 3.6L27.4 12.2M22.8 7.8L31.8 8" fill="none" stroke={ink} strokeWidth={2.35} strokeLinecap="round" />
   </Svg>;
 }
 
@@ -90,7 +91,7 @@ export function RoutineWheelAddButton({ label, onPress, ink = INK_DEFAULT, style
   const isDark = useColorScheme() === 'dark';
   const holding = useSharedValue(0);
   const tile = Math.max(34, size - 2);
-  const iconSize = Math.round(tile * (icon === 'createCard' ? 0.68 : 0.74));
+  const iconSize = Math.round(tile * (icon === 'createCard' ? 0.78 : 0.74));
 
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: holding.value * 0.5 }, { translateY: holding.value * 1 }],

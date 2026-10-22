@@ -7,7 +7,7 @@ export const ACTIVITY_ILLUSTRATIONS = [
   { id: "03-meeting", label: "회의하기", source: require('../../../assets/activity-illustrations/03-meeting.webp') as ImageSourcePropType },
   { id: "04-laundry", label: "빨래하기", source: require('../../../assets/activity-illustrations/04-laundry.webp') as ImageSourcePropType },
   { id: "05-work", label: "업무 보기", source: require('../../../assets/activity-illustrations/05-work.webp') as ImageSourcePropType },
-  { id: "06-reading", label: "독서하기", source: require('../../../assets/activity-illustrations/06-reading.webp') as ImageSourcePropType },
+  { id: "06-reading", label: "책읽기", source: require('../../../assets/activity-illustrations/06-reading.webp') as ImageSourcePropType },
   { id: "07-movie-home", label: "집에서 영화 보기", source: require('../../../assets/activity-illustrations/07-movie-home.webp') as ImageSourcePropType },
   { id: "08-study-hoodie", label: "후드티와 둥근 안경으로 공부하기", source: require('../../../assets/activity-illustrations/08-study-hoodie.webp') as ImageSourcePropType },
   { id: "09-coffee-tablet", label: "커피와 아이패드", source: require('../../../assets/activity-illustrations/09-coffee-tablet.webp') as ImageSourcePropType },
@@ -53,7 +53,7 @@ export const ACTIVITY_ILLUSTRATIONS = [
   { id: "49-guitar", label: "기타 연습", source: require('../../../assets/activity-illustrations/49-guitar.webp') as ImageSourcePropType },
   { id: "50-nap", label: "낮잠", source: require('../../../assets/activity-illustrations/50-nap.webp') as ImageSourcePropType },
   { id: "51-sleeping-in-bed", label: "침대에서 자기", source: require('../../../assets/activity-illustrations/51-sleeping-in-bed.webp') as ImageSourcePropType },
-  { id: "52-reading-cafe", label: "카페에서 독서하기", source: require('../../../assets/activity-illustrations/52-reading-cafe.webp') as ImageSourcePropType },
+  { id: "52-reading-cafe", label: "카페에서 책읽기", source: require('../../../assets/activity-illustrations/52-reading-cafe.webp') as ImageSourcePropType },
   { id: "53-diary-in-bed", label: "침대에 기대어 다이어리 쓰기", source: require('../../../assets/activity-illustrations/53-diary-in-bed.webp') as ImageSourcePropType },
   { id: "54-seaside-trip", label: "바닷가 여행", source: require('../../../assets/activity-illustrations/54-seaside-trip.webp') as ImageSourcePropType },
 ] as const;

@@ -215,7 +215,7 @@ export function CustomFlowAppearancePicker({
                 resetIconPagination();
                 setIconQuery(query);
               }}
-              placeholder=""
+              placeholder={t('appearance.iconSearchPlaceholder')}
               placeholderTextColor={controlMuted}
               autoCapitalize="none"
               autoCorrect={false}

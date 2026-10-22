@@ -462,6 +462,129 @@ public struct SelectNotePageIntent: WidgetConfigurationIntent {
   }
 }
 
+// MARK: - Comic scene
+
+@available(iOS 17.0, *)
+public struct ComicSceneWidgetEntity: AppEntity, Hashable {
+  public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "widget.comic.pick")
+  public static var defaultQuery = ComicSceneWidgetEntityQuery()
+
+  public var id: String
+  public var title: String
+  public var diaryTitle: String
+  public var index: Int
+
+  public init(id: String, title: String, diaryTitle: String, index: Int) {
+    self.id = id
+    self.title = title
+    self.diaryTitle = diaryTitle
+    self.index = index
+  }
+
+  public static func == (lhs: ComicSceneWidgetEntity, rhs: ComicSceneWidgetEntity) -> Bool {
+    lhs.id == rhs.id
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+  }
+
+  public var displayRepresentation: DisplayRepresentation {
+    DisplayRepresentation(title: "\(diaryTitle) · \(index) · \(title)")
+  }
+}
+
+@available(iOS 17.0, *)
+public struct ComicSceneWidgetEntityQuery: EntityQuery {
+  public init() {}
+
+  public func entities(for identifiers: [ComicSceneWidgetEntity.ID]) async throws -> [ComicSceneWidgetEntity] {
+    let byId = Dictionary(uniqueKeysWithValues: Self.loadEntities().map { ($0.id, $0) })
+    return identifiers.compactMap { byId[$0] }
+  }
+
+  public func suggestedEntities() async throws -> IntentItemCollection<ComicSceneWidgetEntity> {
+    pokitWidgetEntityCollection(Self.loadEntities(), section: "widget.comic.name")
+  }
+
+  public func defaultResult() async -> ComicSceneWidgetEntity? {
+    let entities = Self.loadEntities()
+    guard let fallbackId = Self.loadFallbackSceneId() else { return entities.first }
+    return entities.first(where: { $0.id == fallbackId }) ?? entities.first
+  }
+
+  private static func loadFallbackSceneId() -> String? {
+    guard let defaults = UserDefaults(suiteName: PokitAppGroup.identifier),
+          let raw = PokitAppGroup.readComicSceneWidgetJson(from: defaults),
+          let data = raw.data(using: .utf8),
+          let bundle = try? JSONDecoder().decode(ComicWidgetOptionBundle.self, from: data)
+    else { return nil }
+    return bundle.fallbackSceneId
+  }
+
+  static func loadEntities() -> [ComicSceneWidgetEntity] {
+    guard let defaults = UserDefaults(suiteName: PokitAppGroup.identifier),
+          let raw = PokitAppGroup.readComicSceneWidgetJson(from: defaults),
+          let data = raw.data(using: .utf8),
+          let bundle = try? JSONDecoder().decode(ComicWidgetOptionBundle.self, from: data)
+    else { return [] }
+
+    return (bundle.scenes ?? []).compactMap { row in
+      guard let id = row.id?.trimmingCharacters(in: .whitespacesAndNewlines), !id.isEmpty else { return nil }
+      let title = row.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      let diaryTitle = row.diaryTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      return ComicSceneWidgetEntity(
+        id: id,
+        title: title.isEmpty ? String(localized: "widget.comic.untitled") : title,
+        diaryTitle: diaryTitle,
+        index: max(1, row.index ?? 1)
+      )
+    }
+  }
+
+  private struct ComicWidgetOptionBundle: Decodable {
+    let fallbackSceneId: String?
+    let scenes: [ComicWidgetOption]?
+  }
+
+  private struct ComicWidgetOption: Decodable {
+    let id: String?
+    let title: String?
+    let diaryTitle: String?
+    let index: Int?
+  }
+}
+
+@available(iOS 17.0, *)
+public struct ComicSceneOptionsProvider: DynamicOptionsProvider {
+  public init() {}
+
+  public func results() async throws -> IntentItemCollection<ComicSceneWidgetEntity> {
+    pokitWidgetEntityCollection(ComicSceneWidgetEntityQuery.loadEntities(), section: "widget.comic.name")
+  }
+}
+
+@available(iOS 17.0, *)
+public struct SelectComicSceneIntent: WidgetConfigurationIntent {
+  public static var title: LocalizedStringResource = "widget.comic.name"
+  public static var description = IntentDescription(stringLiteral: "widget.comic.intentDescription")
+  public static var isDiscoverable: Bool { false }
+  public static var openAppWhenRun: Bool { false }
+
+  @Parameter(title: "widget.comic.pick", optionsProvider: ComicSceneOptionsProvider())
+  public var scene: ComicSceneWidgetEntity?
+
+  public init() {}
+
+  public init(scene: ComicSceneWidgetEntity?) {
+    self.scene = scene
+  }
+
+  public static var parameterSummary: some ParameterSummary {
+    Summary { \.$scene }
+  }
+}
+
 /// 노트 위젯 탭 전용 — 설정 Intent와 분리해 앱만 연다.
 @available(iOS 17.0, *)
 public struct OpenPokitDayNoteIntent: AppIntent {

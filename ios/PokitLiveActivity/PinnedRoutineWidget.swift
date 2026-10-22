@@ -15,6 +15,7 @@ private struct PinnedRoutineSnapshotJson: Decodable {
   let categoryKey: String?
   let title: String?
   let iconName: String?
+  let illustrationId: String?
   let summary: String?
   let detailLines: [String]?
   let checklistItems: [PinnedRoutineChecklistItemJson]?
@@ -57,6 +58,7 @@ private enum PinnedRoutineMetricKind: String {
 
 private struct PinnedRoutineWidgetModel {
   let hasRoutine: Bool
+  let illustrationId: String
   let title: String
   let detailLines: [String]
   let checklistItems: [PinnedRoutineChecklistItem]
@@ -77,6 +79,7 @@ private struct PinnedRoutineWidgetModel {
 
   init(
     hasRoutine: Bool,
+    illustrationId: String = "checklist",
     title: String,
     detailLines: [String],
     checklistItems: [PinnedRoutineChecklistItem],
@@ -96,6 +99,7 @@ private struct PinnedRoutineWidgetModel {
     titleHighlightOpacity: Double = 0
   ) {
     self.hasRoutine = hasRoutine
+    self.illustrationId = illustrationId
     self.title = title
     self.detailLines = detailLines
     self.checklistItems = checklistItems
@@ -116,7 +120,11 @@ private struct PinnedRoutineWidgetModel {
   }
 }
 
-private let pinnedRoutineEmptyMessage = "홈 화면에서 위젯을 길게 눌러 오늘의 주인공을 고르세요"
+private let pinnedRoutineEmptyMessage = PokitWidgetL10n.text(
+  ko: "앱에서 할 일을 먼저 시작해 주세요",
+  en: "Start a to-do in the app first.",
+  ja: "アプリでタスクを始めてください。"
+)
 
 private func pinnedRoutineEmptyModel(
   faceHex: String? = nil,
@@ -212,6 +220,7 @@ private func model(from json: PinnedRoutineSnapshotJson) -> PinnedRoutineWidgetM
 
   return PinnedRoutineWidgetModel(
     hasRoutine: true,
+    illustrationId: json.illustrationId ?? json.iconName ?? "checklist",
     title: title,
     detailLines: Array(lines.prefix(3)),
     checklistItems: Array(items.prefix(8)),
@@ -287,39 +296,12 @@ private struct PinnedRoutineEntry: TimelineEntry {
 @available(iOS 17.0, *)
 private struct PinnedRoutineProvider: AppIntentTimelineProvider {
   func placeholder(in context: Context) -> PinnedRoutineEntry {
-    // 갱신·루틴 전환 시 시스템이 placeholder를 잠깐 그린다.
-    // 체중 스파크라인 샘플을 쓰면 다른 루틴으로 바꿀 때도 그래프 잔상이 보인다.
-    PinnedRoutineEntry(
-      date: Date(),
-      model: PinnedRoutineWidgetModel(
-        hasRoutine: true,
-        title: "Routine",
-        detailLines: [],
-        checklistItems: [
-          PinnedRoutineChecklistItem(text: "Item", done: true, timeLabel: ""),
-          PinnedRoutineChecklistItem(text: "Item", done: false, timeLabel: ""),
-        ],
-        progressLabel: "1/2",
-        metricKind: .checklist,
-        progressRatio: 0.5,
-        heroLine: "",
-        subLine: "",
-        sparkWeights: [],
-        isCompleted: false,
-        emptyMessage: "",
-        faceHex: "#FFE566",
-        inkHex: "#111111",
-        titleHighlightHex: nil,
-        titleHighlightOpacity: 0
-      )
-    )
+    PinnedRoutineEntry(date: Date(), model: pinnedRoutineEmptyModel())
   }
 
   func snapshot(for configuration: SelectPinnedRoutineIntent, in context: Context) async -> PinnedRoutineEntry {
-    PinnedRoutineEntry(
-      date: Date(),
-      model: loadPinnedRoutineWidgetModel(categoryKey: configuration.routine?.id)
-    )
+    let model = loadPinnedRoutineWidgetModel(categoryKey: configuration.routine?.id)
+    return PinnedRoutineEntry(date: Date(), model: model)
   }
 
   func timeline(for configuration: SelectPinnedRoutineIntent, in context: Context) async -> Timeline<PinnedRoutineEntry> {
@@ -519,16 +501,46 @@ private struct PinnedRoutineEntryView: View {
 
   var body: some View {
     let model = entry.model
-    return DayPlanPostItChrome {
-      Group {
-        if model.hasRoutine {
-          content(model: model)
-        } else {
-          emptyContent(message: model.emptyMessage)
-        }
+    VStack(alignment: .leading, spacing: 5) {
+      HStack(alignment: .top) {
+        pokitWidgetIllustration(model.illustrationId)
+          .resizable().scaledToFit().frame(width: 46, height: 46)
+          .accessibilityHidden(true)
+        Spacer(minLength: 4)
+        VStack(alignment: .trailing, spacing: 0) {
+          Text(entry.date.formatted(.dateTime.day()))
+            .font(.system(size: 27, weight: .light, design: .rounded))
+          Text(entry.date.formatted(.dateTime.month(.abbreviated).year(.twoDigits)).uppercased())
+            .font(.system(size: 8, weight: .medium))
+        }.foregroundStyle(ink)
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      Text(model.hasRoutine ? model.title : PokitWidgetL10n.routineName)
+        .font(.system(size: 17, weight: .bold, design: .rounded))
+        .foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.75)
+      if !model.hasRoutine {
+        Text(model.emptyMessage).font(.system(size: 10))
+          .foregroundStyle(muted).lineLimit(3)
+      } else if !model.checklistItems.isEmpty {
+        ForEach(Array(model.checklistItems.prefix(2).enumerated()), id: \.offset) { _, item in
+          HStack(spacing: 5) {
+            PinnedCompletionCheck(checked: item.done, size: 11)
+            Text(item.text).font(.system(size: 10, weight: .medium))
+              .foregroundStyle(item.done ? muted : ink)
+              .strikethrough(item.done).lineLimit(1)
+          }
+        }
+      } else {
+        Text(model.heroLine.isEmpty ? (model.detailLines.first ?? model.subLine) : model.heroLine)
+          .font(.system(size: 11, weight: .medium)).foregroundStyle(ink).lineLimit(2)
+      }
+      Spacer(minLength: 0)
+      if model.hasRoutine, !model.progressLabel.isEmpty {
+        Text(model.progressLabel).font(.system(size: 9, weight: .medium))
+          .foregroundStyle(muted).lineLimit(1)
+      }
     }
+    .padding(12)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   @ViewBuilder
@@ -801,13 +813,14 @@ struct PinnedRoutineWidget: Widget {
           inkHex: entry.model.inkHex,
           mutedHex: entry.model.mutedHex
         )
-        .containerBackground(for: .widget) { face }
+        .containerBackground(for: .widget) { PokitWidgetPaper(face: face) }
         .contentMargins(.all, 0)
         .widgetURL(PokitAppGroup.WidgetOpenURL.dayPlan)
     }
     .configurationDisplayName("widget.routine.name")
     .description("widget.routine.galleryDescription")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    .supportedFamilies([.systemSmall])
+    .contentMarginsDisabled()
   }
 }
 

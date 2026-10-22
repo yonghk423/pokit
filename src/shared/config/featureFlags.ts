@@ -7,7 +7,10 @@ export const FEATURE_FLAGS = {
   basicRoutineListLayout: false,
   /** 오늘 화면의 날짜 헤더 줄을 임시로 숨긴다. */
   dailyPlanDateHeader: false,
-  /** 하루 활동 시간 범위 설정을 보류한다. 저장된 시간·알림 설정은 보존한다. */
+  /**
+   * 첫 실행 시간 설정과 하루 활동 시간 범위.
+   * 화면·저장 코드는 유지하고, false면 게이트와 프리패치가 실행되지 않는다.
+   */
   dailyRhythmWindow: false,
   /** 잠금화면 메모는 기능·저장 내용을 유지하고 상단 진입 아이콘만 임시로 숨긴다. */
   quickMemoShortcut: false,

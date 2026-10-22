@@ -3,7 +3,7 @@ import type { CustomFlowIconCategoryId } from './customFlowIconCategories';
 
 export const ROUTINE_ILLUSTRATIONS = [
   { id: 'routine:exercise', category: 'exercise', labels: { ko: '운동', en: 'Exercise', ja: '運動' }, keywords: '운동 헬스 산책 달리기 dumbbell workout fitness walk run 筋トレ 散歩' },
-  { id: 'routine:reading', category: 'study', labels: { ko: '독서', en: 'Reading', ja: '読書' }, keywords: '독서 공부 책 book study learning 勉強 本' },
+  { id: 'routine:reading', category: 'study', labels: { ko: '책읽기', en: 'Reading', ja: '読書' }, keywords: '책읽기 독서 공부 책 book study learning 勉強 本' },
   { id: 'routine:water', category: 'health', labels: { ko: '물 마시기', en: 'Water', ja: '水分補給' }, keywords: '물 수분 water drink hydration 水' },
   { id: 'routine:meal', category: 'food', labels: { ko: '식사', en: 'Meal', ja: '食事' }, keywords: '식사 요리 아침 점심 저녁 food cooking breakfast 食事 料理' },
   { id: 'routine:sleep', category: 'rest', labels: { ko: '수면', en: 'Sleep', ja: '睡眠' }, keywords: '수면 휴식 잠 sleep rest bedtime 休憩' },

@@ -1,4 +1,5 @@
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { syncComicSceneWidgetToWidget } from './comicSceneWidgetSync';
 import { COMIC_CHARACTERS, DEFAULT_COMIC_CHARACTER_ID } from './comicCharacters';
 import { normalizeComicScenes, type ComicDayScene } from './comicDayStorage';
 
@@ -6,7 +7,10 @@ export const COMIC_DIARY_STORAGE_KEY = 'pokit:comic-diaries:v1';
 export type ComicDiary = { id: string; title: string; characterId: string; scenes: ComicDayScene[]; createdAt: number; updatedAt: number };
 export type ComicDiaryLibrary = { version: 1; diaries: ComicDiary[]; activeId: string | null; migratedLegacyKeys: string[] };
 const knownCharacter = (id: unknown): id is string => COMIC_CHARACTERS.some(character => character.id === id);
-export function saveComicDiaryLibrary(library: ComicDiaryLibrary) { localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, library); }
+export function saveComicDiaryLibrary(library: ComicDiaryLibrary) {
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, library);
+  syncComicSceneWidgetToWidget(library);
+}
 
 /** Import every dated record once, leaving its original data intact as a backup. */
 export function loadComicDiaryLibrary(currentDate: string, titleForNumber: (number: number) => string): ComicDiaryLibrary {

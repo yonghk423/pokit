@@ -3,6 +3,7 @@ import {
   filterDayPlanFlowBlocks,
   HEALTH_INTAKE_CATEGORY_KEY,
   HEALTH_INTAKE_LABEL_KO,
+  HEALTH_INTAKE_LABEL_KO_LEGACY,
   isHealthIntakeRelatedCategoryKey,
   parseHHmmToMinutes,
   listTodayPlanCategoryKeys,
@@ -106,7 +107,8 @@ function isMedicineFlowBlock(categoryKey: string, categoryLabel: string): boolea
     isHealthIntakeRelatedCategoryKey(categoryKey) ||
     categoryKey === 'medicine' ||
     categoryLabel === MEDICINE_CATEGORY_LABEL ||
-    categoryLabel === HEALTH_INTAKE_LABEL_KO
+    categoryLabel === HEALTH_INTAKE_LABEL_KO ||
+    categoryLabel === HEALTH_INTAKE_LABEL_KO_LEGACY
   );
 }
 

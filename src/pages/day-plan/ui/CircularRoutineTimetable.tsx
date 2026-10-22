@@ -27,6 +27,10 @@ export type CircularRoutineItem = {
   key: string; label: string; icon: string; timeLabel?: string; dateKey?: string;
   startMinutes?: number; startsNextDay?: boolean; completed: boolean;
   faceColor?: string; inkColor?: string; summary?: string;
+  /** 한 줄에 하나씩 나열. 칸보다 많으면 카드가 말줄임으로 자른다. */
+  summaryLines?: readonly string[];
+  /** 요약 아래에 항상 한 줄로 붙는 값. 체중 목표 등. */
+  summaryFoot?: string;
 };
 type Props = {
   timeEnded?: boolean;

@@ -12,7 +12,7 @@ describe('resolveDayPlanBlockDisplayTitle', () => {
   it('falls back to korean catalog labels for raw titles', () => {
     expect(
       resolveDayPlanBlockDisplayTitle({ title: 'reading', categoryKey: 'reading' }),
-    ).toBe('독서');
+    ).toBe('책읽기');
     expect(
       resolveDayPlanBlockDisplayTitle({
         title: 'customFlow:preset_daily_recycle',

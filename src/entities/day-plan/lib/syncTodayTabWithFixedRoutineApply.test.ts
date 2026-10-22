@@ -432,12 +432,12 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       'fasting',
     ]);
     expect(patch?.planBlocks?.map((block) => block.title)).toEqual([
-      '건강을 위한 섭취',
-      '체중조절',
+      '영양 챙기기',
+      '체중 관리',
     ]);
     expect(patch?.planBlocks?.map((block) => block.category)).toEqual([
-      '건강을 위한 섭취',
-      '체중조절',
+      '영양 챙기기',
+      '체중 관리',
     ]);
     expect(patch?.priorityCategoryOrder).toBeUndefined();
   });
@@ -476,8 +476,8 @@ describe('computeSyncTodayTabWithFixedRoutineApply', () => {
       ],
       activeSetIds: ['set_weekend'],
     });
-    expect(patch?.planBlocks?.map((block) => block.title)).toEqual(['독서']);
-    expect(patch?.planBlocks?.map((block) => block.category)).toEqual(['독서']);
+    expect(patch?.planBlocks?.map((block) => block.title)).toEqual(['책읽기']);
+    expect(patch?.planBlocks?.map((block) => block.category)).toEqual(['책읽기']);
   });
 
   it('restores the exact stored routine slot after today-plan window clamping', () => {

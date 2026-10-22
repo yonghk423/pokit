@@ -66,7 +66,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 import { prefetchPuzzleGuideAssets } from '@shared/lib/puzzle-guide-assets';
-import { prefetchWidgetGuideAssets } from '@shared/lib/widget-guide-assets';
 
 import {
   buildSettingsPalette,
@@ -132,8 +131,6 @@ export function SettingsPage() {
   useFocusEffect(
     useCallback(() => {
       setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
-      // 설명서 진입 전에 이미지를 미리 올려 흰 스테이지 대기를 줄인다.
-      void prefetchWidgetGuideAssets(locale);
       if (FEATURE_FLAGS.puzzle) void prefetchPuzzleGuideAssets();
       if (SHOW_POKIT_PRO_SETTINGS) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
@@ -534,33 +531,6 @@ export function SettingsPage() {
             <IconSymbol name="chevron.right" size={14} color={p.chevron} />
           </Pressable>
           ) : null}
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/widget-guide');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.widgetGuide', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="square.grid.2x2"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.widgetGuideTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.widgetGuideDesc', locale)}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
         </SettingsSection>
 
         {SHOW_NOTIFICATION_SETTINGS ? (

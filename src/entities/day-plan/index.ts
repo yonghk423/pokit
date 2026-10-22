@@ -334,6 +334,7 @@ export {
   getInitialHealthIntakeDataConfig,
   HEALTH_INTAKE_CATEGORY_KEY,
   HEALTH_INTAKE_LABEL_KO,
+  HEALTH_INTAKE_LABEL_KO_LEGACY,
   isHealthIntakeRelatedCategoryKey,
   mergeLegacyHealthIntakeFromParts,
   normalizeCatalogKeysAfterHealthIntakeMerge,
@@ -412,7 +413,7 @@ export {
 export type { ReadingBookCatalogSource } from './lib/readingBookCatalog';
 export { readingBookEntryToShareText } from './lib/readingBookShareText';
 export {
-  bookMatchesReadingLibraryQuery, DEFAULT_READING_LIVE_ACTIVITY_CONFIG, deriveReadingBookProgress, deriveReadingProgress, ensureReadingBookPages,
+  bookMatchesReadingLibraryQuery, currentReadingBookTitles, DEFAULT_READING_LIVE_ACTIVITY_CONFIG, deriveReadingBookProgress, deriveReadingProgress, ensureReadingBookPages,
   firstAladinBookEntry, getInitialReadingLiveActivityConfig, makeReadingBookId,
   makeSeedLittlePrinceBook,
   normalizeReadingBookMemo,

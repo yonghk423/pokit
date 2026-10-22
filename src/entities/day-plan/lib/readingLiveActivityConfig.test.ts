@@ -9,6 +9,7 @@ import {
   normalizeReadingLiveActivityConfig,
   normalizeReadingMetricSelection,
   readingDisplayTitle,
+  currentReadingBookTitles,
   sortReadingBooksByAddedAt,
   sortReadingBooksByNewestFirst,
   type ReadingBookEntry,
@@ -223,6 +224,16 @@ describe('readingLiveActivityConfig', () => {
       books: [{ id: 'b1', title: '텍스트만', startPage: 1, targetPage: 100 }],
     });
     expect(firstAladinBookEntry(cfg)).toBeNull();
+  });
+
+  it('lists only books currently being read, newest first', () => {
+    expect(currentReadingBookTitles([
+      { id: 'old', title: '  데미안  ', startPage: 1, targetPage: 10, status: 'reading', addedAtMs: 1 },
+      { id: 'want', title: '읽고 싶은 책', startPage: 1, targetPage: 10, status: 'want', addedAtMs: 3 },
+      { id: 'done', title: '다 읽은 책', startPage: 1, targetPage: 10, status: 'done', addedAtMs: 4 },
+      { id: 'new', title: '어린왕자', startPage: 1, targetPage: 10, status: 'reading', addedAtMs: 2 },
+      { id: 'blank', title: '   ', startPage: 1, targetPage: 10, status: 'reading', addedAtMs: 5 },
+    ])).toEqual(['어린왕자', '데미안']);
   });
 
   it('defaults book status to reading and preserves valid values', () => {

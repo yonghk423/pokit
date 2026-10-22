@@ -15,7 +15,9 @@ import { normalizeRoutineDisplayName, readRoutineDisplayNameFromConfig } from '.
 import { normalizeRoutineSummary } from './routineSummary';
 
 export const HEALTH_INTAKE_CATEGORY_KEY = 'healthIntake';
-export const HEALTH_INTAKE_LABEL_KO = '건강을 위한 섭취';
+export const HEALTH_INTAKE_LABEL_KO = '영양 챙기기';
+/** 예전 표시명. 저장된 일정 제목 매칭용 */
+export const HEALTH_INTAKE_LABEL_KO_LEGACY = '건강을 위한 섭취';
 
 /** @deprecated 마이그레이션·히스토리 호환 */
 export const LEGACY_WATER_CATEGORY_KEY = 'water';

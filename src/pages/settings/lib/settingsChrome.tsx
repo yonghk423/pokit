@@ -4,7 +4,6 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
-import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 /** 오늘 탭 PlanModeSwitch 아이콘과 동일 스펙 */
@@ -38,7 +37,7 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   return {
     bg: isDark ? '#262B28' : '#F7F6F4',
-    surface: isDark ? c.bg : '#F7F6F4',
+    surface: isDark ? c.bg : '#FFFEFA',
     /** 행 구분 — 순검정 2px 대신 연한 구분선 */
     border: isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)',
     sectionTitle: c.textMuted,
@@ -120,7 +119,8 @@ export function SettingsSection({
   isDark?: boolean;
 }) {
   /** 항목마다 종이 결 + 단정한 오프셋 음영을 주어 현재 카드 스타일로 통일 */
-  const shadowColor = isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(40, 45, 38, 0.13)';
+  const shadowColor = isDark ? 'rgba(0, 0, 0, 0.30)' : 'rgba(62, 57, 47, 0.14)';
+  const frameColor = isDark ? 'rgba(224, 225, 215, 0.48)' : '#C8C2B4';
 
   return (
     <View style={styles.section}>
@@ -129,14 +129,13 @@ export function SettingsSection({
         if (isSectionHeading(child.props.style)) return child;
 
         return (
-          <CityPopCardShell
+          <SettingsRowCard
             key={child.key ?? `settings-row-${index}`}
-            isDark={isDark}
             faceColor={surface}
             shadowColor={shadowColor}
-            shadowOffset={SHADOW_SM}>
+            frameColor={frameColor}>
             {child}
-          </CityPopCardShell>
+          </SettingsRowCard>
         );
       })}
     </View>
@@ -145,6 +144,29 @@ export function SettingsSection({
 
 function isSectionHeading(style: unknown): boolean {
   return Array.isArray(style) && style.includes(settingsChromeStyles.sectionTitle);
+}
+
+function SettingsRowCard({
+  children,
+  faceColor,
+  shadowColor,
+  frameColor,
+}: {
+  children: ReactNode;
+  faceColor: string;
+  shadowColor: string;
+  frameColor: string;
+}) {
+  return (
+    <View style={styles.rowCardOuter}>
+      <View pointerEvents="none" style={[styles.rowCardShadow, { backgroundColor: shadowColor }]} />
+      <View style={[styles.rowCardFace, { backgroundColor: faceColor }]}>
+        <PaperGrain opacity={0.46} />
+        <HanddrawnFrame color={frameColor} />
+        {children}
+      </View>
+    </View>
+  );
 }
 
 export const settingsChromeStyles = StyleSheet.create({
@@ -223,6 +245,27 @@ const styles = StyleSheet.create({
   section: {
     gap: 10,
     overflow: 'visible',
+  },
+  rowCardOuter: {
+    position: 'relative',
+    width: '100%',
+    marginRight: SHADOW_SM,
+    marginBottom: SHADOW_SM,
+    overflow: 'visible',
+  },
+  rowCardShadow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 4,
+    transform: [{ translateX: SHADOW_SM }, { translateY: SHADOW_SM }],
+  },
+  rowCardFace: {
+    position: 'relative',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   iconShell: {
     position: 'relative',

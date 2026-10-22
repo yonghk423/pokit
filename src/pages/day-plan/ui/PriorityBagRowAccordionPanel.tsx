@@ -458,28 +458,6 @@ export function PriorityBagRowAccordionPanel({
     [persistChecklist, tasks, toggleTask],
   );
 
-  /**
-   * 초기(첫 팁 미열람): 첫 항목 체크 + 1번 포스트잇.
-   * 첫 팁을 본 뒤에는 체크 상태를 강제하지 않는다.
-   */
-  useEffect(() => {
-    if (!isWeekTour || tasks.length === 0) return;
-    if (loadPokitWeekTourFirstTipSeen()) return;
-    const first = tasks[0];
-    if (!first) return;
-
-    if (!first.done) {
-      persistChecklist(
-        tasks.map((row, index) => (index === 0 ? { ...row, done: true } : row)),
-      );
-    }
-
-    if (tourTipStep === 0 && tourTipTaskId === first.id) return;
-
-    setTourTipTaskId(first.id);
-    setTourTipStep(0);
-  }, [isWeekTour, persistChecklist, tasks, tourTipStep, tourTipTaskId]);
-
   const widgetNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const puzzleNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tourTipStepRef = useRef(tourTipStep);

@@ -8,7 +8,7 @@ describe('resolveStandardCatalogDisplayLabel', () => {
   it('maps stored Korean health/fasting names to English', () => {
     useAppLocaleStore.setState({ locale: 'en' });
     expect(resolveStandardCatalogDisplayLabel('healthIntake', '건강을 위한 섭취')).toBe(
-      'Health intake',
+      'Nutrition',
     );
     expect(resolveStandardCatalogDisplayLabel('fasting', '체중조절')).toBe('Weight management');
   });
@@ -16,7 +16,7 @@ describe('resolveStandardCatalogDisplayLabel', () => {
   it('maps stored Korean names to Japanese', () => {
     useAppLocaleStore.setState({ locale: 'ja' });
     expect(resolveStandardCatalogDisplayLabel('healthIntake', '건강을 위한 섭취')).toBe(
-      '健康のための摂取',
+      '栄養を整える',
     );
     expect(resolveStandardCatalogDisplayLabel('fasting', '체중조절')).toBe('体重管理');
   });

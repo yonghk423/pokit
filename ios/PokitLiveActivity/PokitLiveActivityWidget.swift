@@ -720,16 +720,11 @@ struct PokitLiveActivityBundle: WidgetBundle {
     if #available(iOS 17.0, *) {
       return WidgetBundleBuilder.buildBlock(
         PinnedRoutineWidget(),
-        BookstoreWidget(),
-        NoteWidget(),
-        DayPlanHomeWidget(),
-        DayPlanLockWidget(),
+        ComicSceneWidget(),
         PokitLiveActivityWidget()
       )
     }
     return WidgetBundleBuilder.buildBlock(
-      DayPlanHomeWidget(),
-      DayPlanLockWidget(),
       PokitLiveActivityWidget()
     )
   }

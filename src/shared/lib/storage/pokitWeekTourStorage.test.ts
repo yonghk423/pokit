@@ -24,15 +24,13 @@ describe('pokitWeekTourStorage', () => {
 
   it('seeds tour into empty bag for first-time users only', () => {
     expect(loadPokitWeekTourSeeded()).toBe(false);
-    expect(nextOrderWithPokitWeekTourSeed([])).toEqual([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+    expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
   });
 
   it('re-seeds empty bag when tutorial is not finished, even after seeded flag', () => {
     markPokitWeekTourSeeded('2026-09-18');
     expect(loadPokitWeekTourSeeded()).toBe(true);
-    expect(nextOrderWithPokitWeekTourSeed([], '2026-09-18')).toEqual([
-      BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
-    ]);
+    expect(nextOrderWithPokitWeekTourSeed([], '2026-09-18')).toBeNull();
   });
 
   it('does not re-seed empty bag on a later day after it was already seeded', () => {

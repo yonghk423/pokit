@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 // MARK: - JSON (RN `PersistedDayPlan` + widget payload)
@@ -591,5 +592,77 @@ struct DayPlanPostItChrome<Content: View>: View {
       .padding(.top, topPadding ?? (isSmall ? 22 : 24))
       .padding(.bottom, isSmall ? 12 : 14)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+// App artwork is bundled in the extension; SF Symbols are only legacy IDs.
+func pokitWidgetIllustration(_ id: String) -> Image {
+  let controls: [String: String] = [
+    "arrow.clockwise": "control_reset",
+    "arrow.down.app.fill": "control_send",
+    "bell": "control_bell",
+    "bell.fill": "control_bell",
+    "book.closed.fill": "control_book",
+    "book.fill": "control_book",
+    "calendar": "control_calendar",
+    "chart.bar.fill": "control_chart",
+    "checklist": "control_checklist",
+    "checkmark.circle": "control_checklist",
+    "checkmark.circle.fill": "control_checklist",
+    "chevron.down": "control_down",
+    "chevron.up": "control_up",
+    "clock": "control_clock",
+    "doc.on.doc": "control_stack",
+    "figure.stand": "control_scale",
+    "hand.raised.fill": "routine_abstain",
+    "info.circle": "control_info",
+    "keyboard.chevron.compact.down": "control_keyboard",
+    "list.bullet.rectangle": "control_list",
+    "magnifyingglass": "control_search",
+    "megaphone.fill": "control_megaphone",
+    "note.text": "control_memo",
+    "paintbrush.fill": "control_brush",
+    "paperplane.fill": "control_send",
+    "pencil.and.list.clipboard": "control_checklist",
+    "photo": "control_photos",
+    "photo.on.rectangle.angled": "control_photos",
+    "pills.fill": "control_pills",
+    "plus.circle": "control_plus-circle",
+    "rectangle.stack": "control_stack",
+    "scalemass.fill": "control_scale",
+    "slider.horizontal.3": "control_sliders",
+    "square.and.arrow.down": "control_save",
+    "square.and.arrow.up": "control_send",
+    "square.and.pencil": "control_memo",
+    "square.grid.2x2": "control_grid",
+    "square.stack": "control_stack",
+    "star.fill": "control_star",
+    "tag": "control_tag",
+    "text.alignleft": "control_memo",
+    "text.magnifyingglass": "control_search",
+    "text.quote": "control_memo",
+    "textformat": "control_letters",
+    "timer": "control_timer",
+    "trash": "control_trash",
+    "trash.fill": "control_trash",
+  ]
+  let name = id.hasPrefix("routine:") ? "routine_" + String(id.dropFirst(8)) : (controls[id] ?? "control_checklist")
+  return Image(UIImage(named: name) != nil ? name : "control_checklist")
+}
+
+struct PokitWidgetPaper: View {
+  let face: Color
+  var body: some View {
+    GeometryReader { proxy in
+      ZStack {
+        face
+        Image("widget_paper").resizable().scaledToFill()
+          .frame(width: proxy.size.width, height: proxy.size.height)
+          .blendMode(.multiply).opacity(0.65)
+        Image("widget_grain").resizable().scaledToFill()
+          .frame(width: proxy.size.width, height: proxy.size.height)
+          .blendMode(.multiply).opacity(0.24)
+      }.clipped()
+    }.allowsHitTesting(false)
   }
 }

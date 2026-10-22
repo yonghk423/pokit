@@ -198,6 +198,15 @@ export function sortReadingBooksByNewestFirst(
   return sortReadingBooksByAddedAt(books, 'newest');
 }
 
+/** 카드에 나열할 「읽는 중」 책 제목. 읽고 싶은 책·다 읽은 책은 빠진다. */
+export function currentReadingBookTitles(books: readonly ReadingBookEntry[]): string[] {
+  return sortReadingBooksByNewestFirst(
+    books.filter((book) => normalizeReadingBookStatus(book.status) === 'reading'),
+  )
+    .map((book) => book.title.trim())
+    .filter((title) => title.length > 0);
+}
+
 export function bookMatchesReadingLibraryQuery(book: ReadingBookEntry, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;

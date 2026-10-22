@@ -1,7 +1,7 @@
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -29,12 +29,15 @@ import {
 } from '@shared/lib/storage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 const ICON = 34;
 const ICON_SHADOW = 2;
+const LIST_ROW_SHADOW = 2;
 /** 미읽음 점 — 파스텔 톤 진한 레드 */
 const BADGE = '#C45C5C';
 
@@ -89,7 +92,39 @@ function RowIcon({
   );
 }
 
-/** 설정 → 공지사항 — 설정 행과 같은 카드·아이콘 결 */
+function AnnouncementListCard({
+  face,
+  frame,
+  shadow,
+  children,
+}: {
+  face: string;
+  frame: string;
+  shadow: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={[styles.listRowShell, { marginRight: LIST_ROW_SHADOW, marginBottom: LIST_ROW_SHADOW }]}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.listRowShadow,
+          {
+            backgroundColor: shadow,
+            transform: [{ translateX: LIST_ROW_SHADOW }, { translateY: LIST_ROW_SHADOW }],
+          },
+        ]}
+      />
+      <View style={[styles.listRowFace, { backgroundColor: face }]}>
+        <PaperGrain opacity={0.46} />
+        <HanddrawnFrame color={frame} />
+        {children}
+      </View>
+    </View>
+  );
+}
+
+/** 설정 → 공지사항 — 설정 행과 같은 종이 카드 */
 export function AnnouncementsPage() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -105,7 +140,9 @@ export function AnnouncementsPage() {
   const [selected, setSelected] = useState<Announcement | null>(null);
 
   const pageBg = rf.bg;
-  const cardFace = isDark ? rf.surfaceAlt : pageBg;
+  const cardFace = isDark ? rf.bg : '#FFFEFA';
+  const listFrame = isDark ? 'rgba(224, 225, 215, 0.48)' : '#C8C2B4';
+  const listShadow = isDark ? 'rgba(0, 0, 0, 0.30)' : 'rgba(62, 57, 47, 0.14)';
   const rowBorder = isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)';
   /** 설정 탭 SettingsRowIcon과 동일 — 흰 면 · 검정 테두리 · 솔리드 음영 */
   const iconColor = isDark ? '#FAFAFA' : '#000000';
@@ -229,7 +266,7 @@ export function AnnouncementsPage() {
           ) : null}
 
           {empty ? (
-            <CityPopCardShell isDark={isDark} faceColor={cardFace} shadowColor={cardShadow} shadowOffset={2}>
+            <AnnouncementListCard face={cardFace} frame={listFrame} shadow={listShadow}>
               <View style={styles.emptyInner}>
                 <RowIcon
                   color={iconColor}
@@ -241,27 +278,23 @@ export function AnnouncementsPage() {
                 />
                 <ThemedText style={[styles.helper, { color: rf.textMuted }]}>{t('announcements.empty')}</ThemedText>
               </View>
-            </CityPopCardShell>
+            </AnnouncementListCard>
           ) : null}
 
           {!loading && !error && items.length > 0 ? (
-            <CityPopCardShell isDark={isDark} faceColor={cardFace} shadowColor={cardShadow} shadowOffset={2}>
-              {items.map((item, index) => {
+            <View style={styles.list}>
+              {items.map((item) => {
                 const unread = !readIds.has(item.id);
                 const meta = `${priorityLabel(item.priority)} · ${formatPublishedAt(item.publishedAt, locale)}`;
                 return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => openDetail(item)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      unread ? `${item.title}, ${t('announcements.unreadHint')}` : item.title
-                    }
-                    style={[
-                      styles.row,
-                      index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: rowBorder } : null,
-                    ]}>
-                    <View style={styles.rowLeft}>
+                  <AnnouncementListCard key={item.id} face={cardFace} frame={listFrame} shadow={listShadow}>
+                    <Pressable
+                      onPress={() => openDetail(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        unread ? `${item.title}, ${t('announcements.unreadHint')}` : item.title
+                      }
+                      style={styles.row}>
                       <View style={styles.rowText}>
                         <ThemedText style={[styles.rowTitle, { color: rf.text }]} numberOfLines={2}>
                           {item.title}
@@ -270,12 +303,12 @@ export function AnnouncementsPage() {
                           {meta}
                         </ThemedText>
                       </View>
-                    </View>
-                    <IconSymbol name="chevron.right" size={14} color={rf.textMuted} />
-                  </Pressable>
+                      <IconSymbol name="chevron.right" size={14} color={rf.textMuted} />
+                    </Pressable>
+                  </AnnouncementListCard>
                 );
               })}
-            </CityPopCardShell>
+            </View>
           ) : null}
         </ScrollView>
       </View>
@@ -374,8 +407,9 @@ const styles = StyleSheet.create({
   },
   topLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
   topPage: { fontSize: 16, fontWeight: '700', marginTop: 2, letterSpacing: -0.2 },
-  bodyPad: { flex: 1, paddingHorizontal: CityPopSpacing.marginMobile },
+  bodyPad: { flex: 1, paddingHorizontal: 8 },
   content: { gap: 14, paddingTop: 8 },
+  list: { gap: 10 },
   centerBlock: { alignItems: 'center', gap: 12, paddingVertical: 40 },
   helper: { fontSize: 14, textAlign: 'center', fontWeight: '500' },
   errorDetail: { fontSize: 12, textAlign: 'center' },
@@ -385,21 +419,31 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 18,
   },
+  listRowShell: {
+    position: 'relative',
+  },
+  listRowShadow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 4,
+  },
+  listRowFace: {
+    position: 'relative',
+    borderRadius: 4,
+    zIndex: 1,
+    overflow: 'hidden',
+  },
   row: {
     minHeight: 64,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-  },
-  rowLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    minWidth: 0,
   },
   rowText: { flex: 1, gap: 2, minWidth: 0 },
   rowTitle: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },

@@ -1,3 +1,5 @@
+import { loadComicDiaryLibrary } from '@pages/day-plan/lib/comicDiaryStorage';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
@@ -5,6 +7,7 @@ import { AppState } from 'react-native';
 import {
   syncTodayTabWithFixedRoutineApply,
   syncPinnedRoutineToWidget,
+  getLocalDateKey,
   ensureBookstoreNoteWidgetLifecycle,
   syncBookstoreAndNoteWidgets,
   seedPokitWeekTourIntoTodayIfNeeded,
@@ -48,7 +51,7 @@ import { initCrashlytics } from '@shared/lib/crashlytics';
 import { requestAppReviewIfDue } from '@shared/lib/support';
 
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
-import { useAppLocaleStore } from '@shared/lib/i18n';
+import { t, useAppLocaleStore } from '@shared/lib/i18n';
 import { useAppFontStore } from '@shared/lib/ui-font';
 import {
   ensureDefaultPriorityCatalog,
@@ -81,8 +84,8 @@ export function useAppBootstrap() {
       await initLocalStorageClient();
       if (cancelled) return;
 
-      // 첫 화면(하루 일과 온보딩) 이미지는 hydrate보다 먼저 올려 디코드 지연을 줄인다
-      if (!loadDailyRhythmOnboardingCompleted()) {
+      // 첫 화면 시간 설정이 켜져 있을 때만 온보딩 이미지를 미리 올린다.
+      if (FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted()) {
         void prefetchDailyRhythmOnboardingAssets();
       }
 
@@ -106,6 +109,7 @@ export function useAppBootstrap() {
       useDayPlanStore.getState().prunePastEndedBlocks();
       syncTodayTabWithFixedRoutineApply();
       syncPinnedRoutineToWidget();
+      loadComicDiaryLibrary(getLocalDateKey(), number => t('comicDiary.defaultTitle', { number }));
       ensureBookstoreNoteWidgetLifecycle();
       syncBookstoreAndNoteWidgets();
       seedPokitWeekTourIntoTodayIfNeeded();
@@ -116,8 +120,7 @@ export function useAppBootstrap() {
         blocks: plan.blocks,
       });
 
-      // 온보딩이 열려 있을 때는 이미지 프리패치를 스플래시 해제 전에 끝낸다
-      if (!loadDailyRhythmOnboardingCompleted()) {
+      if (FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted()) {
         await prefetchDailyRhythmOnboardingAssets();
       }
       if (!cancelled) setIsReady(true);

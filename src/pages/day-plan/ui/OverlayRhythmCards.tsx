@@ -24,6 +24,8 @@ import { overlayCardPose, overlayDeckFrame, overlayDeckLayout, loopDeckIndex, ov
 
 /** 카드 루틴 시간 UI — false면 표시·편집만 숨기고 하위 콜백·저장 로직은 유지 */
 const SHOW_CARD_ROUTINE_TIME = FEATURE_FLAGS.cardRoutineTimeEdit;
+/** 카드 상세의 완료 토글 — false면 화면에서만 숨기고 onComplete 연결은 유지 */
+const SHOW_CARD_COMPLETE = false;
 
 type CardOrigin = { left: number; top: number; width: number; height: number };
 /** 면색 미지정 — 포스트잇 기본값 white (`#FFFFFF` / 다크 `#3A3C52`) */
@@ -43,6 +45,44 @@ function CardDate({ dateKey, ink, scale = 1, compact = false }: { dateKey?: stri
   </View>;
 }
 
+/** 제목은 한 줄. 칸에 다 안 들어가면 마지막 줄은 말줄임. */
+function CardTitleList({
+  titles,
+  maxLines,
+  color,
+  fontSize,
+  lineHeight,
+  marginTop,
+}: {
+  titles: readonly string[];
+  maxLines: number;
+  color: string;
+  fontSize: number;
+  lineHeight: number;
+  marginTop: number;
+}) {
+  const clean = titles.map((title) => title.trim()).filter((title) => title.length > 0);
+  if (clean.length === 0 || maxLines < 1) return null;
+  const overflow = clean.length > maxLines;
+  const visible = overflow ? clean.slice(0, maxLines - 1) : clean;
+  return (
+    <View style={{ marginTop }}>
+      {visible.map((title, index) => (
+        <ThemedText
+          key={`${index}:${title}`}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={{ color, fontSize, lineHeight }}>
+          {title}
+        </ThemedText>
+      ))}
+      {overflow ? (
+        <ThemedText numberOfLines={1} style={{ color, fontSize, lineHeight }}>…</ThemedText>
+      ) : null}
+    </View>
+  );
+}
+
 function OverlayCard({ item, index, colorSlot, width, height, progress, mountedWindow, active, onPress, isDark }: {
   item: CircularRoutineItem; index: number; colorSlot: number; width: number; height: number; progress: SharedValue<number>; mountedWindow: number; active: boolean;
   onPress: () => void; isDark: boolean;
@@ -56,7 +96,12 @@ function OverlayCard({ item, index, colorSlot, width, height, progress, mountedW
   });
   const contentMotion = useAnimatedStyle(() => ({ opacity: overlayCardPose(index - visibleDeckProgress(progress.get(), mountedWindow)).contentOpacity }));
   const colors = cardColors(item, colorSlot, isDark);
-  const hasSummary = !!item.summary?.trim();
+  const summaryLines = item.summaryLines ?? [];
+  const summaryFoot = item.summaryFoot?.trim() ?? '';
+  const footLines = summaryFoot ? summaryFoot.split('\n').length : 0;
+  const hasSummary = summaryLines.length > 0 || !!item.summary?.trim() || summaryFoot.length > 0;
+  const summaryLineCount = footLines > 1 ? 4 : summaryFoot ? 5 : 6;
+  const summaryIcon = (hasSummary ? (footLines > 1 ? 68 : 84) : 140) * scale;
   return <Animated.View testID={`rhythm-card-${item.key}`} style={[s.card, {
     width: cardWidth, height: cardHeight,
     borderRadius: 12 * scale, backgroundColor: colors.paper,
@@ -66,15 +111,22 @@ function OverlayCard({ item, index, colorSlot, width, height, progress, mountedW
     </View>
     <Animated.View style={[s.body, contentMotion]}>
     <Pressable disabled={!active} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={t('dayPlan.cardOpenHint')} onPress={onPress} style={[s.body, { padding: 30 * scale }]}>
-      <View style={s.cardHead}><IconSymbol name={item.icon} size={(hasSummary ? 100 : 140) * scale} color={colors.ink} /><CardDate dateKey={item.dateKey} ink={colors.ink} scale={scale} /></View>
-      <ThemedText numberOfLines={2} adjustsFontSizeToFit style={{ color: colors.ink, fontSize: (hasSummary ? 30 : 42) * scale, lineHeight: (hasSummary ? 37 : 51) * scale, marginTop: (hasSummary ? 23 : 30) * scale }}>{item.label}</ThemedText>
+      <View style={s.cardHead}><IconSymbol name={item.icon} size={summaryIcon} color={colors.ink} /><CardDate dateKey={item.dateKey} ink={colors.ink} scale={scale} /></View>
+      <ThemedText numberOfLines={2} adjustsFontSizeToFit style={{ color: colors.ink, fontSize: (hasSummary ? 30 : 42) * scale, lineHeight: (hasSummary ? 37 : 51) * scale, marginTop: (hasSummary ? 16 : 30) * scale }}>{item.label}</ThemedText>
       {SHOW_CARD_ROUTINE_TIME ? (
         <View style={[s.time, { marginTop: 16 * scale }]}>
           <IconSymbol name="clock" size={19 * scale} color={colors.ink} />
           <ThemedText numberOfLines={1} style={{ color: colors.ink, fontSize: 20 * scale, lineHeight: 27 * scale }}>{item.timeLabel ?? t('dayPlan.timeUnsetHint')}</ThemedText>
         </View>
       ) : null}
-      {hasSummary ? <ThemedText numberOfLines={3} style={{ color: colors.ink, fontSize: 22 * scale, lineHeight: 31 * scale, marginTop: 17 * scale }}>{item.summary}</ThemedText> : null}
+      {summaryLines.length > 0 ? (
+        <CardTitleList titles={summaryLines} maxLines={summaryLineCount} color={colors.ink} fontSize={20 * scale} lineHeight={28 * scale} marginTop={12 * scale} />
+      ) : item.summary?.trim() ? (
+        <ThemedText numberOfLines={summaryLineCount} style={{ color: colors.ink, fontSize: 20 * scale, lineHeight: 28 * scale, marginTop: 12 * scale }}>{item.summary}</ThemedText>
+      ) : null}
+      {summaryFoot ? (
+        <ThemedText numberOfLines={Math.min(3, footLines)} style={{ color: colors.ink, fontSize: 18 * scale, lineHeight: 26 * scale, marginTop: 8 * scale }}>{summaryFoot}</ThemedText>
+      ) : null}
     </Pressable>
     </Animated.View>
   </Animated.View>;
@@ -102,7 +154,10 @@ function RhythmCardOverview({ items, width, height, isDark, enabled, progress, o
   return <ScrollView testID="rhythm-card-overview" scrollEnabled={enabled} showsVerticalScrollIndicator={false} contentContainerStyle={s.overviewContent} scrollEventThrottle={16} onScroll={event => { offset.current = event.nativeEvent.contentOffset.y; }}>
     {items.map((item, index) => {
       const colors = cardColors(item, index % 3, isDark);
-      const hasSummary = !!item.summary?.trim();
+      const summaryLines = item.summaryLines ?? [];
+      const summaryFoot = item.summaryFoot?.trim() ?? '';
+      const footLines = summaryFoot ? summaryFoot.split('\n').length : 0;
+      const hasSummary = summaryLines.length > 0 || !!item.summary?.trim() || summaryFoot.length > 0;
       return <OverviewCardMotion key={item.key} progress={progress} index={index} width={cardWidth} height={cardHeight}><Pressable testID={`rhythm-grid-card-${item.key}`} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={t('dayPlan.cardOpenHint')}
         onPress={() => {
           tapHaptic();
@@ -119,7 +174,14 @@ function RhythmCardOverview({ items, width, height, isDark, enabled, progress, o
         {SHOW_CARD_ROUTINE_TIME ? (
           <View style={[s.time, { marginTop: 5 }]}><IconSymbol name="clock" size={10} color={colors.ink} /><ThemedText numberOfLines={1} style={{ color: colors.ink, fontSize: 10, lineHeight: 14, flexShrink: 1 }}>{item.timeLabel ?? t('dayPlan.timeUnsetHint')}</ThemedText></View>
         ) : null}
-        {hasSummary ? <ThemedText numberOfLines={2} style={{ color: colors.ink, fontSize: 11, lineHeight: 15, marginTop: 7 }}>{item.summary}</ThemedText> : null}
+        {summaryLines.length > 0 ? (
+          <CardTitleList titles={summaryLines} maxLines={summaryFoot ? 3 : 4} color={colors.ink} fontSize={11} lineHeight={15} marginTop={7} />
+        ) : item.summary?.trim() ? (
+          <ThemedText numberOfLines={summaryFoot ? 3 : 4} style={{ color: colors.ink, fontSize: 11, lineHeight: 15, marginTop: 7 }}>{item.summary}</ThemedText>
+        ) : null}
+        {summaryFoot ? (
+          <ThemedText numberOfLines={Math.min(3, footLines)} style={{ color: colors.ink, fontSize: 11, lineHeight: 15, marginTop: 4 }}>{summaryFoot}</ThemedText>
+        ) : null}
       </Pressable></OverviewCardMotion>;
     })}
   </ScrollView>;
@@ -195,10 +257,12 @@ function ExpandedRhythmCard({ item, slot, origin, width, height, isDark, renderD
           {renderDetail({ ...item, faceColor: colors.paper, inkColor: colors.ink })}
         </ScrollView>
         <View style={s.detailFooter}>
-          <View style={s.complete}>
-            <CompletionRadioButton checked={item.completed} isDark={isDark} size={25} appearance="ink" motion="gentle" uncheckedColor={colors.ink} accessibilityLabel={t(item.completed ? 'dayPlan.completeCancelA11y' : 'dayPlan.completeA11y', { label: item.label })} onPress={() => onComplete(item.key)} />
-            <ThemedText style={{ color: colors.ink, fontSize: 13 }}>{t('common.complete')}</ThemedText>
-          </View>
+          {SHOW_CARD_COMPLETE ? (
+            <View style={s.complete}>
+              <CompletionRadioButton checked={item.completed} isDark={isDark} size={25} appearance="ink" motion="gentle" uncheckedColor={colors.ink} accessibilityLabel={t(item.completed ? 'dayPlan.completeCancelA11y' : 'dayPlan.completeA11y', { label: item.label })} onPress={() => onComplete(item.key)} />
+              <ThemedText style={{ color: colors.ink, fontSize: 13 }}>{t('common.complete')}</ThemedText>
+            </View>
+          ) : null}
           <PaperControl accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={close} style={s.closeButton}><ThemedText style={{ color: colors.ink, fontSize: 14 }}>{t('common.close')}</ThemedText></PaperControl>
         </View>
       </Animated.View>
@@ -474,5 +538,5 @@ const s = StyleSheet.create({
   detailBody: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 28 },
   detailFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 10 },
   complete: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  closeButton: { minWidth: 76, minHeight: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#5F655C', borderRadius: 4 },
+  closeButton: { marginLeft: 'auto', minWidth: 76, minHeight: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#5F655C', borderRadius: 4 },
 });

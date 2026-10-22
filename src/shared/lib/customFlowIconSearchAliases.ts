@@ -99,6 +99,7 @@ export const CUSTOM_FLOW_ICON_SEARCH_ALIASES: Record<string, readonly string[]> 
   "도움말": ["questionmark"],
   "도착": ["arrival"],
   "到着": ["arrival"],
+  "책읽기": ["book"],
   "독서": ["book"],
   "돈": ["dollarsign", "wonsign", "yensign"],
   "동작": ["motion"],

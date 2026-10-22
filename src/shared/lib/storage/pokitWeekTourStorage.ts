@@ -5,7 +5,6 @@ import {
   POKIT_WEEK_TOUR_STEP_COUNT,
 } from './defaultPriorityCatalog';
 import { loadGoalDetailCategoryConfig } from './goalDetailSettingsStorage';
-import { isStandardCatalogKeyHidden } from './hiddenStandardCatalogStorage';
 
 type PersistedPokitWeekTourSeed = {
   seeded: boolean;
@@ -143,17 +142,10 @@ export function hasPokitWeekTourProgress(): boolean {
  * 같은 날 탭 전환이 튜토리얼을 orphan으로 지운 경우만 복구한다.
  * 이미 시드한 뒤 날짜가 바뀌면(다음날 롤오버) 빈 담기에 다시 넣지 않는다.
  */
+/** 빠르게 둘러보기는 더 이상 오늘 목록에 넣지 않는다. */
 export function nextOrderWithPokitWeekTourSeed(
-  order: readonly string[],
-  todayKey?: string,
+  _order: readonly string[],
+  _todayKey?: string,
 ): string[] | null {
-  if (isStandardCatalogKeyHidden(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
-  if (order.includes(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)) return null;
-  if (order.length > 0) return null;
-  if (isPokitWeekTourChecklistComplete()) return null;
-  if (todayKey) {
-    const seededOn = loadPokitWeekTourSeededDate();
-    if (seededOn && seededOn !== todayKey) return null;
-  }
-  return [BUILTIN_POKIT_WEEK_TOUR_FLOW_ID];
+  return null;
 }

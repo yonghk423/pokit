@@ -2,10 +2,10 @@ import { t, type I18nKey } from '@shared/lib/i18n';
 
 /** 담기·루틴 탭 카탈로그에 보이는 표준 카테고리 표시명 — 단일 기준 */
 export const PRIORITY_CATALOG_PICKER_LABELS: Record<string, string> = {
-  healthIntake: '건강을 위한 섭취',
+  healthIntake: '영양 챙기기',
   water: '수분 섭취',
   fasting: '체중 관리',
-  reading: '독서',
+  reading: '책읽기',
   work: '노트',
   other: '오늘의 주인공 직접 설정',
 };
@@ -23,6 +23,8 @@ const STANDARD_LABEL_KEYS: Record<string, I18nKey> = {
 /** 예전에 쓰던 기본명 — 로케일 사전에 없어도 기본값으로 본다 */
 const STANDARD_LABEL_ALIASES: Record<string, readonly string[]> = {
   other: ['루틴 직접 설정'],
+  reading: ['독서', 'Reading', '読書'],
+  healthIntake: ['건강을 위한 섭취', '약 복용', 'Health intake', 'Medicine', '健康のための摂取', 'おくすり'],
   fasting: ['체중관리', '체중조절', '체중 조절', '단식', 'Weight control'],
 };
 

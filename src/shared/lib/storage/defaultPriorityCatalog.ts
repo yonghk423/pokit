@@ -88,7 +88,7 @@ export const POKIT_WEEK_TOUR_CHECKLIST_LABELS = [
   '나만의 루틴 만들기',
   '히스토리 확인하기',
   '오늘 루틴 확인하기',
-  '책방 열어보기',
+  '책읽기 열어보기',
   '잠금화면 메모 써보기',
   '노트 적어보기',
   '설정에서 레이아웃 바꿔보기',
@@ -130,29 +130,19 @@ export {
 /** @deprecated `health` 시스템 그룹으로 통합됨 — 마이그레이션용 */
 export const BUILTIN_HEALTH_GROUP_KEY = 'customGroup:preset_health' as const;
 
-/** 신규 설치 시 자동 시드되는 커스텀 그룹 */
+/** @deprecated 빠르게 둘러보기 튜토리얼과 함께 제거됨 */
 export const BUILTIN_TUTORIAL_GROUP_LABEL = '오늘의 주인공 사용해보기' as const;
 
-export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [
-  { key: BUILTIN_TUTORIAL_GROUP_KEY, label: BUILTIN_TUTORIAL_GROUP_LABEL },
-] as const;
+export const DEFAULT_BUILTIN_CUSTOM_GROUPS = [] as const;
 
-export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [
-  {
-    id: BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
-    groupKey: BUILTIN_TUTORIAL_GROUP_KEY,
-    displayName: POKIT_WEEK_TOUR_DISPLAY_NAME,
-    icon: 'routine:planning',
-    color: '#ffffff',
-    summary: POKIT_WEEK_TOUR_SUMMARY,
-    templateKey: 'checklist',
-    checklistLabels: POKIT_WEEK_TOUR_CHECKLIST_LABELS,
-  },
-];
+export const DEFAULT_BUILTIN_CUSTOM_FLOWS: readonly BuiltinCustomFlowDef[] = [];
 
 /** Removed from the default catalog; saved plans and detail data remain available. */
 export const RETIRED_DEFAULT_CUSTOM_FLOW_IDS: readonly string[] = [
-  BUILTIN_ABSTAIN_FLOW_ID, BUILTIN_STRETCHING_FLOW_ID, BUILTIN_DAILY_EXERCISE_FLOW_ID,
+  BUILTIN_ABSTAIN_FLOW_ID,
+  BUILTIN_STRETCHING_FLOW_ID,
+  BUILTIN_DAILY_EXERCISE_FLOW_ID,
+  BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
 ];
 
 /** 제거된 기본 커스텀 플로우 — 히스토리·레거시 표시·마이그레이션용 */

@@ -297,6 +297,7 @@ export function CreateCustomFlowSheet({
           {step === 'basics' ? (
             <View style={styles.basicsFace}>
               <View style={styles.sectionInner}>
+                <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.nameLabel')}</ThemedText>
                 <View style={[styles.inputShell, { backgroundColor: inputFaceBg }]}>
                   <PaperGrain opacity={0.22} />
                   <HanddrawnFrame color={pencil} />

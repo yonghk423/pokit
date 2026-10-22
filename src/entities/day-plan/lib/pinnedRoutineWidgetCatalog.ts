@@ -4,6 +4,9 @@ import {
   loadHiddenStandardCatalogKeys,
 } from '@shared/lib/storage';
 
+import { loadDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
+import { resolvePriorityRoutineCategoryKey } from './priorityRoutineInstance';
+
 import { resolveCategoryCatalogIcon } from './categoryCatalogAppearance';
 import { isCustomFlowCategoryKey } from './customFlowCategoryKey';
 import { resolveCustomFlowDisplayLabel } from './customFlowDisplayLabel';
@@ -31,6 +34,8 @@ function resolveCandidateLabel(categoryKey: string): string {
 
 /** 위젯 설정·App Group 번들에 넣을 루틴 후보 목록 */
 export function listPinnedRoutineWidgetCandidates(): PinnedRoutineWidgetCandidate[] {
+  const draft = loadDayPlanDraft();
+  const addedKeys = new Set((draft?.priorityCategoryOrder ?? []).map(resolvePriorityRoutineCategoryKey));
   const hidden = new Set(loadHiddenStandardCatalogKeys());
   const standards = getPriorityCatalogStandardKeys()
     .filter((key) => !hidden.has(key))
@@ -49,7 +54,7 @@ export function listPinnedRoutineWidgetCandidates(): PinnedRoutineWidgetCandidat
   const seen = new Set<string>();
   const out: PinnedRoutineWidgetCandidate[] = [];
   for (const row of [...customs, ...standards]) {
-    if (seen.has(row.key)) continue;
+    if (!addedKeys.has(resolvePriorityRoutineCategoryKey(row.key)) || seen.has(row.key)) continue;
     seen.add(row.key);
     out.push(row);
   }

@@ -38,6 +38,7 @@ describe('minuteOffsetToDateMs', () => {
 describe('resolveCategoryKeyFromLabel', () => {
   it('maps known Korean labels', () => {
     expect(resolveCategoryKeyFromLabel('독서')).toBe('reading');
+    expect(resolveCategoryKeyFromLabel('책읽기')).toBe('reading');
     expect(resolveCategoryKeyFromLabel('  수분 ')).toBe('water');
     expect(resolveCategoryKeyFromLabel('알 수 없음')).toBeNull();
   });

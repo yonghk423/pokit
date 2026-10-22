@@ -54,11 +54,6 @@ import { useGoalDetailSettingsPalette, type GoalDetailSettingsPalette } from '..
 
 import { ReadingAddBookSheet } from './ReadingAddBookSheet';
 import { ReadingBookDetailSheet } from './ReadingBookDetailSheet';
-import {
-  readingAccentOnInk,
-  readingStatusDoneFace,
-  readingStatusReadingFace,
-} from '../lib/readingAccent';
 
 import type { GoalDetailCategoryKey } from '../../../../model/types';
 
@@ -68,9 +63,8 @@ type SettingsPalette = GoalDetailSettingsPalette;
 const HEADER_ICON_SHADOW = 1;
 const HEADER_ICON_SOFT_SHADOW_LIGHT = 'rgba(0, 0, 0, 0.12)';
 const HEADER_ICON_SOFT_SHADOW_DARK = 'rgba(255, 255, 255, 0.12)';
-const LIST_ROW_SHADOW = HEADER_ICON_SHADOW;
-const LIST_SOFT_SHADOW_LIGHT = HEADER_ICON_SOFT_SHADOW_LIGHT;
-const LIST_SOFT_SHADOW_DARK = HEADER_ICON_SOFT_SHADOW_DARK;
+/** 설정 탭 리스트 카드와 동일 오프셋 */
+const LIST_ROW_SHADOW = 2;
 
 type LibraryTab = 'all' | ReadingBookStatus;
 
@@ -137,11 +131,13 @@ function ReadingBookListRow({
   const { locale, t } = useTranslation();
   const c = palette;
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
-  const status = normalizeReadingBookStatus(entry.status);
   const author = resolveReadingBookAuthor(entry);
   const coverUrl = resolveReadingBookCoverUrl(entry);
-  const softShadow = isDark ? LIST_SOFT_SHADOW_DARK : LIST_SOFT_SHADOW_LIGHT;
-  const faceWhite = isDark ? tone.surfaceAlt : '#FFFFFF';
+  const face = isDark ? tone.bg : '#FFFEFA';
+  const frame = isDark ? 'rgba(224, 225, 215, 0.48)' : '#C8C2B4';
+  const shadow = isDark ? 'rgba(0, 0, 0, 0.30)' : 'rgba(62, 57, 47, 0.14)';
+  const coverFrame = isDark ? 'rgba(255,255,255,0.55)' : '#000000';
+  const coverShadow = isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(24, 26, 46, 0.22)';
   const pagesLine = formatReadingBookPagesLine(entry);
   const latestDateKey = resolveLatestReadingDateKey(entry);
   const lastReadLine =
@@ -150,37 +146,23 @@ function ReadingBookListRow({
           date: formatReadingListDateKey(latestDateKey, locale),
         })
       : null;
-  const statusFace =
-    status === 'done'
-      ? readingStatusDoneFace(isDark)
-      : status === 'want'
-        ? isDark
-          ? 'rgba(255, 236, 179, 0.28)'
-          : '#FFE8A8'
-        : readingStatusReadingFace(isDark);
-  const statusLabelColor =
-    status === 'want' ? c.onSurface : readingAccentOnInk(isDark);
+  const metaLine = [statusLabelText, pagesLine, lastReadLine].filter(Boolean).join(' · ');
 
   return (
-    <View
-      style={[
-        styles.listRowShell,
-        {
-          marginRight: LIST_ROW_SHADOW,
-          marginBottom: LIST_ROW_SHADOW,
-        },
-      ]}>
+    <View style={[styles.listRowShell, { marginRight: LIST_ROW_SHADOW, marginBottom: LIST_ROW_SHADOW }]}>
       <View
         pointerEvents="none"
         style={[
           styles.listRowShadow,
           {
-            backgroundColor: softShadow,
+            backgroundColor: shadow,
             transform: [{ translateX: LIST_ROW_SHADOW }, { translateY: LIST_ROW_SHADOW }],
           },
         ]}
       />
-      <View style={[styles.listRowFace, { backgroundColor: faceWhite }]}>
+      <View style={[styles.listRowFace, { backgroundColor: face }]}>
+        <PaperGrain opacity={0.46} />
+        <HanddrawnFrame color={frame} />
         <Pressable
           accessibilityRole="button"
           accessibilityHint={statusLabelText}
@@ -189,20 +171,30 @@ function ReadingBookListRow({
             onPress();
           }}
           style={styles.listRow}>
-          {coverUrl ? (
-            <View style={styles.listCoverFrame}>
-              <Image source={{ uri: coverUrl }} style={styles.listCover} contentFit="cover" />
-            </View>
-          ) : (
+          <View style={styles.listCoverShell}>
             <View
+              pointerEvents="none"
               style={[
-                styles.listCoverFrame,
-                styles.listCoverFallback,
-                { backgroundColor: c.surfaceLow },
-              ]}>
-              <IconSymbol name="book.closed.fill" size={14} color={c.outline} />
-            </View>
-          )}
+                styles.listCoverShadow,
+                {
+                  backgroundColor: coverShadow,
+                  transform: [{ translateX: LIST_ROW_SHADOW }, { translateY: LIST_ROW_SHADOW }],
+                },
+              ]}
+            />
+            {coverUrl ? (
+              <View style={styles.listCoverFrame}>
+                <Image source={{ uri: coverUrl }} style={styles.listCover} contentFit="cover" />
+                <HanddrawnFrame color={coverFrame} />
+              </View>
+            ) : (
+              <View style={[styles.listCoverFrame, styles.listCoverFallback, { backgroundColor: isDark ? tone.surfaceAlt : '#F7F6F4' }]}>
+                <PaperGrain />
+                <HanddrawnFrame color={coverFrame} />
+                <IconSymbol name="book.closed.fill" size={16} color={isDark ? '#FAFAFA' : '#000000'} />
+              </View>
+            )}
+          </View>
           <View style={styles.listBody}>
             <ThemedText style={[styles.listTitle, { color: c.onSurface }]} numberOfLines={2}>
               {entry.title}
@@ -212,24 +204,11 @@ function ReadingBookListRow({
                 {author}
               </ThemedText>
             ) : null}
-            <View style={styles.listMetaChips}>
-              <View style={[styles.statusChip, { backgroundColor: statusFace }]}>
-                <ThemedText style={[styles.statusChipText, { color: statusLabelColor }]}>
-                  {statusLabelText}
-                </ThemedText>
-              </View>
-              <ThemedText style={[styles.pagesChipText, { color: c.onVariant }]} numberOfLines={1}>
-                {pagesLine}
-                {lastReadLine ? ` · ${lastReadLine}` : ''}
-              </ThemedText>
-            </View>
+            <ThemedText style={[styles.listMeta, { color: c.onVariant }]} numberOfLines={1}>
+              {metaLine}
+            </ThemedText>
           </View>
-          <View style={styles.listTrailing}>
-            {status === 'done' ? (
-              <IconSymbol name="checkmark.circle.fill" size={12} color={isDark ? '#FAFAFA' : '#111111'} />
-            ) : null}
-            <IconSymbol name="chevron.right" size={11} color={c.outline} />
-          </View>
+          <IconSymbol name="chevron.right" size={14} color={c.onVariant} />
         </Pressable>
       </View>
     </View>
@@ -967,7 +946,7 @@ const styles = StyleSheet.create({
   },
   listScrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingTop: 12,
     paddingBottom: 28,
   },
@@ -995,49 +974,52 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   listRowShadow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 0,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 4,
   },
   listRowFace: {
-    borderWidth: 0,
-    borderRadius: 0,
+    position: 'relative',
+    borderRadius: 4,
     zIndex: 1,
     overflow: 'hidden',
   },
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    minHeight: 60,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 64,
+  },
+  listCoverShell: {
+    position: 'relative',
+    width: 36,
+    height: 48,
+    flexShrink: 0,
+  },
+  listCoverShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 34,
+    height: 46,
   },
   listCoverFrame: {
-    width: 36,
-    height: 50,
-    borderWidth: 0,
+    width: 34,
+    height: 46,
     overflow: 'hidden',
+    zIndex: 1,
   },
   listCover: { width: '100%', height: '100%' },
   listCoverFallback: { alignItems: 'center', justifyContent: 'center' },
-  listBody: { flex: 1, minWidth: 0, gap: 1 },
-  listTitle: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2, lineHeight: 16 },
-  listAuthor: { fontSize: 10, fontWeight: '600', lineHeight: 13 },
-  listMetaChips: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 1,
-    flexWrap: 'wrap',
-  },
-  statusChip: {
-    borderWidth: 0,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  statusChipText: { fontSize: 8, fontWeight: '800', letterSpacing: -0.1 },
-  pagesChipText: { fontSize: 9, fontWeight: '700', letterSpacing: -0.1 },
-  listTrailing: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  listBody: { flex: 1, minWidth: 0, gap: 2 },
+  listTitle: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
+  listAuthor: { fontSize: 11, fontWeight: '500', lineHeight: 15 },
+  listMeta: { fontSize: 11, fontWeight: '500', lineHeight: 15 },
 
   emptyState: {
     paddingHorizontal: 16,

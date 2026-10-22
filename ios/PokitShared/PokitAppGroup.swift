@@ -10,6 +10,8 @@ public enum PokitAppGroup {
   public static let bookstoreWidgetJsonKey = "pokit_bookstore_widget_json"
   /// 노트 위젯 번들(페이지 목록 + 기본키)
   public static let noteWidgetJsonKey = "pokit_note_widget_json"
+  /// 만화 장면 위젯 번들(장면 목록 + 기본키)
+  public static let comicSceneWidgetJsonKey = "pokit_comic_scene_widget_json"
   /// 위젯 탭 → 앱 진입 시 적용할 planMode (한 번 읽으면 지움)
   public static let pendingPlanModeKey = "pokit_widget_pending_plan_mode"
   private static let legacyDayPlanJsonKey = "lockflow_day_plan_widget_json"
@@ -58,6 +60,13 @@ public enum PokitAppGroup {
 
   public static func readNoteWidgetJson(from ud: UserDefaults) -> String? {
     guard let value = ud.string(forKey: noteWidgetJsonKey), !value.isEmpty else {
+      return nil
+    }
+    return value
+  }
+
+  public static func readComicSceneWidgetJson(from ud: UserDefaults) -> String? {
+    guard let value = ud.string(forKey: comicSceneWidgetJsonKey), !value.isEmpty else {
       return nil
     }
     return value

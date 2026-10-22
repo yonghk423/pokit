@@ -30,13 +30,14 @@ import {
   isRemovedBuiltinCustomFlowId,
   isRemovedBuiltinCustomGroupKey,
   LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
-  POKIT_WEEK_TOUR_CHECKLIST_LABELS,
-  POKIT_WEEK_TOUR_DISPLAY_NAME,
   BUILTIN_TUTORIAL_GROUP_LABEL,
-  POKIT_WEEK_TOUR_SUMMARY,
 } from './defaultPriorityCatalog';
 import { updateStandardCatalogGroup } from './catalogItemGroupStorage';
 import { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
+import {
+  loadRoutineCatalogSelectionKeys,
+  saveRoutineCatalogSelectionKeys,
+} from './priorityCatalogFixedRoutinesStorage';
 import {
   appendGoalDetailCommittedCategoryKeys,
   listGoalDetailCategoryConfigKeys,
@@ -253,10 +254,13 @@ function unifyHealthCatalogGroups(): void {
 
 function mergeDefaultCustomGroups(): void {
   const cur = listCustomCatalogGroups();
+  // The defaults may currently be empty, but widen the tuple so loop items
+  // retain their catalog group type instead of narrowing to `never`.
+  const defaultGroups: readonly CustomCatalogGroup[] = DEFAULT_BUILTIN_CUSTOM_GROUPS;
   const byKey = new Map(cur.map((g) => [g.key, g]));
   let changed = false;
 
-  for (const group of DEFAULT_BUILTIN_CUSTOM_GROUPS) {
+  for (const group of defaultGroups) {
     const existing = byKey.get(group.key);
     if (!existing) {
       byKey.set(group.key, { key: group.key, label: group.label });
@@ -274,8 +278,8 @@ function mergeDefaultCustomGroups(): void {
   }
   if (!changed) return;
 
-  const builtinKeys = new Set<string>(DEFAULT_BUILTIN_CUSTOM_GROUPS.map((g) => g.key));
-  const merged: CustomCatalogGroup[] = DEFAULT_BUILTIN_CUSTOM_GROUPS.map((g) => ({
+  const builtinKeys = new Set<string>(defaultGroups.map((g) => g.key));
+  const merged: CustomCatalogGroup[] = defaultGroups.map((g) => ({
     key: g.key,
     label: byKey.get(g.key)?.label ?? g.label,
     subtitle: byKey.get(g.key)?.subtitle,
@@ -371,6 +375,47 @@ function purgeGoodPostureFlow(): void {
   }
 }
 
+/** 「오늘의 주인공 빠르게 둘러보기」와 그 그룹을 카탈로그·오늘 목록에서 뺀다. */
+function purgePokitWeekTour(): void {
+  purgeCustomFlowIds([BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+  removeCustomCatalogGroup(BUILTIN_TUTORIAL_GROUP_KEY);
+
+  const selection = loadRoutineCatalogSelectionKeys().filter((key) => key !== BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+  if (selection.length !== loadRoutineCatalogSelectionKeys().length) {
+    saveRoutineCatalogSelectionKeys(selection);
+  }
+
+  const state = loadFixedFlowSetsState();
+  let fixedChanged = false;
+  const sets = state.sets.map((set) => {
+    const items = set.items.filter((item) => item.categoryKey !== BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+    if (items.length !== set.items.length) fixedChanged = true;
+    return { ...set, items };
+  });
+  if (fixedChanged) saveFixedFlowSetsState({ ...state, sets });
+
+  const draft = loadDayPlanDraft();
+  if (!draft) return;
+  const strip = (keys: string[] | undefined) =>
+    (keys ?? []).filter((key) => key !== BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
+  const priorityCategoryOrder = strip(draft.priorityCategoryOrder);
+  const prioritySectionsCategoryOrder = strip(draft.prioritySectionsCategoryOrder);
+  const completedFocusCategoryKeys = strip(draft.completedFocusCategoryKeys);
+  if (
+    priorityCategoryOrder.length === draft.priorityCategoryOrder.length &&
+    prioritySectionsCategoryOrder.length === (draft.prioritySectionsCategoryOrder ?? []).length &&
+    completedFocusCategoryKeys.length === (draft.completedFocusCategoryKeys ?? []).length
+  ) {
+    return;
+  }
+  saveDayPlanDraft({
+    ...draft,
+    priorityCategoryOrder,
+    prioritySectionsCategoryOrder,
+    completedFocusCategoryKeys,
+  });
+}
+
 function purgeFocusFlow(): void {
   purgeCustomFlowIds([BUILTIN_FOCUS_FLOW_ID]);
 
@@ -445,45 +490,6 @@ function migrateExerciseDisplayNameToWeekendRun(): void {
       ? { displayName: flowDef.displayName, summary: flowDef.summary ?? row.summary }
       : {}),
     ...(checklistChanged ? { checklist: nextChecklist } : {}),
-  });
-}
-
-/** 「포킷 일주일」일별 투어 → 하루 안에 끝내는 빠른 둘러보기로 갱신 */
-function migratePokitWeekTourToQuickTour(): void {
-  const cfg = loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
-  if (!cfg || typeof cfg !== 'object') return;
-  const displayName =
-    typeof (cfg as { displayName?: unknown }).displayName === 'string'
-      ? (cfg as { displayName: string }).displayName.trim()
-      : '';
-  const checklist = Array.isArray((cfg as { checklist?: unknown }).checklist)
-    ? ((cfg as { checklist: Array<{ text?: unknown; done?: unknown }> }).checklist ?? [])
-    : [];
-  const looksLegacyWeek =
-    displayName === '포킷 일주일 사용해보기' ||
-    checklist.some((item) => typeof item.text === 'string' && /\d+\s*일차/.test(item.text));
-  const alreadyQuick =
-    displayName === POKIT_WEEK_TOUR_DISPLAY_NAME &&
-    checklist.length === POKIT_WEEK_TOUR_CHECKLIST_LABELS.length &&
-    checklist.every(
-      (item, i) => typeof item.text === 'string' && item.text === POKIT_WEEK_TOUR_CHECKLIST_LABELS[i],
-    );
-  if (!looksLegacyWeek && alreadyQuick) return;
-
-  const doneByIndex = checklist.map((item) => item?.done === true);
-  const nextChecklist = buildBuiltinChecklist(
-    BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
-    POKIT_WEEK_TOUR_CHECKLIST_LABELS,
-  ).map((item, index) => ({
-    ...item,
-    done: Boolean(doneByIndex[index]),
-  }));
-  saveGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID, {
-    ...(cfg as Record<string, unknown>),
-    displayName: POKIT_WEEK_TOUR_DISPLAY_NAME,
-    summary: POKIT_WEEK_TOUR_SUMMARY,
-    templateKey: 'checklist',
-    checklist: nextChecklist,
   });
 }
 
@@ -616,6 +622,6 @@ export function ensureDefaultPriorityCatalog(): void {
   // Retire catalog entries only: keep existing plans, progress and user detail settings.
   for (const id of RETIRED_DEFAULT_CUSTOM_FLOW_IDS) removeCustomFlowCatalogId(id);
   mergeDefaultCustomFlows();
-  migratePokitWeekTourToQuickTour();
   migrateTutorialGroupLabel();
+  purgePokitWeekTour();
 }

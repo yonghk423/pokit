@@ -42,7 +42,7 @@ const registry: Record<Exclude<GoalDetailCategoryKey, CustomFlowCategoryKey>, Go
   },
   reading: {
     key: 'reading',
-    titleKo: '독서',
+    titleKo: '책읽기',
     getInitialDataConfig: getInitialReadingDataConfig,
     Settings: ReadingSettings,
   },
@@ -54,7 +54,7 @@ const registry: Record<Exclude<GoalDetailCategoryKey, CustomFlowCategoryKey>, Go
   },
   healthIntake: {
     key: 'healthIntake',
-    titleKo: '건강을 위한 섭취',
+    titleKo: '영양 챙기기',
     getInitialDataConfig: getInitialHealthIntakeDataConfig,
     Settings: HealthIntakeSettings,
   },
@@ -88,7 +88,7 @@ const customFlowTemplateModules: Record<
     Settings: MeasurementSettings,
   },
   healthIntake: {
-    titleKo: '약 복용',
+    titleKo: '영양 챙기기',
     getInitialDataConfig: getInitialHealthIntakeDataConfig,
     Settings: HealthIntakeSettings,
   },

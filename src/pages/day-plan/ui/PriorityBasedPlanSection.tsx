@@ -44,6 +44,11 @@ import {
   clampSpineBlockToPriorityWindow,
   computeSpineGapInsertSlot,
   createCustomFlowCategoryId,
+  currentReadingBookTitles,
+  latestWeightFromLogs,
+  normalizeHealthIntakeDetailConfig,
+  weightDeltaToTarget,
+  weightGoalAchieved,
   endCategoryOnTodayPlan,
   filterBagTimelineFlowBlocks,
   filterDayPlanFlowBlocks,
@@ -62,6 +67,8 @@ import {
   isSystemCatalogGroupKey,
   localDateToDateKey,
   materializePriorityRoutineOccurrenceKeys,
+  normalizeFastingDetailConfig,
+  normalizeReadingLiveActivityConfig,
   notifyFixedFlowApplyScheduleChanged,
   parseHHmmToMinutes,
   parseLocalDateKeyToDate,
@@ -72,6 +79,7 @@ import {
   resolveCategoryKeyFromLabel,
   resolveCategoryMarkColor,
   resolvePriorityRoutineCategoryKey,
+  resolveCustomFlowTemplateKey,
   resolveRoutineSummaryForDisplay,
   resolveSpinePriorityWindow,
   sortDayPlanBlocks,
@@ -105,7 +113,6 @@ import {
   listCustomCatalogGroups,
   loadDailyRhythmWindowChipGuidePending,
   loadGoalDetailCategoryConfig,
-  loadPokitWeekTourFirstTipSeen,
   loadSpineDefaultBlockMinutes,
   resolveCurrentMealSlotFromSchedule,
   resolvePostItFaceColor,
@@ -486,21 +493,6 @@ export function PriorityBasedPlanSection({
   const [expandedBagRowKeys, setExpandedBagRowKeys] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-
-  /** 첫 튜토리얼 팁은 아코디언 본문에 있음 → 아직 안 본 경우에만 투어 행을 열어 시트가 뜨게 함 */
-  useEffect(() => {
-    if (loadPokitWeekTourFirstTipSeen()) return;
-    const tourKey = priorityCategoryOrder.find((key) =>
-      isPokitWeekTourFlowId(resolvePriorityRoutineCategoryKey(key)),
-    );
-    if (!tourKey) return;
-    setExpandedBagRowKeys((prev) => {
-      if (prev.has(tourKey)) return prev;
-      const next = new Set(prev);
-      next.add(tourKey);
-      return next;
-    });
-  }, [priorityCategoryOrder]);
 
   const monthFallbackDate = useMemo(() => {
     const lo =
@@ -3046,10 +3038,70 @@ export function PriorityBasedPlanSection({
                   const schedule = resolveBagRowSpineSchedule(cat.key);
                   const faceId = priorityCategoryFaceColor[cat.key] ?? null;
                   const inkId = priorityCategoryInkColor[cat.key] ?? null;
+                  const routineKey = resolvePriorityRoutineCategoryKey(cat.key);
+                  const routineConfig = loadGoalDetailCategoryConfig(routineKey);
+                  const readingTitles = routineKey === 'reading'
+                    ? currentReadingBookTitles(normalizeReadingLiveActivityConfig(routineConfig).books)
+                    : null;
+                  const weightCfg = routineKey === 'fasting' || resolveCustomFlowTemplateKey(routineConfig) === 'fasting'
+                    ? normalizeFastingDetailConfig(routineConfig)
+                    : null;
+                  const intakeCfg = routineKey === 'healthIntake' || resolveCustomFlowTemplateKey(routineConfig) === 'healthIntake'
+                    ? normalizeHealthIntakeDetailConfig(routineConfig).medicine
+                    : null;
+                  const intakeSlots = intakeCfg
+                    ? [
+                        intakeCfg.morningOn ? t('mealSlot.morning') : '',
+                        intakeCfg.lunchOn ? t('mealSlot.lunch') : '',
+                        intakeCfg.dinnerOn ? t('mealSlot.dinner') : '',
+                      ].filter((label) => label.length > 0)
+                    : [];
+                  const intakeRatio = intakeCfg && intakeCfg.dosesPerDay > 0
+                    ? Math.min(1, intakeCfg.takenCount / intakeCfg.dosesPerDay)
+                    : 0;
+                  const intakeFoot = intakeCfg
+                    ? [
+                        t('goalDetail.medicine.intakeProgressTitle'),
+                        t('goalDetail.medicine.doseValue', { taken: intakeCfg.takenCount, total: intakeCfg.dosesPerDay }),
+                        intakeCfg.dosesPerDay <= 0
+                          ? t('goalDetail.medicine.intakeProgressEmpty')
+                          : intakeCfg.takenCount >= intakeCfg.dosesPerDay
+                            ? t('goalDetail.medicine.intakeProgressDone')
+                            : t('goalDetail.medicine.nextSlot', {
+                                label: intakeSlots[intakeCfg.takenCount] ?? '—',
+                                percent: Math.round(intakeRatio * 100),
+                              }),
+                      ].join('\n')
+                    : undefined;
+                  const currentKg = weightCfg
+                    ? latestWeightFromLogs(weightCfg.weightLogs, weightCfg.currentWeightKg)
+                    : 0;
+                  const weightAchieved = weightCfg
+                    ? weightGoalAchieved(currentKg, weightCfg.targetWeightKg)
+                    : false;
+                  const weightFoot = weightCfg
+                    ? [
+                        t('goalDetail.fasting.weightGoal'),
+                        weightAchieved
+                          ? t('goalDetail.fasting.goalAchieved')
+                          : `${currentKg.toFixed(1)}kg → ${weightCfg.targetWeightKg.toFixed(1)}kg`,
+                        weightAchieved
+                          ? t('goalDetail.fasting.weeklyMaintain', { kg: weightCfg.weeklyLossTargetKg.toFixed(1) })
+                          : t('goalDetail.fasting.goalDelta', {
+                              delta: weightDeltaToTarget(currentKg, weightCfg.targetWeightKg).toFixed(1),
+                              weekly: weightCfg.weeklyLossTargetKg.toFixed(1),
+                            }),
+                      ].join('\n')
+                    : undefined;
+                  const summaryFoot = weightFoot ?? intakeFoot;
                   return {
                     key: cat.key, label: cat.label, icon: cat.icon,
                     dateKey: schedule.startsNextCalendarDay ? addDaysToLocalDateKey(todayKey, 1) : todayKey,
-                    summary: resolveRoutineSummaryForDisplay(resolvePriorityRoutineCategoryKey(cat.key), readRoutineSummaryFromConfig(loadGoalDetailCategoryConfig(resolvePriorityRoutineCategoryKey(cat.key)))),
+                    summary: readingTitles
+                      ? ''
+                      : resolveRoutineSummaryForDisplay(routineKey, readRoutineSummaryFromConfig(routineConfig)),
+                    summaryLines: readingTitles && readingTitles.length > 0 ? readingTitles : undefined,
+                    summaryFoot,
                     faceColor: faceId ? resolvePostItFaceColor(faceId, isDark) : undefined,
                     inkColor: faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : undefined,
                     completed: isPriorityRowCompleted(cat.key),

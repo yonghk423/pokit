@@ -13,7 +13,6 @@ import {
   BUILTIN_HEALTH_GROUP_KEY,
   BUILTIN_INTERMITTENT_FASTING_FLOW_ID,
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
-  BUILTIN_TUTORIAL_GROUP_KEY,
   LEGACY_DAILY_LIFE_BUNDLED_FLOW_ID,
 } from './defaultPriorityCatalog';
 import { loadStandardCatalogGroupOverrides, resolveCatalogItemGroupKey } from './catalogItemGroupStorage';
@@ -43,30 +42,12 @@ describe('ensureDefaultPriorityCatalog', () => {
     localStorageClient.removeItem(StorageKeys.dayPlanDraft);
   });
 
-  it('seeds only the quick tour custom flow alongside the standard health intake and weight entries', () => {
+  it('does not seed the retired quick tour', () => {
     ensureDefaultPriorityCatalog();
 
-    expect(listCustomCatalogGroups()).toEqual([
-      { key: BUILTIN_TUTORIAL_GROUP_KEY, label: '오늘의 주인공 사용해보기' },
-    ]);
-    expect(listCustomFlowCatalogEntries().map((e) => e.id)).toEqual([
-      BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
-    ]);
-
-    const tourCfg = loadChecklistConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID);
-    expect(tourCfg?.displayName).toBe('오늘의 주인공 빠르게 둘러보기');
-    expect((tourCfg as { templateKey?: string })?.templateKey).toBe('checklist');
-    expect(tourCfg?.checklist).toHaveLength(8);
-    expect(tourCfg?.checklist?.map((item) => item.text)).toEqual([
-      '루틴 탭 둘러보기',
-      '나만의 루틴 만들기',
-      '히스토리 확인하기',
-      '오늘 루틴 확인하기',
-      '책방 열어보기',
-      '잠금화면 메모 써보기',
-      '노트 적어보기',
-      '설정에서 레이아웃 바꿔보기',
-    ]);
+    expect(listCustomCatalogGroups()).toEqual([]);
+    expect(listCustomFlowCatalogEntries()).toEqual([]);
+    expect(loadGoalDetailCategoryConfig(BUILTIN_POKIT_WEEK_TOUR_FLOW_ID)).toBeNull();
 
     expect(loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID)).toBeNull();
     expect(loadGoalDetailCategoryConfig('customFlow:preset_daily_bed')).toBeNull();
@@ -269,10 +250,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(ids).not.toContain(BUILTIN_ABSTAIN_FLOW_ID);
     expect(ids).not.toContain(BUILTIN_STRETCHING_FLOW_ID);
     expect(ids).not.toContain(BUILTIN_FOCUS_FLOW_ID);
-    expect(listCustomCatalogGroups().map((g) => g.key)).toEqual([
-      BUILTIN_TUTORIAL_GROUP_KEY,
-      'customGroup:user01',
-    ]);
+    expect(listCustomCatalogGroups().map((g) => g.key)).toEqual(['customGroup:user01']);
     expect(loadGoalDetailCategoryConfig('customFlow:builtin_hobby_draw')).toBeNull();
   });
 
@@ -413,7 +391,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     localStorageClient.setJson(StorageKeys.dayPlanDraft, { planMode: 'priority', priorityCategoryOrder: [BUILTIN_DAILY_EXERCISE_FLOW_ID] });
     ensureDefaultPriorityCatalog();
     ensureDefaultPriorityCatalog();
-    expect(listAllCustomFlowCatalogEntries().map(entry => entry.id)).toEqual(['customFlow:user-kept', BUILTIN_POKIT_WEEK_TOUR_FLOW_ID]);
+    expect(listAllCustomFlowCatalogEntries().map(entry => entry.id)).toEqual(['customFlow:user-kept']);
     expect(loadGoalDetailCategoryConfig(BUILTIN_DAILY_EXERCISE_FLOW_ID)).toEqual(expect.objectContaining({ displayName: '나의 운동', checklist }));
     expect(localStorageClient.getJson<{ priorityCategoryOrder: string[] }>(StorageKeys.dayPlanDraft)?.priorityCategoryOrder).toEqual([BUILTIN_DAILY_EXERCISE_FLOW_ID]);
   });
@@ -433,7 +411,7 @@ describe('ensureDefaultPriorityCatalog', () => {
     ensureDefaultPriorityCatalog();
     ensureDefaultPriorityCatalog();
 
-    expect(listCustomCatalogGroups()).toHaveLength(2);
-    expect(listCustomFlowCatalogEntries()).toHaveLength(1);
+    expect(listCustomCatalogGroups()).toEqual([{ key: 'customGroup:user01', label: '나만의 묶음' }]);
+    expect(listCustomFlowCatalogEntries()).toHaveLength(0);
   });
 });

@@ -34,31 +34,31 @@ public enum PokitWidgetL10n {
   // MARK: - Routine widget
 
   public static var routineName: String {
-    text(ko: "오늘의 주인공", en: "Routine", ja: "ルーチン")
+    text(ko: "개별 할 일", en: "To-do", ja: "個別のタスク")
   }
 
   public static var routineGalleryDescription: String {
     text(
-      ko: "위젯마다 오늘의 주인공을 골라 포스트잇처럼 보여 줘요.",
-      en: "Pick a routine for each widget and show it like a post-it.",
-      ja: "ウィジェットごとにルーチンを選び、ふせんのように表示します。"
+      ko: "원하는 할 일을 하나 골라 포스트잇 카드로 확인해요.",
+      en: "Pick one task and see it on a post-it card.",
+      ja: "タスクをひとつ選び、付箋カードで確認できます。"
     )
   }
 
   public static var routineIntentDescription: String {
     text(
-      ko: "홈 화면에 보여줄 오늘의 주인공을 고르세요. 위젯마다 다르게 고를 수 있어요.",
-      en: "Choose which routine to show on the Home Screen. Each widget can be different.",
-      ja: "ホーム画面に表示するルーチンを選びます。ウィジェットごとに別のルーチンを選べます。"
+      ko: "홈 화면에 보여줄 할 일을 하나 고르세요. 위젯마다 다르게 고를 수 있어요.",
+      en: "Choose one task to show on the Home Screen. Each widget can be different.",
+      ja: "ホーム画面に表示するタスクをひとつ選びます。ウィジェットごとに別のタスクを選べます。"
     )
   }
 
   public static var expandRoutine: String {
-    text(ko: "오늘의 주인공 펼쳐보기", en: "Expand routine", ja: "ルーチンを開く")
+    text(ko: "할 일 고르기", en: "Choose a task", ja: "タスクを選択")
   }
 
   public static var reselectRoutine: String {
-    text(ko: "오늘의 주인공을 다시 골라 주세요", en: "Choose a routine again", ja: "ルーチンを選び直してください")
+    text(ko: "할 일을 다시 골라 주세요", en: "Choose a task again", ja: "タスクを選び直してください")
   }
 
   public static var openAppThenReselect: String {
@@ -72,22 +72,22 @@ public enum PokitWidgetL10n {
   // MARK: - Bookstore widget
 
   public static var bookstoreName: String {
-    text(ko: "책방", en: "Bookstore", ja: "書房")
+    text(ko: "책읽기", en: "Reading", ja: "読書")
   }
 
   public static var bookstoreGalleryDescription: String {
     text(
-      ko: "위젯 편집에서 「눌러서 책 고르기」를 눌러 책방의 책을 고르세요.",
-      en: "In Edit Widget, tap “Tap to pick a book” to choose a title from the bookstore.",
-      ja: "ウィジェット編集で「タップして本を選ぶ」を押し、書房の本を選びます。"
+      ko: "위젯 편집에서 「눌러서 책 고르기」를 눌러 책읽기의 책을 고르세요.",
+      en: "In Edit Widget, tap “Tap to pick a book” to choose a title from Reading.",
+      ja: "ウィジェット編集で「タップして本を選ぶ」を押し、読書の本を選びます。"
     )
   }
 
   public static var bookstoreIntentDescription: String {
     text(
-      ko: "위젯 편집에서 「눌러서 책 고르기」를 누르면 책방 목록이 열려요.",
-      en: "In Edit Widget, tap “Tap to pick a book” to open the bookstore list.",
-      ja: "ウィジェット編集で「タップして本を選ぶ」を押すと書房の一覧が開きます。"
+      ko: "위젯 편집에서 「눌러서 책 고르기」를 누르면 책읽기 목록이 열려요.",
+      en: "In Edit Widget, tap “Tap to pick a book” to open the Reading list.",
+      ja: "ウィジェット編集で「タップして本を選ぶ」を押すと読書の一覧が開きます。"
     )
   }
 
