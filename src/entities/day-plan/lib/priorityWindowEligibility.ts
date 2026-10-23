@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { getLocalMinutesOfDayNow } from './dayPlanTime';
 import { getLocalDateKey } from './localDateKey';
 import { parseHHmmToMinutes } from './parseTime';
@@ -104,6 +105,8 @@ export function isPriorityWindowEligible(ctx: PriorityWindowContext): boolean {
 }
 
 export function isPriorityWindowEndedForToday(ctx: PriorityWindowContext): boolean {
+  // Keep the time-window implementation available, but do not block today's list when the feature is off.
+  if (!FEATURE_FLAGS.dailyRhythmWindow) return false;
   if (ctx.planMode !== 'priority') return false;
   const bounds = readPriorityWindowBounds(ctx);
   if (!bounds) return false;

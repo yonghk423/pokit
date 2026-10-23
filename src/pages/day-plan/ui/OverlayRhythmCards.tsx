@@ -461,7 +461,7 @@ export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, r
         <Animated.ScrollView ref={deckScroll} horizontal contentOffset={initialOffset} testID="rhythm-card-deck-scroll" style={StyleSheet.absoluteFill} showsHorizontalScrollIndicator={false} scrollEnabled={!overview && looping} scrollEventThrottle={16} onScroll={onScroll} bounces={false} overScrollMode="never" snapToInterval={step} decelerationRate="fast" removeClippedSubviews={false}>
           <View pointerEvents="none" style={{ width: width + maxStart * step, height: stageHeight }} />
         </Animated.ScrollView>
-      </> : <View style={s.empty}><RhythmEmptyState ended={false} ink={ink} muted={muted} /></View>}
+      </> : <View testID="rhythm-card-empty" style={s.empty}><RhythmEmptyState ended={false} ink={ink} muted={muted} presentation="cards" onAdd={onAdd} /></View>}
       </Animated.View></GestureDetector>
       {!overview && count > 0 ? <View testID="rhythm-card-picker" style={s.pickerScroll}>
         <Animated.View key={deckEpoch} style={[{ height: PICKER_BUTTON }, pickerShift]}>
@@ -525,7 +525,7 @@ const s = StyleSheet.create({
   cardDate: { alignItems: 'flex-end', flexShrink: 0 },
   time: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   add: { position: 'absolute', right: 14, bottom: 14 },
-  empty: { minHeight: 340, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
+  empty: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
   overlay: { ...StyleSheet.absoluteFill, zIndex: 20 },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: '#000000' },
   expanded: { position: 'absolute', left: 16, right: 16, top: 12, bottom: 12, borderRadius: 16, shadowColor: '#35352F', shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 12 },

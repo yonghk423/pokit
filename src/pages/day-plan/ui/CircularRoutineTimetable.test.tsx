@@ -15,7 +15,7 @@ jest.mock('react-native-gesture-handler', () => ({
   Gesture: {
     Pan: () => {
       const chain: Record<string, unknown> = {};
-      for (const name of ['enabled', 'minDistance', 'onBegin', 'onStart', 'onUpdate', 'onEnd', 'runOnJS', 'activeOffsetX', 'failOffsetY']) chain[name] = () => chain;
+      for (const name of ['enabled', 'minDistance', 'onBegin', 'onStart', 'onUpdate', 'onEnd', 'runOnJS', 'activeOffsetX', 'failOffsetY', 'activeOffsetY', 'failOffsetX']) chain[name] = () => chain;
       return chain;
     },
     Tap: () => {
@@ -23,6 +23,13 @@ jest.mock('react-native-gesture-handler', () => ({
       for (const name of ['enabled', 'maxDistance', 'maxDuration', 'onBegin', 'onEnd']) chain[name] = (value: unknown) => { chain[`${name}Value`] = value; return chain; };
       return chain;
     },
+    LongPress: () => {
+      const chain: Record<string, unknown> = {};
+      for (const name of ['enabled', 'minDuration', 'maxDistance', 'onStart']) chain[name] = (value: unknown) => { chain[`${name}Value`] = value; return chain; };
+      return chain;
+    },
+    Race: (...gestures: unknown[]) => ({ gestures }),
+    Simultaneous: (...gestures: unknown[]) => ({ gestures }),
     Exclusive: (...gestures: unknown[]) => ({ gestures }),
   },
 }));
@@ -151,6 +158,24 @@ it('shows the first-rhythm state on an empty wheel and preserves the add action'
   act(() => { tree = create(<CircularRoutineTimetable items={[]} ink="#222" muted="#888" isDark={false} renderDetail={() => null} onComplete={jest.fn()} onFinish={jest.fn()} onAdd={onAdd} />); });
   expect(tree.root.findAllByType(ThemedText).some(node => node.props.children === 'dayPlan.rhythmEmptyTitle')).toBe(true);
   const add = tree.root.findAll(node => node.props.accessibilityLabel === 'dayPlan.addMoreRoutine' && typeof node.props.onPress === 'function')[0];
+  act(() => { add.props.onPress(); });
+  expect(onAdd).toHaveBeenCalledTimes(1);
+  act(() => { tree.unmount(); });
+});
+
+it('shows only the add-card icon in the actual empty card deck and opens the add flow', () => {
+  const onAdd = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<CircularRoutineTimetable presentation="cards" items={[]} ink="#222" muted="#888" isDark={false} renderDetail={() => null} onComplete={jest.fn()} onFinish={jest.fn()} onAdd={onAdd} />); });
+  const deck = tree.root.findAll(node => node.props.testID === 'rhythm-card-stack-layer')[0];
+  expect(deck).toBeDefined();
+  expect(deck.findAllByType(ThemedText)).toHaveLength(0);
+  const empty = tree.root.findByProps({ testID: 'rhythm-card-empty' });
+  expect(StyleSheet.flatten(empty.props.style)).toMatchObject({
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center', alignItems: 'center',
+  });
+  const add = deck.findAll(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'dayPlan.addRoutine' && typeof node.props.onPress === 'function')[0];
+  expect(add).toBeDefined();
   act(() => { add.props.onPress(); });
   expect(onAdd).toHaveBeenCalledTimes(1);
   act(() => { tree.unmount(); });

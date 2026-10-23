@@ -244,7 +244,7 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
         </View>
       </GestureDetector>
       {showEmpty ? <View style={[s.emptyState, { width: visibleRadius, top: size.height / 2 - Math.min(140, size.height * 0.3) }]}>
-        <RhythmEmptyState ended={timeEnded} ink={ink} muted={muted} />
+        <RhythmEmptyState ended={timeEnded} ink={ink} muted={muted} presentation={presentation} onAdd={onAdd} />
       </View> : null}
       {timeEnded && items.length > 0 ? <PaperControl accessibilityRole="button" accessibilityLabel={t(reviewEnded ? 'dayPlan.rhythmShowClosing' : 'dayPlan.rhythmReview')} onPress={() => { tapHaptic(); setReviewEnded(value => !value); }} style={[s.review, { backgroundColor: '#FFFFFF' }]}>
         <Svg width={26} height={26} viewBox="0 0 28 28" accessible={false}><Path d="M5 7L21 6L22 22L5 23ZM9 4L24 4L25 19M8 11L18 10M8 15L18 14M8 19L15 18" fill="none" stroke="#343434" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
