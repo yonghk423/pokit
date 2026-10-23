@@ -2,7 +2,7 @@
   "expo": {
     "name": "YOUR DAY",
     "slug": "pokit",
-    "version": "1.9.17",
+    "version": "1.9.18",
     "orientation": "portrait",
     "icon": "./assets/app-icon2-square.png",
     "scheme": "pokit",
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "108",
+      "buildNumber": "109",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -45,8 +45,8 @@
       }
     },
     "android": {
-      "version": "1.9.17",
-      "versionCode": 108,
+      "version": "1.9.18",
+      "versionCode": 109,
       "adaptiveIcon": {
         "backgroundColor": "#CED2EC",
         "foregroundImage": "./assets/app-icon2-square.png"
