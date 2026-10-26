@@ -30,7 +30,7 @@ import {
   DailyRhythmStyleAlarmRow,
   paletteForReminderTimeCard,
   SnappedTimePickerField,
-} from '@widgets/daily-rhythm-time-field';
+} from '@widgets/daily-mate-time-field';
 
 import { buildSettingsPalette, settingsChromeStyles as chrome } from '../lib/settingsChrome';
 

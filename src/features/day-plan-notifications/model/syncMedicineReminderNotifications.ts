@@ -11,11 +11,9 @@ import {
   resolveCustomFlowTemplateKey,
   useDayPlanStore,
 } from '@entities/day-plan';
-import { useLocalNotificationsStore } from '@entities/local-notifications';
 import {
   cancelLocalNotificationsById,
   cancelScheduledNotificationsByEventType,
-  scheduleDailyLocalNotification,
 } from '@shared/lib/notifications';
 import {
   loadGoalDetailBlockConfig,
@@ -25,15 +23,11 @@ import {
 } from '@shared/lib/storage';
 import { t } from '@shared/lib/i18n';
 
-const MAX_MEDICINE_REMINDER_SLOTS = 32;
-
 const MEDICINE_CATEGORY_LABEL = '약 복용';
 export const MEDICINE_DOSE_REMINDER_EVENT_TYPE = 'medicineDoseReminder';
-const MEDICINE_NOTIFICATION_ID_PREFIX = 'pokit:medicine-reminder:';
 
 /**
- * 부트스트랩·스토어 구독이 한 변경에 연달아 반응해도 취소·재예약이 겹치지 않게 합니다.
- * 직렬화하지 않으면 각 실행이 같은 이전 ID를 읽고 새 알림을 중복 예약할 수 있습니다.
+ * 부트스트랩·스토어 구독이 한 변경에 연달아 반응해도 취소가 겹치지 않게 합니다.
  */
 let medicineReminderSyncQueue: Promise<void> = Promise.resolve();
 let lastSyncedMedicineReminderKey = '';
@@ -57,16 +51,6 @@ function doseLabelKo(part: DosePart): string {
 
 function resolveMedicineStorageKey(categoryKey: string): string {
   return isHealthIntakeRelatedCategoryKey(categoryKey) ? HEALTH_INTAKE_CATEGORY_KEY : categoryKey;
-}
-
-function buildMedicineReminderIdentifier(slotKey: string): string {
-  return `${MEDICINE_NOTIFICATION_ID_PREFIX}${slotKey}`;
-}
-
-function buildMedicineReminderSyncKey(slots: MedicineReminderSlot[]): string {
-  return slots
-    .map((s) => `${s.slotKey}:${s.blockId}:${s.hour}:${s.minute}:${s.title}:${s.body}`)
-    .join('|');
 }
 
 export function isMedicineReminderCategory(categoryKey: string, raw: unknown): boolean {
@@ -189,61 +173,18 @@ async function cancelAllMedicineReminderNotifications(): Promise<void> {
 }
 
 async function performMedicineReminderNotificationSync(
-  overlay?: MedicineReminderConfigOverlay,
+  _overlay?: MedicineReminderConfigOverlay,
 ): Promise<boolean> {
-  const slots = collectMedicineReminderSlots(overlay).slice(0, MAX_MEDICINE_REMINDER_SLOTS);
-  if (slots.length > 0) {
-    const permitted = await useLocalNotificationsStore.getState().ensurePermission();
-    if (!permitted) {
-      if (lastSyncedMedicineReminderKey !== 'denied') {
-        await cancelAllMedicineReminderNotifications();
-        lastSyncedMedicineReminderKey = 'denied';
-      }
-      return false;
-    }
-  } else {
-    await useLocalNotificationsStore.getState().refreshPermission();
+  // 복용·섭취 시각 푸시 알림은 현재 제품에서 쓰지 않음. 기존 예약만 정리한다.
+  if (lastSyncedMedicineReminderKey !== 'disabled') {
+    await cancelAllMedicineReminderNotifications();
+    lastSyncedMedicineReminderKey = 'disabled';
   }
-
-  if (useLocalNotificationsStore.getState().permission !== 'granted') {
-    if (lastSyncedMedicineReminderKey !== 'denied') {
-      await cancelAllMedicineReminderNotifications();
-      lastSyncedMedicineReminderKey = 'denied';
-    }
-    return slots.length === 0;
-  }
-
-  const syncKey = `granted:${buildMedicineReminderSyncKey(slots)}`;
-  if (syncKey === lastSyncedMedicineReminderKey) {
-    return true;
-  }
-
-  await cancelAllMedicineReminderNotifications();
-
-  const nextRows: { slotKey: string; notificationId: string }[] = [];
-
-  for (const s of slots) {
-    const nid = await scheduleDailyLocalNotification({
-      identifier: buildMedicineReminderIdentifier(s.slotKey),
-      title: s.title,
-      body: s.body,
-      hour: s.hour,
-      minute: s.minute,
-      data: { eventType: MEDICINE_DOSE_REMINDER_EVENT_TYPE, blockId: s.blockId },
-    });
-    if (nid) {
-      nextRows.push({ slotKey: s.slotKey, notificationId: nid });
-    }
-  }
-
-  saveMedicineReminderScheduled(nextRows);
-  lastSyncedMedicineReminderKey = syncKey;
   return true;
 }
 
 /**
- * 오늘 일정에 있는 건강 섭취·약 복용 설정을 읽어 슬롯별 매일 로컬 알림을 다시 예약합니다.
- * 예약할 슬롯이 있으면 시스템 알림 권한을 요청합니다.
+ * 복용·섭취 알림은 비활성. 호출 시 기존 예약을 취소한다.
  */
 export function syncMedicineReminderNotifications(
   overlay?: MedicineReminderConfigOverlay,

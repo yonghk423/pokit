@@ -4,6 +4,15 @@ import type { I18nKey } from '@shared/lib/i18n';
 
 export type DeskChoice = { id: string; color: string; selected: boolean; labelKey: I18nKey; label?: string; onSelect: () => void };
 
+/** Paper / ink tab for the row color palette (desk illustration UI removed). */
+export type DeskTool = {
+  id: 'face' | 'ink';
+  label: string;
+  choices?: DeskChoice[];
+  reset?: () => void;
+  swatch?: string;
+};
+
 export function deskPaperChoices(value: PostItFaceColorId | null | undefined, onChange: (value: PostItFaceColorId | null) => void, isDark: boolean): DeskChoice[] {
   const choices: PostItFaceColorPreset[] = [...POST_IT_SELECTION_COLOR_PRESETS];
   const saved = POST_IT_FACE_COLOR_PRESETS.find((preset) => preset.id === value);

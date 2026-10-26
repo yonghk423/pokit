@@ -3,6 +3,6 @@ import { Redirect } from 'expo-router';
 import { PuzzleGuidePage } from '@pages/puzzle-guide';
 
 export default function PuzzleGuideRoute() {
-  if (!FEATURE_FLAGS.puzzle) return <Redirect href="/(tabs)/day-plan" />;
+  if (!FEATURE_FLAGS.puzzle) return <Redirect href="/day-plan" />;
   return <PuzzleGuidePage />;
 }

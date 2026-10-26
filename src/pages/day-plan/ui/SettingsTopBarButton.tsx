@@ -14,7 +14,6 @@ import { t, useAppLocaleStore } from '@shared/lib/i18n';
 import { loadAnnouncementReadIds } from '@shared/lib/storage';
 import { openSupportMailComposer } from '@shared/lib/support';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { HeaderIcon } from '@shared/ui/header-icon';
 
 import type { DayPlanPalette } from '../lib/dayPlanPalette';
 
@@ -58,16 +57,16 @@ function TopBarIconButton({
         { marginRight: SHADOW, marginBottom: SHADOW },
         pressed && styles.pressed,
       ]}>
-      <View pointerEvents="none" style={[styles.shadow, { backgroundColor: shadow, transform: [{ translateX: SHADOW }, { translateY: SHADOW }] }]} />
-      <View style={[styles.iconHit, { backgroundColor: face, borderWidth: 0 }]}>
-        <PaperGrain opacity={0.25} />
-        <HanddrawnFrame color={border} />
-        {name === 'gearshape' ? (
-          <HeaderIcon name="settings" />
-        ) : (
+      {name === 'gearshape' ? <View pointerEvents="none" style={styles.moreHit}>
+        {[0, 1, 2].map(dot => <View key={dot} style={[styles.moreDot, { backgroundColor: iconColor }]} />)}
+      </View> : <>
+        <View pointerEvents="none" style={[styles.shadow, { backgroundColor: shadow, transform: [{ translateX: SHADOW }, { translateY: SHADOW }] }]} />
+        <View style={[styles.iconHit, { backgroundColor: face, borderWidth: 0 }]}>
+          <PaperGrain opacity={0.25} />
+          <HanddrawnFrame color={border} />
           <IconSymbol name={name} size={18} color={iconColor} />
-        )}
-      </View>
+        </View>
+      </>}
       {showBadge ? (
         <View
           pointerEvents="none"
@@ -136,7 +135,7 @@ export function SettingsTopBarButton({ c: _c }: Props) {
       ) : null}
       {showTopContactButton ? (
         <TopBarIconButton
-          name="paperplane.fill"
+          name="envelope.fill"
           accessibilityLabel={t('settings.a11y.support')}
           isDark={isDark}
           face={face}
@@ -188,6 +187,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     zIndex: 1,
   },
+  moreHit: { width: 44, height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  moreDot: { width: 4, height: 4, borderRadius: 2 },
   pressed: {
     transform: [{ translateY: 1 }],
   },

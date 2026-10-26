@@ -13,9 +13,10 @@ import type { GuideBookFigureId } from '../lib/guideBookPages';
 /** `DayPlanCustomTabBar` / 하단 탭과 동일 */
 const APP_TABS = [
   { key: 'today', icon: 'calendar', labelKey: 'guideBook.figure.tabToday', n: 1 },
-  { key: 'routine', icon: 'list.bullet.rectangle', labelKey: 'guideBook.figure.tabRoutine', n: 2 },
-  { key: 'puzzle', icon: 'rectangle.stack', labelKey: 'tabs.puzzle', n: 3 },
-  { key: 'story', icon: 'book', labelKey: 'guideBook.figure.tabStory', n: 4 },
+  { key: 'comic', icon: 'book.closed.fill', labelKey: 'tabs.comicDay', n: 2 },
+  { key: 'routine', icon: 'list.bullet.rectangle', labelKey: 'guideBook.figure.tabRoutine', n: 3 },
+  { key: 'puzzle', icon: 'rectangle.stack', labelKey: 'tabs.puzzle', n: 4 },
+  { key: 'story', icon: 'book', labelKey: 'guideBook.figure.tabStory', n: 5 },
 ] as const;
 
 /** `PlanModeSwitch` 와 동일 */
@@ -79,7 +80,7 @@ function AppTabBar({
     <View
       style={[
         styles.tabBar,
-        { backgroundColor: colors.containerBg, borderColor: colors.containerBorder },
+        { backgroundColor: colors.containerBg },
       ]}>
       {APP_TABS.filter((tab) =>
         (FEATURE_FLAGS.puzzle || tab.key !== 'puzzle')
@@ -118,7 +119,7 @@ function ModeRow({
   const pill = tabPillColors(tone.isDark);
   const topBarIcons = [
     { icon: 'megaphone.fill' as const, key: 'announce' },
-    { icon: 'paperplane.fill' as const, key: 'contact' },
+    { icon: 'envelope.fill' as const, key: 'contact' },
     { icon: 'gearshape' as const, key: 'settings' },
   ];
   return (
@@ -1067,20 +1068,23 @@ const styles = StyleSheet.create({
     minHeight: 220,
   },
   phoneBody: { padding: 10, gap: 8 },
-  tabBarPad: { paddingHorizontal: 10, paddingBottom: 10, paddingTop: 4 },
+  tabBarPad: { alignItems: 'center', paddingHorizontal: 10, paddingBottom: 10, paddingTop: 4 },
   tabBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'center',
     height: 56,
-    borderWidth: 2,
+    borderRadius: 28,
     paddingHorizontal: 6,
-    gap: 4,
+    gap: 2,
   },
   tabItem: {
-    flex: 1,
+    minWidth: 52,
     alignItems: 'center',
     justifyContent: 'center',
     height: 44,
+    paddingHorizontal: 10,
+    borderRadius: 22,
   },
   tabBadgeAbs: { position: 'absolute', top: 2, right: 6, zIndex: 2 },
   badge: {

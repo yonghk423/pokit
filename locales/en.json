@@ -2,7 +2,8 @@
   "ios": {
     "CFBundleDisplayName": "YOUR DAY",
     "NSPhotoLibraryUsageDescription": "Photos access is needed to attach images to notes.",
-    "NSPhotoLibraryAddUsageDescription": "Photos access is needed to save images attached to notes."
+    "NSPhotoLibraryAddUsageDescription": "Photos access is needed to save images attached to notes.",
+    "NSLocationWhenInUseUsageDescription": "Your approximate location is used only while the app is open to show local weather. It is not stored."
   },
   "android": {
     "app_name": "YOUR DAY"

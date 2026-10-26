@@ -472,12 +472,14 @@ public struct ComicSceneWidgetEntity: AppEntity, Hashable {
   public var id: String
   public var title: String
   public var diaryTitle: String
+  public var dateKey: String?
   public var index: Int
 
-  public init(id: String, title: String, diaryTitle: String, index: Int) {
+  public init(id: String, title: String, diaryTitle: String, index: Int, dateKey: String? = nil) {
     self.id = id
     self.title = title
     self.diaryTitle = diaryTitle
+    self.dateKey = dateKey
     self.index = index
   }
 
@@ -490,7 +492,7 @@ public struct ComicSceneWidgetEntity: AppEntity, Hashable {
   }
 
   public var displayRepresentation: DisplayRepresentation {
-    DisplayRepresentation(title: "\(diaryTitle) · \(index) · \(title)")
+    DisplayRepresentation(title: "\(index) · \(title)", subtitle: "\(diaryTitle)")
   }
 }
 
@@ -504,7 +506,7 @@ public struct ComicSceneWidgetEntityQuery: EntityQuery {
   }
 
   public func suggestedEntities() async throws -> IntentItemCollection<ComicSceneWidgetEntity> {
-    pokitWidgetEntityCollection(Self.loadEntities(), section: "widget.comic.name")
+    Self.collection(dateKey: nil)
   }
 
   public func defaultResult() async -> ComicSceneWidgetEntity? {
@@ -537,9 +539,29 @@ public struct ComicSceneWidgetEntityQuery: EntityQuery {
         id: id,
         title: title.isEmpty ? String(localized: "widget.comic.untitled") : title,
         diaryTitle: diaryTitle,
-        index: max(1, row.index ?? 1)
+        index: max(1, row.index ?? 1),
+        dateKey: row.dateKey
       )
     }
+  }
+
+  static func collection(dateKey: String?) -> IntentItemCollection<ComicSceneWidgetEntity> {
+    let entities = loadEntities().filter { dateKey == nil || ($0.dateKey ?? "undated") == dateKey }
+    var order: [String] = []
+    var groups: [String: [ComicSceneWidgetEntity]] = [:]
+    for entity in entities.sorted(by: { ($0.dateKey ?? "") > ($1.dateKey ?? "") }) {
+      let day = entity.dateKey ?? "undated"
+      let group = day + "::" + entity.diaryTitle
+      if groups[group] == nil { order.append(group) }
+      groups[group, default: []].append(entity)
+    }
+    return IntentItemCollection(sections: order.map { key in
+      let rows = groups[key]!.sorted { $0.index < $1.index }
+      let label = dateKey == nil
+        ? ComicSceneWidgetDateEntity(id: rows[0].dateKey ?? "undated").label + " · " + rows[0].diaryTitle
+        : rows[0].diaryTitle
+      return IntentItemSection(LocalizedStringResource(stringLiteral: label), items: rows.map { IntentItem($0) })
+    })
   }
 
   private struct ComicWidgetOptionBundle: Decodable {
@@ -551,16 +573,54 @@ public struct ComicSceneWidgetEntityQuery: EntityQuery {
     let id: String?
     let title: String?
     let diaryTitle: String?
+    let dateKey: String?
     let index: Int?
   }
 }
 
 @available(iOS 17.0, *)
+public struct ComicSceneWidgetDateEntity: AppEntity, Hashable {
+  public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "widget.comic.date")
+  public static var defaultQuery = ComicSceneWidgetDateQuery()
+  public var id: String
+  public init(id: String) { self.id = id }
+  var label: String {
+    if id == "undated" { return String(localized: "widget.comic.undated") }
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "yyyy-MM-dd"
+    guard let date = formatter.date(from: id) else { return id }
+    return DateFormatter.localizedString(from: date, dateStyle: .full, timeStyle: .none)
+  }
+  public var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(label)") }
+}
+
+@available(iOS 17.0, *)
+public struct ComicSceneWidgetDateQuery: EntityQuery {
+  public init() {}
+  private static func dates() -> [ComicSceneWidgetDateEntity] {
+    let keys = Set(ComicSceneWidgetEntityQuery.loadEntities().map { $0.dateKey ?? "undated" })
+    return keys.sorted {
+      if $0 == "undated" { return false }
+      if $1 == "undated" { return true }
+      return $0 > $1
+    }.map { ComicSceneWidgetDateEntity(id: $0) }
+  }
+  public func entities(for identifiers: [String]) async throws -> [ComicSceneWidgetDateEntity] {
+    let available = Dictionary(uniqueKeysWithValues: Self.dates().map { ($0.id, $0) })
+    return identifiers.compactMap { available[$0] }
+  }
+  public func suggestedEntities() async throws -> [ComicSceneWidgetDateEntity] { Self.dates() }
+  public func defaultResult() async -> ComicSceneWidgetDateEntity? { Self.dates().first }
+}
+
+@available(iOS 17.0, *)
 public struct ComicSceneOptionsProvider: DynamicOptionsProvider {
+  @IntentParameterDependency<SelectComicSceneIntent>(\.$date) private var configuration
   public init() {}
 
   public func results() async throws -> IntentItemCollection<ComicSceneWidgetEntity> {
-    pokitWidgetEntityCollection(ComicSceneWidgetEntityQuery.loadEntities(), section: "widget.comic.name")
+    ComicSceneWidgetEntityQuery.collection(dateKey: configuration?.date.id)
   }
 }
 
@@ -570,6 +630,9 @@ public struct SelectComicSceneIntent: WidgetConfigurationIntent {
   public static var description = IntentDescription(stringLiteral: "widget.comic.intentDescription")
   public static var isDiscoverable: Bool { false }
   public static var openAppWhenRun: Bool { false }
+
+  @Parameter(title: "widget.comic.date")
+  public var date: ComicSceneWidgetDateEntity?
 
   @Parameter(title: "widget.comic.pick", optionsProvider: ComicSceneOptionsProvider())
   public var scene: ComicSceneWidgetEntity?
@@ -581,7 +644,10 @@ public struct SelectComicSceneIntent: WidgetConfigurationIntent {
   }
 
   public static var parameterSummary: some ParameterSummary {
-    Summary { \.$scene }
+    Summary {
+      \.$date
+      \.$scene
+    }
   }
 }
 

@@ -7,6 +7,7 @@ RCT_EXTERN_METHOD(syncPinnedRoutineJson:(NSString *)json)
 RCT_EXTERN_METHOD(syncBookstoreWidgetJson:(NSString *)json)
 RCT_EXTERN_METHOD(syncNoteWidgetJson:(NSString *)json)
 RCT_EXTERN_METHOD(syncComicSceneWidgetJson:(NSString *)json)
+RCT_EXTERN_METHOD(syncWeatherWidgetJson:(NSString *)json)
 RCT_EXTERN_METHOD(consumePendingPlanMode:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 

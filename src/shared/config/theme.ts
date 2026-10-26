@@ -4,10 +4,10 @@
 
 import { CityPopTypography, RetroFlatColors, cityPopFont } from './retroFlat';
 
-/** 앱 기본 강조색 (Primary) — 민트 그린 */
+/** 앱 기본 강조색 (Primary) — 순수 검정. CTA 면색은 RetroFlatColors.*.bgMint / primaryContainer. */
 export const PrimaryColor = {
-  rgb: 'rgb(53, 102, 104)',
-  rgba: (alpha: number) => `rgba(53, 102, 104, ${alpha})`,
+  rgb: 'rgb(0, 0, 0)',
+  rgba: (alpha: number) => `rgba(0, 0, 0, ${alpha})`,
 } as const;
 
 export const PokitIconPalette = {

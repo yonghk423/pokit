@@ -32,3 +32,6 @@
 "widget.today.lockDescription" = "今日のルーチンのアイコンと件数を表示します。";
 "widget.today.emptyRoutines" = "ルーチンがまだありません";
 "widget.today.loadError" = "予定を読み込めません";
+
+"widget.comic.date" = "日付を選択";
+"widget.comic.undated" = "日付なし";

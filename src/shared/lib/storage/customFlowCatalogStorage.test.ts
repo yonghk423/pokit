@@ -82,3 +82,24 @@ describe('customFlowCatalogStorage', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
+
+it('excludes saved development examples and config-only samples while keeping user-created mates', () => {
+  localStorageClient.removeItem(StorageKeys.customFlowCatalog);
+  localStorageClient.removeItem(StorageKeys.goalDetailSettings);
+  const sampleIds = [
+    'customFlow:dev-template:checklist', 'customFlow:dev-template:memo',
+    'customFlow:dev-template:measurement', 'customFlow:dev-template:healthIntake',
+    'customFlow:dev-template:fasting', 'customFlow:dev-template:counter',
+    'customFlow:dev-template:reminder', 'customFlow:dev-concept:checklist',
+    'customFlow:dev-concept:counter',
+  ];
+  const userId = 'customFlow:user-created';
+  localStorageClient.setJson(StorageKeys.customFlowCatalog, {
+    items: [...sampleIds.slice(0, 7), userId].map(id => ({ id, groupKey: 'productivity' })),
+  });
+  for (const id of [...sampleIds, userId]) saveGoalDetailCategoryConfig(id, { displayName: '메이트', checklist: [] });
+  expect(listCustomFlowCatalogEntries().map(entry => entry.id)).toEqual([userId]);
+  expect(listAllCustomFlowCatalogEntries().map(entry => entry.id)).toEqual([userId]);
+  // Existing plans can still resolve the sample's detail data: this is catalog visibility, not deletion.
+  expect(localStorageClient.getJson<{ byCategory: Record<string, unknown> }>(StorageKeys.goalDetailSettings)?.byCategory[sampleIds[0]]).toBeDefined();
+});

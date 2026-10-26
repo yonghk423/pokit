@@ -1,20 +1,25 @@
 import { deckWindowStart, overlayCardPose, overlayDeckLayout, overlayDeckFrame, loopDeckIndex } from './overlayCardDeck';
 
-it('reveals no more than three card contents through an entire transition', () => {
+it('keeps a bounded stack visible through an entire transition', () => {
   for (let progress = 0; progress <= 1; progress += 0.025) {
     const visible = Array.from({ length: 6 }, (_, index) => overlayCardPose(index - progress))
       .filter(pose => pose.opacity > 0 && pose.contentOpacity > 0);
-    expect(visible.length).toBeLessThanOrEqual(3);
+    expect(visible.length).toBeLessThanOrEqual(4);
   }
   expect(overlayCardPose(3).contentOpacity).toBe(0);
   expect(overlayCardPose(3).opacity).toBe(0);
 });
 
-it('shows both neighbors even when the snapped offset lands slightly off an index', () => {
-  for (const drift of [-0.03, 0, 0.03]) {
-    expect(overlayCardPose(-1 - drift).opacity).toBe(1);
-    expect(overlayCardPose(1 - drift).opacity).toBe(1);
-  }
+it('sends the front card rightward before lowering it behind the next card', () => {
+  const start = overlayCardPose(0);
+  const outgoing = overlayCardPose(-0.4);
+  const behind = overlayCardPose(-0.7);
+  expect(start.rotate).toBe(0);
+  expect(outgoing.x).toBeGreaterThan(0.7);
+  expect(outgoing.zIndex).toBeGreaterThan(overlayCardPose(0.6).zIndex);
+  expect(behind.zIndex).toBeLessThan(overlayCardPose(0.3).zIndex);
+  expect(overlayCardPose(-1).opacity).toBe(0);
+  expect(overlayCardPose(0).opacity).toBe(1);
 });
 
 it('keeps first and last windows valid for short lists and scroll overshoot', () => {
@@ -31,10 +36,12 @@ it('preserves the reference card proportions and overlap on every viewport', () 
     // Short landscape stages clamp the height instead of shrinking the card.
     if (height >= 600) expect(cardWidth / cardHeight).toBeCloseTo(300 / 414);
     const front = overlayDeckFrame(0, width, height);
-    const left = overlayDeckFrame(-1, width, height);
-    const right = overlayDeckFrame(1, width, height);
-    expect((right.left - front.left) / scale).toBeCloseTo(216);
-    expect((front.left - left.left) / scale).toBeCloseTo(216);
+    const left = overlayDeckFrame(1, width, height);
+    const right = overlayDeckFrame(2, width, height);
+    expect((right.left - front.left) / scale).toBeCloseTo(15);
+    expect((front.left - left.left) / scale).toBeCloseTo(13.5);
+    expect(Math.abs(left.rotate)).toBeLessThanOrEqual(2);
+    expect(Math.abs(right.rotate)).toBeLessThanOrEqual(2);
     // Each scaled neighbor peeks out from behind the front card on its own side.
     const peek = cardWidth * (1 - left.scale) / 2;
     expect(left.left + peek).toBeLessThan(front.left);
@@ -73,4 +80,13 @@ it('keeps populated cards on screen when the native animation gets ahead of Reac
       expect(visible.length).toBeGreaterThanOrEqual(2);
     }
   }
+});
+
+it('follows a reverse gesture left and restores the previous front card', () => {
+  const outgoing = overlayCardPose(0.4, -1);
+  const incoming = overlayCardPose(-0.6, -1);
+  expect(outgoing.x).toBeLessThan(-0.7);
+  expect(outgoing.zIndex).toBeGreaterThan(incoming.zIndex);
+  expect(overlayCardPose(0.7, -1).zIndex).toBeLessThan(overlayCardPose(-0.3, -1).zIndex);
+  for (const depth of [0, 1, 2]) expect(overlayCardPose(depth, -1)).toEqual(overlayCardPose(depth, 1));
 });

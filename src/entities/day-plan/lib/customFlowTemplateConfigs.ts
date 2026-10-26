@@ -114,7 +114,6 @@ export const CREATABLE_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'healthIntake',
   'fasting',
   'counter',
-  'reminder',
 ] as const satisfies readonly CustomFlowTemplateKey[];
 
 /** 새로 만들 수 없지만 기존 루틴·세션 호환용 */
@@ -123,6 +122,8 @@ export const LEGACY_CUSTOM_FLOW_TEMPLATE_KEYS = [
   'abstain',
   'habit',
   'focus',
+  /** 시간 알림 — 신규 생성 중단, 기존 루틴만 호환 */
+  'reminder',
 ] as const satisfies readonly CustomFlowTemplateKey[];
 
 export const CUSTOM_FLOW_TEMPLATE_KEYS: readonly CustomFlowTemplateKey[] = [

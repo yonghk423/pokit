@@ -82,6 +82,40 @@ describe('pickHomeNudgeAnnouncement', () => {
     const items = [item({ id: 'a', priority: 'info', title: 'POKIT 1.9.4 업데이트' })];
     expect(pickHomeNudgeAnnouncement(items, new Set())).toBeNull();
   });
+
+  it('skips announcements at or below the installed app version', () => {
+    const items = [
+      item({
+        id: 'same',
+        priority: 'important',
+        title: 'POKIT 1.9.17 업데이트',
+      }),
+      item({
+        id: 'older',
+        priority: 'important',
+        title: 'POKIT 1.9.10 업데이트',
+      }),
+    ];
+    expect(pickHomeNudgeAnnouncement(items, new Set(), '1.9.17')).toBeNull();
+  });
+
+  it('still nudges when a newer version announcement exists', () => {
+    const items = [
+      item({
+        id: 'current',
+        priority: 'important',
+        title: 'POKIT 1.9.17 업데이트',
+      }),
+      item({
+        id: 'next',
+        priority: 'important',
+        title: 'POKIT 1.9.18 업데이트',
+      }),
+    ];
+    expect(pickHomeNudgeAnnouncement(items, new Set(), '1.9.17')).toEqual(
+      expect.objectContaining({ id: 'next' }),
+    );
+  });
 });
 
 describe('announcementBodyPreview', () => {

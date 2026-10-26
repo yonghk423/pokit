@@ -2120,18 +2120,9 @@ export function CustomFlowTemplateSessionBody({
       return <MemoTemplateView cfg={cfg} emit={emit} theme={theme} previewMode={previewMode} />;
     }
 
-    case 'reminder': {
-      if (!('reminderTimes' in cfg)) return null;
-      return (
-        <ReminderTemplateView
-          cfg={cfg}
-          emit={emit}
-          theme={theme}
-          previewMode={previewMode}
-          allowScheduleCompletion={allowScheduleCompletion}
-        />
-      );
-    }
+    case 'reminder':
+      // 시간 알림 템플릿은 제품에서 제거됨 — 잔여 설정은 표시하지 않음
+      return null;
 
     case 'abstain': {
       if (!('checklist' in cfg)) return null;

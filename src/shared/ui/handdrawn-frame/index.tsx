@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 
-const BORDER = require('../../../../assets/control-illustrations/button-border.png');
+const BORDER = require('../../../../assets/control-illustrations/button-border.webp');
 
 /** A hollow graphite border: paper/color and touch targets remain underneath. */
 export function HanddrawnFrame({ color, bold = false }: { color: string; bold?: boolean }) {

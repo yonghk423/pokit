@@ -63,7 +63,7 @@ assets/widget/_refs의 참고 이미지도 향후 사용하지 않는다는 사�
 
 | 파일 | 크기 (KiB) | 참조 위치 |
 |---|---:|---|
-| `assets/app-icon.png` | 735.6 | `app.json:7`; `app.json:52`; `app.json:63` |
+| `assets/app-icon3.png` | — | `app.json` icon / notification / adaptive / favicon |
 | `assets/onboarding/hero.jpg` | 102.0 | `src/pages/day-plan/lib/dailyRhythmOnboardingAssets.ts:11` |
 | `assets/pokit4.webp` | 43.6 | `src/shared/lib/welcome-intro-assets.ts:13` |
 | `assets/puzzle/basketball.webp` | 45.7 | `src/shared/lib/storage/devMockSeed/modules/puzzleHistoryMockSeed.ts:20` |
@@ -80,7 +80,7 @@ assets/widget/_refs의 참고 이미지도 향후 사용하지 않는다는 사�
 | `assets/puzzle-guide/target.jpg` | 262.6 | `src/shared/lib/puzzle-guide-assets.ts:15` |
 | `assets/puzzle-guide/tip.jpg` | 222.8 | `src/shared/lib/puzzle-guide-assets.ts:17` |
 | `assets/puzzle-guide/wall.jpg` | 208.5 | `src/shared/lib/puzzle-guide-assets.ts:14` |
-| `assets/splash-routines-9.webp` | 266.7 | `src/application/splashAssets.ts:10`; `app.json:77` |
+| `assets/splash-artwork.png` | — | `app.json` expo-splash-screen ios.image; `WelcomeIntroPage.tsx` |
 | `assets/splash3.webp` | 49.9 | `src/shared/lib/welcome-intro-assets.ts:12` |
 | `assets/splash4.webp` | 54.8 | `src/shared/lib/welcome-intro-assets.ts:11` |
 | `assets/splash5.webp` | 38.7 | `src/shared/lib/welcome-intro-assets.ts:14`; `src/shared/ui/settings-atmosphere/settingsAtmosphereAssets.ts:7` |
@@ -125,7 +125,7 @@ SHA-256 해시가 동일한 파일입니다. 현재 사용되는 파일도 포�
 | 크기 (KiB/개) | 동일 파일 |
 |---:|---|
 | 45.7 | `assets/puzzle/basketball.webp` / `assets/unsplash-routine/basketball.webp` |
-| 266.7 | `assets/puzzle/collage.webp` / `assets/splash-routines-9.webp` / `assets/unsplash-routine/collage.webp` |
+| 266.7 | `assets/puzzle/collage.webp` / `assets/unsplash-routine/collage.webp` |
 | 70.7 | `assets/puzzle/desk-stretch.webp` / `assets/unsplash-routine/desk-stretch.webp` |
 | 87.8 | `assets/puzzle/garage-kettlebell.webp` / `assets/unsplash-routine/garage-kettlebell.webp` |
 | 46.5 | `assets/puzzle/hands-heart.webp` / `assets/unsplash-routine/hands-heart.webp` |

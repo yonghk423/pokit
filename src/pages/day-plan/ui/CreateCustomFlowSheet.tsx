@@ -1,3 +1,6 @@
+import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
+import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
+import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -245,11 +248,13 @@ export function CreateCustomFlowSheet({
     if (!canProceedBasics) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setStep('template');
+    useServiceTutorial.getState().advance('rhythmForm', 'rhythmTemplate');
   };
 
   const handleBackStep = () => {
     void Haptics.selectionAsync();
     setStep('basics');
+    useServiceTutorial.getState().advance('rhythmTemplate', 'rhythmForm');
   };
 
   return (
@@ -261,6 +266,7 @@ export function CreateCustomFlowSheet({
       <View style={[styles.root, { backgroundColor: surface }]}>
         <PaperGrain opacity={0.35} />
         <View style={[styles.header, { paddingTop: 14 }]}>
+          <ServiceTutorialTarget steps={['rhythmForm', 'rhythmTemplate']} spotlight={false}>
           <View style={styles.headerLeading}>
             {step === 'template' ? (
               <Pressable
@@ -275,6 +281,7 @@ export function CreateCustomFlowSheet({
               <View style={styles.headerBackBtn} />
             )}
           </View>
+          </ServiceTutorialTarget>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
@@ -285,6 +292,8 @@ export function CreateCustomFlowSheet({
           </Pressable>
         </View>
 
+        <ServiceTutorialCoach steps={['rhythmForm', 'rhythmTemplate']} onEnd={onClose} onSkipStep={() => { if (useServiceTutorial.getState().step === 'rhythmTemplate') { if (!name.trim()) setName(t('dayPlan.addRoutine')); setStep('template'); } else { onCreate({ name: name.trim() || t('dayPlan.addRoutine'), groupKey: initialGroupKey?.trim() || DEFAULT_CUSTOM_FLOW_GROUP_KEY, icon: selectedIcon, accentColor: DEFAULT_CUSTOM_FLOW_ACCENT_COLOR, templateKey: selectedTemplateKey || 'memo', summary: summary.trim(), templateDataConfig: templateSetupConfig }); onClose(); } }} />
+        <ServiceTutorialTarget steps={['rhythmForm', 'rhythmTemplate']} spotlight={false} style={{ flex: 1 }}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
@@ -298,7 +307,7 @@ export function CreateCustomFlowSheet({
             <View style={styles.basicsFace}>
               <View style={styles.sectionInner}>
                 <ThemedText style={[styles.fieldLabel, { color: ink }]}>{t('createFlow.nameLabel')}</ThemedText>
-                <View style={[styles.inputShell, { backgroundColor: inputFaceBg }]}>
+                <ServiceTutorialTarget steps={!name.trim() ? ['rhythmForm'] : []}><View style={[styles.inputShell, { backgroundColor: inputFaceBg }]}>
                   <PaperGrain opacity={0.22} />
                   <HanddrawnFrame color={pencil} />
                   <ThemedTextInput
@@ -312,7 +321,7 @@ export function CreateCustomFlowSheet({
                     multiline={false}
                     style={[styles.input, { color: ink }]}
                   />
-                </View>
+                </View></ServiceTutorialTarget>
               </View>
 
               <View style={[styles.sectionInner, styles.sectionInnerFollow]}>
@@ -501,7 +510,9 @@ export function CreateCustomFlowSheet({
             </>
           )}
         </ScrollView>
+        </ServiceTutorialTarget>
 
+        <ServiceTutorialTarget steps={['rhythmForm', 'rhythmTemplate']} spotlight={false}>
         <View
           style={[
             styles.footer,
@@ -511,23 +522,24 @@ export function CreateCustomFlowSheet({
             },
           ]}>
           {step === 'basics' ? (
-            <BrutalConfirmButton
+            <ServiceTutorialTarget steps={canProceedBasics ? ['rhythmForm'] : []}><BrutalConfirmButton
               label={t('common.next')}
               accessibilityLabel={t('common.next')}
               align="stretch"
               disabled={!canProceedBasics}
               onPress={handleNextStep}
-            />
+            /></ServiceTutorialTarget>
           ) : (
-            <BrutalConfirmButton
+            <ServiceTutorialTarget steps={canCreate ? ['rhythmTemplate'] : []}><BrutalConfirmButton
               label={t('createFlow.create')}
               accessibilityLabel={t('createFlow.create')}
               align="stretch"
               disabled={!canCreate}
               onPress={handleCreate}
-            />
+            /></ServiceTutorialTarget>
           )}
         </View>
+        </ServiceTutorialTarget>
       </View>
     </Modal>
   );

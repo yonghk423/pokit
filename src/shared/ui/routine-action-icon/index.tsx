@@ -1,12 +1,6 @@
-import { Image } from 'expo-image';
 import Svg, { Path } from 'react-native-svg';
 
-const SOURCES = {
-  adjust: require('../../../../assets/routine-action-icons/edit-note.webp'),
-  settings: require('../../../../assets/routine-action-icons/settings.webp'),
-} as const;
-
-export type RoutineActionIconName = keyof typeof SOURCES | 'ring' | 'expand';
+export type RoutineActionIconName = 'adjust' | 'expand' | 'ring';
 
 /** 더하기·펼침·완료 원은 주변 연필 그림과 같은 옅은 잉크 농도로 표시한다. */
 const PENCIL_INK_OPACITY = 0.38;
@@ -34,18 +28,6 @@ export function RoutineActionIcon({
           <Path d="m6.1 10 .9 1m8.6 1.2 1.4-1.5" stroke={color} strokeWidth={0.5} strokeLinecap="round" opacity={0.6} fill="none" />
         </>}
       </Svg>
-    );
-  }
-  if (name !== 'ring') {
-    return (
-      <Image
-        source={SOURCES[name]}
-        contentFit="contain"
-        useAppleWebpCodec={false}
-        transition={0}
-        accessible={false}
-        style={{ width: size, height: size }}
-      />
     );
   }
   return (

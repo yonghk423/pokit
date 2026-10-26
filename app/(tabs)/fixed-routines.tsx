@@ -8,7 +8,7 @@ import { Redirect } from 'expo-router';
 const FrozenFixedRoutinePage = freezeHeavyTabScreen(FixedRoutinePage);
 
 export default function FixedRoutinesTabScreen() {
-  if (!FEATURE_FLAGS.routinesManageTab) return <Redirect href="/(tabs)/day-plan" />;
+  if (!FEATURE_FLAGS.routinesManageTab) return <Redirect href="/day-plan" />;
   return (
     <NativeTabContent>
       <DayPlanTabScreenShell>

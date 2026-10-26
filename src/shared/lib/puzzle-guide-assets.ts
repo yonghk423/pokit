@@ -11,10 +11,10 @@ export const PUZZLE_GUIDE_STAGE_CREAM_DARK = '#2A2620';
 
 /** 위젯 설명서와 같은 노트 펼친 에디토리얼 슬라이드 */
 const puzzleGuideAssets: Record<PuzzleGuideImageId, number> = {
-  wall: require('../../../assets/puzzle-guide/wall.jpg'),
-  target: require('../../../assets/puzzle-guide/target.jpg'),
-  photo: require('../../../assets/puzzle-guide/photo.jpg'),
-  tip: require('../../../assets/puzzle-guide/tip.jpg'),
+  wall: require('../../../assets/puzzle-guide/wall.webp'),
+  target: require('../../../assets/puzzle-guide/target.webp'),
+  photo: require('../../../assets/puzzle-guide/photo.webp'),
+  tip: require('../../../assets/puzzle-guide/tip.webp'),
 };
 
 export function getPuzzleGuideImage(id: PuzzleGuideImageId): ImageSourcePropType {

@@ -8,7 +8,7 @@ import { freezeHeavyTabScreen } from '@shared/ui/freeze-heavy-tab-screen';
 const FrozenPuzzleHistoryTabPage = freezeHeavyTabScreen(PuzzleHistoryTabPage);
 
 export default function PuzzleHistoryTab() {
-  if (!FEATURE_FLAGS.puzzle) return <Redirect href="/(tabs)/day-plan" />;
+  if (!FEATURE_FLAGS.puzzle) return <Redirect href="/day-plan" />;
   return (
     <NativeTabContent>
       <DayPlanTabScreenShell>

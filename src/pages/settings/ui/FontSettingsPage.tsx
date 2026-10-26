@@ -1,4 +1,4 @@
-import { PaperControl } from '@shared/ui/paper-control';
+import { SettingsInkFrame } from '../lib/settingsChrome';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pressable, Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
@@ -24,7 +24,7 @@ import {
   type AppFontId,
   type AppFontSizeId,
 } from '@shared/lib/ui-font';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { SettingsPenIcon as IconSymbol } from '../lib/settingsPen';
 import { ThemedView } from '@shared/ui/themed-view';
 
 function appFontTextStyle(
@@ -44,14 +44,14 @@ const FONT_OPTIONS: {
   descKey: I18nKey;
 }[] = [
   {
-    key: 'kimJungWon',
-    labelKey: 'settings.font.kimJungWon',
-    descKey: 'settings.font.kimJungWonDesc',
-  },
-  {
     key: 'corncorn',
     labelKey: 'settings.font.corncorn',
     descKey: 'settings.font.corncornDesc',
+  },
+  {
+    key: 'kimJungWon',
+    labelKey: 'settings.font.kimJungWon',
+    descKey: 'settings.font.kimJungWonDesc',
   },
   {
     key: 'hiMelody',
@@ -73,7 +73,7 @@ export function FontSettingsPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
-  const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const rf = { ...(isDark ? RetroFlatColors.dark : RetroFlatColors.light), text: isDark ? '#F1E7D2' : '#181713', textMuted: isDark ? '#C9C0AC' : '#575044' };
   const insets = useSafeAreaInsets();
   const fontId = useAppFontStore((s) => s.fontId);
   const setFontId = useAppFontStore((s) => s.setFontId);
@@ -81,9 +81,10 @@ export function FontSettingsPage() {
   const setSizeId = useAppFontStore((s) => s.setSizeId);
   const sizeScale = useAppFontSizeScale();
   /** 외곽선 없이 음영만 — 면은 불투명 */
-  const cardFace = isDark ? rf.surfaceAlt : '#F7F6F4';
-  const cardFacePressed = isDark ? rf.surfaceContainer : '#F3F0E8';
-  const checkOn = rf.primary;
+  const cardFace = 'transparent';
+  const selectedWash = isDark ? '#306163' : '#C8EBDD';
+  const cardFacePressed = isDark ? '#3B7370' : '#B5DFD0';
+  const checkOn = rf.text;
   const checkOff = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.28)';
 
   /** 선택 중인 글씨체·크기로 미리보기 (크롬과 분리) */
@@ -108,7 +109,7 @@ export function FontSettingsPage() {
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]} darkColor="#262B28" lightColor="#F7F6F4">
+    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#282724' : '#F8F6F0' }]} darkColor="#282724" lightColor="#F8F6F0">
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.topBar}>
           <Pressable
@@ -159,11 +160,8 @@ export function FontSettingsPage() {
               const active = sizeId === opt.key;
               const optScale =
                 resolveAppFontSizeScale(opt.key) * resolveAppFontOpticalScale(fontId);
-              const selectedWash = isDark
-                ? 'rgba(158,207,209,0.18)'
-                : 'rgba(168,218,220,0.38)';
               const face = active ? selectedWash : cardFace;
-              const facePressed = active ? selectedWash : cardFacePressed;
+              const facePressed = cardFacePressed;
               return (
                 <View
                   key={opt.key}
@@ -184,7 +182,7 @@ export function FontSettingsPage() {
                       },
                     ]}
                   />
-                  <PaperControl
+                  <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t(opt.labelKey)}
                     accessibilityState={{ selected: active }}
@@ -197,6 +195,7 @@ export function FontSettingsPage() {
                     styles.sizeCard,
                       { backgroundColor: pressed ? facePressed : face },
                     ]}>
+                    <SettingsInkFrame color={rf.text} />
                     <Text
                       style={[
                         styles.sizeCardTitle,
@@ -209,7 +208,7 @@ export function FontSettingsPage() {
                       ]}>
                       {APP_FONT_SIZE_IDS.indexOf(opt.key) + 1}
                     </Text>
-                  </PaperControl>
+                  </Pressable>
                 </View>
               );
             })}
@@ -266,7 +265,7 @@ export function FontSettingsPage() {
                     },
                   ]}
                 />
-                <PaperControl
+                <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t(opt.labelKey)}
                   accessibilityState={{ selected: active }}
@@ -278,19 +277,10 @@ export function FontSettingsPage() {
                   style={({ pressed }) => [
                     styles.fontCard,
                     {
-                      backgroundColor: pressed
-                        ? active
-                          ? isDark
-                            ? 'rgba(158,207,209,0.24)'
-                            : 'rgba(168,218,220,0.46)'
-                          : cardFacePressed
-                        : active
-                          ? isDark
-                            ? 'rgba(158,207,209,0.14)'
-                            : 'rgba(168,218,220,0.26)'
-                          : cardFace,
+                      backgroundColor: pressed ? cardFacePressed : active ? selectedWash : cardFace,
                     },
                   ]}>
+                  <SettingsInkFrame color={rf.text} />
                   <View style={styles.fontText}>
                     <Text
                       style={[
@@ -324,7 +314,7 @@ export function FontSettingsPage() {
                     size={20}
                     color={active ? checkOn : checkOff}
                   />
-                </PaperControl>
+                </Pressable>
               </View>
             );
           })}

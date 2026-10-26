@@ -1,5 +1,8 @@
+import { tutorialCopy } from '../../welcome-intro/lib/tutorialCopy';
+import { resetServiceTutorialSession } from '../../welcome-intro/model/serviceTutorial';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
+import { restartAppSession } from '@shared/lib/app-session';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -61,7 +64,7 @@ import {
   SUPPORT_EMAIL,
 } from '@shared/lib/support';
 import { useAppFontStore, type AppFontId } from '@shared/lib/ui-font';
-import { IconSymbol } from '@shared/ui/icon-symbol';
+import { SettingsPenIcon as IconSymbol } from '../lib/settingsPen';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
@@ -109,6 +112,7 @@ export function SettingsPage() {
   const pageBg = p.bg;
   const appVersionLabel = getDisplayedAppVersionLabel();
   const [isResettingData, setIsResettingData] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const [isSubscriptionBusy, setIsSubscriptionBusy] = useState(false);
   const [hasUnreadAnnouncements, setHasUnreadAnnouncements] = useState(false);
   const locale = useAppLocaleStore((s) => s.locale);
@@ -300,6 +304,11 @@ export function SettingsPage() {
       clearPuzzleRevealSeen();
       usePuzzleHistoryStore.getState().reloadFromStorage();
       await useLocalNotificationsStore.getState().refreshPermission();
+      resetServiceTutorialSession();
+      // Navigate first: the remount keeps the navigator state, so the intro is what reopens fresh.
+      if (router.canDismiss()) router.dismissAll();
+      router.replace('/welcome-intro');
+      restartAppSession();
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(t('alert.reset.success.title', locale), t('alert.reset.success.message', locale));
@@ -313,14 +322,13 @@ export function SettingsPage() {
 
   const confirmResetData = () => {
     if (isResettingData) return;
-    Alert.alert(
-      t('settings.confirmReset.title', locale),
-      t('settings.confirmReset.message', locale),
-      [
-        { text: t('common.cancel', locale), style: 'cancel' },
-        { text: t('common.reset', locale), style: 'destructive', onPress: () => void runResetData() },
-      ],
-    );
+    setConfirmingReset(true);
+  };
+
+  const tutorial = tutorialCopy(locale);
+  const tap = (action: () => void) => () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    action();
   };
 
   return (
@@ -364,15 +372,9 @@ export function SettingsPage() {
           ]}
           showsVerticalScrollIndicator={false}>
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-              {t('settings.section.announcements', locale)}
-            </ThemedText>
             <Pressable
               style={[chrome.item, { borderTopColor: p.border }]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/announcements');
-              }}
+              onPress={tap(() => router.push('/announcements'))}
               accessibilityRole="button"
               accessibilityLabel={
                 hasUnreadAnnouncements
@@ -403,484 +405,348 @@ export function SettingsPage() {
           </SettingsSection>
 
           {FEATURE_FLAGS.dailyRhythmWindow || SHOW_LAYOUT_SETTINGS ? (
+            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+              {FEATURE_FLAGS.dailyRhythmWindow ? (
+                <Pressable
+                  style={[chrome.item, { borderTopColor: p.border }]}
+                  onPress={tap(() => router.push('/daily-mate-settings'))}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.a11y.dayWindow', locale)}>
+                  <View style={chrome.itemLeft}>
+                    <SettingsRowIcon name="clock" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                    <View style={chrome.itemTextWrap}>
+                      <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                        {t('settings.dayPlanWindow', locale)}
+                      </ThemedText>
+                      <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                        {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
+                        {dayStartAlarmOn ? t('settings.dayPlanStartAlarmOn', locale) : ''}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+                </Pressable>
+              ) : null}
+              {SHOW_LAYOUT_SETTINGS ? (
+                <Pressable
+                  style={[chrome.item, { borderTopColor: p.border }]}
+                  onPress={tap(() => router.push('/layout-settings'))}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.a11y.layout', locale)}>
+                  <View style={chrome.itemLeft}>
+                    <SettingsRowIcon name="list.bullet.rectangle" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                    <View style={chrome.itemTextWrap}>
+                      <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                        {t('settings.layoutTitle', locale)}
+                      </ThemedText>
+                      <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                        {t('settings.layoutDesc', locale)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+                </Pressable>
+              ) : null}
+            </SettingsSection>
+          ) : null}
+
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-              {t('settings.section.dayPlan', locale)}
-            </ThemedText>
-
-          {FEATURE_FLAGS.dailyRhythmWindow ? (
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/daily-rhythm-settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.dayWindow', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="clock"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.dayPlanWindow', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
-                  {dayStartAlarmOn ? t('settings.dayPlanStartAlarmOn', locale) : ''}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-          ) : null}
-
-          {SHOW_LAYOUT_SETTINGS ? (
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/layout-settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.layout', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="list.bullet.rectangle"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.layoutTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.layoutDesc', locale)}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-          ) : null}
-        </SettingsSection>
-          ) : null}
-
-        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.help', locale)}
-          </ThemedText>
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/guide-book');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.guide', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="book.fill"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.guideBookTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.guideBookDesc', locale)}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-          {FEATURE_FLAGS.puzzle ? (
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/puzzle-guide');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.puzzleGuide', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="rectangle.stack"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.puzzleGuideTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.puzzleGuideDesc', locale)}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-          ) : null}
-        </SettingsSection>
-
-        {SHOW_NOTIFICATION_SETTINGS ? (
-          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-              {t('settings.section.notification', locale)}
-            </ThemedText>
-
             <Pressable
               style={[chrome.item, { borderTopColor: p.border }]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/notification-settings');
-              }}
+              onPress={tap(() => router.push('/welcome-intro'))}
               accessibilityRole="button"
-              accessibilityLabel={t('settings.a11y.notification', locale)}>
+              accessibilityLabel={tutorial.replay}>
               <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="bell.fill"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.iconBorder}
-                  shadow={p.shadow}
-                />
+                <SettingsRowIcon name="book.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {t('settings.notificationTitle', locale)}
+                    {tutorial.replay}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {t('settings.notificationDesc', locale)}
+                    {tutorial.replayDesc}
                   </ThemedText>
                 </View>
               </View>
               <IconSymbol name="chevron.right" size={14} color={p.chevron} />
             </Pressable>
+            {FEATURE_FLAGS.puzzle ? (
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }]}
+                onPress={tap(() => router.push('/puzzle-guide'))}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.a11y.puzzleGuide', locale)}>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="rectangle.stack" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {t('settings.puzzleGuideTitle', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {t('settings.puzzleGuideDesc', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+            ) : null}
           </SettingsSection>
-        ) : null}
 
-        {SHOW_APPEARANCE_SETTINGS ? (
+          {SHOW_NOTIFICATION_SETTINGS ? (
+            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }]}
+                onPress={tap(() => router.push('/notification-settings'))}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.a11y.notification', locale)}>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="bell.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {t('settings.notificationTitle', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {t('settings.notificationDesc', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+            </SettingsSection>
+          ) : null}
+
+          {SHOW_APPEARANCE_SETTINGS ? (
+            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }]}
+                onPress={tap(() => router.push('/appearance-settings'))}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.a11y.appearance', locale)}>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="paintbrush.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {t('settings.appearanceTitle', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {appearanceLabel}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+            </SettingsSection>
+          ) : null}
+
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-              {t('settings.section.appearance', locale)}
-            </ThemedText>
-
             <Pressable
               style={[chrome.item, { borderTopColor: p.border }]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/appearance-settings');
-              }}
+              onPress={tap(() => router.push('/font-settings'))}
               accessibilityRole="button"
-              accessibilityLabel={t('settings.a11y.appearance', locale)}>
+              accessibilityLabel={t('settings.a11y.font', locale)}>
               <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="paintbrush.fill"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.iconBorder}
-                  shadow={p.shadow}
-                />
+                <SettingsRowIcon name="textformat" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {t('settings.appearanceTitle', locale)}
+                    {t('settings.fontTitle', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {appearanceLabel}
+                    {fontLabel}
                   </ThemedText>
                 </View>
               </View>
               <IconSymbol name="chevron.right" size={14} color={p.chevron} />
             </Pressable>
           </SettingsSection>
-        ) : null}
 
-        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.font', locale)}
-          </ThemedText>
+          {SHOW_POKIT_PRO_SETTINGS ? (
+            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
+                onPress={tap(() => {
+                  if (isPro) void runCustomerCenter();
+                  else void runPresentPaywall();
+                })}
+                disabled={isSubscriptionBusy}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isPro ? t('settings.a11y.pro.manage', locale) : t('settings.a11y.pro.subscribe', locale)
+                }>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="star.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {!subscriptionConfigured
+                        ? t('settings.pro.moduleMissing', locale)
+                        : isPro
+                          ? t('settings.pro.manageDesc', locale)
+                          : t('settings.pro.featuresDesc', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
+                onPress={tap(() => {
+                  void runRestorePurchases();
+                })}
+                disabled={isSubscriptionBusy}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.a11y.restore', locale)}>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="arrow.clockwise" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {t('settings.restore.title', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {t('settings.restore.desc', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+            </SettingsSection>
+          ) : null}
 
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/font-settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.font', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="textformat"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.fontTitle', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {fontLabel}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-        </SettingsSection>
-
-        {SHOW_POKIT_PRO_SETTINGS ? (
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-              {t('settings.section.pro', locale)}
-            </ThemedText>
-
             <Pressable
-              style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (isPro) {
-                  void runCustomerCenter();
-                } else {
-                  void runPresentPaywall();
-                }
-              }}
-              disabled={isSubscriptionBusy}
+              style={[chrome.item, { borderTopColor: p.border }]}
+              onPress={tap(() => {
+                void openAppStoreWriteReview();
+              })}
               accessibilityRole="button"
-              accessibilityLabel={
-                isPro ? t('settings.a11y.pro.manage', locale) : t('settings.a11y.pro.subscribe', locale)
-              }>
+              accessibilityLabel={t('settings.a11y.praiseApp', locale)}>
               <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="star.fill"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.iconBorder}
-                  shadow={p.shadow}
-                />
+                <SettingsRowIcon name="star.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
+                    {t('settings.praiseApp', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {!subscriptionConfigured
-                      ? t('settings.pro.moduleMissing', locale)
-                      : isPro
-                        ? t('settings.pro.manageDesc', locale)
-                        : t('settings.pro.featuresDesc', locale)}
+                    {t('settings.praiseApp.desc', locale)}
                   </ThemedText>
                 </View>
               </View>
               <IconSymbol name="chevron.right" size={14} color={p.chevron} />
             </Pressable>
-
             <Pressable
-              style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                void runRestorePurchases();
-              }}
-              disabled={isSubscriptionBusy}
+              style={[chrome.item, { borderTopColor: p.border }]}
+              onPress={tap(() => {
+                void shareAppWithFriends();
+              })}
               accessibilityRole="button"
-              accessibilityLabel={t('settings.a11y.restore', locale)}>
+              accessibilityLabel={t('settings.a11y.shareApp', locale)}>
               <View style={chrome.itemLeft}>
-                <SettingsRowIcon
-                  name="arrow.clockwise"
-                  color={p.icon}
-                  boxBg={p.iconBoxBg}
-                  border={p.iconBorder}
-                  shadow={p.shadow}
-                />
+                <SettingsRowIcon name="square.and.arrow.up" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
                 <View style={chrome.itemTextWrap}>
                   <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {t('settings.restore.title', locale)}
+                    {t('settings.shareApp', locale)}
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {t('settings.restore.desc', locale)}
+                    {t('settings.shareApp.desc', locale)}
                   </ThemedText>
                 </View>
               </View>
               <IconSymbol name="chevron.right" size={14} color={p.chevron} />
             </Pressable>
           </SettingsSection>
-        ) : null}
 
-        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.growth', locale)}
-          </ThemedText>
-
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              void openAppStoreWriteReview();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.praiseApp', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="star.fill"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.praiseApp', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.praiseApp.desc', locale)}
-                </ThemedText>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+            <Pressable
+              style={[chrome.item, { borderTopColor: p.border }]}
+              onPress={tap(() => {
+                void openSupportMailComposer();
+              })}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.a11y.support', locale)}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon name="envelope.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    {t('settings.supportContact', locale)}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    {SUPPORT_EMAIL}
+                  </ThemedText>
+                </View>
               </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              void shareAppWithFriends();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.shareApp', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="square.and.arrow.up"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.shareApp', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {t('settings.shareApp.desc', locale)}
-                </ThemedText>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+            <Pressable
+              style={[chrome.item, styles.infoItem, { borderTopColor: p.border }]}
+              onPress={tap(() => router.push('/release-notes'))}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.a11y.appVersion', locale)}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon name="info.circle" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    {t('settings.appVersion', locale)}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    {appVersionLabel}
+                  </ThemedText>
+                </View>
               </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-        </SettingsSection>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+          </SettingsSection>
 
-        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.support', locale)}
-          </ThemedText>
-
-          <Pressable
-            style={[chrome.item, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              void openSupportMailComposer();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.support', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="paperplane.fill"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.supportContact', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {SUPPORT_EMAIL}
-                </ThemedText>
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+            {confirmingReset ? (
+              <View style={[chrome.item, { borderTopColor: p.border, backgroundColor: p.dangerBg, alignItems: 'stretch' }]}>
+                <View style={{ flex: 1, gap: 10 }}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.dangerTitle }]} lightColor={p.dangerTitle} darkColor={p.dangerTitle}>{t('settings.confirmReset.title', locale)}</ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.dangerDesc }]} lightColor={p.dangerDesc} darkColor={p.dangerDesc}>{t('settings.confirmReset.message', locale)}</ThemedText>
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 16 }}>
+                    <Pressable accessibilityRole="button" hitSlop={8} disabled={isResettingData} onPress={tap(() => setConfirmingReset(false))}><ThemedText style={{ color: p.title }}>{t('common.cancel', locale)}</ThemedText></Pressable>
+                    <Pressable accessibilityRole="button" hitSlop={8} disabled={isResettingData} onPress={tap(() => void runResetData())}><ThemedText style={{ color: p.dangerTitle }}>{isResettingData ? t('settings.resetData.loading', locale) : t('common.reset', locale)}</ThemedText></Pressable>
+                  </View>
+                </View>
               </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-
-          <Pressable
-            style={[chrome.item, styles.infoItem, { borderTopColor: p.border }]}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/release-notes');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.appVersion', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="info.circle"
-                color={p.icon}
-                boxBg={p.iconBoxBg}
-                border={p.iconBorder}
-                shadow={p.shadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                  {t('settings.appVersion', locale)}
-                </ThemedText>
-                <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                  {appVersionLabel}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-          </Pressable>
-        </SettingsSection>
-
-        <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-          <ThemedText style={[chrome.sectionTitle, { color: p.sectionTitle }]}>
-            {t('settings.section.data', locale)}
-          </ThemedText>
-          <Pressable
-            style={({ pressed }) => [
-              chrome.item,
-              { borderTopColor: p.border, backgroundColor: p.dangerBg },
-              pressed && { opacity: 0.9 },
-              isResettingData && styles.disabledItem,
-            ]}
-            onPress={confirmResetData}
-            disabled={isResettingData}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.a11y.reset', locale)}>
-            <View style={chrome.itemLeft}>
-              <SettingsRowIcon
-                name="trash.fill"
-                color={p.dangerIcon}
-                boxBg={p.dangerIconBoxBg}
-                border={p.iconBorder}
-                shadow={p.dangerShadow}
-              />
-              <View style={chrome.itemTextWrap}>
-                <ThemedText
-                  style={[chrome.itemTitle, { color: p.dangerTitle }]}
-                  lightColor={p.dangerTitle}
-                  darkColor={p.dangerTitle}>
-                  {isResettingData ? t('settings.resetData.loading', locale) : t('settings.resetData', locale)}
-                </ThemedText>
-                <ThemedText
-                  style={[chrome.itemDesc, { color: p.dangerDesc }]}
-                  lightColor={p.dangerDesc}
-                  darkColor={p.dangerDesc}>
-                  {t('settings.resetData.desc', locale)}
-                </ThemedText>
-              </View>
-            </View>
-            <IconSymbol name="chevron.right" size={14} color={p.dangerChevron} />
-          </Pressable>
-        </SettingsSection>
-      </ScrollView>
+            ) : (
+              <Pressable
+                style={[
+                  chrome.item,
+                  { borderTopColor: p.border, backgroundColor: p.dangerBg },
+                  isResettingData && styles.disabledItem,
+                ]}
+                onPress={tap(confirmResetData)}
+                disabled={isResettingData}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.a11y.reset', locale)}>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon
+                    name="trash.fill"
+                    color={p.dangerIcon}
+                    boxBg={p.dangerIconBoxBg}
+                    border={p.iconBorder}
+                    shadow={p.dangerShadow}
+                  />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText
+                      style={[chrome.itemTitle, { color: p.dangerTitle }]}
+                      lightColor={p.dangerTitle}
+                      darkColor={p.dangerTitle}>
+                      {isResettingData ? t('settings.resetData.loading', locale) : t('settings.resetData', locale)}
+                    </ThemedText>
+                    <ThemedText
+                      style={[chrome.itemDesc, { color: p.dangerDesc }]}
+                      lightColor={p.dangerDesc}
+                      darkColor={p.dangerDesc}>
+                      {t('settings.resetData.desc', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.dangerChevron} />
+              </Pressable>
+            )}
+          </SettingsSection>
+        </ScrollView>
       </View>
     </ThemedView>
   );

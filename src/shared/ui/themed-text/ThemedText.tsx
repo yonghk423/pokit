@@ -123,6 +123,6 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontSize: 16,
     fontWeight: '500',
-    color: '#436086',
+    color: '#000000',
   },
 });

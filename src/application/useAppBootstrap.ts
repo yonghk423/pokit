@@ -1,4 +1,5 @@
-import { loadComicDiaryLibrary } from '@pages/day-plan/lib/comicDiaryStorage';
+import { getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
+import { loadComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -18,11 +19,16 @@ import {
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useFixedFlowSetsStore,
+  useGoalDetailSettingsStore,
   seedRoutineStartTimesFromLegacySources,
   useRoutineStartTimesStore,
   useScheduledRoutinePlanStore,
 } from '@entities/day-plan';
+import { useHistoryStore } from '@entities/history';
+import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { useLocalNotificationsStore } from '@entities/local-notifications';
+import { usePuzzleHistoryStore } from '@entities/puzzle-history';
+import { useAppSessionStore } from '@shared/lib/app-session';
 import {
   reconcileReminderTemplateNotificationRules,
   syncCategoryReminderNotifications,
@@ -48,7 +54,6 @@ import {
 } from '@shared/lib/notifications';
 import { logAppOpen } from '@shared/lib/analytics';
 import { initCrashlytics } from '@shared/lib/crashlytics';
-import { requestAppReviewIfDue } from '@shared/lib/support';
 
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { t, useAppLocaleStore } from '@shared/lib/i18n';
@@ -62,8 +67,44 @@ import {
   loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
 } from '@shared/lib/storage';
-import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyRhythmOnboardingAssets';
-import { useDevSeedMenu } from './useDevSeedMenu';
+import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyMateOnboardingAssets';
+
+/** 저장소 → 전역 스토어 hydrate. 시작 시와 `restartAppSession()` 때 실행한다. */
+function hydrateAppState() {
+  ensureDefaultPriorityCatalog();
+  seedReadingBookstoreIfNeeded();
+  // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
+  savePriorityDayRollMode('reset');
+  useAppearanceStore.getState().hydrate();
+  useAppFontStore.getState().hydrate();
+  useDayPlanLayoutModeVisibilityStore.getState().hydrate();
+  useDayPlanChromeSettingsStore.getState().hydrate();
+
+  useDayPlanStore.getState().hydrate();
+  useDayPlanDraftStore.getState().hydrate();
+  useFixedFlowSetsStore.getState().hydrate();
+  useRoutineStartTimesStore.getState().hydrate();
+  useScheduledRoutinePlanStore.getState().hydrate();
+  useGoalDetailSettingsStore.getState().reloadAllFromStorage();
+  useHistoryStore.getState().reloadFromStorage();
+  useHorizonCompletionStore.getState().reloadFromStorage();
+  usePuzzleHistoryStore.getState().reloadFromStorage();
+  seedRoutineStartTimesFromLegacySources();
+  useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
+  useDayPlanStore.getState().prunePastEndedBlocks();
+  syncTodayTabWithFixedRoutineApply();
+  syncPinnedRoutineToWidget();
+  loadComicDiaryLibrary(getLocalDateKey(), number => t('comicDiary.defaultTitle', { number }));
+  ensureBookstoreNoteWidgetLifecycle();
+  syncBookstoreAndNoteWidgets();
+  seedPokitWeekTourIntoTodayIfNeeded();
+  registerOtherCategoryResolverFromStorage();
+  const plan = useDayPlanStore.getState();
+  useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
+    dateKey: plan.dateKey,
+    blocks: plan.blocks,
+  });
+}
 
 /**
  * 앱 전역 부트스트랩: hydrate + 알림 리스너 + Live Activity 동기화.
@@ -72,7 +113,6 @@ import { useDevSeedMenu } from './useDevSeedMenu';
 export function useAppBootstrap() {
   const router = useRouter();
   useLocalNotifications();
-  useDevSeedMenu();
   const [isReady, setIsReady] = useState(false);
   const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
   const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
@@ -89,36 +129,17 @@ export function useAppBootstrap() {
         void prefetchDailyRhythmOnboardingAssets();
       }
 
-      useAppLocaleStore.getState().hydrateFromDevice();
-      ensureDefaultPriorityCatalog();
-      seedReadingBookstoreIfNeeded();
-      // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
-      savePriorityDayRollMode('reset');
-      useAppearanceStore.getState().hydrate();
-      useAppFontStore.getState().hydrate();
-      useDayPlanLayoutModeVisibilityStore.getState().hydrate();
-      useDayPlanChromeSettingsStore.getState().hydrate();
-
-      useDayPlanStore.getState().hydrate();
-      useDayPlanDraftStore.getState().hydrate();
-      useFixedFlowSetsStore.getState().hydrate();
-      useRoutineStartTimesStore.getState().hydrate();
-      useScheduledRoutinePlanStore.getState().hydrate();
-      seedRoutineStartTimesFromLegacySources();
-      useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
-      useDayPlanStore.getState().prunePastEndedBlocks();
-      syncTodayTabWithFixedRoutineApply();
-      syncPinnedRoutineToWidget();
-      loadComicDiaryLibrary(getLocalDateKey(), number => t('comicDiary.defaultTitle', { number }));
-      ensureBookstoreNoteWidgetLifecycle();
-      syncBookstoreAndNoteWidgets();
-      seedPokitWeekTourIntoTodayIfNeeded();
-      registerOtherCategoryResolverFromStorage();
-      const plan = useDayPlanStore.getState();
-      useDayPlanRuntimeStore.getState().buildTimelineFromBlocks({
-        dateKey: plan.dateKey,
-        blocks: plan.blocks,
-      });
+      if (__DEV__) {
+        const { ensureDevelopmentMockData } = await import('./development/mockData');
+        const { registerDevelopmentMockMenu } = await import('./development/mockMenu');
+        const profile = getDevelopmentStorageProfile();
+        if (profile) { useAppLocaleStore.getState().setLocale(profile); ensureDevelopmentMockData(); }
+        registerDevelopmentMockMenu();
+      }
+      const mockLocale = getDevelopmentStorageProfile();
+      if (mockLocale) useAppLocaleStore.getState().setLocale(mockLocale);
+      else useAppLocaleStore.getState().hydrateFromDevice();
+      hydrateAppState();
 
       if (FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted()) {
         await prefetchDailyRhythmOnboardingAssets();
@@ -150,13 +171,14 @@ export function useAppBootstrap() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isReady) return;
-    const timer = setTimeout(() => {
-      void requestAppReviewIfDue();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [isReady]);
+  // Runs synchronously inside restart(), so stores are fresh before the keyed tree remounts.
+  useEffect(() => useAppSessionStore.subscribe((state, prev) => {
+    if (state.epoch === prev.epoch) return;
+    useDayPlanRuntimeStore.getState().stopTicker();
+    useDayPlanRuntimeStore.getState().clearRuntime();
+    hydrateAppState();
+  }), []);
+
 
   useEffect(() => {
     if (!isReady) return;
@@ -242,19 +264,19 @@ export function useAppBootstrap() {
     if (!isReady) return;
     return addLocalNotificationResponseListener((data) => {
       if (data.eventType === 'categoryReminder') {
-        router.push('/(tabs)/day-plan');
+        router.push('/day-plan');
         return;
       }
       if (data.eventType === 'routineStart') {
-        router.push('/(tabs)/day-plan');
+        router.push('/day-plan');
         return;
       }
       if (data.eventType === 'incompleteRoutineReminder') {
-        router.push('/(tabs)/day-plan');
+        router.push('/day-plan');
         return;
       }
       if (data.eventType === 'priorityDayEnd') {
-        router.push('/(tabs)/day-plan');
+        router.push('/day-plan');
         return;
       }
       if (data.eventType === 'medicineDoseReminder') {
@@ -262,7 +284,7 @@ export function useAppBootstrap() {
         if (bid) {
           router.push({ pathname: '/activity-session', params: { blockId: bid } });
         } else {
-          router.push('/(tabs)/day-plan');
+          router.push('/day-plan');
         }
         return;
       }
@@ -271,7 +293,7 @@ export function useAppBootstrap() {
         if (bid) {
           router.push({ pathname: '/activity-session', params: { blockId: bid } });
         } else {
-          router.push('/(tabs)/day-plan');
+          router.push('/day-plan');
         }
         return;
       }

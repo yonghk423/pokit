@@ -12,6 +12,8 @@ public enum PokitAppGroup {
   public static let noteWidgetJsonKey = "pokit_note_widget_json"
   /// 만화 장면 위젯 번들(장면 목록 + 기본키)
   public static let comicSceneWidgetJsonKey = "pokit_comic_scene_widget_json"
+  /// 앱에서 가져온 현재 날씨(만화 장면 위젯 오버레이)
+  public static let weatherWidgetJsonKey = "pokit_weather_widget_json"
   /// 위젯 탭 → 앱 진입 시 적용할 planMode (한 번 읽으면 지움)
   public static let pendingPlanModeKey = "pokit_widget_pending_plan_mode"
   private static let legacyDayPlanJsonKey = "lockflow_day_plan_widget_json"
@@ -72,10 +74,18 @@ public enum PokitAppGroup {
     return value
   }
 
+  public static func readWeatherWidgetJson(from ud: UserDefaults) -> String? {
+    guard let value = ud.string(forKey: weatherWidgetJsonKey), !value.isEmpty else {
+      return nil
+    }
+    return value
+  }
+
   /// 홈 위젯 탭은 App Intent 재실행이 아니라 URL로 앱을 연다.
   /// (설정 Intent가 탭에서 멈추면 홈 화면이 흐려진 채 고정된다.)
   public enum WidgetOpenURL {
     public static let dayPlan = URL(string: "pokit://day-plan")!
+    public static let comicDay = URL(string: "pokit://comic-day")!
     public static let bookstore = URL(string: "pokit://day-plan?planMode=reading")!
     public static let note = URL(string: "pokit://day-plan?planMode=dayNote")!
   }

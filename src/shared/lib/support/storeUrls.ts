@@ -40,3 +40,11 @@ export function getAppStoreWriteReviewUrl(
   }
   return `${getAppStoreListingUrl('ios', options)}?action=write-review`;
 }
+
+/**
+ * iOS App Store 앱으로 바로 여는 write-review 딥링크.
+ * https 링크가 막히거나 브라우저로만 열릴 때 폴백용.
+ */
+export function getAppStoreWriteReviewItmsUrl(): string {
+  return `itms-apps://itunes.apple.com/app/id${APP_STORE_IOS_ID}?action=write-review`;
+}

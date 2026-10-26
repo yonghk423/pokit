@@ -15,6 +15,17 @@
                     <view key="view" userInteractionEnabled="NO" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="EXPO-ContainerView" userLabel="ContainerView">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="SplashScreenLegacy" translatesAutoresizingMaskIntoConstraints="NO" id="SplashArtwork">
+                                <rect key="frame" x="43.0" y="94.0" width="307" height="665"/>
+                            </imageView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="SplashArtwork" firstAttribute="centerX" secondItem="EXPO-ContainerView" secondAttribute="centerX" id="SplashCenterX"/>
+                            <constraint firstItem="SplashArtwork" firstAttribute="centerY" secondItem="EXPO-ContainerView" secondAttribute="centerY" id="SplashCenterY"/>
+                            <constraint firstItem="SplashArtwork" firstAttribute="width" secondItem="EXPO-ContainerView" secondAttribute="width" multiplier="0.78" id="SplashWidth"/>
+                            <constraint firstItem="SplashArtwork" firstAttribute="height" secondItem="EXPO-ContainerView" secondAttribute="height" multiplier="0.78" id="SplashHeight"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="Rmq-lb-GrQ"/>
                         <color key="backgroundColor" name="SplashScreenBackground"/>
                     </view>
@@ -25,8 +36,9 @@
         </scene>
     </scenes>
     <resources>
+        <image name="SplashScreenLegacy" width="940" height="1672"/>
         <namedColor name="SplashScreenBackground">
-            <color alpha="1.000" blue="1.000000000000000" green="0.996078431372549" red="0.996078431372549" customColorSpace="sRGB" colorSpace="custom"/>
+            <color alpha="1.000" blue="0.929411764705882" green="0.960784313725490" red="0.972549019607843" customColorSpace="sRGB" colorSpace="custom"/>
         </namedColor>
     </resources>
 </document>

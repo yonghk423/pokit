@@ -1,13 +1,13 @@
-"""Compile pigment detail from the supplied color-chart reference into RGBA PNG."""
+"""Compile pigment detail from the supplied color-chart reference into lossless WebP."""
 import statistics
 import sys
 from array import array
 from pathlib import Path
 
-from PIL import Image, ImageFilter, PngImagePlugin
+from PIL import Image, ImageFilter
 
 source = Path(sys.argv[1])
-target = Path(__file__).resolve().parents[1] / 'assets/color-textures/grain-overlay.png'
+target = Path(__file__).resolve().parents[1] / 'assets/color-textures/grain-overlay.webp'
 reference = Image.open(source).convert('L')
 # Four central 64px patches from actual pigment squares, avoiding their edges.
 # Normalize each patch's color/illumination so only its existing material remains.
@@ -43,8 +43,6 @@ for y in range(128):
         pixels.append((tone, tone, tone, alpha))
 overlay = Image.new('RGBA', (128, 128))
 overlay.putdata(pixels)
-metadata = PngImagePlugin.PngInfo()
-metadata.add(b'sRGB', b'\x00')
 target.parent.mkdir(parents=True, exist_ok=True)
-overlay.save(target, pnginfo=metadata, optimize=True)
-print(f'{target.name}: {target.stat().st_size} bytes; RGBA, 8-bit, sRGB')
+overlay.save(target, 'WEBP', lossless=True, method=6, exact=True)
+print(f'{target.name}: {target.stat().st_size} bytes; RGBA lossless WebP')

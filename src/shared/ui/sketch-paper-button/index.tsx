@@ -9,8 +9,8 @@ const FRAME = '#929B8B';
 const SHADOW = 'rgba(65, 78, 58, 0.07)';
 
 /** Paper button with the same pencil frame and grain as the layout tiles. */
-export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, style }: {
-  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; style?: StyleProp<ViewStyle>;
+export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, strongFrame = false, style }: {
+  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; strongFrame?: boolean; style?: StyleProp<ViewStyle>;
 }) {
   return (
     <Pressable
@@ -21,7 +21,8 @@ export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize =
       <View pointerEvents="none" style={s.shadow} />
       <View style={[s.face, iconOnly && s.iconFace]}>
         <PaperGrain opacity={0.25} />
-        <HanddrawnFrame color={FRAME} />
+        <HanddrawnFrame color={strongFrame ? '#292B27' : FRAME} bold={strongFrame} />
+        {strongFrame ? <HanddrawnFrame color="#292B27" bold /> : null}
         <Svg width={iconOnly ? 22 : 17} height={iconOnly ? 22 : 18} viewBox="0 0 20 20" accessible={false}>
           <Path d="M3.1 10.4Q9.9 9.8 16.7 10.1M10.2 3L9.8 17M4.2 9.5L15.7 9.4M9.3 4L9.1 15.5" fill="none" stroke={ink} strokeWidth={0.9} strokeLinecap="round" />
         </Svg>

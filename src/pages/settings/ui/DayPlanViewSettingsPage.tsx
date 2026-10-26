@@ -111,7 +111,7 @@ export function DayPlanViewSettingsPage() {
                   </View>
                   <HanddrawnToggle
                 isDark={isDark}
-                checkedColor="#AADBD5"
+                checkedColor={p.icon}
                 checked={enabled}
                 disabled={disableOff}
                 onChange={(next) => {

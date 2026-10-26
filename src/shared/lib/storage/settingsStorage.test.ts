@@ -119,9 +119,9 @@ describe('settingsStorage', () => {
   });
 
   it('persists app font id', () => {
-    expect(loadAppFontId()).toBe('kimJungWon');
-    saveAppFontId('corncorn');
     expect(loadAppFontId()).toBe('corncorn');
+    saveAppFontId('kimJungWon');
+    expect(loadAppFontId()).toBe('kimJungWon');
     saveAppFontId('hiMelody');
     expect(loadAppFontId()).toBe('hiMelody');
     saveAppFontId('kimJungWon');
@@ -130,22 +130,22 @@ describe('settingsStorage', () => {
 
   it('ignores invalid app font id', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gaegu' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
   });
 
-  it('migrates retired font ids to kimJungWon', () => {
+  it('migrates retired font ids to corncorn', () => {
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gothicA1' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'sebangGothic2' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'hanken' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'jua' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'doHyeon' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'system' });
-    expect(loadAppFontId()).toBe('kimJungWon');
+    expect(loadAppFontId()).toBe('corncorn');
   });
 
   it('persists app font size id with sm default', () => {

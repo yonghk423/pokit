@@ -19,7 +19,7 @@ import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { ThemedText } from '@shared/ui/themed-text';
-import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
+import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-mate-time-field';
 
 import { isOvernightHhmmRange } from '../lib/dayPlanEditorShared';
 

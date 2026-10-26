@@ -33,3 +33,6 @@
 "widget.today.lockDescription" = "Shows today’s routine icon and count.";
 "widget.today.emptyRoutines" = "No routines yet";
 "widget.today.loadError" = "Couldn’t load the schedule";
+
+"widget.comic.date" = "Choose a date";
+"widget.comic.undated" = "Undated";

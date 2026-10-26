@@ -49,6 +49,9 @@ type Props = {
   /** 상단 행 오른쪽(문의 등) — 좌측 모드 버튼과 동일 베이스라인 */
   trailing?: ReactNode;
   middle?: ReactNode;
+  fixedMiddle?: boolean;
+  /** `start`면 오른쪽 버튼을 헤더 위에 붙이고, 그 아래에 내용을 둘 수 있다. */
+  trailingAlign?: 'center' | 'start';
 };
 
 export function PlanModeSwitch({
@@ -60,6 +63,8 @@ export function PlanModeSwitch({
   description,
   trailing,
   middle,
+  fixedMiddle = false,
+  trailingAlign = 'center',
 }: Props) {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
@@ -144,8 +149,8 @@ export function PlanModeSwitch({
               );
             })}
           </View> : null}
-          {middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
-          {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+          {middle ? fixedMiddle ? <View style={styles.fixedMiddle}>{middle}</View> : <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
+          {trailing ? <View style={[styles.trailing, trailingAlign === 'start' && styles.trailingStart]}>{trailing}</View> : null}
         </View>
       </View>
       {hint != null && hint !== '' ? (
@@ -180,10 +185,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   middle: { flexGrow: 0, flexShrink: 1, minWidth: 0 },
-  middleContent: { flexGrow: 0, justifyContent: 'flex-start', alignItems: 'center', paddingVertical: 2, paddingHorizontal: 1 },
+  middleContent: { flexGrow: 0, justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: 1 },
+  fixedMiddle: { flex: 1, minWidth: 0, alignSelf: 'flex-start' },
   trailing: {
+    marginLeft: 'auto',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  trailingStart: {
+    alignSelf: 'stretch',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
   },
   leftButtonGroup: {
     flexDirection: 'row',

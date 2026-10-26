@@ -1,285 +1,86 @@
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { useCallback, useState, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { TutorialHeroImage } from './TutorialHeroImage';
+import { TutorialSceneBackdrop } from './TutorialSceneBackdrop';
+import { requestTutorialReviewOnce } from '../lib/tutorialLifecycle';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { InteractionManager, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { runOnJS } from 'react-native-reanimated';
-
-import {
-  CityPopSpacing,
-  RETRO_BORDER_WIDTH,
-  RetroFlatColors,
-  cityPopFont,
-} from '@shared/config/retroFlat';
-import { markWelcomeIntroSeenAndFlush } from '@shared/lib/storage';
-import { t as brandText, useTranslation } from '@shared/lib/i18n';
+import { useDayPlanDraftStore } from '@entities/day-plan';
+import { useTranslation } from '@shared/lib/i18n';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
+import { openAppStoreWriteReview } from '@shared/lib/support';
+import { SettingsPenFrame as PenFrame } from '../../settings/lib/settingsPen';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { setTutorialOffPathHandler } from '@shared/ui/tutorial-guide-layer';
 import { ThemedText } from '@shared/ui/themed-text';
-
-import { getWelcomeIntroSlides } from '../lib/welcomeIntroSlides';
-
-/** 첫 사용자용 짧은 서비스 소개 (5장 슬라이드) */
+import { tutorialCopy } from '../lib/tutorialCopy';
+import { loadServiceTutorial, useServiceTutorial, type ServiceMode } from '../model/serviceTutorial';
+/** Only the introduction and ending live here. All teaching happens in the service UI. */
 export function WelcomeIntroPage() {
-  const { t, locale } = useTranslation();
-  const slides = useMemo(() => getWelcomeIntroSlides(locale), [locale]);
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const rf = RetroFlatColors.light;
-  const [index, setIndex] = useState(0);
-  const last = index >= slides.length - 1;
-  const item = slides[index]!;
-
-  const finish = useCallback(() => {
-    void markWelcomeIntroSeenAndFlush().finally(() => {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/day-plan');
-      }
+  const router = useRouter(); const insets = useSafeAreaInsets(); const { locale } = useTranslation(); const c = tutorialCopy(locale);
+  const { outro, endReview } = useLocalSearchParams<{ outro?: string; chooseNext?: string; endReview?: string }>();
+  const [saved] = useState(loadServiceTutorial);
+  const tutorial = useServiceTutorial();
+  const { width, height } = useWindowDimensions();
+  const availableIntroHeight = Math.max(1, height - insets.top - insets.bottom - 58);
+  const introImageHeight = Math.min(280, availableIntroHeight * 0.38, Math.max(1, width - 48) * 1672 / 940);
+  const finished = endReview === '1' || (outro === '1' && (saved.step === 'finish' || tutorial.step === 'finish'));
+  const reviewRequestedOnEnding = useRef(false);
+  const bothCompleted = tutorial.completed.length === 2 || saved.completed.length === 2;
+  useFocusEffect(useCallback(() => { setTutorialOffPathHandler(null); }, []));
+  useFocusEffect(useCallback(() => {
+    if (!finished || (!bothCompleted && endReview !== '1')) return;
+    if (reviewRequestedOnEnding.current) return;
+    // Request as soon as the route transition settles; no extra delay on the ending screen.
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (reviewRequestedOnEnding.current) return;
+      reviewRequestedOnEnding.current = true;
+      void requestTutorialReviewOnce(true, { explicitEnd: endReview === '1' });
     });
-  }, [router]);
+    return () => task.cancel();
+  }, [finished, bothCompleted, endReview]));
 
-  const skip = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    finish();
-  }, [finish]);
-
-  const goNext = useCallback(() => {
-    if (last) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      finish();
-      return;
-    }
-    setIndex((i) => Math.min(i + 1, slides.length - 1));
-    void Haptics.selectionAsync();
-  }, [finish, last]);
-
-  const goPrev = useCallback(() => {
-    if (index <= 0) return;
-    setIndex((i) => Math.max(i - 1, 0));
-    void Haptics.selectionAsync();
-  }, [index]);
-
-  const swipe = Gesture.Pan()
-    .activeOffsetX([-24, 24])
-    .onEnd((e) => {
-      if (e.translationX < -48) {
-        runOnJS(goNext)();
-      } else if (e.translationX > 48) {
-        runOnJS(goPrev)();
-      }
-    });
-
-  return (
-    <View style={styles.screen}>
-      <View
-        style={[
-          styles.column,
-          { paddingTop: Math.max(insets.top, 12) },
-        ]}>
-        <View style={styles.topBar}>
-          <ThemedText
-            style={[styles.topLabel, { color: rf.textMuted }, cityPopFont('700')]}
-            lightColor={rf.textMuted}
-            darkColor={rf.textMuted}>
-            {t('welcome.pageLabel', { current: index + 1, total: slides.length })}
-          </ThemedText>
-          <Pressable
-            onPress={skip}
-            accessibilityRole="button"
-            accessibilityLabel={t('welcome.skipA11y')}
-            hitSlop={10}
-            style={[
-              styles.skipBtn,
-              { borderColor: rf.border, backgroundColor: 'rgba(251,248,255,0.92)' },
-            ]}>
-            <ThemedText
-              style={[styles.skipLabel, { color: rf.text }, cityPopFont('600')]}
-              lightColor={rf.text}
-              darkColor={rf.text}>
-              {t('welcome.skip')}
-            </ThemedText>
-          </Pressable>
+  const serviceTabFor = (mode: ServiceMode) => (mode === 'comic' ? '/(tabs)/comic-day' : '/day-plan');
+  const close = () => { tapHaptic(); useDayPlanDraftStore.getState().setPlanMode('priority'); if (router.canGoBack()) router.dismissTo('/(tabs)/comic-day'); else router.replace('/(tabs)/comic-day'); };
+  const start = (mode?: ServiceMode) => {
+    tapHaptic();
+    tutorial.start(mode);
+    useDayPlanDraftStore.getState().setPlanMode('priority');
+    const resolved = mode ?? useServiceTutorial.getState().mode;
+    router.replace(serviceTabFor(resolved));
+  };
+  const skip = () => {
+    tutorial.pause(); close();
+  };
+  if (!finished) return <View style={[s.screen, { paddingTop: insets.top }]}>
+    <View style={s.introHeader}><View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <ThemedText accessibilityRole="header" style={[s.brand, { textAlign: 'left', fontSize: 22 }]}>{locale === 'ko' ? '튜토리얼' : locale === 'ja' ? 'チュートリアル' : 'Tutorial'}</ThemedText>
+    </View>{saved.step !== 'finish' && (saved.routineKey || saved.sceneKey) ? <Pressable accessibilityRole="button" onPress={() => start()} style={{ marginRight: 18 }}><ThemedText style={s.small}>{locale === 'ko' ? '이어서' : locale === 'ja' ? '続きから' : 'Resume'}</ThemedText></Pressable> : null}<Pressable accessibilityRole="button" hitSlop={10} onPress={skip}><ThemedText style={s.small}>{c.skip}</ThemedText></Pressable></View>
+    <View style={{ flex: 1 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[s.content, { paddingTop: 12, paddingBottom: 16, gap: 14 }]}>
+        <View style={{ height: introImageHeight, alignItems: 'center', justifyContent: 'center' }}>
+          <TutorialSceneBackdrop width={Math.max(1, width - 48)} height={introImageHeight} />
+          <TutorialHeroImage width={introImageHeight * 940 / 1672} height={introImageHeight} />
         </View>
+        <ThemedText accessibilityRole="header" style={s.heading}>{locale === 'ko' ? '오늘의 주인공은 나' : locale === 'ja' ? '今日の主人公は、あなた' : 'You are today’s main character'}</ThemedText>
+        <ThemedText style={s.body}>{locale === 'ko' ? '주인공을 고르고, 나의 하루를 장면으로 담아보세요.\n메모와 할 일을 기록하고, 수납장 도구의 메이트 카드로 하루를 챙길 수 있어요.' : locale === 'ja' ? '主人公を選び、一日を場面に残しましょう。メモやタスクを記録し、収納トレイのメイトカードで一日を整えられます。' : 'Choose a character and capture your day in scenes. Add notes and tasks, then use Mate cards in the tray tool to care for your day.'}</ThemedText>
 
-        <GestureDetector gesture={swipe}>
-          <View style={styles.bodyArea}>
-            <View style={[styles.copyCard, { borderColor: rf.border }]}>
-              {item.id === 'welcome' ? (
-                <ThemedText
-                  style={[styles.brand, { color: rf.text }, cityPopFont('800')]}
-                  lightColor={rf.text}
-                  darkColor={rf.text}>
-                  {brandText('settings.shareApp.shareTitle')}
-                </ThemedText>
-              ) : null}
-              <ThemedText
-                style={[styles.title, { color: rf.text }, cityPopFont('800')]}
-                lightColor={rf.text}
-                darkColor={rf.text}>
-                {item.title}
-              </ThemedText>
-              <ThemedText
-                style={[styles.body, { color: rf.textMuted }, cityPopFont('500')]}
-                lightColor={rf.textMuted}
-                darkColor={rf.textMuted}>
-                {item.body}
-              </ThemedText>
-              {item.note ? (
-                <View
-                  style={[
-                    styles.noteBox,
-                    {
-                      borderColor: rf.border,
-                      backgroundColor: rf.primaryContainer,
-                    },
-                  ]}>
-                  <ThemedText
-                    style={[styles.noteText, { color: rf.text }, cityPopFont('700')]}
-                    lightColor={rf.text}
-                    darkColor={rf.text}>
-                    {item.note}
-                  </ThemedText>
-                </View>
-              ) : null}
-            </View>
-          </View>
-        </GestureDetector>
-
-        <View
-          style={[
-            styles.footer,
-            {
-              paddingBottom: Math.max(insets.bottom, 16) + 8,
-              backgroundColor: 'rgba(251,248,255,0.94)',
-              borderTopColor: rf.border,
-            },
-          ]}>
-          <View style={styles.dots}>
-            {slides.map((s, i) => (
-              <View
-                key={s.id}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor: i === index ? rf.text : rf.borderMuted,
-                    opacity: i === index ? 1 : 0.35,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-          <Pressable
-            onPress={goNext}
-            accessibilityRole="button"
-            accessibilityLabel={last ? t('welcome.startBtn') : t('welcome.nextBtn')}
-            style={({ pressed }) => [
-              styles.cta,
-              {
-                borderColor: rf.border,
-                backgroundColor: rf.primaryContainer,
-                opacity: pressed ? 0.92 : 1,
-              },
-            ]}>
-            <ThemedText
-              style={[styles.ctaLabel, { color: rf.text }, cityPopFont('800')]}
-              lightColor={rf.text}
-              darkColor={rf.text}>
-              {last ? t('welcome.startBtn') : t('welcome.nextBtn')}
-            </ThemedText>
-          </Pressable>
-        </View>
+      </ScrollView>
+      <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 16) }}>
+        <Pressable accessibilityRole="button" testID="tutorial-start-hero" style={s.button} onPress={() => start('comic')}><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{locale === 'ko' ? '시작하기' : locale === 'ja' ? 'はじめる' : 'Start'}</ThemedText></Pressable>
       </View>
     </View>
-  );
+  </View>;
+  return <View style={[s.screen, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <PaperGrain opacity={0.35} />
+    <Pressable accessibilityRole="button" onPress={skip} style={s.skip}><ThemedText style={s.small}>{c.skip}</ThemedText></Pressable>
+    <ScrollView contentContainerStyle={s.content}>
+      <ThemedText style={s.brand}>{c.brand}</ThemedText>
+      <ThemedText accessibilityRole="header" style={s.heading}>{c.closingTitle}</ThemedText>
+      <Pressable accessibilityRole="button" style={[s.button, s.buttonTiltUp]} onPress={() => { tapHaptic(); void openAppStoreWriteReview(); }}><PaperGrain opacity={0.28} /><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{c.review}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" style={[s.button, s.buttonTiltDown]} onPress={() => { tutorial.pause(); close(); }}><PaperGrain opacity={0.28} /><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{c.later}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => { router.setParams({ outro: undefined, chooseNext: undefined, endReview: undefined }); }}><ThemedText style={s.small}>{c.replay}</ThemedText></Pressable>
+    </ScrollView>
+  </View>;
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: RetroFlatColors.light.bg,
-  },
-  column: {
-    flex: 1,
-  },
-  topBar: {
-    paddingHorizontal: CityPopSpacing.md,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  topLabel: { fontSize: 13, lineHeight: 18, letterSpacing: -0.2 },
-  skipBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: RETRO_BORDER_WIDTH,
-  },
-  skipLabel: { fontSize: 14, lineHeight: 20 },
-  bodyArea: {
-    flex: 1,
-    paddingHorizontal: CityPopSpacing.md,
-    paddingBottom: 12,
-    justifyContent: 'flex-end',
-  },
-  copyCard: {
-    width: '100%',
-    gap: 10,
-    paddingHorizontal: 18,
-    paddingTop: 22,
-    paddingBottom: 22,
-    backgroundColor: 'rgba(251, 248, 255, 0.94)',
-    borderWidth: RETRO_BORDER_WIDTH,
-    overflow: 'visible',
-  },
-  brand: {
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: -0.6,
-    paddingTop: 2,
-  },
-  title: {
-    fontSize: 22,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 24,
-    letterSpacing: -0.2,
-  },
-  noteBox: {
-    marginTop: 4,
-    borderWidth: RETRO_BORDER_WIDTH,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  noteText: {
-    fontSize: 14,
-    lineHeight: 22,
-    letterSpacing: -0.2,
-  },
-  footer: {
-    paddingHorizontal: CityPopSpacing.md,
-    paddingTop: 14,
-    gap: 14,
-    borderTopWidth: RETRO_BORDER_WIDTH,
-  },
-  dots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-  },
-  cta: {
-    borderWidth: RETRO_BORDER_WIDTH,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaLabel: { fontSize: 16, lineHeight: 22, letterSpacing: -0.2 },
-});
+const s = StyleSheet.create({ screen: { flex: 1, backgroundColor: '#F5F1E8' }, introHeader: { height: 58, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, skip: { alignSelf: 'flex-end', padding: 20 }, content: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 24 }, brand: { color: '#000000', fontSize: 22, textAlign: 'center' }, heading: { color: '#000000', fontSize: 30, lineHeight: 42, textAlign: 'center' }, body: { color: '#000000', fontSize: 19, lineHeight: 30 }, buttonLabel: { color: '#000000', fontSize: 19, lineHeight: 30 }, small: { color: '#64645F', fontSize: 14, lineHeight: 23 }, button: { padding: 16, backgroundColor: 'transparent', alignItems: 'center', overflow: 'hidden' }, buttonTiltUp: { transform: [{ rotate: '-0.45deg' }] }, buttonTiltDown: { transform: [{ rotate: '0.4deg' }] } });

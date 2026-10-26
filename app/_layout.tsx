@@ -1,11 +1,14 @@
+import '@app/silenceKnownLogs';
+import { TutorialGuideLayer } from '@shared/ui/tutorial-guide-layer';
 import { useAppAlertStore } from '@shared/lib/app-alert';
+import { useAppSessionStore } from '@shared/lib/app-session';
 import { AppAlertRoot } from '@shared/ui/app-alert';
 import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
-import { prepareRhythmArtwork } from '@pages/day-plan/lib/rhythmArtworkCache';
+import { prepareRhythmArtwork } from '@pages/day-plan/lib/mateArtworkCache';
 import { prepareSurfaceTextures } from '@shared/ui/surface-texture/textureCache';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { I18nextProvider } from 'react-i18next';
@@ -15,9 +18,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnalyticsScreenTracker } from '@app/AnalyticsScreenTracker';
 import { resolveStatusBarStyle } from '@app/AppStatusBar';
-import { LocalizedSplashOverlay, SPLASH_BACKGROUND_COLOR, useAppBootstrap, useCityPopFonts } from '@app/index';
+import { SPLASH_BACKGROUND_COLOR, useAppBootstrap, useCityPopFonts } from '@app/index';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { i18n } from '@shared/lib/i18n';
+import { requestAppReviewIfDue } from '@shared/lib/support';
 
 import { RetroFlatColors } from '@shared/config/retroFlat';
 
@@ -25,7 +29,7 @@ import { RetroFlatColors } from '@shared/config/retroFlat';
 const APP_SURFACE_LIGHT = RetroFlatColors.light.bg;
 const APP_SURFACE_DARK = RetroFlatColors.dark.bg;
 
-/** 언어별 이미지가 보이기 시작한 뒤 최소 표시 시간. */
+/** 네이티브 시작 화면의 최소 표시 시간. */
 const MIN_SPLASH_MS = 1000;
 
 export const unstable_settings = {
@@ -38,11 +42,10 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 
 export default function RootLayout() {
   const hasPendingAlert = useAppAlertStore((state) => state.queue.length > 0);
+  const sessionEpoch = useAppSessionStore((state) => state.epoch);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const [splashImageReady, setSplashImageReady] = useState(false);
   const [splashMinimumElapsed, setSplashMinimumElapsed] = useState(false);
-  const handleSplashReady = useCallback(() => setSplashImageReady(true), []);
 
   const navigationTheme = isDark
     ? {
@@ -81,18 +84,16 @@ export default function RootLayout() {
   const showSplash = !contentReady || !splashMinimumElapsed;
 
   useEffect(() => {
-    if (!splashImageReady) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    void SplashScreen.hideAsync().catch(() => {}).then(() => {
-      if (cancelled) return;
-      timer = setTimeout(() => setSplashMinimumElapsed(true), MIN_SPLASH_MS);
-    });
-    return () => {
-      cancelled = true;
-      if (timer !== undefined) clearTimeout(timer);
-    };
-  }, [splashImageReady]);
+    const timer = setTimeout(() => setSplashMinimumElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // The native launch screen is the only splash artwork; drawing it again in JS doubles it during the hand-off.
+  useEffect(() => {
+    if (showSplash) return;
+    void SplashScreen.hideAsync().catch(() => {});
+    void requestAppReviewIfDue();
+  }, [showSplash]);
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -100,14 +101,16 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <AppAlertRoot enabled={contentReady && !showSplash}>
             {contentReady ? (
-              <ThemeProvider value={navigationTheme}>
+              <ThemeProvider key={sessionEpoch} value={navigationTheme}><TutorialGuideLayer>
                 <Stack
                   screenOptions={{
                     contentStyle: { backgroundColor: rootBg },
                     statusBarStyle: resolveStatusBarStyle(isDark),
                     gestureEnabled: !hasPendingAlert,
                   }}>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  {/* Horizontal drags belong to card decks, never to an interactive pop of the tab host. */}
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false, fullScreenGestureEnabled: false }} />
+                  <Stack.Screen name="day-plan" options={{ headerShown: false, presentation: 'card', gestureEnabled: false }} />
                   <Stack.Screen name="reading-library" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
                     name="goal-detail-settings"
@@ -119,7 +122,7 @@ export default function RootLayout() {
                   />
                   <Stack.Screen name="flow-review" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
-                    name="daily-rhythm-settings"
+                    name="daily-mate-settings"
                     options={{ headerShown: false, presentation: 'card', gestureEnabled: false }}
                   />
                   <Stack.Screen
@@ -185,14 +188,13 @@ export default function RootLayout() {
                   />
                 </Stack>
                 <AnalyticsScreenTracker />
-              </ThemeProvider>
+              </TutorialGuideLayer></ThemeProvider>
             ) : null}
             {contentReady && !showSplash && !isDark ? (
               <View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, { zIndex: 100, mixBlendMode: 'multiply' }]}>
                 <PaperGrain opacity={0.24} />
               </View>
             ) : null}
-            {showSplash ? <LocalizedSplashOverlay onReady={handleSplashReady} /> : null}
           </AppAlertRoot>
         </SafeAreaProvider>
       </GestureHandlerRootView>

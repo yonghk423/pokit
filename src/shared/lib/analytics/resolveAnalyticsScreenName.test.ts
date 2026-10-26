@@ -2,10 +2,11 @@ import { resolveAnalyticsScreenName } from './resolveAnalyticsScreenName';
 
 describe('resolveAnalyticsScreenName', () => {
   it('maps tab and stack routes to meaningful English names', () => {
-    expect(resolveAnalyticsScreenName('/(tabs)/day-plan')).toBe('today');
+    expect(resolveAnalyticsScreenName('/day-plan')).toBe('today');
+    expect(resolveAnalyticsScreenName('/(tabs)/comic-day')).toBe('comic_diary');
     expect(resolveAnalyticsScreenName('/fixed-routines')).toBe('routines');
     expect(resolveAnalyticsScreenName('/(tabs)/priority-catalog')).toBe('my_routines');
-    expect(resolveAnalyticsScreenName('/(tabs)/day-plan-statistics')).toBe('history');
+    expect(resolveAnalyticsScreenName('/day-plan-statistics')).toBe('history');
     expect(resolveAnalyticsScreenName('/(tabs)/puzzle-history')).toBe('puzzle');
     expect(resolveAnalyticsScreenName('/(tabs)/pokit-story')).toBe('bookstore');
     expect(resolveAnalyticsScreenName('/settings')).toBe('settings');

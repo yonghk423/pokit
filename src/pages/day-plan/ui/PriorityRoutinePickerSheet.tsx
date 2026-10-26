@@ -1,3 +1,5 @@
+import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
+import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
@@ -356,13 +358,13 @@ export function PriorityRoutinePickerSheet({
         <PaperGrain opacity={0.35} />
         <View style={[styles.header, { borderBottomColor: sectionLine }]}>
           {onCreateCustom ? (
-            <RoutineWheelAddButton
+            <ServiceTutorialTarget steps={['rhythmPicker']}><RoutineWheelAddButton
               icon="createCard"
               size={42}
               label={t('fixedRoutine.createNew')}
               invite
               onPress={onCreateCustom}
-            />
+            /></ServiceTutorialTarget>
           ) : (
             <View style={styles.createButtonSpacer} />
           )}
@@ -370,6 +372,7 @@ export function PriorityRoutinePickerSheet({
             <IconSymbol name="xmark" size={20} color={muted} />
           </Pressable>
         </View>
+        <ServiceTutorialCoach steps={['rhythmPicker']} onSkipStep={onClose} onEnd={onClose} />
         {spineGapAdd ? (
           <View style={[styles.defaultDurationSection, { borderBottomColor: line }]}>
             <ThemedText style={[styles.defaultDurationLabel, { color: muted }]}>{t('dayPlan.defaultGapLabel')}</ThemedText>

@@ -6,6 +6,7 @@ import {
   type Announcement,
   type AnnouncementLocale,
 } from '@entities/announcement';
+import { getNativeAppVersion } from '@shared/lib/app-version/nativeAppVersion';
 import { useAppLocaleStore } from '@shared/lib/i18n';
 import {
   loadAnnouncementReadIds,
@@ -31,7 +32,7 @@ export function useAnnouncementHomeNudge() {
       return;
     }
     const readIds = new Set(loadAnnouncementReadIds());
-    setNotice(pickHomeNudgeAnnouncement(result.items, readIds));
+    setNotice(pickHomeNudgeAnnouncement(result.items, readIds, getNativeAppVersion()));
   }, [locale]);
 
   useAnnouncementRefreshWhileVisible(refresh);

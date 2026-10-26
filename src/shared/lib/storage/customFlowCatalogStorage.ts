@@ -1,3 +1,4 @@
+import { isDevelopmentCatalogSampleKey } from './catalogSampleKeys';
 import { RETIRED_DEFAULT_CUSTOM_FLOW_IDS } from './defaultPriorityCatalog';
 import { listGoalDetailCategoryConfigKeys } from './goalDetailSettingsStorage';
 import { loadHiddenStandardCatalogKeys } from './hiddenStandardCatalogStorage';
@@ -64,7 +65,7 @@ function normalizeEntries(raw: Shape): CustomFlowCatalogEntry[] {
 
 /** 사용자가 만든 플로우(담기·고정 루틴) 카탈로그 — 신규 형식(그룹 포함) */
 export function listCustomFlowCatalogEntries(): CustomFlowCatalogEntry[] {
-  return normalizeEntries(readRoot());
+  return normalizeEntries(readRoot()).filter(entry => !isDevelopmentCatalogSampleKey(entry.id));
 }
 
 /** 기존 호환 — id 만 반환 */
@@ -80,7 +81,7 @@ export function listAllCustomFlowCatalogEntries(): CustomFlowCatalogEntry[] {
   const stored = listCustomFlowCatalogEntries();
   const known = new Map(stored.map((e) => [e.id, e] as const));
   for (const id of listGoalDetailCategoryConfigKeys()) {
-    if (!id.startsWith('customFlow:') || known.has(id)) continue;
+    if (!id.startsWith('customFlow:') || known.has(id) || isDevelopmentCatalogSampleKey(id)) continue;
     known.set(id, { id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
   }
   const hidden = new Set(loadHiddenStandardCatalogKeys());

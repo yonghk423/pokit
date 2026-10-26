@@ -67,7 +67,7 @@ describe('priorityCatalog', () => {
     expect(healthSection?.title).toBeTruthy();
     expect(healthSection?.items.some((i) => i.key === 'customFlow:user-c')).toBe(true);
     expect(healthSection?.items.some((i) => i.key === 'water')).toBe(false);
-    expect(sections.find((s) => s.groupKey === 'productivity')).toBeUndefined();
+    expect(sections.find((s) => s.groupKey === 'productivity')?.items.map(item => item.key)).toEqual(['reading']);
   });
 
   it('places user-created routine groups first in the add modal', () => {

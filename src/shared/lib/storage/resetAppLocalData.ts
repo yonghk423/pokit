@@ -1,6 +1,6 @@
 import { cancelAllScheduledLocalNotifications } from '@shared/lib/notifications';
 
-import { clearDailyRhythmOnboardingCompleted } from './dailyRhythmOnboardingStorage';
+import { clearDailyRhythmOnboardingCompleted } from './dailyMateOnboardingStorage';
 import { clearReadingBookstoreTapGuide } from './readingBookstoreTapGuideStorage';
 import { clearPokitLocalStorage } from './localStorageClient';
 

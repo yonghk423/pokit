@@ -9,6 +9,12 @@ jest.mock('@shared/ui/presentation', () => ({ useUiSurfacePresentation: () => 'n
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
 jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.requireActual('react-native').TextInput }));
 jest.mock('@shared/ui/icon-symbol', () => ({ IconSymbol: () => null }));
+jest.mock('@shared/ui/handdrawn-frame', () => ({ HanddrawnFrame: () => null }));
+jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
+jest.mock('react-native-svg', () => {
+  const { View } = jest.requireActual('react-native');
+  return { __esModule: true, default: View, Svg: View, Path: View };
+});
 jest.mock('@shared/ui/color-palette-tabs', () => ({
   RowColorPaletteDesk: () => null,
   useRowColorPaletteBridge: () => ({
@@ -22,7 +28,6 @@ jest.mock('react-native-reanimated', () => ({
   useSharedValue: (value: number) => ({ value, set: jest.fn() }),
   useAnimatedStyle: (fn: () => unknown) => fn(),
   withTiming: (value: number) => value,
-  interpolateColor: (_v: number, _range: number[], colors: string[]) => colors[0],
   Easing: { out: (fn: unknown) => fn, cubic: jest.fn() },
 }));
 

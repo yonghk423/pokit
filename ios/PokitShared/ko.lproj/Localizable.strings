@@ -1,16 +1,16 @@
 /* Widget gallery & Edit Widget — Korean */
 
-"widget.routine.name" = "개별 할 일";
+"widget.routine.name" = "오늘의 메이트";
 "widget.routine.galleryDescription" = "원하는 할 일을 하나 골라 포스트잇 카드로 확인해요.";
 "widget.routine.intentDescription" = "홈 화면에 보여줄 할 일을 하나 고르세요. 위젯마다 다르게 고를 수 있어요.";
 "widget.routine.pick" = "할 일 고르기";
 
-"widget.comic.name" = "만화카툰";
-"widget.comic.galleryDescription" = "만화 일기에서 장면 하나를 골라 크게 보여 줘요.";
-"widget.comic.intentDescription" = "홈 화면에 보여줄 만화 일기 장면을 고르세요.";
+"widget.comic.name" = "오늘의 주인공";
+"widget.comic.galleryDescription" = "오늘의 주인공에서 장면 하나를 골라 크게 보여 줘요.";
+"widget.comic.intentDescription" = "홈 화면에 보여줄 오늘의 주인공 장면을 고르세요.";
 "widget.comic.pick" = "장면 고르기";
 "widget.comic.untitled" = "제목 없는 장면";
-"widget.comic.emptyMessage" = "앱에서 만화카툰을 먼저 시작해 주세요";
+"widget.comic.emptyMessage" = "앱에서 오늘의 주인공을 먼저 시작해 주세요";
 
 "widget.bookstore.name" = "책읽기";
 "widget.bookstore.galleryDescription" = "위젯 편집에서 「눌러서 책 고르기」를 눌러 책읽기의 책을 고르세요.";
@@ -32,3 +32,6 @@
 "widget.today.lockDescription" = "오늘의 주인공 아이콘과 개수를 보여 줍니다.";
 "widget.today.emptyRoutines" = "등록된 오늘의 주인공이 없어요";
 "widget.today.loadError" = "일정을 불러올 수 없어요";
+
+"widget.comic.date" = "날짜 고르기";
+"widget.comic.undated" = "날짜 미지정";

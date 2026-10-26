@@ -1,5 +1,6 @@
-import { ComicDayBoard, ComicSceneDetail } from './ComicDayBoard';
-import { loadComicScenes, saveComicScene } from '../lib/comicSceneImages';
+import { useSettledDeckLayout, type DeckSize } from '../lib/useSettledDeckLayout';
+import { ComicDayBoard, ComicSceneDetail } from './HeroDayBoard';
+import { loadComicScenes, saveComicScene } from '../lib/heroSceneImages';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Keyboard, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -13,8 +14,8 @@ import { PaperControl } from '@shared/ui/paper-control';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { RoutineWheelAddButton } from '@shared/ui/routine-wheel-add-button';
 import { ThemedText } from '@shared/ui/themed-text';
-import { RhythmEmptyState } from './RhythmEmptyState';
-import { OverlayRhythmCards } from './OverlayRhythmCards';
+import { RhythmEmptyState } from './MateEmptyState';
+import { OverlayRhythmCards } from './OverlayMateCards';
 import {
   CIRCULAR_MIN_SECTOR_COUNT,
   circularFirstSectorDeg,
@@ -39,6 +40,7 @@ type Props = {
   renderDetail: (item: CircularRoutineItem) => ReactNode;
   onComplete: (key: string) => void;
   onFinish: (key: string, label: string) => void;
+  onFinishMany?: (keys: string[]) => void;
   onAdd: () => void;
   onSchedule?: () => void;
   onEditTime?: (key: string, label: string) => void;
@@ -75,18 +77,18 @@ function RoutineSector({ item, angle, radius, orbitRadius, rotation, ink, isDark
   );
 }
 
-export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDetail, onComplete, onFinish, onAdd, onSchedule, onEditTime, presentation = 'circle', timeEnded = false }: Props) {
+/** Last measured stage, so a remounted deck paints its cards at the final position in the first frame. */
+let lastTimetableSize = { width: 340, height: 600 };
+const rememberTimetableSize = (size: DeckSize) => { lastTimetableSize = size; };
+
+export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDetail, onComplete, onFinish, onFinishMany, onAdd, onSchedule, onEditTime, presentation = 'circle', timeEnded = false }: Props) {
   const [reviewEnded, setReviewEnded] = useState(false);
   const showEmpty = items.length === 0 || (timeEnded && !reviewEnded);
   const [sceneChoices, setSceneChoices] = useState(loadComicScenes);
   const { t } = useTranslation();
-  const [size, setSize] = useState({ width: 340, height: 600 });
+  const { size, updateSize } = useSettledDeckLayout(lastTimetableSize, rememberTimetableSize);
   const rootRef = useRef<View>(null);
   const keyboardResizing = useRef(false);
-  const updateSize = useCallback((width: number, height: number) => {
-    if (width <= 0 || height <= 0) return;
-    setSize(previous => previous.width === width && previous.height === height ? previous : { width, height });
-  }, []);
   useEffect(() => {
     let frame: number | undefined;
     const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => {
@@ -222,7 +224,7 @@ export function CircularRoutineTimetable({ items, ink, muted, isDark, renderDeta
   const wheelPaper = isDark ? paper : timeEnded ? '#F2F0EC' : '#F1F1ED';
   return (
     <View ref={rootRef} testID="circular-timetable-root" style={[s.root, { backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]} onLayout={event => { if (keyboardResizing.current || Keyboard.isVisible()) return; const { width, height } = event.nativeEvent.layout; updateSize(width, height); }}>
-      {presentation === 'comic' ? <ComicDayBoard items={ordered} ink={ink} muted={muted} isDark={isDark} choices={sceneChoices} onOpen={openDetail} onComplete={onComplete} onAdd={onAdd} onEditTime={onEditTime} /> : presentation === 'cards' ? <OverlayRhythmCards items={ordered} width={size.width} height={size.height} ink={ink} muted={muted} isDark={isDark} renderDetail={renderDetail} onComplete={onComplete} onExcludeFromToday={onFinish} onAdd={onAdd} onSchedule={onSchedule} onEditTime={onEditTime} /> : <>
+      {presentation === 'comic' ? <ComicDayBoard items={ordered} ink={ink} muted={muted} isDark={isDark} choices={sceneChoices} onOpen={openDetail} onComplete={onComplete} onAdd={onAdd} onEditTime={onEditTime} /> : presentation === 'cards' ? <OverlayRhythmCards items={ordered} width={size.width} height={size.height} ink={ink} muted={muted} isDark={isDark} renderDetail={renderDetail} onComplete={onComplete} onExcludeFromToday={onFinish} onRemoveMany={onFinishMany} onAdd={onAdd} onSchedule={onSchedule} onEditTime={onEditTime} /> : <>
       <GestureDetector gesture={wheelGesture}>
         <View style={s.viewport}>
           <Animated.View style={[{ position: 'absolute', width: radius * 2, height: radius * 2, left: -radius, top: size.height / 2 - radius }, wheelStyle]}>

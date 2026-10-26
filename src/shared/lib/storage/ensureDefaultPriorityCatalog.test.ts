@@ -414,4 +414,65 @@ describe('ensureDefaultPriorityCatalog', () => {
     expect(listCustomCatalogGroups()).toEqual([{ key: 'customGroup:user01', label: '나만의 묶음' }]);
     expect(listCustomFlowCatalogEntries()).toHaveLength(0);
   });
+
+  it('purges existing time-reminder template routines from catalog and today list', () => {
+    const reminderId = 'customFlow:user-reminder';
+    localStorageClient.setJson(StorageKeys.customFlowCatalog, {
+      items: [{ id: reminderId, groupKey: 'custom' }],
+    });
+    localStorageClient.setJson(StorageKeys.goalDetailSettings, {
+      byCategory: {
+        [reminderId]: {
+          templateKey: 'reminder',
+          displayName: '약 알림',
+          reminderItems: [{ time: '09:00', label: '아침' }],
+          completedTimes: [],
+        },
+      },
+      committedCategoryKeys: [reminderId],
+    });
+    localStorageClient.setJson(StorageKeys.dayPlanDraft, {
+      planMode: 'priority',
+      priorityCategoryOrder: [reminderId, 'reading'],
+      prioritySectionsCategoryOrder: [reminderId],
+    });
+    localStorageClient.setJson(StorageKeys.fixedFlowSets, {
+      activeSetIds: [],
+      sets: [
+        {
+          id: 'set_reminder_test',
+          name: '테스트',
+          applyRule: 'manual',
+          items: [
+            { categoryKey: reminderId, enabled: true },
+            { categoryKey: 'reading', enabled: true },
+          ],
+        },
+      ],
+    });
+    localStorageClient.setJson(StorageKeys.settings, {
+      categoryReminderRules: { [reminderId]: { enabled: true, times: ['09:00'] } },
+    });
+
+    ensureDefaultPriorityCatalog();
+
+    expect(listCustomFlowCatalogEntries().some((e) => e.id === reminderId)).toBe(false);
+    expect(loadGoalDetailCategoryConfig(reminderId)).toBeNull();
+    expect(
+      localStorageClient.getJson<{ priorityCategoryOrder?: string[] }>(StorageKeys.dayPlanDraft)
+        ?.priorityCategoryOrder,
+    ).toEqual(['reading']);
+    expect(
+      localStorageClient.getJson<{
+        sets?: Array<{ id: string; items: Array<{ categoryKey: string }> }>;
+      }>(StorageKeys.fixedFlowSets)?.sets?.find((set) => set.id === 'set_reminder_test')?.items.map(
+        (item) => item.categoryKey,
+      ),
+    ).toEqual(['reading']);
+    expect(
+      localStorageClient.getJson<{ categoryReminderRules?: Record<string, unknown> }>(
+        StorageKeys.settings,
+      )?.categoryReminderRules,
+    ).toEqual({});
+  });
 });

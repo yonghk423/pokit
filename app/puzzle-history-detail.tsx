@@ -3,6 +3,6 @@ import { Redirect } from 'expo-router';
 import { PuzzleHistoryDetailPage } from '@pages/puzzle-history';
 
 export default function PuzzleHistoryDetailRoute() {
-  if (!FEATURE_FLAGS.puzzle) return <Redirect href="/(tabs)/day-plan" />;
+  if (!FEATURE_FLAGS.puzzle) return <Redirect href="/day-plan" />;
   return <PuzzleHistoryDetailPage />;
 }

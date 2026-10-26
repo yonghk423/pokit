@@ -6,12 +6,7 @@
 
 export { AnalyticsScreenTracker } from './AnalyticsScreenTracker';
 export { resolveStatusBarStyle } from './AppStatusBar';
-export { LocalizedSplashOverlay } from './LocalizedSplashOverlay';
-export {
-  SPLASH_BACKGROUND_COLOR,
-  getSplashImageSource,
-  SPLASH_IMAGE_SOURCES,
-} from './splashAssets';
+export { SPLASH_BACKGROUND_COLOR } from './splashAssets';
 export { resetAppStatusBarCache, syncAppStatusBar } from '@shared/lib/status-bar/appStatusBar';
 export { useAppBootstrap } from './useAppBootstrap';
 export { useAnalyticsScreenViews } from './useAnalyticsScreenViews';

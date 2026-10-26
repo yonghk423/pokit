@@ -1,5 +1,5 @@
-import { ComicDiaryMenuButton } from './ComicDiaryMenuButton';
-import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentComicPlanner';
+import { useServiceTutorial, tutorialRoutineVisible, completeTutorialMateCreation } from '../../welcome-intro/model/serviceTutorial';
+import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { RowColorPaletteBridgeProvider, RowColorPaletteFallbackHost } from '@shared/ui/color-palette-tabs';
 import { deskPaperChoices, deskInkChoices } from '@shared/ui/stationery-desk/choices';
@@ -11,7 +11,7 @@ import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   AppState,
   Keyboard,
@@ -128,7 +128,6 @@ import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { DailyQuoteCard } from '@shared/ui/daily-quote-card';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { HeaderIcon } from '@shared/ui/header-icon';
-import { useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 import { ThemedText } from '@shared/ui/themed-text';
 
 import {
@@ -168,7 +167,7 @@ import { useDayMealSlotSchedule } from '../lib/useDayMealSlotSchedule';
 import { CatalogRowSpineTimePanel, type CatalogRowSpineTimePanelHandle } from './CatalogRowSpineTimePanel';
 import { CreateCustomFlowSheet, type CreateCustomFlowPlacement } from './CreateCustomFlowSheet';
 import { DayMealSlotScheduleSheet } from './DayMealSlotScheduleSheet';
-import { DayPlanLayoutModeTabs, type DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
+import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
 import { CircularRoutineTimetable } from './CircularRoutineTimetable';
 import { PriorityBagRowAccordionPanel } from './PriorityBagRowAccordionPanel';
 import { PriorityMealSlotAddRoutineRow } from './PriorityMealSlotAddRoutineRow';
@@ -398,7 +397,6 @@ type Props = {
   onOpenFixedRoutine?: () => void;
   layoutMode: DayPlanLayoutMode;
   onSelectLayoutMode: (mode: DayPlanLayoutMode) => void;
-  visibleLayoutModes?: readonly DayPlanLayoutMode[];
   /**
    * 하루 주기 온보딩 직후 증가 — 집중 시간 칩 1회 강조를 다시 시도한다.
    * (섹션이 이미 마운트된 채 게이트만 닫히는 경우)
@@ -409,13 +407,11 @@ type Props = {
    * 상단 모드를 나갔다가 돌아올 때 목록을 처음부터 다시 그리지 않기 위함.
    */
   listPaintActive?: boolean;
-  onComicModeChange?: (active: boolean) => void;
 };
 
 /* ─── 메인 ─── */
 
 export function PriorityBasedPlanSection({
-  onComicModeChange,
   c,
   isFocusStarted,
   priorityPlanDateKey,
@@ -436,7 +432,6 @@ export function PriorityBasedPlanSection({
   onOpenFixedRoutine,
   layoutMode,
   onSelectLayoutMode,
-  visibleLayoutModes,
   windowChipGuideNonce = 0,
   listPaintActive = true,
 }: Props) {
@@ -450,15 +445,14 @@ export function PriorityBasedPlanSection({
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const [circularTimetableOpen, setCircularTimetableOpen] = useState(false);
-  const [cardsOpen, setCardsOpen] = useState(false);
-  const [comicDayOpen, setComicDayOpen] = useState(false);
-  // Saved or already-mounted legacy views fall back to cards while their entry points are paused.
-  const showCards = !comicDayOpen && (cardsOpen || (circularTimetableOpen ? !FEATURE_FLAGS.circularRoutineLayout : !FEATURE_FLAGS.basicRoutineListLayout));
-  const showTimetable = circularTimetableOpen || showCards;
-  const comicPlannerRef = useRef<ComicDiaryHandle>(null);
-  const [diaryTitle, setDiaryTitle] = useState<string | null>(null);
-  useEffect(() => { onComicModeChange?.(comicDayOpen); }, [comicDayOpen, onComicModeChange]);
+  const tutorialActive = useServiceTutorial(state => state.active);
+  const tutorialMode = useServiceTutorial(state => state.mode);
+  const tutorialStep = useServiceTutorial(state => state.step);
+  const tutorialRoutineKey = useServiceTutorial(state => state.routineKey);
+  const tutorialRunId = useServiceTutorial(state => state.runId);
+  /** 오늘 탭은 카드 보기 고정 — 주인공은 하단 탭, 원형·리스트 보기는 플래그로 숨김 */
+  const showCards = true;
+  const showTimetable = true;
   const hideDailyQuoteSetting = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideDailyQuote = !FEATURE_FLAGS.dailyQuote || hideDailyQuoteSetting;
   const announcementHome = useAnnouncementHomeNudge();
@@ -1087,14 +1081,14 @@ export function PriorityBasedPlanSection({
 
   /** 첫 온보딩 완료 직후 — 집중 시간 칩을 한 번 강조해 탭을 유도 */
   useEffect(() => {
-    if (comicDayOpen || !loadDailyRhythmWindowChipGuidePending()) return;
+    if (!loadDailyRhythmWindowChipGuidePending()) return;
     const timer = setTimeout(() => {
-      if (comicDayOpen || !loadDailyRhythmWindowChipGuidePending()) return;
+      if (!loadDailyRhythmWindowChipGuidePending()) return;
       clearDailyRhythmWindowChipGuidePending();
       triggerPriorityWindowChipEmphasis();
     }, 700);
     return () => clearTimeout(timer);
-  }, [comicDayOpen, triggerPriorityWindowChipEmphasis, windowChipGuideNonce]);
+  }, [triggerPriorityWindowChipEmphasis, windowChipGuideNonce]);
 
   const alertFocusEndedGuideToWindow = useCallback(
     (messageKey: 'catalog.focusEndedAdd' | 'catalog.focusEndedChangeTime') => {
@@ -1144,6 +1138,7 @@ export function PriorityBasedPlanSection({
   ]);
 
   const openAddRoutineForBag = useCallback(() => {
+    useServiceTutorial.getState().advance('rhythmAdd', 'rhythmPicker');
     if (
       isPriorityWindowEndedForToday({
         planMode: 'priority',
@@ -1268,6 +1263,7 @@ export function PriorityBasedPlanSection({
         setPriorityCategoryOrder((current) => [...current, ...occurrenceKeys]);
         appendRoutineCatalogSelectionKeys(categoryKeys);
         setLastAddedCategoryKey(occurrenceKeys[occurrenceKeys.length - 1] ?? null);
+        completeTutorialMateCreation(categoryKeys[categoryKeys.length - 1] ?? '');
       }
     },
     [
@@ -1380,6 +1376,7 @@ export function PriorityBasedPlanSection({
       }
 
       clearAddRoutineTargetContext();
+      completeTutorialMateCreation(id);
       setCreateSheetOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
@@ -1395,6 +1392,25 @@ export function PriorityBasedPlanSection({
       spinePendingGapBounds,
     ],
   );
+
+  useEffect(() => {
+    if (!tutorialActive || tutorialMode !== 'rhythm' || tutorialStep !== 'rhythmForm') return;
+    setAddRoutineSheetOpen(false);
+    const timer = setTimeout(() => setCreateSheetOpen(true), 400);
+    return () => clearTimeout(timer);
+  }, [tutorialActive, tutorialMode, tutorialStep]);
+  const preparedTutorialRun = useRef<string | null>(null);
+  useEffect(() => {
+    if (!tutorialActive || tutorialMode !== 'rhythm' || tutorialRoutineKey
+      || !['rhythmOpen', 'rhythmRecord'].includes(tutorialStep)
+      || preparedTutorialRun.current === tutorialRunId) return;
+    preparedTutorialRun.current = tutorialRunId;
+    handleCreateCustomFlow({
+      name: locale === 'ko' ? '나의 첫 메이트' : locale === 'ja' ? '最初のメイト' : 'My first mate',
+      groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY,
+      icon: 'routine:reading', accentColor: '#80C9B7', templateKey: 'memo',
+    });
+  }, [tutorialActive, tutorialMode, tutorialRoutineKey, tutorialStep, tutorialRunId, handleCreateCustomFlow, locale]);
 
   const addRoutineSheetConfirmLabel = addRoutineTargetSlot
     ? t('dayPlan.confirmLink')
@@ -2231,7 +2247,7 @@ export function PriorityBasedPlanSection({
     }
     setEmphasizePriorityWindowChip(false);
     clearDailyRhythmWindowChipGuidePending();
-    router.push('/daily-rhythm-settings');
+    router.push('/daily-mate-settings');
   }, [router]);
 
   const resolveBagRowSpineSchedule = useCallback(
@@ -2492,31 +2508,6 @@ export function PriorityBasedPlanSection({
 
   /** c.containerLow 한 값을 모든 컨테이너에 직접 지정 — 중간 View 투명 영역에서 톤 차이 원천 제거 */
   const surfaceBg = c.containerLow;
-
-  const registerHeaderActions = useDayPlanHeaderActions();
-  const headerLayoutActions = useMemo(() => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      {(visibleLayoutModes?.length ?? 3) > 0 ? <DayPlanLayoutModeTabs
-      showCircularTimetable
-      circularActive={circularTimetableOpen && !showCards}
-      cardsActive={showCards}
-      onSelectCards={() => { setComicDayOpen(false); setCircularTimetableOpen(true); setCardsOpen(true); }}
-      comicActive={comicDayOpen}
-      onSelectComic={() => { setCardsOpen(false); setComicDayOpen(true); setCircularTimetableOpen(false); }}
-      onSelectCircular={() => { setCardsOpen(false); setComicDayOpen(false); setCircularTimetableOpen(true); }}
-      mode={layoutMode}
-      onSelectMode={(next) => { setCardsOpen(false); setCircularTimetableOpen(false); setComicDayOpen(false); onSelectLayoutMode(next); }}
-      c={c}
-      isDark={isDark}
-      visibleModes={visibleLayoutModes}
-    /> : null}
-    </View>
-  ), [visibleLayoutModes, circularTimetableOpen, showCards, comicDayOpen, layoutMode, onSelectLayoutMode, c, isDark, t]);
-  useLayoutEffect(() => {
-    registerHeaderActions?.(listPaintActive ? headerLayoutActions : null);
-  }, [registerHeaderActions, listPaintActive, headerLayoutActions]);
-  useLayoutEffect(() => () => { registerHeaderActions?.(null); }, [registerHeaderActions]);
-
 
   return (
     <View style={[styles.prioritySectionRoot, { backgroundColor: surfaceBg }]}>
@@ -2784,16 +2775,6 @@ export function PriorityBasedPlanSection({
                 keyboardShouldPersistTaps="handled">
                 {bagRowTimeEdit ? (
                   <>
-                    <ThemedText
-                      style={[
-                        styles.dateModalHint,
-                        styles.timeModalLead,
-                        { color: editorial.muted },
-                      ]}>
-                      {t('dayPlan.bagRowDayWindowCaption', {
-                        window: priorityWindowLine || `${priorityStart} — ${priorityEnd}`,
-                      })}
-                    </ThemedText>
                     <CatalogRowSpineTimePanel
                       key={bagRowTimeModalKey}
                       ref={bagRowTimePanelRef}
@@ -2931,28 +2912,26 @@ export function PriorityBasedPlanSection({
         }
       />
 
-      <View style={[styles.bookOuter, { backgroundColor: comicDayOpen && !isDark ? '#F7F6F4' : surfaceBg, flex: 1, minHeight: 0 }]}>
+      <View style={[styles.bookOuter, { backgroundColor: surfaceBg, flex: 1, minHeight: 0 }]}>
         {/* 기간·집중 구간 — 다일 타임라인 카드 (달력·시계는 각각 모달) */}
         <View style={styles.priorityTimelineOuter}>
           <View
             style={[
               styles.priorityTimelineCard,
               {
-                backgroundColor: comicDayOpen && !isDark ? '#F7F6F4' : editorial.surface,
+                backgroundColor: editorial.surface,
               },
             ]}>
-            {comicDayOpen || FEATURE_FLAGS.dailyPlanDateHeader ? <View
+            {FEATURE_FLAGS.dailyPlanDateHeader ? <View
               style={[
                 styles.priorityTimelineHeader,
-                comicDayOpen && { alignItems: 'center', paddingTop: 8, paddingBottom: 8 },
                 {
                   borderBottomColor: editorial.line,
-                  backgroundColor: comicDayOpen && !isDark ? '#F7F6F4' : editorial.surface,
+                  backgroundColor: editorial.surface,
                 },
               ]}>
-              {comicDayOpen ? <ComicDiaryMenuButton onPress={() => comicPlannerRef.current?.openLibrary()} /> : null}
               <View style={styles.priorityTimelineHeaderText}>
-                {comicDayOpen ? <Pressable accessibilityRole="button" accessibilityLabel={t(diaryTitle ? 'comicDiary.rename' : 'comicDiary.library')} onPress={() => diaryTitle ? comicPlannerRef.current?.renameDiary() : comicPlannerRef.current?.openLibrary()} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: editorial.ink, fontSize: 19, lineHeight: 27 }}>{diaryTitle ?? t('comicDiary.title')}</ThemedText></Pressable> : layoutMode === 'sections' ? (
+                {layoutMode === 'sections' ? (
                   <>
                     <View style={styles.priorityTimelineTitleRow}>
                       <ThemedText
@@ -3021,9 +3000,8 @@ export function PriorityBasedPlanSection({
                   </>
                 )}
               </View>
-              {!registerHeaderActions ? <View style={styles.priorityTimelineHeaderActions}>{headerLayoutActions}</View> : null}
             </View> : null}
-            {comicDayOpen ? <IndependentComicPlanner ref={comicPlannerRef} onTitleChange={setDiaryTitle} key={todayKey} date={todayKey} ink={editorial.ink} muted={editorial.muted} isDark={isDark} /> : showTimetable ? (
+            {showTimetable ? (
               <View style={{ flex: 1, minHeight: 0 }}>
                 {!hideDailyQuote ? (
                   <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}><DailyQuoteCard dateKey={todayKey} isDark={isDark} /></View>
@@ -3034,7 +3012,7 @@ export function PriorityBasedPlanSection({
                 ink={editorial.ink}
                 muted={editorial.muted}
                 isDark={isDark}
-                items={orderedSelectedItemsForDisplay.map((cat) => {
+                items={orderedSelectedItemsForDisplay.filter(cat => tutorialRoutineVisible(cat.key, { active: tutorialActive, mode: tutorialMode, routineKey: tutorialRoutineKey })).map((cat) => {
                   const schedule = resolveBagRowSpineSchedule(cat.key);
                   const faceId = priorityCategoryFaceColor[cat.key] ?? null;
                   const inkId = priorityCategoryInkColor[cat.key] ?? null;
@@ -3103,7 +3081,7 @@ export function PriorityBasedPlanSection({
                     summaryLines: readingTitles && readingTitles.length > 0 ? readingTitles : undefined,
                     summaryFoot,
                     faceColor: faceId ? resolvePostItFaceColor(faceId, isDark) : undefined,
-                    inkColor: faceId || inkId ? resolvePostItInkHex(inkId ?? 'auto', faceId, isDark) : undefined,
+                    inkColor: inkId && inkId !== 'auto' ? resolvePostItInkHex(inkId, faceId, isDark) : '#000000',
                     completed: isPriorityRowCompleted(cat.key),
                     startMinutes: schedule.isSuggested ? undefined : schedule.startMinutes,
                     startsNextDay: schedule.startsNextCalendarDay,
@@ -3112,6 +3090,10 @@ export function PriorityBasedPlanSection({
                 })}
                 onComplete={(key) => bagRowActions.onToggleComplete(key)}
                 onFinish={(key, label) => bagRowActions.onFinishForToday?.(key, label)}
+                onFinishMany={(keys) => {
+                  setPriorityRowLayoutAnim(true);
+                  for (const key of new Set(keys)) endCategoryOnTodayPlan(key);
+                }}
                 onAdd={openAddRoutineForBag}
                 onSchedule={showCards ? () => { void Haptics.selectionAsync(); setScheduledRoutineSheetOpen(true); } : undefined}
                 onEditTime={(key, label) => openBagRowTimeModal({ rowKey: key, categoryKey: key, label })}
@@ -3631,6 +3613,7 @@ export function PriorityBasedPlanSection({
         </View>
       </View>
 
+      <ServiceTutorialCoach steps={['finish']} />
       <DayMealSlotScheduleSheet
         visible={mealSlotScheduleSheetOpen}
         schedule={mealSlotSchedule}
@@ -3653,11 +3636,13 @@ export function PriorityBasedPlanSection({
         surface={editorial.surface}
         line={editorial.line}
         onClose={() => {
+          useServiceTutorial.getState().advance('rhythmPicker', 'rhythmAdd');
           setAddRoutineSheetOpen(false);
           clearAddRoutineTargetContext();
         }}
         onConfirm={handleConfirmAddRoutinesToSlot}
         onCreateCustom={() => {
+          useServiceTutorial.getState().advance('rhythmPicker', 'rhythmForm');
           // 픽커만 닫고 슬롯/갭 타깃은 유지 — 생성 직후 해당 모드에 담기 위함
           setAddRoutineSheetOpen(false);
           setCreateSheetGroupKey(undefined);
@@ -3668,6 +3653,7 @@ export function PriorityBasedPlanSection({
       <CreateCustomFlowSheet
         visible={createSheetOpen}
         onClose={() => {
+          useServiceTutorial.getState().advance('rhythmForm', 'rhythmAdd');
           setCreateSheetOpen(false);
           clearAddRoutineTargetContext();
         }}

@@ -17,9 +17,8 @@ jest.mock('@shared/lib/i18n', () => ({
 }));
 
 import { openAppStoreWriteReview } from './openAppStoreReview';
-import { getAppStoreWriteReviewUrl } from './storeUrls';
+import { getAppStoreWriteReviewItmsUrl, getAppStoreWriteReviewUrl } from './storeUrls';
 
-const mockCanOpenURL = Linking.canOpenURL as jest.MockedFunction<typeof Linking.canOpenURL>;
 const mockOpenURL = Linking.openURL as jest.MockedFunction<typeof Linking.openURL>;
 
 describe('getAppStoreWriteReviewUrl', () => {
@@ -37,6 +36,12 @@ describe('getAppStoreWriteReviewUrl', () => {
       'https://play.google.com/store/apps/details?id=com.yonghee.pokit',
     );
   });
+
+  it('returns itms-apps write-review deep link', () => {
+    expect(getAppStoreWriteReviewItmsUrl()).toBe(
+      'itms-apps://itunes.apple.com/app/id6762331629?action=write-review',
+    );
+  });
 });
 
 describe('openAppStoreWriteReview', () => {
@@ -45,27 +50,40 @@ describe('openAppStoreWriteReview', () => {
     (Platform as { OS: string }).OS = 'ios';
   });
 
-  it('opens the write-review URL when available', async () => {
-    mockCanOpenURL.mockResolvedValue(true);
+  it('opens the https write-review URL first', async () => {
     mockOpenURL.mockResolvedValue(undefined as never);
 
     await openAppStoreWriteReview();
 
-    expect(mockCanOpenURL).toHaveBeenCalledWith(
-      'https://apps.apple.com/kr/app/id6762331629?action=write-review',
-    );
     expect(mockOpenURL).toHaveBeenCalledWith(
       'https://apps.apple.com/kr/app/id6762331629?action=write-review',
     );
     expect(Alert.alert).not.toHaveBeenCalled();
   });
 
-  it('alerts when the URL cannot be opened', async () => {
-    mockCanOpenURL.mockResolvedValue(false);
+  it('falls back to itms-apps when https open fails on iOS', async () => {
+    mockOpenURL
+      .mockRejectedValueOnce(new Error('https blocked'))
+      .mockResolvedValueOnce(undefined as never);
 
     await openAppStoreWriteReview();
 
-    expect(mockOpenURL).not.toHaveBeenCalled();
+    expect(mockOpenURL).toHaveBeenNthCalledWith(
+      1,
+      'https://apps.apple.com/kr/app/id6762331629?action=write-review',
+    );
+    expect(mockOpenURL).toHaveBeenNthCalledWith(
+      2,
+      'itms-apps://itunes.apple.com/app/id6762331629?action=write-review',
+    );
+    expect(Alert.alert).not.toHaveBeenCalled();
+  });
+
+  it('alerts when every open attempt fails', async () => {
+    mockOpenURL.mockRejectedValue(new Error('no store'));
+
+    await openAppStoreWriteReview();
+
     expect(Alert.alert).toHaveBeenCalled();
   });
 });

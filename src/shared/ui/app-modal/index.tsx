@@ -1,3 +1,4 @@
+import { TutorialGuideLayer } from '@shared/ui/tutorial-guide-layer';
 import { Modal as NativeModal, type ModalProps } from 'react-native';
 
 import { activeAlertScope, useAppAlertStore } from '@shared/lib/app-alert';
@@ -19,7 +20,7 @@ export function AppModal({ children, visible = true, onRequestClose, ...props }:
         }
         onRequestClose?.(event);
       }}>
-      <AppAlertSurface scopeId={scope.id} depth={scope.depth}>{children}</AppAlertSurface>
+      <AppAlertSurface scopeId={scope.id} depth={scope.depth}><TutorialGuideLayer>{children}</TutorialGuideLayer></AppAlertSurface>
     </NativeModal>
   );
 }

@@ -50,8 +50,8 @@
 
 | 파일 | 이유 |
 |------|------|
-| `assets/app-icon2-square.png` | 앱 아이콘 / 알림 아이콘 / favicon (`app.json`) |
-| `assets/splash-routines-9.webp` | `expo-splash-screen` 네이티브 스플래시 (콜라주와 동일) |
+| `assets/app-icon3.png` | 앱 아이콘 / 알림 아이콘 / favicon (`app.json`) |
+| `assets/splash-artwork.png` | `expo-splash-screen` 네이티브 스플래시 / 튜토리얼 인트로 |
 
 남은 `assets` 용량의 대부분은 위 두 PNG (~3.7MB).
 

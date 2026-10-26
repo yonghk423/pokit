@@ -37,7 +37,7 @@ describe('pickPuzzleHistoryImage helpers', () => {
     );
 
     await expect(
-      puzzleHistoryImageExists('http://127.0.0.1:8081/assets/unsplash-routine/open-book.webp?platform=ios'),
+      puzzleHistoryImageExists('http://127.0.0.1:8081/assets/routine-icons/reading.webp?platform=ios'),
     ).resolves.toBe(true);
     await expect(
       puzzleHistoryImageExists('file:///pokit-mock-puzzle/album_21_spring.webp'),

@@ -1,5 +1,5 @@
 import { BottomTabBarHeightContext } from 'expo-router/js-tabs';
-import { type PropsWithChildren, useCallback, useState } from 'react';
+import { type PropsWithChildren, type ReactNode, useCallback, useState } from 'react';
 import { type LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-screens/experimental';
@@ -10,15 +10,15 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 const TAB_CHROME_LIGHT = '#F7F6F4';
 const TAB_CHROME_DARK = '#262B28';
 
-type Props = PropsWithChildren<{ chromeColor?: string }>;
+type Props = PropsWithChildren<{ chromeColor?: string; background?: ReactNode }>;
 
 /** Keep native tab chrome out of editor bounds without changing keyboard avoidance. */
-export function NativeTabContent({ children, chromeColor }: Props) {
+export function NativeTabContent({ children, chromeColor, background }: Props) {
   if (Platform.OS !== 'ios') return <>{children}</>;
-  return <IosTabContent chromeColor={chromeColor}>{children}</IosTabContent>;
+  return <IosTabContent chromeColor={chromeColor} background={background}>{children}</IosTabContent>;
 }
 
-function IosTabContent({ children, chromeColor }: Props) {
+function IosTabContent({ children, chromeColor, background }: Props) {
   const insets = useSafeAreaInsets();
   const schemeChrome = useColorScheme() === 'dark' ? TAB_CHROME_DARK : TAB_CHROME_LIGHT;
   const chrome = chromeColor ?? schemeChrome;
@@ -37,10 +37,10 @@ function IosTabContent({ children, chromeColor }: Props) {
 
   return (
     <BottomTabBarHeightContext.Provider value={tabBarHeight}>
-      <View style={[styles.fill, { backgroundColor: chrome }]}>
+      <View style={[styles.fill, { backgroundColor: chrome }]}>{background}
         <SafeAreaView
           edges={{ bottom: true }}
-          style={[styles.fill, { backgroundColor: chrome }]}
+          style={[styles.fill, { backgroundColor: background ? 'transparent' : chrome }]}
           onLayout={measureOuter}>
           <View style={styles.fill} onLayout={measureInner}>{children}</View>
         </SafeAreaView>

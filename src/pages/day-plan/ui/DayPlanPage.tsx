@@ -1,7 +1,9 @@
+import { loadServiceTutorial, useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
+import { claimTutorialAutoOpen } from '../../welcome-intro/lib/tutorialLifecycle';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   InteractionManager,
   Keyboard,
@@ -67,7 +69,7 @@ import { coerceDayPlanLayoutMode } from '@shared/lib/storage/dayPlanLayoutModeVi
 import { getClockNow, useAppClockEpoch } from '@shared/lib/time/appClock';
 import { ThemedView } from '@shared/ui/themed-view';
 
-import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyRhythmPresets';
+import { DEFAULT_DAILY_RHYTHM } from '../lib/dailyMatePresets';
 import {
   defaultPriorityWindowFromNow,
   getPickerCategoryLabel,
@@ -75,9 +77,8 @@ import {
   PRIMARY,
 } from '../lib/dayPlanEditorShared';
 import { palette } from '../lib/dayPlanPalette';
-import { DayPlanShellBackgroundContext } from '../model/dayPlanHeaderActions';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
-import { DailyRhythmOnboardingGate } from './DailyRhythmOnboardingGate';
+import { DailyRhythmOnboardingGate } from './DailyMateOnboardingGate';
 import { DayNotePlanSection } from './DayNotePlanSection';
 import { tabBarScrollBottomInset } from './DayPlanCustomTabBar';
 import type { DayPlanLayoutMode } from './DayPlanLayoutModeTabs';
@@ -111,15 +112,26 @@ export function DayPlanPage({
   ) => ReactNode;
 }) {
   const router = useRouter();
+  const tutorialOpened = useRef(false);
+  useFocusEffect(useCallback(() => {
+    const savedTutorial = loadServiceTutorial();
+    // A tutorial left active in storage after app exit is paused on return; it must not
+    // unexpectedly appear over ordinary day-plan use. The user can resume it explicitly.
+    if (savedTutorial.active && !useServiceTutorial.getState().active) useServiceTutorial.getState().pause();
+    const timer = !tutorialOpened.current && !savedTutorial.dismissed ? setTimeout(() => {
+      tutorialOpened.current = true;
+      if (claimTutorialAutoOpen()) router.push('/welcome-intro');
+    }, 400) : null;
+    return () => {
+      if (timer) clearTimeout(timer);
+      const tut = useServiceTutorial.getState();
+      if (tut.active && tut.mode === 'rhythm') tut.pause();
+    };
+  }, [router]));
+
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  const [comicModeActive, setComicModeActive] = useState(false);
-  const setShellBackground = useContext(DayPlanShellBackgroundContext);
-  useEffect(() => {
-    setShellBackground?.(comicModeActive && !isDark ? '#F7F6F4' : null);
-    return () => setShellBackground?.(null);
-  }, [comicModeActive, isDark, setShellBackground]);
   const [rhythmGateOpen, setRhythmGateOpen] = useState(
     () => FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted(),
   );
@@ -191,11 +203,6 @@ export function DayPlanPage({
   const visibility = useDayPlanLayoutModeVisibilityStore((s) => s.visibility);
   const coerceLayoutMode = useDayPlanLayoutModeVisibilityStore((s) => s.coerceMode);
   const hydrateLayoutModeVisibility = useDayPlanLayoutModeVisibilityStore((s) => s.hydrate);
-  const visibleLayoutModes = useMemo(
-    () => (['bag', 'sections', 'spine'] as const).filter((mode) => visibility[mode]),
-    [visibility],
-  );
-
   const effectiveLayoutMode = useMemo(
     () => coerceDayPlanLayoutMode(layoutMode, visibility),
     [layoutMode, visibility],
@@ -511,6 +518,15 @@ export function DayPlanPage({
     [addBlock, priorityEnd, priorityStart, router],
   );
 
+  const endFocusedLiveActivity = useCallback(() => {
+    const activeBlockId = useDayPlanRuntimeStore.getState().activeBlockId;
+    const focusBlockId = useDayPlanStore.getState().liveActivityChecklistFocusBlockId;
+    const target = activeBlockId ?? focusBlockId;
+    if (target) {
+      void endPokitLiveActivity(target);
+    }
+  }, []);
+
   const onSave = (options?: { silent?: boolean }) => {
     if (planMode === 'quickMemo') {
       const blockTitle = quickMemoPlainBody(parseQuickMemoChecklist(quickMemoDraft));
@@ -664,7 +680,7 @@ export function DayPlanPage({
   };
 
   const onSaveRef = useRef(onSave);
-  onSaveRef.current = onSave;
+  useEffect(() => { onSaveRef.current = onSave; }, [onSave]);
   const quickMemoSaveLockRef = useRef(false);
   const quickMemoSaveUnlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -709,14 +725,6 @@ export function DayPlanPage({
     onSaveRef.current({ silent: true });
   }, [planMode, isFocusStarted, priorityCategoryOrder, priorityWindowEligible]);
 
-  const endFocusedLiveActivity = useCallback(() => {
-    const activeBlockId = useDayPlanRuntimeStore.getState().activeBlockId;
-    const focusBlockId = useDayPlanStore.getState().liveActivityChecklistFocusBlockId;
-    const target = activeBlockId ?? focusBlockId;
-    if (target) {
-      void endPokitLiveActivity(target);
-    }
-  }, []);
 
   useEffect(() => {
     if (planMode !== 'priority') return;
@@ -816,11 +824,7 @@ export function DayPlanPage({
     endFocusedLiveActivity,
   ]);
 
-  const { registerPrimaryAction, registerComicDiaryLight } = useDayPlanTabBridge();
-  useFocusEffect(useCallback(() => {
-    registerComicDiaryLight(comicModeActive && !isDark);
-    return () => registerComicDiaryLight(false);
-  }, [comicModeActive, isDark, registerComicDiaryLight]));
+  const { registerPrimaryAction } = useDayPlanTabBridge();
 
   /** 마운트 해제 시 primary 를 idle로 되돌림 */
   useEffect(() => {
@@ -926,7 +930,6 @@ export function DayPlanPage({
               pointerEvents={surface === 'priority' ? 'auto' : 'none'}
               accessibilityElementsHidden={surface !== 'priority'}>
               <PriorityBasedPlanSection
-                onComicModeChange={setComicModeActive}
                 c={c}
                 isFocusStarted={isFocusStarted}
                 priorityPlanDateKey={priorityPlanDateKey}
@@ -947,7 +950,6 @@ export function DayPlanPage({
                 onOpenFixedRoutine={handleOpenFixedRoutine}
                 layoutMode={effectiveLayoutMode}
                 onSelectLayoutMode={onSelectLayoutMode}
-                visibleLayoutModes={visibleLayoutModes}
                 windowChipGuideNonce={windowChipGuideNonce}
                 listPaintActive={surface === 'priority'}
               />
@@ -956,7 +958,7 @@ export function DayPlanPage({
         </View>
       </KeyboardAvoidingView>
       <DailyRhythmOnboardingGate
-        visible={FEATURE_FLAGS.dailyRhythmWindow && rhythmGateOpen && surface === 'priority' && !comicModeActive}
+        visible={FEATURE_FLAGS.dailyRhythmWindow && rhythmGateOpen && surface === 'priority'}
         isDark={isDark}
         c={c}
         onConfirm={handleRhythmConfirm}

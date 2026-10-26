@@ -230,12 +230,12 @@ export function DayPlanLayoutModeTabs({
 
   return (
     <View style={[styles.root, showLabels && styles.rootLabeled]}>
-      {showCircularTimetable ? (
+      {showCircularTimetable && onSelectComic ? (
         <Pressable
           onPress={() => {
             if (comicActive) return;
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onSelectComic?.();
+            onSelectComic();
           }}
           accessibilityState={{ selected: comicActive }}
           accessibilityRole="tab"
@@ -244,10 +244,9 @@ export function DayPlanLayoutModeTabs({
           <View style={[styles.tab, { backgroundColor: comicActive ? pill.activeBg : isDark ? pill.inactiveBg : '#FFFFFF' }]}>
             <PaperGrain opacity={0.25} />
             <Image
-              source={require('../../../../assets/activity-illustrations/10-park-walk.webp')}
+              source={require('../../../../assets/tab-icons/comic-portrait-v2.webp')}
               style={{ width: 25, height: 25 }}
-              contentFit="cover"
-              contentPosition={{ left: '30%', top: '50%' }}
+              contentFit="contain"
               transition={0}
               accessible={false}
             />

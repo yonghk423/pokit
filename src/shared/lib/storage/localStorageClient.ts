@@ -42,6 +42,11 @@ function scheduleNativeRemoveItem(key: string): void {
 
 /** 메모리·디스크의 pokit/lockflow 키를 비우고, 이후 완료되는 이전 쓰기를 무효화한다. */
 export async function clearPokitLocalStorage(): Promise<void> {
+  if (getDevelopmentStorageProfile()) {
+    for (const key of localStorageClient.listKeys().filter(isPokitStorageKey)) localStorageClient.removeItem(key);
+    await flushLocalStorageClientWrites();
+    return;
+  }
   storageResetGeneration += 1;
 
   let diskKeysToClear: string[] = [];
@@ -130,6 +135,28 @@ export async function flushLocalStorageClientWrites(): Promise<void> {
   await Promise.allSettled([...pendingNativeWrites]);
 }
 
+const DEV_PROFILE_KEY = 'pokit:dev-mock:profile';
+const DEV_PROFILE_PREFIX = 'pokit:dev-mock:';
+export type DevelopmentStorageProfile = 'ko' | 'en' | 'ja';
+/** Development datasets never read or write the person's normal storage keys. */
+export function getDevelopmentStorageProfile(): DevelopmentStorageProfile | null {
+  if (!__DEV__) return null;
+  try {
+    const value = storage ? storage.getItem(DEV_PROFILE_KEY) : memoryStorage.get(DEV_PROFILE_KEY);
+    return value === 'ko' || value === 'en' || value === 'ja' ? value : null;
+  } catch { return null; }
+}
+function physicalStorageKey(key: string): string {
+  const profile = getDevelopmentStorageProfile();
+  return profile && isPokitStorageKey(key) && !key.startsWith(DEV_PROFILE_PREFIX)
+    ? `${DEV_PROFILE_PREFIX}${profile}:data:${key}` : key;
+}
+export function setDevelopmentStorageProfile(profile: DevelopmentStorageProfile | null): void {
+  if (!__DEV__) return;
+  if (profile) localStorageClient.setItemRaw(DEV_PROFILE_KEY, profile);
+  else localStorageClient.removeItem(DEV_PROFILE_KEY);
+}
+
 export const localStorageClient = {
   /** Synchronous inventory of the already-hydrated cache (and browser storage). */
   listKeys(prefix = ''): string[] {
@@ -144,9 +171,16 @@ export const localStorageClient = {
         for (const key of Object.keys(storage)) keys.add(key);
       }
     }
-    return [...keys].filter(key => key.startsWith(prefix));
+    const profile = getDevelopmentStorageProfile();
+    const scope = profile ? `${DEV_PROFILE_PREFIX}${profile}:data:` : null;
+    return [...keys].flatMap(key => {
+      if (scope && key.startsWith(scope)) return [key.slice(scope.length)];
+      if (key.startsWith(DEV_PROFILE_PREFIX)) return [];
+      return scope && isPokitStorageKey(key) ? [] : [key];
+    }).filter(key => key.startsWith(prefix));
   },
   getItemRaw(key: string): string | null {
+    key = physicalStorageKey(key);
     try {
       if (!storage) {
         return memoryStorage.get(key) ?? null;
@@ -158,6 +192,7 @@ export const localStorageClient = {
   },
 
   setItemRaw(key: string, value: string): void {
+    key = physicalStorageKey(key);
     try {
       if (!storage) {
         memoryStorage.set(key, value);
@@ -173,6 +208,7 @@ export const localStorageClient = {
   },
 
   removeItem(key: string): void {
+    key = physicalStorageKey(key);
     try {
       if (!storage) {
         memoryStorage.delete(key);

@@ -10,7 +10,6 @@ jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn() }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
 jest.mock('@shared/ui/icon-symbol', () => ({ IconSymbol: jest.requireActual('react-native').View }));
-jest.mock('@shared/ui/stationery-tool', () => ({ StationeryTool: jest.requireActual('react-native').View }));
 jest.mock('@shared/ui/palette-selection-check', () => ({ PaletteSelectionCheck: jest.requireActual('react-native').View }));
 jest.mock('react-native-gesture-handler', () => ({ FlatList: jest.requireActual('react-native').FlatList }));
 jest.mock('react-native-reanimated', () => ({

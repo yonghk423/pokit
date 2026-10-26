@@ -2,13 +2,13 @@
   "expo": {
     "name": "YOUR DAY",
     "slug": "pokit",
-    "version": "1.9.18",
+    "version": "1.9.19",
     "orientation": "portrait",
-    "icon": "./assets/app-icon2-square.png",
+    "icon": "./assets/app-icon4.png",
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
     "notification": {
-      "icon": "./assets/app-icon2-square.png",
+      "icon": "./assets/app-icon3.png",
       "color": "#000000"
     },
     "newArchEnabled": true,
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "109",
+      "buildNumber": "110",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -45,11 +45,11 @@
       }
     },
     "android": {
-      "version": "1.9.18",
-      "versionCode": 109,
+      "version": "1.9.19",
+      "versionCode": 110,
       "adaptiveIcon": {
-        "backgroundColor": "#CED2EC",
-        "foregroundImage": "./assets/app-icon2-square.png"
+        "backgroundColor": "#F2EDE4",
+        "foregroundImage": "./assets/app-icon4.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -60,7 +60,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/app-icon2-square.png"
+      "favicon": "./assets/app-icon4.png"
     },
     "plugins": [
       "expo-router",
@@ -70,26 +70,36 @@
           "photosPermission": "노트에 첨부할 사진을 앨범에서 선택하려면 사진 접근 권한이 필요해요."
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "현재 날씨를 보여주기 위해 사용 중에만 대략적인 위치를 확인해요. 위치는 저장하지 않아요."
+        }
+      ],
       "expo-mail-composer",
       [
         "expo-splash-screen",
         {
           "resizeMode": "contain",
-          "backgroundColor": "#FEFEFF",
+          "backgroundColor": "#F8F5ED",
           "android": {
             "drawable": {
               "icon": "./assets/splash-background.xml"
             }
           },
           "dark": {
-            "backgroundColor": "#FEFEFF"
+            "backgroundColor": "#F8F5ED"
+          },
+          "ios": {
+            "image": "./assets/splash-artwork.png",
+            "enableFullScreenImage_legacy": true
           }
         }
       ],
       [
         "expo-notifications",
         {
-          "icon": "./assets/app-icon2-square.png",
+          "icon": "./assets/app-icon3.png",
           "color": "#000000",
           "defaultChannel": "default"
         }

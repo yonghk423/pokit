@@ -1,0 +1,65 @@
+import { buildMockDiaries, buildMockMates, ensureDevelopmentMockData } from './mockData';
+import { localStorageClient, setDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
+import { normalizeComicScenes } from '@pages/day-plan/lib/heroDayStorage';
+import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
+import { loadDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
+import { loadRoutineCatalogSelectionKeys } from '@shared/lib/storage/priorityCatalogFixedRoutinesStorage';
+import { loadGoalDetailCategoryConfig } from '@shared/lib/storage/goalDetailSettingsStorage';
+import { type AppLocale } from '@shared/lib/i18n';
+
+afterEach(() => setDevelopmentStorageProfile(null));
+it.each<AppLocale>(['ko', 'en', 'ja'])('builds a complete, usable %s dataset with real scene records and current mate templates', locale => {
+  const date = '2026-10-26';
+  const library = buildMockDiaries(locale, date);
+  expect(library.diaries).toHaveLength(3);
+  expect(new Set(library.diaries.map(diary => diary.characterId)).size).toBe(2);
+  const scenes = library.diaries.flatMap(diary => diary.scenes);
+  expect(scenes).toHaveLength(16);
+  expect(normalizeComicScenes(scenes)).toEqual(scenes);
+  expect(scenes.every(scene => scene.memo.length > 50 && scene.todos.length >= 2)).toBe(true);
+  const mates = buildMockMates(locale, date);
+  expect(mates).toHaveLength(8);
+  expect(mates.every(mate => mate.config.displayName.length > 2 && mate.config.summary.length > 5)).toBe(true);
+  const counter = mates[4].config as { currentCount: number; history: unknown[] };
+  expect(counter.currentCount).toBe(18); expect(counter.history).toHaveLength(7);
+  const weight = mates[6].config as { unit: string; currentValue: number; history: unknown[] };
+  expect(weight.unit).toBe('kg'); expect(weight.currentValue).toBe(61.4); expect(weight.history).toHaveLength(7);
+});
+it('seeds only the active sandbox, makes the mates visible, and preserves edits until reset', () => {
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { personal: true });
+  setDevelopmentStorageProfile('en');
+  expect(ensureDevelopmentMockData(true, '2026-10-26')).toBe(true);
+  const library = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(library.diaries).toHaveLength(3);
+  const keys = loadDayPlanDraft()!.priorityCategoryOrder;
+  expect(keys).toHaveLength(8);
+  expect(loadRoutineCatalogSelectionKeys()).toEqual(keys);
+  expect(loadGoalDetailCategoryConfig(keys[0])).toBeTruthy();
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { edited: true });
+  expect(ensureDevelopmentMockData(false, '2026-10-26')).toBe(false);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ edited: true });
+  setDevelopmentStorageProfile(null);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ personal: true });
+  expect(ensureDevelopmentMockData(true, '2026-10-26')).toBe(false);
+});
+
+it.each<AppLocale>(['ko', 'en', 'ja'])('adds the bookstore to an existing %s mock without resetting edits or adding duplicates', locale => {
+  setDevelopmentStorageProfile(locale);
+  ensureDevelopmentMockData(true, '2026-10-26');
+  const library = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  const daily = library.diaries[0];
+  daily.scenes = daily.scenes.filter(scene => scene.id !== `mock-scene:${locale}:bookstore-daily`);
+  daily.scenes[0].memo = 'My edited memo';
+  daily.title = 'My edited title';
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, library);
+  const draft = loadDayPlanDraft();
+  expect(ensureDevelopmentMockData(false, '2026-10-26')).toBe(true);
+  const updated = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(updated.activeId).toBe(library.activeId);
+  expect(updated.diaries[0].title).toBe('My edited title');
+  expect(updated.diaries[0].scenes[0].memo).toBe('My edited memo');
+  expect(updated.diaries[0].scenes.filter(scene => scene.image === '56-bookstore')).toHaveLength(1);
+  expect(updated.diaries.slice(1)).toEqual(library.diaries.slice(1));
+  expect(loadDayPlanDraft()).toEqual(draft);
+  expect(ensureDevelopmentMockData(false, '2026-10-26')).toBe(false);
+});

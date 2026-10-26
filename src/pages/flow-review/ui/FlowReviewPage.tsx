@@ -27,8 +27,8 @@ const BG = '#FEFEFF';
 const SURFACE = '#F4F2FF';
 const SURFACE_LOW = '#E8E2D8';
 const BORDER = '#000000';
-const OUTLINE = '#436086';
-const TEXT = '#181A2E';
+const OUTLINE = '#000000';
+const TEXT = '#000000';
 const PRIMARY = '#356668';
 
 const CATEGORY_META: Record<string, { icon: Parameters<typeof IconSymbol>[0]['name']; labelKey: Parameters<typeof t>[0] }> = {

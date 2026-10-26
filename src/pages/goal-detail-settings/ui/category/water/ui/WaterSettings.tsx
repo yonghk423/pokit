@@ -19,7 +19,7 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
-import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-rhythm-time-field';
+import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-mate-time-field';
 
 import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';

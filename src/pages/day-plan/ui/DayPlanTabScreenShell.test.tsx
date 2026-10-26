@@ -5,7 +5,8 @@ import { DayPlanTabScreenShell } from './DayPlanTabScreenShell';
 import { useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 
 let mockPlanMode = 'priority';
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }), useSegments: () => ['(tabs)', 'day-plan'], useLocalSearchParams: () => ({}) }));
+let mockSegments = ['(tabs)', 'day-plan'];
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }), useSegments: () => mockSegments, useLocalSearchParams: () => ({}) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0 }) }));
 jest.mock('@entities/day-plan', () => ({ consumePendingWidgetPlanMode: jest.fn(async () => null), useDayPlanDraftStore: (selector: (state: unknown) => unknown) => selector({ planMode: mockPlanMode, setPlanMode: jest.fn() }) }));
 jest.mock('@shared/lib/hooks/use-color-scheme', () => ({ useColorScheme: () => 'light' }));
@@ -13,6 +14,7 @@ jest.mock('@shared/lib/i18n/hooks/useTranslation', () => ({ useTranslation: () =
 jest.mock('@shared/ui/handdrawn-frame', () => ({ HanddrawnFrame: () => null }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/header-icon', () => ({ HeaderIcon: () => null }));
+jest.mock('./WeatherSummary', () => ({ WeatherSummary: () => null }));
 jest.mock('./SettingsTopBarButton', () => ({ SettingsTopBarButton: () => {
   const NativeView = jest.requireActual('react-native').View;
   return <NativeView testID="fixed-settings" />;
@@ -62,4 +64,22 @@ it('keeps diary and cards available while hiding paused daily layouts', async ()
   // Selected cards remain selected when re-pressed; the other tab is the diary.
   expect(tabs[1].props.accessibilityState.selected).toBe(true);
   act(() => tree.unmount());
+});
+
+
+it.each(['day-plan', 'comic-day'])('keeps %s header ownership while another tab becomes active', async tabName => {
+  mockPlanMode = 'priority';
+  mockSegments = ['(tabs)', tabName];
+  const onPress = jest.fn();
+  let tree!: ReactTestRenderer;
+  const render = () => <DayPlanTabScreenShell tabName={tabName}><RegisterActions onPress={onPress} /></DayPlanTabScreenShell>;
+  await act(async () => { tree = create(render()); });
+  const { PlanModeSwitch } = require('./PlanModeSwitch');
+  expect(tree.root.findByType(PlanModeSwitch).props.fixedMiddle).toBe(tabName === 'comic-day');
+  mockSegments = ['(tabs)', tabName === 'comic-day' ? 'day-plan' : 'comic-day'];
+  await act(async () => { tree.update(render()); });
+  expect(tree.root.findByType(PlanModeSwitch).props.fixedMiddle).toBe(tabName === 'comic-day');
+  expect(tree.root.findByType(PlanModeSwitch).props.middle).not.toBeNull();
+  act(() => { tree.unmount(); });
+  mockSegments = ['(tabs)', 'day-plan'];
 });

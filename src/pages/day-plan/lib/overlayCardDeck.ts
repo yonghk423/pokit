@@ -1,20 +1,44 @@
-/** Reference coordinates, ordered from the foreground into the stack. */
-export function overlayCardPose(depth: number) {
+import { DAY_PLAN_MATE_CARD_TOP } from './dayPlanDeckMetrics';
+
+/** A centered paper stack; the outgoing front card travels right, then behind it. */
+function forwardCardPose(depth: number) {
   'worklet';
-  const d = Math.max(-2, Math.min(2, depth));
-  const distance = Math.abs(d);
+  if (depth < 0) {
+    const turn = Math.min(1, -depth);
+    const arc = Math.sin(Math.PI * turn);
+    return {
+      x: arc * 0.86,
+      y: -arc * 5 + turn * 24,
+      scale: 1 - turn * 0.045,
+      rotate: arc * 7,
+      opacity: depth <= -1 ? 0 : Math.min(1, (1 - turn) / 0.16),
+      contentOpacity: 1,
+      zIndex: turn < 0.53 ? 40 : 5,
+    };
+  }
+  const d = Math.min(3, depth);
+  // The front stays upright; rear edges peek out on alternating sides.
+  const first = Math.min(1, d);
+  const second = Math.max(0, Math.min(1, d - 1));
   return {
-    // Place the neighboring cards far enough out to reveal a small, balanced
-    // paper edge on both sides of the foreground card.
-    x: d * 0.72,
-    y: distance * 8,
-    scale: 1 - Math.min(1, distance) * 0.22,
-    // Snapped scroll offsets land a hair off whole indices, so a hard cutoff at 1
-    // hides one neighbor. Stay opaque through 1.1 and fade out by 1.5.
-    opacity: Math.max(0, Math.min(1, (1.5 - distance) / 0.4)),
-    contentOpacity: distance < 0.5 ? 1 : distance < 1.1 ? 0.72 : 0,
-    zIndex: Math.round(30 - distance * 10),
+    x: -0.045 * first + 0.095 * second,
+    y: 14 * first + 10 * second,
+    scale: 1 - 0.02 * first - 0.02 * second,
+    rotate: -1.8 * first + 3.6 * second,
+    opacity: depth <= 2 ? 1 : Math.max(0, 1 - (depth - 2) / 0.2),
+    contentOpacity: depth <= 2.2 ? 1 : 0,
+    zIndex: Math.round(30 - d * 10),
   };
+}
+
+/** Reverse gestures send the current front left and bring the preceding card forward. */
+export function overlayCardPose(depth: number, direction = 1) {
+  'worklet';
+  if (direction < 0 && Math.abs(depth) > 0.001 && Math.abs(depth) < 0.999) {
+    const pose = forwardCardPose(-depth);
+    return { ...pose, x: -pose.x, rotate: -pose.rotate };
+  }
+  return forwardCardPose(depth);
 }
 
 export function deckWindowStart(progress: number, count: number) {
@@ -31,13 +55,13 @@ export function overlayDeckLayout(width: number, height: number) {
   const scale = cardWidth / 300;
   const cardHeight = Math.min(414 * scale, Math.max(1, height - 56));
   const offsetX = (width - cardWidth) / 2;
-  const offsetY = (height - cardHeight) / 2 + 44;
+  const offsetY = Math.min(DAY_PLAN_MATE_CARD_TOP, Math.max(12, height - cardHeight - 12));
   return { cardWidth, cardHeight, scale, offsetX, offsetY };
 }
 
-export function overlayDeckFrame(depth: number, width: number, height: number) {
+export function overlayDeckFrame(depth: number, width: number, height: number, direction = 1) {
   'worklet';
-  const pose = overlayCardPose(depth);
+  const pose = overlayCardPose(depth, direction);
   const layout = overlayDeckLayout(width, height);
   return {
     ...pose,

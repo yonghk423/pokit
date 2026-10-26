@@ -1,3 +1,4 @@
+import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import {
   BottomTabBarHeightCallbackContext,
@@ -5,18 +6,17 @@ import {
 } from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useContext, useEffect, useMemo } from 'react';
-import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Image, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 
 export const DAY_PLAN_TAB_BAR_ROW_HEIGHT = 56;
-const TAB_BAR_SHADOW = 3;
+const TAB_ICON_SIZE = 26;
 
 const IOS_HOME_INDICATOR_FALLBACK = 34;
 
@@ -26,19 +26,19 @@ export function tabBarScrollBottomInset(_safeBottomInset: number, endGapPx = 6):
 
 type TabDef = {
   route: string;
-  icon: string;
-  size: number;
+  icon: ImageSourcePropType;
   labelKey: I18nKey;
 };
 
 const TABS: TabDef[] = [
-  { route: 'day-plan', icon: 'calendar', size: 22, labelKey: 'tabs.dayPlan' },
-  { route: 'fixed-routines', icon: 'list.bullet.rectangle', size: 22, labelKey: 'tabs.routines' },
-  { route: 'puzzle-history', icon: 'rectangle.stack', size: 22, labelKey: 'tabs.puzzle' },
-  { route: 'pokit-story', icon: 'book', size: 22, labelKey: 'tabs.story' },
+  { route: 'comic-day', icon: require('../../../../assets/tab-icons/comic-portrait-v2.webp'), labelKey: 'tabs.comicDay' },
+  { route: 'fixed-routines', icon: require('../../../../assets/tab-icons/routine.webp'), labelKey: 'tabs.routines' },
+  { route: 'puzzle-history', icon: require('../../../../assets/tab-icons/puzzle.webp'), labelKey: 'tabs.puzzle' },
+  { route: 'pokit-story', icon: require('../../../../assets/tab-icons/story-pen.png'), labelKey: 'tabs.story' },
 ];
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const heroArtwork = useHeroTabArtwork(state => state.source);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const onTabBarHeightChange = useContext(BottomTabBarHeightCallbackContext);
@@ -80,42 +80,16 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const colors = useMemo(
     () =>
       isDark
-        ? {
-          containerBg: RetroFlatColors.dark.surfaceAlt,
-          shadow: RetroFlatColors.dark.solidShadow,
-          activeBg: RetroFlatColors.dark.bgMint,
-          activeIcon: RetroFlatColors.dark.tertiary,
-          inactiveIcon: RetroFlatColors.dark.textMuted,
-        }
-        : {
-          containerBg: '#FFFFFF',
-          shadow: '#000000',
-          activeBg: RetroFlatColors.light.bgMint,
-          activeIcon: RetroFlatColors.light.tertiary,
-          inactiveIcon: RetroFlatColors.light.textMuted,
-        },
+        ? { containerBg: '#262B28', activeBg: '#3A3A3C' }
+        : { containerBg: '#F7F6F4', activeBg: '#E6E3DE' },
     [isDark],
   );
 
   return (
     <View
       onLayout={handleBarLayout}
-      style={[styles.outerWrap, { paddingBottom: safeBottom }]}>
-      <View
-        style={[
-          styles.shell,
-          { marginRight: TAB_BAR_SHADOW, marginBottom: TAB_BAR_SHADOW },
-        ]}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.shadow,
-            {
-              backgroundColor: colors.shadow,
-              transform: [{ translateX: TAB_BAR_SHADOW }, { translateY: TAB_BAR_SHADOW }],
-            },
-          ]}
-        />
+      style={[styles.outerWrap, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]}>
+      <View style={styles.shell}>
         <View
           style={[
             styles.container,
@@ -144,11 +118,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   isFocused && { backgroundColor: colors.activeBg },
                   pressed && { opacity: 0.8 },
                 ]}>
-                <IconSymbol
-                  name={tab.icon as any}
-                  size={tab.size}
-                  color={isFocused ? colors.activeIcon : colors.inactiveIcon}
-                />
+                <Image source={tab.route === 'comic-day' ? heroArtwork : tab.icon} style={styles.icon} resizeMode="contain" />
               </Pressable>
             );
           })}
@@ -160,32 +130,38 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
 
 const styles = StyleSheet.create({
   outerWrap: {
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingHorizontal: 24,
     paddingTop: 8,
+    backgroundColor: 'transparent',
   },
   shell: {
-    position: 'relative',
-  },
-  shadow: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 0,
+    borderRadius: DAY_PLAN_TAB_BAR_ROW_HEIGHT / 2,
+    shadowColor: '#14161C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     height: DAY_PLAN_TAB_BAR_ROW_HEIGHT,
-    borderRadius: 0,
-    borderWidth: 0,
+    borderRadius: DAY_PLAN_TAB_BAR_ROW_HEIGHT / 2,
     paddingHorizontal: 6,
-    gap: 4,
-    zIndex: 1,
+    gap: 2,
+    overflow: 'hidden',
   },
   tabItem: {
-    flex: 1,
+    minWidth: 64,
     alignItems: 'center',
     justifyContent: 'center',
     height: 44,
-    borderRadius: 0,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+  },
+  icon: {
+    width: TAB_ICON_SIZE,
+    height: TAB_ICON_SIZE,
   },
 });

@@ -95,7 +95,7 @@ export function LayoutSettingsPage() {
               </View>
               <HanddrawnToggle
                 isDark={isDark}
-                checkedColor="#AADBD5"
+                checkedColor={p.icon}
                 checked={showTopAnnouncementsButton}
                 onChange={(next) => {
                   void Haptics.selectionAsync();
@@ -128,7 +128,7 @@ export function LayoutSettingsPage() {
               </View>
               <HanddrawnToggle
                 isDark={isDark}
-                checkedColor="#AADBD5"
+                checkedColor={p.icon}
                 checked={showTopContactButton}
                 onChange={(next) => {
                   void Haptics.selectionAsync();
@@ -161,7 +161,7 @@ export function LayoutSettingsPage() {
               </View>
               <HanddrawnToggle
                 isDark={isDark}
-                checkedColor="#AADBD5"
+                checkedColor={p.icon}
                 checked={hideAppUpdateNudge}
                 onChange={(next) => {
                   void Haptics.selectionAsync();
@@ -195,7 +195,7 @@ export function LayoutSettingsPage() {
               </View>
               <HanddrawnToggle
                 isDark={isDark}
-                checkedColor="#AADBD5"
+                checkedColor={p.icon}
                 checked={hideDailyQuote}
                 onChange={(next) => {
                   void Haptics.selectionAsync();
@@ -248,7 +248,7 @@ export function LayoutSettingsPage() {
               </View>
               <HanddrawnToggle
                 isDark={isDark}
-                checkedColor="#AADBD5"
+                checkedColor={p.icon}
                 checked={completeInAccordion}
                 onChange={(next) => {
                   void Haptics.selectionAsync();

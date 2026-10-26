@@ -13,7 +13,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { PostItColorGrid } from '@shared/ui/post-it-color-palette';
 import { useTranslation } from '@shared/lib/i18n';
 import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
-import { type DeskTool } from '@shared/ui/stationery-desk/StationeryDeskSurface';
+import { type DeskTool } from '@shared/ui/stationery-desk/choices';
 import { StationeryCaptionIcon } from '@shared/ui/stationery-desk/StationeryCaptionIcon';
 
 export type RowColorPaletteTabId = 'face' | 'ink';

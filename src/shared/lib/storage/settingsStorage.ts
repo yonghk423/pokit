@@ -383,8 +383,8 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
 
 function parseAppFontId(value: unknown): AppFontId {
   if (value === 'hiMelody' || value === 'kimJungWon' || value === 'corncorn') return value;
-  // 미설정·hanken·sebangGothic2 등 레거시 → 기본(그리운 김정원)
-  return 'kimJungWon';
+  // 미설정·hanken·sebangGothic2 등 레거시 → 기본(온글잎 콘콘체)
+  return 'corncorn';
 }
 
 export function loadAppFontId(): AppFontId {

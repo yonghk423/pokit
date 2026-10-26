@@ -22,18 +22,21 @@ type VersionedAnnouncement = {
  * 오늘 탭·앱스토어 연동 안내용.
  * - important/force 중 제목에 버전(x.y.z)이 있는 것만 후보
  * - **버전 숫자가 가장 큰 1건**만 (semver 비교)
+ * - 설치 버전보다 **높은** 공지만 (이미 최신을 깐 첫 사용자·동일 버전 공지는 제외)
  * - 그 한 건이 이미 읽음이면 안내하지 않음 (옛 미읽음 폴백 없음)
  * - 설정 → 새소식 목록은 전체 누적(이 함수와 무관)
  */
 export function pickHomeNudgeAnnouncement(
   items: Announcement[],
   readIds: ReadonlySet<string>,
+  installedVersion: string | null = null,
 ): Announcement | null {
   let best: VersionedAnnouncement | null = null;
   for (const item of items) {
     if (!isHomeNudgePriority(item.priority)) continue;
     const version = extractAnnouncementVersion(item.title);
     if (!version) continue;
+    if (installedVersion && compareAppVersions(version, installedVersion) <= 0) continue;
     if (
       !best ||
       compareAppVersions(version, best.version) > 0 ||

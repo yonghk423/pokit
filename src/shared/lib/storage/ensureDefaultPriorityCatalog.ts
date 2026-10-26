@@ -33,6 +33,7 @@ import {
   BUILTIN_TUTORIAL_GROUP_LABEL,
 } from './defaultPriorityCatalog';
 import { updateStandardCatalogGroup } from './catalogItemGroupStorage';
+import { loadDayPlan, saveDayPlan } from './dayPlanStorage';
 import { loadDayPlanDraft, saveDayPlanDraft } from './dayPlanDraftStorage';
 import {
   loadRoutineCatalogSelectionKeys,
@@ -51,6 +52,12 @@ import {
   purgeRetiredHealthIntakeFromDayPlanDraft,
   purgeRetiredHealthIntakeFromFixedFlowSets,
 } from './migrateHealthIntakeCatalog';
+import { loadRoutineStartTimes, saveRoutineStartTimes } from './routineStartTimesStorage';
+import {
+  loadScheduledRoutinePlan,
+  saveScheduledRoutinePlan,
+} from './scheduledRoutinePlanStorage';
+import { loadCategoryReminderRules, saveCategoryReminderRules } from './settingsStorage';
 import { localStorageClient } from './localStorageClient';
 import { StorageKeys } from './storageKeys';
 import { loadHiddenStandardCatalogKeys, restoreStandardCatalogKey } from './hiddenStandardCatalogStorage';
@@ -439,6 +446,118 @@ function purgeFocusFlow(): void {
   }
 }
 
+function isReminderTemplateConfig(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object') return false;
+  const o = raw as Record<string, unknown>;
+  if (o.templateKey === 'reminder') return true;
+  return Array.isArray(o.reminderItems) || Array.isArray(o.reminderTimes);
+}
+
+/** 시간 알림 템플릿 — 신규·기존 루틴·알림·담기에서 모두 제거 */
+function purgeReminderTemplateCustomFlows(): void {
+  const reminderIds = [
+    ...new Set([
+      ...listGoalDetailCategoryConfigKeys().filter((key) =>
+        isReminderTemplateConfig(loadGoalDetailCategoryConfig(key)),
+      ),
+      ...listCustomFlowCatalogEntries()
+        .map((entry) => entry.id)
+        .filter((id) => isReminderTemplateConfig(loadGoalDetailCategoryConfig(id))),
+    ]),
+  ];
+
+  if (reminderIds.length > 0) {
+    const idSet = new Set(reminderIds);
+    purgeCustomFlowIds(reminderIds);
+
+    const selection = loadRoutineCatalogSelectionKeys().filter((key) => !idSet.has(key));
+    if (selection.length !== loadRoutineCatalogSelectionKeys().length) {
+      saveRoutineCatalogSelectionKeys(selection);
+    }
+
+    const state = loadFixedFlowSetsState();
+    let fixedChanged = false;
+    const sets = state.sets.map((set) => {
+      const items = set.items.filter((item) => !idSet.has(item.categoryKey));
+      if (items.length !== set.items.length) fixedChanged = true;
+      return { ...set, items };
+    });
+    if (fixedChanged) saveFixedFlowSetsState({ ...state, sets });
+
+    const draft = loadDayPlanDraft();
+    if (draft) {
+      const strip = (keys: string[] | undefined) => (keys ?? []).filter((key) => !idSet.has(key));
+      const priorityCategoryOrder = strip(draft.priorityCategoryOrder);
+      const prioritySectionsCategoryOrder = strip(draft.prioritySectionsCategoryOrder);
+      const completedFocusCategoryKeys = strip(draft.completedFocusCategoryKeys);
+      if (
+        priorityCategoryOrder.length !== draft.priorityCategoryOrder.length ||
+        prioritySectionsCategoryOrder.length !== (draft.prioritySectionsCategoryOrder ?? []).length ||
+        completedFocusCategoryKeys.length !== (draft.completedFocusCategoryKeys ?? []).length
+      ) {
+        saveDayPlanDraft({
+          ...draft,
+          priorityCategoryOrder,
+          prioritySectionsCategoryOrder,
+          completedFocusCategoryKeys,
+        });
+      }
+    }
+
+    const plan = loadDayPlan<{ id?: string; categoryKey?: string }>();
+    if (plan?.blocks?.length) {
+      const nextBlocks = plan.blocks.filter((block) => {
+        const key = typeof block.categoryKey === 'string' ? block.categoryKey.trim() : '';
+        return !key || !idSet.has(key);
+      });
+      if (nextBlocks.length !== plan.blocks.length) {
+        const removedIds = new Set(
+          plan.blocks
+            .filter((block) => {
+              const key = typeof block.categoryKey === 'string' ? block.categoryKey.trim() : '';
+              return key && idSet.has(key);
+            })
+            .map((block) => block.id)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0),
+        );
+        saveDayPlan({
+          ...plan,
+          blocks: nextBlocks,
+          completedBlockIds: (plan.completedBlockIds ?? []).filter((id) => !removedIds.has(id)),
+          skippedBlockIds: (plan.skippedBlockIds ?? []).filter((id) => !removedIds.has(id)),
+        });
+      }
+    }
+
+    const startTimes = loadRoutineStartTimes();
+    let startChanged = false;
+    const byCategoryKey = { ...startTimes.byCategoryKey };
+    for (const id of reminderIds) {
+      if (id in byCategoryKey) {
+        delete byCategoryKey[id];
+        startChanged = true;
+      }
+    }
+    if (startChanged) saveRoutineStartTimes({ byCategoryKey });
+
+    const scheduled = loadScheduledRoutinePlan();
+    let scheduledChanged = false;
+    const assignmentsByDate = { ...scheduled.assignmentsByDate };
+    for (const [dateKey, row] of Object.entries(assignmentsByDate)) {
+      const nextKeys = row.categoryKeys.filter((key) => !idSet.has(key));
+      if (nextKeys.length === row.categoryKeys.length) continue;
+      scheduledChanged = true;
+      if (nextKeys.length === 0) delete assignmentsByDate[dateKey];
+      else assignmentsByDate[dateKey] = { categoryKeys: nextKeys };
+    }
+    if (scheduledChanged) saveScheduledRoutinePlan({ assignmentsByDate });
+  }
+
+  // OS 알림 규칙도 전부 끔 (템플릿 잔여 규칙 포함)
+  const rules = loadCategoryReminderRules();
+  if (Object.keys(rules).length > 0) saveCategoryReminderRules({});
+}
+
 function buildBuiltinChecklist(flowId: string, labels: readonly string[]) {
   return labels.map((text, index) => ({
     id: `${flowId}_item_${index}`,
@@ -619,6 +738,7 @@ export function ensureDefaultPriorityCatalog(): void {
   purgeGoodPostureFlow();
   purgeFocusFlow();
   purgeRetiredDailyLifeFlows();
+  purgeReminderTemplateCustomFlows();
   // Retire catalog entries only: keep existing plans, progress and user detail settings.
   for (const id of RETIRED_DEFAULT_CUSTOM_FLOW_IDS) removeCustomFlowCatalogId(id);
   mergeDefaultCustomFlows();

@@ -2,11 +2,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
-  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 
 import { useTranslation } from '@shared/lib/i18n';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -14,7 +14,9 @@ import {
   RowColorPaletteDesk,
   useRowColorPaletteBridge,
 } from '@shared/ui/color-palette-tabs';
+import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { IconSymbol } from '@shared/ui/icon-symbol';
+import { PaperGrain } from '@shared/ui/paper-grain';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -25,8 +27,10 @@ type Palette = ReturnType<typeof goalDetailSettingsPalette>;
 
 const MINT = '#C8EBDD';
 const MINT_INK = '#3D8F7E';
+const PENCIL = '#5A7468';
 const IDLE = 'rgba(0,0,0,0)';
 const BREATHE = Easing.out(Easing.cubic);
+const UNDERLINE_LEN = 100;
 
 export function RoutineSummaryField({
   value,
@@ -73,16 +77,10 @@ export function RoutineSummaryField({
   }, [invite, showInvite]);
 
   const washStyle = useAnimatedStyle(() => ({
-    opacity: invite.value * (isNote ? 0.42 : 0.55),
+    opacity: invite.value * (isNote ? 0.28 : 0.55),
   }));
-  const underlineStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      invite.value,
-      [0, 1],
-      [palette.outlineVariant ?? 'rgba(0,0,0,0.12)', MINT_INK],
-    ),
-    opacity: underline || !isNote ? 0.9 : invite.value * 0.85,
-    transform: [{ scaleY: 1 + invite.value * 0.6 }],
+  const underlineWrapStyle = useAnimatedStyle(() => ({
+    opacity: underline || !isNote ? 0.88 : 0.22 + invite.value * 0.58,
   }));
 
   const focusField = () => {
@@ -103,7 +101,9 @@ export function RoutineSummaryField({
             hitSlop={8}
             onPress={focusField}
             style={({ pressed }) => [styles.hintChip, pressed && { transform: [{ translateY: 1 }] }]}>
-            <IconSymbol name="pencil" size={16} color={MINT_INK} />
+            <PaperGrain opacity={0.22} />
+            <HanddrawnFrame color={PENCIL} />
+            <IconSymbol name="pencil" size={15} color={MINT_INK} />
           </Pressable>
         ) : null}
       </View>
@@ -146,7 +146,27 @@ export function RoutineSummaryField({
           multiline
           textAlignVertical="top"
         />
-        {isNote ? <Animated.View pointerEvents="none" style={[styles.inviteLine, underlineStyle]} /> : null}
+        {isNote ? (
+          <Animated.View pointerEvents="none" style={[styles.inviteLine, underlineWrapStyle]}>
+            <Svg width="100%" height={7} viewBox={`0 0 ${UNDERLINE_LEN} 7`} preserveAspectRatio="none">
+              <Path
+                d="M1 2.3q14-.25 28 .1t28-.12 28 .18 14-.05"
+                fill="none"
+                stroke={showInvite ? MINT_INK : (palette.outlineVariant ?? PENCIL)}
+                strokeWidth={0.95}
+                strokeLinecap="round"
+              />
+              <Path
+                d="M1.5 5.1q13 .12 27-.08t29 .1 27-.06 14 .04"
+                fill="none"
+                stroke={showInvite ? MINT_INK : (palette.outlineVariant ?? PENCIL)}
+                strokeWidth={0.8}
+                strokeLinecap="round"
+                opacity={0.55}
+              />
+            </Svg>
+          </Animated.View>
+        ) : null}
       </Pressable>
       {showColorDesk ? <RowColorPaletteDesk /> : null}
     </View>
@@ -169,13 +189,12 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
+    overflow: 'hidden',
     backgroundColor: MINT,
   },
   padShell: {
     position: 'relative',
-    borderRadius: 6,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   wash: {
     ...StyleSheet.absoluteFill,
@@ -206,8 +225,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   inviteLine: {
-    height: 2,
+    height: 7,
     marginHorizontal: 2,
-    borderRadius: 1,
+    marginTop: -2,
   },
 });

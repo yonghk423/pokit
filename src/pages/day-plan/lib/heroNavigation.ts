@@ -1,0 +1,10 @@
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { COMIC_CHARACTERS } from './heroCharacters';
+const KEY = 'pokit:comic-navigation';
+type ComicNavigation = { characterId: string; screen: 'board' | 'picker'; diaryId?: string };
+export function loadComicNavigation(): ComicNavigation | null {
+  const value = localStorageClient.getJson<ComicNavigation>(KEY);
+  return value && COMIC_CHARACTERS.some(character => character.id === value.characterId) && (value.screen === 'board' || value.screen === 'picker') ? value : null;
+}
+export function saveComicNavigation(characterId: string, screen: ComicNavigation['screen'], diaryId?: string) { localStorageClient.setJson(KEY, { characterId, screen, ...(diaryId ? { diaryId } : {}) }); }
+export function clearComicNavigation() { localStorageClient.removeItem(KEY); }

@@ -68,6 +68,22 @@ target 'Pokit' do
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
 
+    # These modules include generated specs plus React headers. With prebuilt RN,
+    # resolve both to the same header tree to avoid duplicate ObjC declarations.
+    if ENV['RCT_USE_PREBUILT_RNCORE'] == '1'
+      installer.pods_project.targets.each do |target|
+        next unless ['react-native-safe-area-context', 'react-native-view-shot', 'RNScreens'].include?(target.name)
+        target.build_configurations.each do |bc|
+          bc.build_settings['HEADER_SEARCH_PATHS'] = [
+            '"${PODS_ROOT}/React-Core-prebuilt/React.xcframework/Headers/React_Core"',
+            '"${PODS_ROOT}/ReactNativeDependencies/Headers"',
+            '$(inherited)',
+            *Array(bc.build_settings['HEADER_SEARCH_PATHS']),
+          ].uniq
+        end
+      end
+    end
+
     # RNFBCrashlytics quoted imports ("RNFBApp/RNFBSharedUtils.h", "RNFBPreferences.h")
     # need Private + RNFBApp public headers when use_frameworks :static.
     installer.pods_project.targets.each do |target|

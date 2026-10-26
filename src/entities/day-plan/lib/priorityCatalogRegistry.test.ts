@@ -1,5 +1,6 @@
 import {
   filterKeysToPriorityCatalog,
+  getPriorityCatalogStandardKeys,
   isNonDeletableCatalogKey,
   resolveUserBagRoutineCatalogKeys,
   sanitizePriorityCategoryOrderKeys,
@@ -71,4 +72,8 @@ describe('filterKeysToPriorityCatalog', () => {
   it('excludes note(work) from routine catalog', () => {
     expect(filterKeysToPriorityCatalog(['work', 'reading'])).toEqual(['reading']);
   });
+});
+
+it('offers exactly the three built-in mates', () => {
+  expect(getPriorityCatalogStandardKeys().slice().sort()).toEqual(['fasting', 'healthIntake', 'reading']);
 });

@@ -1,5 +1,4 @@
-import { PaperGrain } from '@shared/ui/paper-grain';
-import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PenFrame } from '@shared/ui/pen-frame';
 import {
   Pressable,
   StyleSheet,
@@ -11,7 +10,6 @@ import {
 
 import {
   RETRO_RADIUS,
-  RetroFlatColors,
   SOLID_SHADOW_OFFSET,
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -23,13 +21,13 @@ export type BrutalConfirmButtonProps = {
   /** 기본: 확인 */
   label?: string;
   accessibilityLabel?: string;
-  /** 면 색. 생략 시 시티팝 민트 primary */
+  /** 면 색. 기본은 투명 */
   fill?: string;
-  /** 글자색. 생략 시 민트 위 검정 */
+  /** 글자색. 기본은 잉크색 */
   labelColor?: string;
   /** 윤곽선 */
   border?: string;
-  /** 있으면 solid shadow. 생략 시 연한 검정(라이트) / 연한 민트(다크) */
+  /** 그림자 색. 기본은 그림자 없음 */
   shadowColor?: string;
   /** solid shadow 오프셋. 생략 시 compact는 1, 그 외는 SOLID_SHADOW_OFFSET */
   shadowOffset?: number;
@@ -45,34 +43,26 @@ export type BrutalConfirmButtonProps = {
 };
 
 export function resolveBrutalConfirmPrimaryColors(isDark: boolean) {
-  const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
+  const ink = isDark ? '#F5F5F0' : '#171717';
   return {
-    /** 항상 밝은 민트 면 (다크 모드도 primaryContainer 대신 primary) */
-    fill: isDark ? c.primary : c.primaryContainer,
-    /** 민트 위 글자 — 순수 검정 */
-    labelColor: '#000000',
-    border: c.border,
-    /** solid shadow — 라이트는 연한 잉크 (순수 검정 금지) */
-    shadowColor: isDark ? 'rgba(158, 207, 209, 0.45)' : 'rgba(0, 0, 0, 0.16)',
-    /**
-     * 비활성도 민트 계열 불투명 색.
-     * opacity로 흐리면 solid shadow가 비쳐 검게 보임.
-     */
-    disabledFill: isDark ? '#6FA8AA' : '#C5E8E9',
-    disabledLabelColor: 'rgba(0, 0, 0, 0.45)',
+    fill: 'transparent',
+    labelColor: ink,
+    border: ink,
+    shadowColor: 'transparent',
+    disabledFill: 'transparent',
+    disabledLabelColor: isDark ? 'rgba(245,245,240,0.4)' : 'rgba(0,0,0,0.4)',
   };
 }
 
-/**
- * Flat Brutalism Lite 확인 CTA — 민트 면 · 외곽선 없음 · 4px solid shadow.
- */
+/** Transparent paper CTA with a single fountain-pen outline. */
+
 export function BrutalConfirmButton({
   onPress,
   label,
   accessibilityLabel,
   fill,
   labelColor,
-  border: _border,
+  border,
   shadowColor,
   shadowOffset: shadowOffsetProp,
   disabled = false,
@@ -84,15 +74,13 @@ export function BrutalConfirmButton({
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const primary = resolveBrutalConfirmPrimaryColors(isDark);
-  // fill을 넘기면 활성/비활성 모두 그 민트를 쓰고, 비활성은 별도 연한 민트로 대체하지 않음
-  // (요청: 이름 미입력·disabled여도 항상 민트)
   const resolvedFill = fill ?? (disabled ? primary.disabledFill : primary.fill);
   const resolvedLabelColor =
     labelColor ?? (disabled ? primary.disabledLabelColor : primary.labelColor);
   const resolvedShadow = shadowColor ?? primary.shadowColor;
   const resolvedLabel = label ?? t('common.confirm');
   const stretch = align === 'stretch';
-  const showShadow = Boolean(resolvedShadow);
+  const showShadow = Boolean(resolvedShadow) && resolvedShadow !== 'transparent';
   /** compact도 액션 버튼과 동일 offset 1 */
   const shadowOffset = shadowOffsetProp ?? (compact ? 1 : SOLID_SHADOW_OFFSET);
 
@@ -130,8 +118,7 @@ export function BrutalConfirmButton({
             backgroundColor: resolvedFill,
           },
         ]}>
-        <PaperGrain />
-        <HanddrawnFrame color={resolvedLabelColor} />
+        <PenFrame color={border ?? primary.border} />
         <ThemedText
           lightColor={resolvedLabelColor}
           darkColor={resolvedLabelColor}

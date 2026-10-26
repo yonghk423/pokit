@@ -1,199 +1,77 @@
-import { FEATURE_FLAGS } from '@shared/config/featureFlags';
-import React from 'react';
-import { DynamicColorIOS, Image, Platform, StyleSheet, View } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { useHeroTabArtwork } from '../../src/pages/day-plan/model/heroTabArtwork';
+import { DynamicColorIOS, Image, Platform, type ImageSourcePropType } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-
-import { DayPlanTabBridgeProvider } from '@pages/day-plan';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+
+import { Tabs } from 'expo-router';
+
+import { DayPlanCustomTabBar, DayPlanTabBridgeProvider } from '@pages/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
-import {
-  resolveAppFontFamily,
-  useAppFontSizeId,
-  useEffectiveAppFontId,
-} from '@shared/lib/ui-font';
-import { HapticTab } from '@shared/ui/haptic-tab/HapticTab';
 
-const TAB_ICON_SIZE = 26;
-
-/** iOS 네이티브 탭은 HapticTab을 타지 않는다. 누를 때마다 가벼운 충격을 준다. */
-const nativeTabListeners = {
-  tabPress: () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  },
-};
-
-function tabIconSource(asset: ImageSourcePropType): ImageSourcePropType {
-  // NativeTabs uses the source's point size rather than an Image style.
-  return { ...Image.resolveAssetSource(asset), width: TAB_ICON_SIZE, height: TAB_ICON_SIZE };
-}
-
-const TAB_ICON_SOURCES: Record<string, ImageSourcePropType> = {
-  'day-plan': tabIconSource(require('../../assets/tab-icons/today.webp')),
-  'fixed-routines': tabIconSource(require('../../assets/tab-icons/routine.webp')),
-  'puzzle-history': tabIconSource(require('../../assets/tab-icons/puzzle.webp')),
-  'pokit-story': tabIconSource(require('../../assets/tab-icons/story.webp')),
-};
-
-/** 탭 라벨 고정 크기 — 글씨 크기 설정(sm/md/lg)과 무관 */
-const TAB_LABEL_FONT_SIZE = 10;
-const TAB_BAR_HEIGHT = 64;
-const TAB_BAR_TOP_GAP = 8;
-const TAB_BAR_BOTTOM_GAP = 12;
-
-export const unstable_settings = { initialRouteName: 'day-plan' };
+export const unstable_settings = { initialRouteName: 'comic-day' };
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+
   return (
     <DayPlanTabBridgeProvider>
-      {Platform.OS === 'ios' ? <IosTabLayout /> : <FloatingTabLayout />}
+      {Platform.OS === 'ios' ? <IosTabLayout /> : <Tabs
+        initialRouteName="comic-day"
+        detachInactiveScreens
+        tabBar={(props) => <DayPlanCustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          lazy: true,
+          freezeOnBlur: true,
+          tabBarStyle: {
+            backgroundColor: 'transparent',
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+        }}>
+        <Tabs.Screen name="comic-day" options={{ title: t('tabs.comicDay') }} />
+        <Tabs.Screen
+          name="fixed-routines"
+          options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }}
+        />
+        <Tabs.Screen
+          name="puzzle-history"
+          options={{ title: t('tabs.puzzle'), href: FEATURE_FLAGS.puzzle ? undefined : null }}
+        />
+        <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
+      </Tabs>}
     </DayPlanTabBridgeProvider>
   );
 }
 
+
+const NATIVE_TAB_ITEMS = [
+  { name: 'comic-day', label: 'tabs.comicDay', icon: require('../../assets/tab-icons/comic-portrait-v2.webp'), hidden: false },
+  { name: 'fixed-routines', label: 'tabs.routines', icon: require('../../assets/tab-icons/routine.webp'), hidden: !FEATURE_FLAGS.routinesManageTab },
+  { name: 'puzzle-history', label: 'tabs.puzzle', icon: require('../../assets/tab-icons/puzzle.webp'), hidden: !FEATURE_FLAGS.puzzle },
+  { name: 'pokit-story', label: 'tabs.story', icon: require('../../assets/tab-icons/story-pen.png'), hidden: false },
+] as const;
+
+function nativeTabIcon(asset: ImageSourcePropType): ImageSourcePropType {
+  return { ...Image.resolveAssetSource(asset), width: 26, height: 26 };
+}
+
 function IosTabLayout() {
+  const heroArtwork = useHeroTabArtwork(state => state.source);
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
+  const canvas = isDark ? '#262B28' : '#F7F6F4';
   const foreground = DynamicColorIOS({ light: '#151518', dark: '#FAFAFA' });
-  const tabBarBg = isDark ? '#262B28' : '#F7F6F4';
-
-  return (
-    <NativeTabs
-      backgroundColor={tabBarBg}
-      blurEffect="none"
-      disableTransparentOnScrollEdge
-      shadowColor="transparent"
-      tintColor={foreground}
-      labelStyle={{ fontSize: 10, color: foreground }}
-      minimizeBehavior="never"
-      unstable_nativeProps={{ nativeContainerStyle: { backgroundColor: tabBarBg } }}>
-      <NativeTabs.Trigger name="day-plan" accessibilityLabel={t('tabs.dayPlan')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
-        {/* <NativeTabs.Trigger.Label>{t('tabs.dayPlan')}</NativeTabs.Trigger.Label> */}
-        <NativeTabs.Trigger.Label hidden />
-        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['day-plan']} renderingMode="original" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger hidden={!FEATURE_FLAGS.routinesManageTab} name="fixed-routines" accessibilityLabel={t('tabs.routines')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
-        {/* <NativeTabs.Trigger.Label>{t('tabs.routines')}</NativeTabs.Trigger.Label> */}
-        <NativeTabs.Trigger.Label hidden />
-        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['fixed-routines']} renderingMode="original" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger hidden={!FEATURE_FLAGS.puzzle} name="puzzle-history" accessibilityLabel={t('tabs.puzzle')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
-        {/* <NativeTabs.Trigger.Label>{t('tabs.puzzle')}</NativeTabs.Trigger.Label> */}
-        <NativeTabs.Trigger.Label hidden />
-        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['puzzle-history']} renderingMode="original" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="pokit-story" accessibilityLabel={t('tabs.story')} disableAutomaticContentInsets contentStyle={{ backgroundColor: tabBarBg }} listeners={nativeTabListeners}>
-        {/* <NativeTabs.Trigger.Label>{t('tabs.story')}</NativeTabs.Trigger.Label> */}
-        <NativeTabs.Trigger.Label hidden />
-        <NativeTabs.Trigger.Icon src={TAB_ICON_SOURCES['pokit-story']} renderingMode="original" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
+  return <NativeTabs tintColor={foreground} labelStyle={{ color: foreground }} minimizeBehavior="never" disableTransparentOnScrollEdge
+    unstable_nativeProps={{ nativeContainerStyle: { backgroundColor: canvas } }}>
+    {NATIVE_TAB_ITEMS.map(item => <NativeTabs.Trigger key={item.name} name={item.name} hidden={item.hidden}
+      accessibilityLabel={t(item.label)} disableAutomaticContentInsets contentStyle={{ backgroundColor: canvas }}
+      listeners={{ tabPress: () => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } }}>
+      <NativeTabs.Trigger.Label hidden />
+      <NativeTabs.Trigger.Icon src={nativeTabIcon(item.name === 'comic-day' ? heroArtwork : item.icon)} renderingMode="original" />
+    </NativeTabs.Trigger>)}
+  </NativeTabs>;
 }
-
-function FloatingTabLayout() {
-  const isDark = useColorScheme() === 'dark';
-  const insets = useSafeAreaInsets();
-  const bottomSpace = insets.bottom + TAB_BAR_BOTTOM_GAP;
-  const { t } = useTranslation();
-  const appFontId = useEffectiveAppFontId();
-  const appFontSizeId = useAppFontSizeId();
-  const tabLabelFontFamily = resolveAppFontFamily(appFontId, '600');
-
-  return (
-    <Tabs
-        key={`${appFontId}-${appFontSizeId}`}
-        initialRouteName="day-plan"
-        detachInactiveScreens
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          lazy: true,
-          freezeOnBlur: true,
-          tabBarButton: HapticTab,
-          tabBarActiveTintColor: isDark ? '#FAFAFA' : '#000000',
-          tabBarInactiveTintColor: isDark ? '#8E8E93' : '#999999',
-          // tabBarLabelPosition: 'below-icon',
-          tabBarShowLabel: false,
-          tabBarActiveBackgroundColor: isDark ? '#38383C' : '#EEEEF0',
-          // Reserve the full footprint so lists, memo controls and WebViews stay above the bar.
-          tabBarStyle: [
-            styles.tabBar,
-            {
-              backgroundColor: isDark ? '#262B28' : '#F7F6F4',
-              height: TAB_BAR_TOP_GAP + TAB_BAR_HEIGHT + bottomSpace,
-              paddingBottom: bottomSpace + 5,
-              paddingLeft: Math.max(insets.left, 16) + 7,
-              paddingRight: Math.max(insets.right, 16) + 7,
-            },
-          ],
-          tabBarItemStyle: styles.tabItem,
-          tabBarBackground: () => (
-            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-              <View
-                style={[
-                  styles.capsule,
-                  {
-                    bottom: bottomSpace,
-                    left: Math.max(insets.left, 16),
-                    right: Math.max(insets.right, 16),
-                    backgroundColor: 'transparent',
-                    borderColor: 'transparent',
-                  },
-                ]}
-              />
-            </View>
-          ),
-          tabBarLabelStyle: {
-            fontSize: TAB_LABEL_FONT_SIZE,
-            lineHeight: 14,
-            ...(tabLabelFontFamily ? { fontFamily: tabLabelFontFamily } : null),
-          },
-          tabBarIcon: () => {
-            const iconSource = TAB_ICON_SOURCES[route.name];
-            return iconSource ? (
-              <Image source={iconSource} style={styles.tabIcon} resizeMode="contain" />
-            ) : null;
-          },
-        })}>
-        <Tabs.Screen name="day-plan" options={{ title: t('tabs.dayPlan') }} />
-        <Tabs.Screen name="fixed-routines" options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }} />
-        <Tabs.Screen name="puzzle-history" options={{ title: t('tabs.puzzle'), href: FEATURE_FLAGS.puzzle ? undefined : null }} />
-        <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
-    </Tabs>
-  );
-}
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    elevation: 0,
-    shadowOpacity: 0,
-    paddingTop: TAB_BAR_TOP_GAP + 5,
-  },
-  capsule: {
-    position: 'absolute',
-    top: TAB_BAR_TOP_GAP,
-    borderRadius: TAB_BAR_HEIGHT / 2,
-    borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0,
-    shadowRadius: 14,
-    elevation: 0,
-  },
-  tabItem: {
-    borderRadius: 27,
-    marginHorizontal: 2,
-    paddingVertical: 3,
-    overflow: 'hidden',
-  },
-  tabIcon: {
-    width: TAB_ICON_SIZE,
-    height: TAB_ICON_SIZE,
-  },
-});

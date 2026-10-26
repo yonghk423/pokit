@@ -60,7 +60,7 @@ export {
   loadDailyRhythmWindowChipGuidePending,
   markDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompletedAndFlush
-} from './dailyRhythmOnboardingStorage';
+} from './dailyMateOnboardingStorage';
 export {
   clearReadingBookstoreTapGuide,
   clearReadingBookstoreSearchGuidePending,

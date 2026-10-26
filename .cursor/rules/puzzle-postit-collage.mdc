@@ -1,6 +1,6 @@
 ---
 description: 퍼즐 포스트잇 콜라주 — 완성본은 원본 사진에 가깝게 (훼손 금지)
-globs: src/entities/puzzle-history/**/*,src/widgets/puzzle-history-board/**/*,assets/puzzle/**/*,assets/unsplash-routine/collage.webp,assets/splash-routines-9.webp
+globs: src/entities/puzzle-history/**/*,src/widgets/puzzle-history-board/**/*,assets/puzzle/**/*
 alwaysApply: true
 ---
 
@@ -12,7 +12,7 @@ alwaysApply: true
 
 - 레이아웃: `src/entities/puzzle-history/lib/puzzleRevealLayout.ts`
 - 보드 렌더: `src/widgets/puzzle-history-board/ui/PuzzleBoard.tsx` (`imgX/imgY` → 사진 오프셋)
-- 정적 콜라주·스플래시: `assets/puzzle/collage.webp` ≡ `assets/unsplash-routine/collage.webp` ≡ `assets/splash-routines-9.webp` (네이티브 스플래시)
+- 정적 콜라주: `assets/puzzle/collage.webp` (앱 스플래시 `splash-artwork.png`와는 별개)
 
 ## 불변 (이것만 유지)
 
@@ -27,7 +27,7 @@ alwaysApply: true
 ## 금지
 
 - 완성 시 머리/몸/지평선이 크게 어긋나게 `img*`와 프레임을 따로 흔들기
-- 콜라주/스플래시를 “개선”한다며 장수를 크게 늘리거나 칸·포스트잇 사이 흰 여백을 넓히기
+- 콜라주를 “개선”한다며 장수를 크게 늘리거나 칸·포스트잇 사이 흰 여백을 넓히기
 - 수영복→러너처럼 **에셋 1장 교체** 요청에 레이아웃 알고리즘·전체 9칸 스타일을 같이 바꾸기
 - 완료 미리보기를 통짜 `Image` cover로 바꿔 콜라주 컨셉을 없애기 (완료 시에는 조각이 채워진 콜라주를 유지)
 
@@ -35,4 +35,4 @@ alwaysApply: true
 
 - 소스 webp는 `assets/puzzle/`에 영문 kebab-case (`garage-kettlebell.webp` 등)
 - 목업 시드·분위기 풀 require 경로만 해당 파일에 맞게 갱신
-- `collage.webp` / `splash-routines-9.webp`는 **같은 5~8장·촘촘 3×3 기준**으로만 해당 칸을 반영 (세 파일 동기화)
+- `collage.webp`는 **5~8장·촘촘 3×3 기준**으로만 해당 칸을 반영
