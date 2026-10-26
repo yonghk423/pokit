@@ -1,7 +1,7 @@
 {
   "name": "pokit",
   "main": "expo-router/entry",
-  "version": "1.9.19",
+  "version": "2.0.0",
   "scripts": {
     "start": "expo start",
     "postinstall": "node ./scripts/patch-debugger-locale.js && node ./scripts/patch-webview-statusbar.js && node ./scripts/patch-tab-bar-cream.js",
