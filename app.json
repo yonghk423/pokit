@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "110",
+      "buildNumber": "111",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -30,6 +30,7 @@
           "ja"
         ],
         "ITSAppUsesNonExemptEncryption": false,
+        "NSMotionUsageDescription": "현재 날씨를 보여 줄 때 기기 방향을 확인하는 데 동작 센서를 사용할 수 있어요. 움직임 기록은 저장하지 않아요.",
         "UIViewControllerBasedStatusBarAppearance": true,
         "UIApplicationSceneManifest": {
           "UIApplicationSupportsMultipleScenes": false,
@@ -46,7 +47,7 @@
     },
     "android": {
       "version": "2.0.0",
-      "versionCode": 110,
+      "versionCode": 111,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",
         "foregroundImage": "./assets/app-icon4.png"

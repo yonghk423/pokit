@@ -2,3 +2,4 @@
 "CFBundleDisplayName" = "YOUR DAY";
 "NSPhotoLibraryUsageDescription" = "Photos access is needed to attach images to notes.";
 "NSPhotoLibraryAddUsageDescription" = "Photos access is needed to save images attached to notes.";
+"NSMotionUsageDescription" = "Motion access may be used to check device orientation while showing the current weather. Motion activity is not saved.";

@@ -2,3 +2,4 @@
 "CFBundleDisplayName" = "YOUR DAY";
 "NSPhotoLibraryUsageDescription" = "ノートに添付する写真をアルバムから選ぶには、写真へのアクセス許可が必要です。";
 "NSPhotoLibraryAddUsageDescription" = "ノートに添付した写真を保存するには、写真へのアクセス許可が必要です。";
+"NSMotionUsageDescription" = "現在の天気を表示するときに端末の向きを確認するため、モーションセンサーを使うことがあります。動きの記録は保存しません。";
