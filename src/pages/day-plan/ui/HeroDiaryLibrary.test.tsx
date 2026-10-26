@@ -35,3 +35,20 @@ it('opens diaries, filters the library, renames with a nonempty title and offers
   expect(onCreate).toHaveBeenCalledTimes(1);
   act(() => { tree.unmount(); });
 });
+
+it('offers the notebook-plus illustration as the create action only for an empty unfiltered library', () => {
+  const onCreate = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicDiaryLibrary diaries={[]} activeId={null} onClose={jest.fn()} onCreate={onCreate} onOpen={jest.fn()} onRename={jest.fn()} onDelete={jest.fn()} />); });
+  const add = () => tree.root.findAllByProps({ testID: 'comic-empty-diary-create' })[0];
+  expect(tree.root.findAllByProps({ testID: 'comic-empty-diary-icon' }).length).toBeGreaterThan(0);
+  expect(add().props.accessibilityLabel).toBe('comicDiary.create');
+  act(() => { add().props.onPress(); });
+  expect(onCreate).toHaveBeenCalledTimes(1);
+  const search = tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDiary.search')!;
+  act(() => { search.props.onChangeText('missing'); });
+  expect(add()).toBeUndefined();
+  act(() => { search.props.onChangeText(''); });
+  expect(add()).toBeDefined();
+  act(() => { tree.unmount(); });
+});

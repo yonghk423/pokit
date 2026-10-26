@@ -13,7 +13,6 @@ describe('resolveAnalyticsScreenName', () => {
     expect(resolveAnalyticsScreenName('/release-notes')).toBe('release_notes');
     expect(resolveAnalyticsScreenName('/goal-detail-settings')).toBe('routine_detail');
     expect(resolveAnalyticsScreenName('/activity-session')).toBe('activity_session');
-    expect(resolveAnalyticsScreenName('/widget-guide')).toBe('widget_guide');
     expect(resolveAnalyticsScreenName('/puzzle-guide')).toBe('puzzle_guide');
   });
 

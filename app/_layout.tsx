@@ -130,10 +130,6 @@ export default function RootLayout() {
                     options={{ headerShown: false, presentation: 'card' }}
                   />
                   <Stack.Screen
-                    name="widget-guide"
-                    options={{ headerShown: false, presentation: 'card' }}
-                  />
-                  <Stack.Screen
                     name="puzzle-guide"
                     options={{ headerShown: false, presentation: 'card' }}
                   />

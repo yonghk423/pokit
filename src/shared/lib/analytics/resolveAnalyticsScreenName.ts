@@ -29,7 +29,6 @@ const EXACT_SCREEN_NAMES: Record<string, string> = {
   'day-plan-view-settings': 'today_view_settings',
   'layout-settings': 'layout_settings',
   'guide-book': 'guide_book',
-  'widget-guide': 'widget_guide',
   'puzzle-guide': 'puzzle_guide',
   'welcome-intro': 'welcome_intro',
 };

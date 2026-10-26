@@ -5,7 +5,6 @@ import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import Svg, { Path } from 'react-native-svg';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
-import { loadComicCharacterName, saveComicCharacterName } from '../lib/heroCharacterName';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -14,10 +13,38 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
 import { SettingsPenFrame } from '../../settings/lib/settingsPen';
+
+function CharacterArtworkGallery({ character, ink, muted, onSelect }: { character: ComicCharacter; ink: string; muted: string; onSelect: () => void }) {
+  const { t } = useTranslation();
+  const [active, setActive] = useState(0);
+  const artwork = [
+    { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: t(character.name) },
+    ...character.preview.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
+  ];
+  const current = artwork[active] ?? artwork[0];
+  return <View style={s.gallery}>
+    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityLabel={current.label} onPress={() => { tapHaptic('select'); onSelect(); }} style={s.mainArtwork}>
+      <ComicSceneImage imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
+    </Pressable>
+    <View style={s.thumbnailRail}>
+      <ScrollView testID={`comic-character-thumbnails-${character.id}`} nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbnails}>
+        {artwork.map((image, index) => <Pressable key={image.id} testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: index === active }} onPress={() => { tapHaptic('select'); setActive(index); onSelect(); }} style={s.thumbnail}>
+          <ComicSceneImage imageKey={`${character.id}:${image.id}:960`} source={image.source} fallbackSource={image.fallback} contentFit="contain" style={s.preview} />
+          {active === index ? <SettingsPenFrame color={ink} /> : null}
+        </Pressable>)}
+      </ScrollView>
+      <View pointerEvents="none" style={s.scrollHint}>
+        <Svg width={14} height={9} viewBox="0 0 14 9" accessible={false}><Path d="M2 2L6.8 6.5L12 1.8" fill="none" stroke={muted} strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+      </View>
+    </View>
+  </View>;
+}
+
 export function ComicCharacterChooser({ onStart, ink, muted, isDark, requireExplicitChoice = false }: { requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; ink: string; muted: string; isDark: boolean }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<ComicCharacter | null>(requireExplicitChoice ? null : COMIC_CHARACTERS[0]);
-  const [names, setNames] = useState(() => Object.fromEntries(COMIC_CHARACTERS.map(character => [character.id, requireExplicitChoice ? null : loadComicCharacterName(character.id)])));
+  // Names belong to this new diary draft, never to the shared character artwork.
+  const [names, setNames] = useState<Record<string, string | null>>(() => Object.fromEntries(COMIC_CHARACTERS.map(character => [character.id, null])));
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const startedTutorialRun = useRef<string | null | undefined>(undefined);
@@ -45,7 +72,7 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark, requireExpl
   const canStart = Boolean(selected && (!requireExplicitChoice || names[selected.id]?.trim()));
   const saveName = () => {
     if (!editing) return;
-    const name = saveComicCharacterName(editing, draft);
+    const name = draft.trim().slice(0, 24);
     if (!name) return;
     setNames(current => ({ ...current, [editing]: name }));
     setEditing(null);
@@ -54,11 +81,9 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark, requireExpl
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
       <ThemedText style={[s.title, { color: ink }]}>{t('comicDay.character.title')}</ThemedText>
       <ThemedText style={[s.subtitle, { color: muted }]}>{t('comicDay.character.hint')}</ThemedText>
-      {COMIC_CHARACTERS.map((character, index) => <ServiceTutorialTarget key={character.id} steps={requireExplicitChoice && !selected && index === 0 ? ['comicCharacter', 'comicName', 'comicReady'] : []}><Pressable accessible={!requireExplicitChoice} accessibilityRole="button" accessibilityLabel={displayName(character)} accessibilityState={{ selected: selected?.id === character.id }} onPress={() => { tapHaptic('select'); setSelected(character); useServiceTutorial.getState().advance('comicCharacter', 'comicName'); }} style={[s.card, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: selected?.id === character.id ? ink : muted }]}>
+      {COMIC_CHARACTERS.map((character, index) => <ServiceTutorialTarget key={character.id} style={s.characterCard} steps={requireExplicitChoice && !selected && index === 0 ? ['comicCharacter', 'comicName', 'comicReady'] : []}><View style={[s.card, { backgroundColor: isDark ? '#262B28' : '#FFFFFF' }]}>
         <PaperGrain opacity={0.18} />
-        {requireExplicitChoice ? <Pressable accessibilityRole="button" accessibilityLabel={displayName(character)} accessibilityState={{ selected: selected?.id === character.id }} onPress={() => { tapHaptic('select'); setSelected(character); useServiceTutorial.getState().advance('comicCharacter', 'comicName'); }}>
-          <ComicSceneImage imageKey={`${character.id}:cover`} source={character.cover} fallbackSource={character.preview[0].source} style={s.cover} priority="high" />
-        </Pressable> : <ComicSceneImage imageKey={`${character.id}:cover`} source={character.cover} fallbackSource={character.preview[0].source} style={s.cover} priority="high" />}
+        <CharacterArtworkGallery character={character} ink={ink} muted={muted} onSelect={() => { setSelected(character); useServiceTutorial.getState().advance('comicCharacter', 'comicName'); }} />
         {requireExplicitChoice ? <View style={s.editBox}>
           <ServiceTutorialTarget steps={selected?.id === character.id && !names[character.id]?.trim() ? ['comicCharacter', 'comicName', 'comicReady'] : []}>
             <ThemedTextInput accessibilityLabel={t('comicDay.character.nameHint')} placeholder={t('comicDay.character.nameHint')} placeholderTextColor={muted}
@@ -79,16 +104,14 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark, requireExpl
             <Svg width={20} height={20} viewBox="0 0 24 24" accessible={false}><Path d="M4 16L16.5 3.5L20.5 7.5L8 20L3 21Z M14.5 5.5L18.5 9.5 M4 16L8 20" fill="none" stroke={ink} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" /></Svg>
           </Pressable>
         </View>}
-        <ThemedText style={[s.description, { color: muted }]}>{t(character.description)}</ThemedText>
-        <View style={s.previews}>{character.preview.map(scene => <ComicSceneImage key={scene.id} imageKey={`${scene.id}:960`} source={COMIC_SCENE_THUMBNAILS[scene.id]} fallbackSource={scene.source} style={s.preview} />)}</View>
         <View accessible accessibilityLabel={t('comicDay.sceneCount', { count: character.scenes.length })} style={s.countIcon}>
           <Svg width={26} height={22} viewBox="0 0 26 22" accessible={false}>
             <Path d="M7 2.5L22.5 3.5L21.4 18.5L6.2 17.4Z M4.2 5L19.7 6L18.6 21L3.4 19.8Z" fill="#FFFFFF" stroke={muted} strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" />
             <Path d="M8.3 7.8L15.7 8.3M8 10.7L14.3 11.1M7.7 13.5L12.4 13.8" fill="none" stroke={muted} strokeWidth={0.7} strokeLinecap="round" />
           </Svg>
         </View>
-        <HanddrawnFrame color={selected?.id === character.id ? ink : muted} bold={selected?.id === character.id} />
-      </Pressable></ServiceTutorialTarget>)}
+        <SettingsPenFrame color={selected?.id === character.id ? ink : muted} />
+      </View></ServiceTutorialTarget>)}
       <View style={s.upcoming}>
         <PaperGrain opacity={0.18} /><HanddrawnFrame color={muted} />
         <Svg width={42} height={48} viewBox="0 0 42 48" accessible={false}>
@@ -113,7 +136,7 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark, requireExpl
           }
           if (tutorial.step === 'comicPick' && startedTutorialRun.current === tutorial.runId) return;
         }
-        onStart(selected, requireExplicitChoice ? names[selected.id]!.trim() : undefined);
+        onStart(selected, names[selected.id]?.trim() || t(selected.name));
       }} style={({ pressed }) => [s.start, !canStart && { opacity: 0.45 }, pressed && { opacity: 0.75, transform: [{ translateY: 1 }] }]}>
         <SettingsPenFrame color="#171510" />
         <ThemedText style={{ color: '#000000', fontSize: 19, lineHeight: 30, flexShrink: 1 }}>{canStart && selected ? t('comicDay.character.startWithName', { name: displayName(selected) }) : t('comicDay.character.nameHint')}</ThemedText>
@@ -123,9 +146,12 @@ export function ComicCharacterChooser({ onStart, ink, muted, isDark, requireExpl
   </KeyboardAvoidingView></ServiceTutorialTarget>;
 }
 const s = StyleSheet.create({
-  content: { padding: 18, paddingBottom: 24 }, title: { fontSize: 24, marginBottom: 6 }, subtitle: { fontSize: 13, marginBottom: 20 },
-  card: { padding: 8, overflow: 'hidden' }, cover: { width: '100%', aspectRatio: 1.35 }, check: { position: 'absolute', top: 16, right: 16, width: 30, height: 30 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, gap: 4 }, editButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 4, paddingHorizontal: 10 }, editBox: { marginTop: 10, gap: 4 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 8 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 44, borderBottomWidth: 0.6 },
-  name: { textAlign: 'center', fontSize: 24, flexShrink: 1 }, description: { textAlign: 'center', fontSize: 13, marginTop: 2 }, previews: { flexDirection: 'row', gap: 6, marginTop: 14 }, preview: { flex: 1, aspectRatio: 1.3 }, countIcon: { alignItems: 'center', justifyContent: 'center', marginVertical: 8, height: 16 },
-  upcoming: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 16, opacity: 0.6 }, footer: { padding: 14, gap: 8, borderTopWidth: 0.5 }, start: { alignSelf: 'center', width: '92%', maxWidth: '94%', minHeight: 62, backgroundColor: 'transparent', paddingHorizontal: 16, paddingVertical: 16, gap: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  content: { padding: 14, paddingBottom: 24 }, title: { fontSize: 24, marginBottom: 6 }, subtitle: { fontSize: 13, marginBottom: 20 },
+  characterCard: { width: '100%', alignSelf: 'stretch', marginBottom: 12 },
+  card: { padding: 10, overflow: 'hidden', borderRadius: 8 },
+  gallery: { height: 128, flexDirection: 'row', gap: 8 }, mainArtwork: { flex: 1, minWidth: 0, borderRadius: 6, overflow: 'hidden' }, cover: { width: '100%', height: '100%' },
+  thumbnailRail: { width: 52, height: 128 }, thumbnails: { gap: 8, paddingTop: 3, paddingBottom: 18, paddingHorizontal: 3 }, thumbnail: { minHeight: 62, width: 46, padding: 4 }, preview: { width: '100%', height: 54, borderRadius: 3 }, scrollHint: { position: 'absolute', bottom: 1, left: 0, right: 0, height: 12, alignItems: 'center', justifyContent: 'flex-end' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 6, marginRight: 60, gap: 4 }, editButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 4, paddingHorizontal: 10 }, editBox: { marginTop: 8, marginRight: 60, gap: 4 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 8 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 44, borderBottomWidth: 0.6 },
+  name: { textAlign: 'center', fontSize: 22, flexShrink: 1 }, countIcon: { alignSelf: 'flex-end', alignItems: 'center', justifyContent: 'center', marginTop: 2, height: 22 },
+  upcoming: { alignSelf: 'stretch', width: '100%', padding: 16, flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 4, opacity: 0.6 }, footer: { padding: 14, gap: 8, borderTopWidth: 0.5 }, start: { alignSelf: 'center', width: '92%', maxWidth: 292, minHeight: 62, backgroundColor: 'transparent', paddingHorizontal: 16, paddingVertical: 16, gap: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 });

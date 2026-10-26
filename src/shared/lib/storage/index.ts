@@ -90,12 +90,10 @@ export {
   loadPokitWeekTourSeeded,
   loadPokitWeekTourSeededDate,
   loadPokitWeekTourPuzzleNudgeSeen,
-  loadPokitWeekTourWidgetNudgeSeen,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourLayoutNudgeSeen,
   markPokitWeekTourPuzzleNudgeSeen,
   markPokitWeekTourSeeded,
-  markPokitWeekTourWidgetNudgeSeen,
   nextOrderWithPokitWeekTourSeed,
 } from './pokitWeekTourStorage';
 export {

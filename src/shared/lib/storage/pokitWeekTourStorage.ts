@@ -76,25 +76,6 @@ export function markPokitWeekTourLayoutNudgeSeen(): void {
   );
 }
 
-type PersistedPokitWeekTourWidgetNudge = {
-  seen: boolean;
-};
-
-/** 투어 완료 후 「홈 위젯」안내를 이미 봤는지 */
-export function loadPokitWeekTourWidgetNudgeSeen(): boolean {
-  const v = localStorageClient.getJson<PersistedPokitWeekTourWidgetNudge>(
-    StorageKeys.pokitWeekTourWidgetNudgeSeen,
-  );
-  return v?.seen === true;
-}
-
-export function markPokitWeekTourWidgetNudgeSeen(): void {
-  localStorageClient.setJson<PersistedPokitWeekTourWidgetNudge>(
-    StorageKeys.pokitWeekTourWidgetNudgeSeen,
-    { seen: true },
-  );
-}
-
 type PersistedPokitWeekTourPuzzleNudge = {
   seen: boolean;
 };

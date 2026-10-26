@@ -40,6 +40,7 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   const [library, setLibrary] = useState(() => loadComicDiaryLibrary(props.date, number => t('comicDiary.defaultTitle', { number })));
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [characterDraft, setCharacterDraft] = useState(0);
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const tutorialActive = useServiceTutorial(state => state.active && state.mode === 'comic');
   // Tab switches used to pause the run; resume when this comic surface mounts again.
@@ -64,7 +65,7 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   const create = (next: ComicCharacter, characterName?: string) => {
     let number = library.diaries.length + 1;
     for (let attempt = 0; attempt <= library.diaries.length && library.diaries.some(item => item.title === t('comicDiary.defaultTitle', { number })); attempt++) number++;
-    const nextLibrary = createComicDiary(library, next.id, t('comicDiary.defaultTitle', { number }), characterName);
+    const nextLibrary = createComicDiary(library, next.id, t('comicDiary.defaultTitle', { number }), characterName?.trim() || t(next.name));
     const diaryKey = nextLibrary.activeId!;
     saveComicNavigation(next.id, 'picker', diaryKey);
     // Publish the diary before moving the external tutorial store. Subscribers
@@ -97,10 +98,10 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onRename={characterName => commit(updateComicDiary(library, diary!.id, { characterName }))}
       onSelectCharacter={() => { clearComicNavigation(); setCreating(true); }} /> : <>
-      <ComicCharacterChooser requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} />
+      <ComicCharacterChooser key={characterDraft} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} />
     </>}
     {libraryOpen ? <ComicDiaryLibrary diaries={library.diaries} activeId={library.activeId} initialRenameId={renameTarget}
-      onClose={() => setLibraryOpen(false)} onCreate={() => { setCreating(true); setLibraryOpen(false); }}
+      onClose={() => setLibraryOpen(false)} onCreate={() => { setCharacterDraft(value => value + 1); setCreating(true); setLibraryOpen(false); }}
       onOpen={id => { const opened = library.diaries.find(item => item.id === id)!; saveComicNavigation(opened.characterId, 'board', id); commit({ ...library, activeId: id }); setCreating(false); setLibraryOpen(false); }}
       onRename={(id, title) => commit(updateComicDiary(library, id, { title }))} onDelete={remove} /> : null}
   </View></TutorialGuideLayer>;

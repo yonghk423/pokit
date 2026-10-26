@@ -34,18 +34,15 @@ import {
   loadPokitWeekTourFirstTipSeen,
   loadPokitWeekTourLayoutNudgeSeen,
   loadPokitWeekTourPuzzleNudgeSeen,
-  loadPokitWeekTourWidgetNudgeSeen,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourLayoutNudgeSeen,
   markPokitWeekTourPuzzleNudgeSeen,
-  markPokitWeekTourWidgetNudgeSeen,
   POKIT_WEEK_TOUR_STEP_COUNT,
   POST_IT_LIGHT_INK,
   resolvePokitWeekTourStepIndex,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
 import { prefetchPuzzleGuideAssets } from '@shared/lib/puzzle-guide-assets';
-import { prefetchWidgetGuideAssets } from '@shared/lib/widget-guide-assets';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -55,7 +52,6 @@ import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { PokitWeekTourLayoutNudgeSheet } from './PokitWeekTourLayoutNudgeSheet';
 import { PokitWeekTourPuzzleNudgeSheet } from './PokitWeekTourPuzzleNudgeSheet';
 import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
-import { PokitWeekTourWidgetNudgeSheet } from './PokitWeekTourWidgetNudgeSheet';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
 
@@ -210,7 +206,7 @@ export function PriorityBagRowAccordionPanel({
   line,
   surface,
 }: Props) {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const { isDayPlanFocused } = useDayPlanTabBridge();
   const [draft, setDraft] = useState('');
@@ -219,7 +215,6 @@ export function PriorityBagRowAccordionPanel({
   const [tourTipStep, setTourTipStep] = useState<number | null>(null);
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
   const [layoutNudgeVisible, setLayoutNudgeVisible] = useState(false);
-  const [widgetNudgeVisible, setWidgetNudgeVisible] = useState(false);
   const [puzzleNudgeVisible, setPuzzleNudgeVisible] = useState(false);
   const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
@@ -458,23 +453,13 @@ export function PriorityBagRowAccordionPanel({
     [persistChecklist, tasks, toggleTask],
   );
 
-  const widgetNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const puzzleNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tourTipStepRef = useRef(tourTipStep);
   const layoutNudgeVisibleRef = useRef(layoutNudgeVisible);
-  const widgetNudgeVisibleRef = useRef(widgetNudgeVisible);
   const puzzleNudgeVisibleRef = useRef(puzzleNudgeVisible);
   tourTipStepRef.current = tourTipStep;
   layoutNudgeVisibleRef.current = layoutNudgeVisible;
-  widgetNudgeVisibleRef.current = widgetNudgeVisible;
   puzzleNudgeVisibleRef.current = puzzleNudgeVisible;
-
-  const clearWidgetNudgeTimer = useCallback(() => {
-    if (widgetNudgeTimerRef.current) {
-      clearTimeout(widgetNudgeTimerRef.current);
-      widgetNudgeTimerRef.current = null;
-    }
-  }, []);
 
   const clearPuzzleNudgeTimer = useCallback(() => {
     if (puzzleNudgeTimerRef.current) {
@@ -482,17 +467,6 @@ export function PriorityBagRowAccordionPanel({
       puzzleNudgeTimerRef.current = null;
     }
   }, []);
-
-  const queueWidgetNudgeSoon = useCallback(() => {
-    if (loadPokitWeekTourWidgetNudgeSeen()) return;
-    clearWidgetNudgeTimer();
-    void prefetchWidgetGuideAssets(locale);
-    widgetNudgeTimerRef.current = setTimeout(() => {
-      widgetNudgeTimerRef.current = null;
-      if (loadPokitWeekTourWidgetNudgeSeen()) return;
-      setWidgetNudgeVisible(true);
-    }, 280);
-  }, [clearWidgetNudgeTimer, locale]);
 
   const queuePuzzleNudgeSoon = useCallback(() => {
     if (!FEATURE_FLAGS.puzzle) return;
@@ -508,10 +482,9 @@ export function PriorityBagRowAccordionPanel({
 
   useEffect(
     () => () => {
-      clearWidgetNudgeTimer();
       clearPuzzleNudgeTimer();
     },
-    [clearPuzzleNudgeTimer, clearWidgetNudgeTimer],
+    [clearPuzzleNudgeTimer],
   );
 
   const closeTourTip = useCallback(() => {
@@ -521,15 +494,13 @@ export function PriorityBagRowAccordionPanel({
     setTourTipStep(null);
     setTourTipTaskId(null);
     // 「닫기」「알겠어요」모두 여기로 옴 — 체크리스트 전부 완료 여부와 무관, 1회만
-    // 1) 레이아웃 안내 → 2) 위젯 안내 → 3) 퍼즐 안내 (이미 본 단계는 건너뜀)
+    // 레이아웃 안내 → 퍼즐 안내 (이미 본 단계는 건너뜀)
     if (!loadPokitWeekTourLayoutNudgeSeen()) {
       setTimeout(() => setLayoutNudgeVisible(true), 280);
-    } else if (!loadPokitWeekTourWidgetNudgeSeen()) {
-      queueWidgetNudgeSoon();
     } else {
       queuePuzzleNudgeSoon();
     }
-  }, [queuePuzzleNudgeSoon, queueWidgetNudgeSoon, tourTipStep]);
+  }, [queuePuzzleNudgeSoon, tourTipStep]);
 
   const confirmTourTip = useCallback(() => {
     closeTourTip();
@@ -538,30 +509,15 @@ export function PriorityBagRowAccordionPanel({
   const dismissLayoutNudge = useCallback(() => {
     markPokitWeekTourLayoutNudgeSeen();
     setLayoutNudgeVisible(false);
-    queueWidgetNudgeSoon();
-  }, [queueWidgetNudgeSoon]);
+    queuePuzzleNudgeSoon();
+  }, [queuePuzzleNudgeSoon]);
 
   const openLayoutFromNudge = useCallback(() => {
     markPokitWeekTourLayoutNudgeSeen();
     setLayoutNudgeVisible(false);
-    clearWidgetNudgeTimer();
-    clearPuzzleNudgeTimer();
-    // 복귀 후 useFocusEffect에서 위젯 안내를 띄운다.
-    router.push('/layout-settings');
-  }, [clearPuzzleNudgeTimer, clearWidgetNudgeTimer, router]);
-
-  const dismissWidgetNudge = useCallback(() => {
-    markPokitWeekTourWidgetNudgeSeen();
-    setWidgetNudgeVisible(false);
-    queuePuzzleNudgeSoon();
-  }, [queuePuzzleNudgeSoon]);
-
-  const openWidgetGuideFromNudge = useCallback(() => {
-    markPokitWeekTourWidgetNudgeSeen();
-    setWidgetNudgeVisible(false);
     clearPuzzleNudgeTimer();
     // 복귀 후 useFocusEffect에서 퍼즐 안내를 띄운다.
-    router.push('/widget-guide');
+    router.push('/layout-settings');
   }, [clearPuzzleNudgeTimer, router]);
 
   const dismissPuzzleNudge = useCallback(() => {
@@ -576,7 +532,7 @@ export function PriorityBagRowAccordionPanel({
   }, [router]);
 
   /**
-   * 레이아웃 안내 → 위젯 안내 → 퍼즐 안내.
+   * 레이아웃 안내 → 퍼즐 안내.
    * - 「닫기」: 직전 단계 dismiss가 다음을 즉시 큐잉
    * - 「확인해 보기」: 설정/설명서에서 돌아온 화면 포커스에서 큐잉
    *   (탭 isDayPlanFocused는 스택 푸시 때 안 바뀌므로 useFocusEffect 사용)
@@ -588,43 +544,29 @@ export function PriorityBagRowAccordionPanel({
       const anySheetOpen = () =>
         tourTipStepRef.current != null ||
         layoutNudgeVisibleRef.current ||
-        widgetNudgeVisibleRef.current ||
         puzzleNudgeVisibleRef.current;
-
-      const tryShowWidgetNudge = () => {
-        if (!loadPokitWeekTourFirstTipSeen()) return;
-        if (!loadPokitWeekTourLayoutNudgeSeen()) return;
-        if (loadPokitWeekTourWidgetNudgeSeen()) return;
-        if (anySheetOpen()) return;
-        queueWidgetNudgeSoon();
-      };
 
       const tryShowPuzzleNudge = () => {
         if (!loadPokitWeekTourFirstTipSeen()) return;
         if (!loadPokitWeekTourLayoutNudgeSeen()) return;
-        if (!loadPokitWeekTourWidgetNudgeSeen()) return;
         if (loadPokitWeekTourPuzzleNudgeSeen()) return;
         if (anySheetOpen()) return;
         queuePuzzleNudgeSoon();
       };
 
-      // 레이아웃/위젯 가이드 푸시 직후 콜백 갱신으로 바로 뜨지 않게 한 틱 뒤
+      // 레이아웃 설정에서 돌아온 직후 바로 뜨지 않게 한 틱 뒤
       const focusTimer = setTimeout(() => {
-        tryShowWidgetNudge();
         tryShowPuzzleNudge();
       }, 0);
 
       return () => {
         clearTimeout(focusTimer);
-        clearWidgetNudgeTimer();
         clearPuzzleNudgeTimer();
       };
     }, [
       clearPuzzleNudgeTimer,
-      clearWidgetNudgeTimer,
       isWeekTour,
       queuePuzzleNudgeSoon,
-      queueWidgetNudgeSoon,
     ]),
   );
 
@@ -811,12 +753,6 @@ export function PriorityBagRowAccordionPanel({
           isDark={isDark}
           onClose={dismissLayoutNudge}
           onOpenLayout={openLayoutFromNudge}
-        />
-        <PokitWeekTourWidgetNudgeSheet
-          visible={widgetNudgeVisible}
-          isDark={isDark}
-          onClose={dismissWidgetNudge}
-          onOpenWidgetGuide={openWidgetGuideFromNudge}
         />
         <PokitWeekTourPuzzleNudgeSheet
           visible={FEATURE_FLAGS.puzzle && puzzleNudgeVisible}
