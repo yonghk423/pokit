@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View, type LayoutRectangle } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View, type LayoutRectangle } from 'react-native';
 
 type Rect = LayoutRectangle;
 const holes = new Map<string, Rect>();
@@ -20,6 +20,8 @@ export function clearTutorialOffPathHandler(handler: () => void) {
 }
 
 export function tutorialOffPathAsk() {
+  // A background tap while typing should close the keyboard first.
+  if (Keyboard.isVisible()) { Keyboard.dismiss(); return; }
   ask?.();
 }
 

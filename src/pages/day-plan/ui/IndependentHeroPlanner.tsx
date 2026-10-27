@@ -6,7 +6,8 @@ import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoac
 import { ComicTodoViewport } from './HeroTodoViewport';
 import { ComicMemoField } from './HeroMemoField';
 import { ComicDiaryLibrary } from './HeroDiaryLibrary';
-import { createComicDiary, deleteComicDiary, loadComicDiaryLibrary, saveComicDiaryLibrary, updateComicDiary, type ComicDiary, type ComicDiaryLibrary as LibraryState } from '../lib/heroDiaryStorage';
+import { COMIC_DIARY_STORAGE_KEY, createComicDiary, deleteComicDiary, loadComicDiaryLibrary, saveComicDiaryLibrary, updateComicDiary, type ComicDiary, type ComicDiaryLibrary as LibraryState } from '../lib/heroDiaryStorage';
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { PenFrame } from '@shared/ui/pen-frame';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperControl } from '@shared/ui/paper-control';
@@ -53,6 +54,16 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   useEffect(() => { if (tutorialStep === 'comicCharacter') setCreating(true); }, [tutorialStep]);
   const tutorialDiaryKey = useServiceTutorial(state => state.diaryKey);
   const tutorialSceneKey = useServiceTutorial(state => state.sceneKey);
+  useLayoutEffect(() => useServiceTutorial.subscribe(current => {
+    if (!current.active || current.mode !== 'comic' || !current.diaryKey) return;
+    // A replay may return to an already mounted tab. Synchronize the newly
+    // saved diary in the same store notification that publishes its key.
+    if (!library.diaries.some(item => item.id === current.diaryKey)) {
+      const saved = localStorageClient.getJson<LibraryState>(COMIC_DIARY_STORAGE_KEY);
+      if (saved?.diaries.some(item => item.id === current.diaryKey)) setLibrary(saved);
+    }
+    if (creating && (current.step === 'comicPick' || current.step === 'comicReturn')) setCreating(false);
+  }), [library, creating]);
   const activeDiaryKey = tutorialDiaryId(library, { active: tutorialActive, mode: 'comic', diaryKey: tutorialDiaryKey, sceneKey: tutorialSceneKey });
   const diary = library.diaries.find(item => item.id === activeDiaryKey);
   const character = COMIC_CHARACTERS.find(item => item.id === diary?.characterId);
@@ -104,7 +115,7 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   const showPlanner = Boolean(diary && character && !creating);
   const showChooser = !showEmptyBoard && !showPlanner;
   return <TutorialGuideLayer><View style={{ flex: 1 }}>
-    <ServiceTutorialCoach characterChoosing={showChooser} steps={showPlanner ? ['comicStart'] : ['comicStart', 'comicCharacter', 'comicName', 'comicReady']} />
+    <ServiceTutorialCoach characterChoosing={showChooser} steps={showChooser ? [] : showPlanner ? ['comicStart'] : ['comicStart', 'comicCharacter', 'comicName', 'comicReady']} />
     {showEmptyBoard ? <ComicDayBoard onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} renameCharacterRef={renameCharacterRef}
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onRename={characterName => commit(updateComicDiary(library, diary!.id, { characterName }))}

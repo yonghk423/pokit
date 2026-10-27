@@ -1,3 +1,7 @@
+import ko from './messages/ko.json';
+import en from './messages/en.json';
+import ja from './messages/ja.json';
+import zhTW from './messages/zh-TW.json';
 import {
   resolveAppLocaleFromLanguageTag,
   SUPPORTED_APP_LOCALES,
@@ -15,5 +19,12 @@ describe('resolveAppLocaleFromLanguageTag', () => {
     expect(resolveAppLocaleFromLanguageTag('zh-HK')).toBe('zh-TW');
     expect(resolveAppLocaleFromLanguageTag('zh-CN')).toBe('en');
     expect(resolveAppLocaleFromLanguageTag('fr-FR')).toBe('en');
+  });
+
+  it('keeps the same keys in every locale catalog', () => {
+    const keys = Object.keys(ko).sort();
+    expect(Object.keys(en).sort()).toEqual(keys);
+    expect(Object.keys(ja).sort()).toEqual(keys);
+    expect(Object.keys(zhTW).sort()).toEqual(keys);
   });
 });

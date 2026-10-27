@@ -1,3 +1,4 @@
+import { FlatList, Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ComicCharacterChooser } from './HeroCharacterChooser';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -7,6 +8,7 @@ import { COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { loadComicCharacterName, saveComicCharacterName } from '../lib/heroCharacterName';
 
+jest.mock('@shared/ui/completion-radio-button', () => ({ CompletionRadioButton: jest.requireActual('react-native').Pressable }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
@@ -25,6 +27,8 @@ it('casts the chosen character, previews its scenes and starts it once after the
   const select = tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` })[0];
   act(() => { select.props.onPress(); });
   expect(tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` })[0].props.accessibilityState.selected).toBe(true);
+  const list = tree.root.findAllByProps({ testID: `comic-character-thumbnail-list-${character.id}` })[0];
+  expect(list.props.data.map((image: { id: string }) => image.id)).toEqual(['cover', ...character.scenes.map(scene => scene.id)]);
   const main = tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` })[0];
   expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:cover:960`);
   act(() => { tree.root.findAllByProps({ testID: `comic-character-thumbnail-${character.id}-${character.preview[0].id}` })[0].props.onPress(); });
@@ -110,4 +114,65 @@ it('cancels an unfinished start when the chooser unmounts', () => {
   act(() => { tree.unmount(); });
   act(() => { jest.advanceTimersByTime(1000); });
   expect(onStart).not.toHaveBeenCalled();
+});
+
+it('dismisses the keyboard on Done without starting or losing the typed name', () => {
+  const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
+  const onStart = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser requireExplicitChoice onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
+  act(() => { tree.root.findAllByProps({ testID: 'comic-character-name' })[0].props.onChangeText('새 이름'); });
+  act(() => { tree.root.findAllByProps({ testID: 'comic-character-name' })[0].props.onSubmitEditing(); });
+  expect(dismiss).toHaveBeenCalled();
+  expect(tree.root.findAllByProps({ testID: 'comic-character-name' })[0].props.value).toBe('새 이름');
+  expect(onStart).not.toHaveBeenCalled();
+  act(() => { tree.unmount(); });
+  dismiss.mockRestore();
+});
+
+it('reserves inline tutorial space below the cards instead of covering them', () => {
+  useServiceTutorial.setState({ active: true, mode: 'comic', step: 'comicCharacter', runId: 'inline-choice-guide' });
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser requireExplicitChoice onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
+  expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' }).length).toBeGreaterThan(0);
+  const stage = tree.root.findAllByProps({ testID: 'comic-character-casting' })[0];
+  expect(stage.findAllByProps({ testID: 'comic-character-inline-guide' })).toHaveLength(0);
+  act(() => { tree.unmount(); });
+});
+
+it('keeps artwork, character choices and guidance mounted when the keyboard opens', () => {
+  const callbacks = new Map<string, () => void>();
+  const addListener = Keyboard.addListener.bind(Keyboard);
+  const listen = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, callback) => {
+    callbacks.set(event, callback as () => void);
+    return addListener(event, callback);
+  });
+  const visible = jest.spyOn(Keyboard, 'isVisible').mockReturnValue(false);
+  useServiceTutorial.setState({ active: true, mode: 'comic', step: 'comicCharacter', runId: 'keyboard-preserves-ui' });
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser requireExplicitChoice onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
+  act(() => { (callbacks.get('keyboardWillShow') ?? callbacks.get('keyboardDidShow'))!(); });
+  expect(tree.root.findAllByProps({ testID: 'comic-character-content' })[0].props.scrollEnabled).toBe(true);
+  for (const character of COMIC_CHARACTERS) {
+    expect(tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` }).length).toBeGreaterThan(0);
+    expect(tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` }).length).toBeGreaterThan(0);
+  }
+  expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' }).length).toBeGreaterThan(0);
+  act(() => { (callbacks.get('keyboardWillHide') ?? callbacks.get('keyboardDidHide'))!(); });
+  expect(tree.root.findAllByProps({ testID: 'comic-character-content' })[0].props.scrollEnabled).toBe(false);
+  act(() => { tree.unmount(); });
+  listen.mockRestore(); visible.mockRestore();
+});
+
+it('renders virtualized thumbnail rails outside the keyboard scroll container', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
+  const content = tree.root.findAllByProps({ testID: 'comic-character-content' })[0];
+  expect(content.findAllByType(FlatList)).toHaveLength(0);
+  const viewport = tree.root.findAllByProps({ testID: 'comic-character-scroll-viewport' })[0];
+  expect(StyleSheet.flatten(viewport.props.style).overflow).toBe('hidden');
+  expect(viewport.findAllByProps({ testID: 'comic-character-content' }).length).toBeGreaterThan(0);
+  const overlay = viewport.findAllByProps({ testID: 'comic-character-thumbnail-overlay' })[0];
+  expect(overlay.findAllByType(FlatList)).toHaveLength(COMIC_CHARACTERS.length);
+  act(() => { tree.unmount(); });
 });

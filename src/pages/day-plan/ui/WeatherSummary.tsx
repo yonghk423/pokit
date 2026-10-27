@@ -7,10 +7,12 @@ import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-n
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { syncWeatherToWidget } from '../lib/weatherWidgetSync';
-import { selectWeatherOutfit } from '../lib/weatherOutfit';
+import { nextWeatherOutfit, selectWeatherOutfit, weatherOutfitCandidates } from '../lib/weatherOutfit';
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 const OPENWEATHER_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY?.trim();
 const CACHE_MS = 15 * 60 * 1000;
@@ -184,6 +186,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   const [report, setReport] = useState<WeatherReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
+  const [selectedOutfit, setSelectedOutfit] = useState<number | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const requestInFlight = useRef(false);
   const loadWeatherRef = useRef<(force?: boolean) => Promise<void>>(async () => undefined);
@@ -326,7 +329,18 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
       : locale.startsWith('en')
         ? weatherDetailCopy.en
         : weatherDetailCopy.ko;
-  const outfitIndex = selectWeatherOutfit(report);
+  const candidates = weatherOutfitCandidates(report);
+  const outfitIndex = selectedOutfit !== null && candidates.includes(selectedOutfit) ? selectedOutfit : candidates[0];
+  const openDetails = () => {
+    tapHaptic();
+    const key = 'pokit:weather-outfit-rotation:v1';
+    const history = localStorageClient.getJson<Record<string, number>>(key) ?? {};
+    const condition = String(selectWeatherOutfit(report));
+    const next = nextWeatherOutfit(report, history[condition]);
+    setSelectedOutfit(next);
+    localStorageClient.setJson(key, { ...history, [condition]: next });
+    setDetailsVisible(true);
+  };
   const label = report.city ? `${report.temperature}° · ${report.city}` : `${report.temperature}°`;
   const accessibilityLabel = report.description ? `${label}, ${report.description}` : label;
   const detailRows: [string, string | null][] = [
@@ -350,7 +364,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
-          onPress={() => setDetailsVisible(true)}
+          onPress={openDetails}
           style={styles.weatherButton}>
           <WeatherMark color={muted} />
           <ThemedText numberOfLines={1} style={[styles.weatherText, { color: ink }]}>{label}</ThemedText>

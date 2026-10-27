@@ -92,3 +92,16 @@ it('resolves bundled artwork before assigning the full-resolution cache key', ()
   act(() => { tree.unmount(); });
   resolve.mockRestore();
 });
+
+it('keeps chooser artwork covered until native display even when a previous mount was cached', () => {
+  let tree!: ReactTestRenderer;
+  const render = () => <ComicSceneImage showSkeletonOnMount source={{ uri: 'chooser-cached' }} imageKey="chooser-cached" style={{ width: 100, height: 80 }} />;
+  act(() => { tree = create(render()); });
+  act(() => { tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0].props.onDisplay(); });
+  act(() => { tree.unmount(); });
+  act(() => { tree = create(render()); });
+  expect(tree.root.findAllByProps({ testID: 'comic-image-skeleton' }).length).toBeGreaterThan(0);
+  act(() => { tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0].props.onDisplay(); });
+  expect(tree.root.findAllByProps({ testID: 'comic-image-skeleton' })).toHaveLength(0);
+  act(() => { tree.unmount(); });
+});

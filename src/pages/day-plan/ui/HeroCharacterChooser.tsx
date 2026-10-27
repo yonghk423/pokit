@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, BackHandler, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, useAnimatedValue, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Animated, BackHandler, Easing, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TouchableWithoutFeedback, useAnimatedValue, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
@@ -8,6 +8,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { SettingsPenFrame } from '../../settings/lib/settingsPen';
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
+import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
@@ -24,17 +25,16 @@ function useReducedMotion() {
   return reduced;
 }
 
-function CastingCard({ character, active, side, width, height, ink, paper, reduced, showPreviews, onSelect }: {
+function CastingCard({ character, active, side, width, height, ink, paper, reduced, artIndex, onSelect }: {
   character: ComicCharacter; active: boolean; side: number; width: number; height: number; ink: string; paper: string;
-  reduced: boolean; showPreviews: boolean; onSelect: () => void;
+  reduced: boolean; artIndex: number; onSelect: () => void;
 }) {
   const { t } = useTranslation();
-  const [artIndex, setArtIndex] = useState(0);
   const focus = useAnimatedValue(active ? 1 : 0);
   const press = useAnimatedValue(1);
   const artwork = [
     { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: t(character.name) },
-    ...character.preview.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
+    ...character.scenes.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
   ];
   const current = artwork[artIndex] ?? artwork[0];
   useEffect(() => {
@@ -47,8 +47,8 @@ function CastingCard({ character, active, side, width, height, ink, paper, reduc
     press.stopAnimation();
     Animated.timing(press, { toValue: value, duration: reduced ? 0 : 130, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
   };
-  return <><Animated.View pointerEvents="auto" style={[s.castingCard, {
-    width, height, marginLeft: -width / 2 - 22, zIndex: active ? 2 : 1, backgroundColor: paper,
+  return <Animated.View pointerEvents="auto" style={[s.castingCard, {
+    width, height, marginLeft: -width / 2, zIndex: active ? 2 : 1, backgroundColor: paper,
     opacity: focus.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }),
     transform: [
       { translateX: focus.interpolate({ inputRange: [0, 1], outputRange: [side * width * 0.49, side * width * 0.49] }) },
@@ -59,23 +59,57 @@ function CastingCard({ character, active, side, width, height, ink, paper, reduc
   }]}>
     <PaperGrain opacity={0.18} />
     <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} onPress={onSelect} onPressIn={() => pressTo(0.985)} onPressOut={() => pressTo(1)} style={s.mainArtwork}>
-      <ComicSceneImage imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
+      <ComicSceneImage showSkeletonOnMount imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
     </Pressable>
     <SettingsPenFrame color={ink} />
-  </Animated.View>
-    {showPreviews ? <View testID={`comic-character-thumbnails-${character.id}`} style={s.thumbnailRail}>
-      {artwork.map((image, index) => <Pressable key={image.id} testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: artIndex === index }} onPress={() => { tapHaptic('select'); setArtIndex(index); }} style={[s.thumbnail, { backgroundColor: paper }]}>
-        <ComicSceneImage imageKey={`${character.id}:${image.id}:thumb`} source={image.source} fallbackSource={image.fallback} contentFit="contain" style={s.cover} />
+  </Animated.View>;
+}
+
+
+function CharacterThumbnailRail({ character, artIndex, onChange, height, showPreviews, reduced, paper, ink }: {
+  character: ComicCharacter; artIndex: number; onChange: (index: number) => void; height: number;
+  showPreviews: boolean; reduced: boolean; paper: string; ink: string;
+}) {
+  const { t } = useTranslation();
+  const previews = useAnimatedValue(0);
+  const artwork = [
+    { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: t(character.name) },
+    ...character.scenes.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
+  ];
+  useEffect(() => {
+    previews.stopAnimation();
+    const animation = Animated.timing(previews, {
+      toValue: showPreviews ? 1 : 0, duration: reduced ? 0 : showPreviews ? 420 : 240,
+      easing: Easing.out(Easing.cubic), useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [showPreviews, reduced, previews]);
+  return (
+    <Animated.View testID={`comic-character-thumbnails-${character.id}`} pointerEvents={showPreviews ? 'auto' : 'none'} accessibilityElementsHidden={!showPreviews} importantForAccessibility={showPreviews ? 'auto' : 'no-hide-descendants'} style={[s.thumbnailRail, { opacity: previews, transform: [{ translateX: previews.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }, { scale: previews.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] }]}>
+      <FlatList testID={`comic-character-thumbnail-list-${character.id}`} data={artwork} keyExtractor={image => image.id} style={{ height: Math.max(88, height) }} contentContainerStyle={s.thumbnailContent} showsVerticalScrollIndicator nestedScrollEnabled initialNumToRender={4} maxToRenderPerBatch={4} windowSize={3} renderItem={({ item: image, index }) => <Pressable testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: artIndex === index }} onPress={() => { tapHaptic('select'); onChange(index); }} style={[s.thumbnail, { backgroundColor: paper }]}>
+        <ComicSceneImage showSkeletonOnMount imageKey={`${character.id}:${image.id}:thumb`} source={image.source} fallbackSource={image.fallback} contentFit="contain" style={s.cover} />
         {artIndex === index ? <SettingsPenFrame color={ink} /> : null}
-      </Pressable>)}
-    </View> : null}
-  </>;
+      </Pressable>} />
+    </Animated.View>
+  );
 }
 
 export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false }: { requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
   const { t } = useTranslation();
   const viewport = useWindowDimensions();
   const reduced = useReducedMotion();
+  const layoutRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const stageRef = useRef<View>(null);
+  const scrollOffset = useRef(0);
+  const [stageTop, setStageTop] = useState(0);
+  const scrollY = useAnimatedValue(0);
+  // eslint-disable-next-line react-hooks/refs -- This listener runs on native scroll events, never during render.
+  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => { scrollOffset.current = event.nativeEvent.contentOffset.y; } });
+  const [artIndices, setArtIndices] = useState<Record<string, number>>({});
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
   const [layoutHeight, setLayoutHeight] = useState<number | null>(null);
   const [stageSize, setStageSize] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<ComicCharacter | null>(requireExplicitChoice ? null : COMIC_CHARACTERS[0]);
@@ -97,12 +131,15 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   // The shell already uses space for its header and tabs. Size the artwork from
   // the remaining flex slot, rather than from the full device window.
   const compact = (layoutHeight ?? viewport.height) < 640;
-  const tight = (layoutHeight ?? viewport.height) < 430;
-  const tightEditing = tight && (editing !== null || requireExplicitChoice);
-  const artworkHeight = Math.max(0, Math.min(380, (stageSize?.height ?? 200) - 62, ((stageSize?.width ?? viewport.width - 48) - 64) / 2.15 / 0.75));
+  const artworkHeight = Math.max(100, Math.min(380, (stageSize?.height ?? 200) - 62, ((stageSize?.width ?? viewport.width - 48) - 24) / 2.15 / 0.75));
   const artworkWidth = artworkHeight * 0.75;
   const canStart = Boolean(selected && (!requireExplicitChoice || names[selected.id]?.trim()));
 
+  useEffect(() => {
+    const shown = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardVisible(true));
+    const hidden = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardVisible(false));
+    return () => { shown.remove(); hidden.remove(); };
+  }, []);
   useEffect(() => {
     alive.current = true;
     return () => { alive.current = false; exit.stopAnimation(); };
@@ -160,6 +197,7 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
     if (!editing) return;
     const name = draft.trim().slice(0, 24);
     if (!name) return;
+    Keyboard.dismiss();
     setNames(current => ({ ...current, [editing]: name }));
     setEditing(null);
   };
@@ -185,9 +223,11 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   };
 
   return <ServiceTutorialTarget steps={requireExplicitChoice ? ['comicCharacter', 'comicName', 'comicReady'] : []} spotlight={false} style={s.root}>
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View testID="comic-character-layout" style={s.layout} onLayout={({ nativeEvent: { layout } }) => { if (layout.height > 0) setLayoutHeight(previous => previous === layout.height ? previous : layout.height); }}>
-      <View style={[s.content, compact && s.contentCompact]}>
+    <TouchableWithoutFeedback accessible={false} onPress={Keyboard.dismiss}>
+    <KeyboardAvoidingView style={s.root} keyboardVerticalOffset={keyboardOffset} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View ref={layoutRef} testID="comic-character-layout" style={s.layout} onLayout={({ nativeEvent: { layout } }) => { layoutRef.current?.measureInWindow((_x, y) => setKeyboardOffset(previous => previous === y ? previous : y)); if (layout.height > 0) setLayoutHeight(previous => previous === layout.height ? previous : layout.height); }}>
+      <View testID="comic-character-scroll-viewport" style={s.scrollViewport}>
+      <Animated.ScrollView ref={scrollRef} testID="comic-character-content" scrollEventThrottle={16} onScroll={onScroll} scrollEnabled={keyboardVisible} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false} style={[s.content, compact && s.contentCompact]} contentContainerStyle={[s.scrollContent, keyboardVisible && s.keyboardContent]} onContentSizeChange={() => { if (keyboardVisible) scrollRef.current?.scrollToEnd({ animated: true }); }}>
         <Animated.View pointerEvents={starting ? 'none' : 'auto'} style={[s.body, { opacity: exit.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1, 0] }) }]}>
           {onClose ? <View style={[s.heading, compact && s.headingCompact]}>
             <View style={s.titleRow}>
@@ -196,44 +236,44 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
               </Pressable> : null}
             </View>
           </View> : null}
-          <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={s.spotlight}>
-            <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
-              {artworkHeight >= 100 && !tightEditing ? COMIC_CHARACTERS.map((character, index) => <CastingCard key={character.id} side={index === 0 ? -1 : 1} character={character} active={focused.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
-                showPreviews={previewCharacter === character.id} onSelect={() => choose(character)} />) : null}
+          <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
+            <Animated.View ref={stageRef} testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { stageRef.current?.measureLayout(layoutRef.current!, (_x, y) => setStageTop(y + scrollOffset.current), () => undefined); setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
+              {artworkHeight >= 100 ? COMIC_CHARACTERS.map((character, index) => <CastingCard key={character.id} side={index === 0 ? -1 : 1} character={character} active={focused.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
+                artIndex={artIndices[character.id] ?? 0} onSelect={() => choose(character)} />) : null}
             </Animated.View>
           </ServiceTutorialTarget>
+          {requireExplicitChoice ? <ServiceTutorialCoach inline characterChoosing steps={['comicStart', 'comicCharacter', 'comicName', 'comicReady']} /> : null}
           <Animated.View style={[s.caption, { opacity: caption, transform: [{ translateY: caption.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }] }]}>
             {requireExplicitChoice ? <ServiceTutorialTarget steps={selected ? ['comicName'] : []} style={s.nameBox}>
-              <ThemedTextInput testID="comic-character-name" accessibilityLabel={t('comicDay.character.nameHint')} placeholder={t('comicDay.character.nameHint')} placeholderTextColor={muted} value={names[focused.id] ?? ''} maxLength={24} autoCorrect={false} returnKeyType="done" onFocus={() => choose(focused)} onChangeText={updateTutorialName} editable={!starting} style={[s.nameInput, { color: ink, borderColor: muted }]} />
+              <ThemedTextInput testID="comic-character-name" accessibilityLabel={t('comicDay.character.nameHint')} placeholder={t('comicDay.character.nameHint')} placeholderTextColor={muted} value={names[focused.id] ?? ''} maxLength={24} autoCorrect={false} returnKeyType="done" onFocus={() => choose(focused)} onChangeText={updateTutorialName} submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} editable={!starting} style={[s.nameInput, { color: ink, borderColor: muted }]} />
             </ServiceTutorialTarget> : editing === focused.id ? <View style={s.nameBox}>
-              <ThemedTextInput accessibilityLabel={t('comicDay.character.rename')} value={draft} onChangeText={setDraft} maxLength={24} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={saveName} style={[s.nameInput, { color: ink, borderColor: muted }]} />
+              <ThemedTextInput accessibilityLabel={t('comicDay.character.rename')} value={draft} onChangeText={setDraft} maxLength={24} autoFocus selectTextOnFocus returnKeyType="done" submitBehavior="blurAndSubmit" onSubmitEditing={saveName} style={[s.nameInput, { color: ink, borderColor: muted }]} />
               <View style={s.editActions}>
-                <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); setEditing(null); }} style={s.editButton}><ThemedText style={{ color: muted }}>{t('common.cancel')}</ThemedText></Pressable>
+                <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); Keyboard.dismiss(); setEditing(null); }} style={s.editButton}><ThemedText style={{ color: muted }}>{t('common.cancel')}</ThemedText></Pressable>
                 <Pressable accessibilityRole="button" disabled={!draft.trim()} accessibilityState={{ disabled: !draft.trim() }} onPress={() => { tapHaptic('confirm'); saveName(); }} style={[s.editButton, { opacity: draft.trim() ? 1 : 0.4 }]}><ThemedText style={{ color: ink }}>{t('common.save')}</ThemedText></Pressable>
               </View>
             </View> : <ThemedText testID="comic-character-selected-name" numberOfLines={1} style={[s.name, { color: ink }]}>{focusedName}</ThemedText>}
-            {!tightEditing ? <View style={s.descriptionRow}>
-            <ThemedText numberOfLines={1} style={[s.description, { color: muted }]}>{t(focused.description)}</ThemedText>
-            <View accessible accessibilityLabel={t('comicDay.sceneCount', { count: focused.scenes.length })} style={s.countIcon}>
-              <Svg width={24} height={22} viewBox="0 0 26 22" accessible={false}><Path d="M7 2.5L22.5 3.5L21.4 18.5L6.2 17.4Z M4.2 5L19.7 6L18.6 21L3.4 19.8Z M8.3 7.8L15.7 8.3M8 10.7L14.3 11.1M7.7 13.5L12.4 13.8" fill="none" stroke={muted} strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" /></Svg>
-            </View>
-            </View> : null}
+
           </Animated.View>
-          {!tightEditing ? <View style={[s.characters, compact && s.charactersCompact]}>
+          <View style={[s.characters, compact && s.charactersCompact]}>
             {COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`comic-character-select-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: names[character.id] ?? t(character.name) })} accessibilityState={{ selected: selected?.id === character.id, disabled: starting }} disabled={starting} onPress={() => choose(character)} style={s.characterOption}>
               <View style={[s.portrait, { backgroundColor: cardPaper }]}>
-                <ComicSceneImage imageKey={`${character.id}:cover:960`} source={character.cover} fallbackSource={character.preview[0].source} contentFit="cover" contentPosition="top" style={s.portraitImage} />
+                <ComicSceneImage showSkeletonOnMount imageKey={`${character.id}:cover:960`} source={character.cover} fallbackSource={character.preview[0].source} contentFit="cover" contentPosition="top" style={s.portraitImage} />
                 {selected?.id === character.id ? <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={48} height={48} viewBox="0 0 58 58" accessible={false}><Path d="M29 2C44 1.5 56 13 55.5 29C56 44 44 56 29 55.5C13.5 56 2 44 2.5 29C2 13.5 14 2 29 2Z" fill="none" stroke={ink} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" /></Svg> : null}
               </View>
               <ThemedText numberOfLines={2} style={[s.optionName, { color: ink, textDecorationLine: selected?.id === character.id ? 'underline' : 'none' }]}>{names[character.id] ?? t(character.name)}</ThemedText>
             </Pressable>)}
-          </View> : null}
+          </View>
           {!requireExplicitChoice && editing === null ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} disabled={starting} onPress={editName} style={s.renameButton}>
             <ThemedText style={[s.renameLabel, { color: muted }]}>{t('comicDay.character.rename')}</ThemedText>
             <Svg width={17} height={17} viewBox="0 0 24 24" accessible={false}><Path d="M4 16L16.5 3.5L20.5 7.5L8 20L3 21Z M14.5 5.5L18.5 9.5 M4 16L8 20" fill="none" stroke={muted} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" /></Svg>
           </Pressable> : null}
           {!compact ? <View style={s.upcoming}><ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.new')} · {t('comicDay.character.soon')}</ThemedText></View> : null}
         </Animated.View>
+      </Animated.ScrollView>
+      <Animated.View pointerEvents={starting ? 'none' : 'box-none'} testID="comic-character-thumbnail-overlay" style={{ position: 'absolute', left: 24, right: 24, top: stageTop, transform: [{ translateY: Animated.multiply(scrollY, -1) }], height: stageSize?.height ?? 200, overflow: 'hidden', zIndex: 5 }}>
+        {COMIC_CHARACTERS.map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} height={artworkHeight} showPreviews={previewCharacter === character.id} reduced={reduced} paper={cardPaper} ink={ink} />)}
+      </Animated.View>
       </View>
       <View style={s.footer}>
         <ServiceTutorialTarget steps={requireExplicitChoice && canStart ? ['comicReady'] : []}>
@@ -246,17 +286,20 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
       </View>
       </View>
     </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   </ServiceTutorialTarget>;
 }
 
 const s = StyleSheet.create({
   root: { flex: 1, minHeight: 0 }, layout: { flex: 1, minHeight: 0 }, content: { flex: 1, minHeight: 0, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 }, contentCompact: { paddingTop: 6, paddingBottom: 4 }, body: { flex: 1, minHeight: 0, width: '100%', maxWidth: 520, alignSelf: 'center' },
   heading: { marginBottom: 12, flexShrink: 0 }, headingCompact: { marginBottom: 6 }, titleRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }, closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  scrollViewport: { flex: 1, minHeight: 0, overflow: 'hidden' },
+  scrollContent: { flexGrow: 1 }, keyboardContent: { minHeight: 640 }, keyboardStage: { minHeight: 180 },
   spotlight: { flex: 1, minHeight: 0, alignSelf: 'stretch' }, stage: { flex: 1, minHeight: 0, width: '100%', alignSelf: 'center', overflow: 'hidden' },
   castingCard: { position: 'absolute', left: '50%', top: 8, padding: 7, borderRadius: 6, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.16, elevation: 3 },
   mainArtwork: { flex: 1, borderRadius: 3, overflow: 'hidden' }, cover: { width: '100%', height: '100%' },
-  thumbnailRail: { position: 'absolute', right: 0, top: 8, gap: 4, zIndex: 4 }, thumbnail: { width: 40, height: 44, padding: 3, borderRadius: 3, overflow: 'hidden' },
-  caption: { alignItems: 'center', gap: 3, flexShrink: 0 }, name: { fontSize: 24, lineHeight: 30, textAlign: 'center' }, descriptionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, description: { fontSize: 14, lineHeight: 20, textAlign: 'center', flexShrink: 1 }, countIcon: { justifyContent: 'center' },
+  thumbnailRail: { position: 'absolute', width: 44, right: 8, top: 16, zIndex: 4, shadowColor: '#242820', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 }, thumbnailContent: { gap: 6, paddingBottom: 4 }, thumbnail: { width: 40, height: 44, padding: 3, borderRadius: 3, overflow: 'hidden' },
+  caption: { alignItems: 'center', gap: 3, flexShrink: 0 }, name: { fontSize: 24, lineHeight: 30, textAlign: 'center' },
   nameBox: { width: '100%', maxWidth: 320 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 46, borderBottomWidth: 0.6 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 16 }, editButton: { minWidth: 56, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   characters: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 18, marginTop: 12, flexShrink: 0 }, charactersCompact: { marginTop: 6 }, characterOption: { alignItems: 'center', paddingHorizontal: 6, paddingVertical: 4, gap: 4, maxWidth: 130, minWidth: 88, minHeight: 76 },
   portrait: { padding: 5, width: 48, height: 48, borderRadius: 24 }, portraitImage: { flex: 1, borderRadius: 19 }, optionName: { fontSize: 15, lineHeight: 20, textAlign: 'center' },

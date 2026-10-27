@@ -208,7 +208,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
       <View style={s.deckStage}>
         <ComicSceneDeck detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
       </View>
-      <ServiceTutorialTarget steps={showCards ? ['comicStart'] : []} style={s.deckAdd}><SketchPaperButton iconOnly label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget>
+      <ServiceTutorialTarget steps={showCards ? ['comicStart'] : []} style={s.deckAdd}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget>
     </Animated.View> : null}
     <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1 }, gridVisibility]}>
   <GestureDetector gesture={gridGesture}><ScrollView ref={gridScrollRef} scrollEnabled={!showCards} testID="comic-card-overview" onScrollBeginDrag={() => setMenuOpen(false)} onScroll={event => { gridOffsetRef.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[s.board, { flexGrow: 1 }]}>

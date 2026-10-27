@@ -6,8 +6,8 @@ import { setTutorialHole } from '@shared/ui/tutorial-guide-layer';
 
 export const MATE_GUIDE_HEIGHT = 156;
 /** Touch-through guide artwork. The layer positions it without changing service layout. */
-export function MateTutorialGuide({ text, progress, later, onPause, end, onEnd, thinking = false }: {
-  text: string; progress: string; later: string; onPause: () => void; end?: string; onEnd?: () => void; thinking?: boolean;
+export function MateTutorialGuide({ text, progress, later, onPause, end, onEnd, thinking = false, compact = false }: {
+  text: string; progress: string; later: string; onPause: () => void; end?: string; onEnd?: () => void; thinking?: boolean; compact?: boolean;
 }) {
   const [bubbleSize, setBubbleSize] = useState({ width: 0, height: 0 });
   const [keyboard, setKeyboard] = useState(false);
@@ -47,12 +47,12 @@ export function MateTutorialGuide({ text, progress, later, onPause, end, onEnd, 
     const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', start);
     return () => { live = false; motion?.stop(); subscription.remove(); };
   }, [breath]);
-  return <View ref={row} collapsable={false} pointerEvents="box-none" testID="mate-tutorial-guide" style={[s.row, keyboard && s.compact]}>
-    <View collapsable={false} pointerEvents="auto" style={[s.bubble, keyboard && { paddingTop: 12, paddingBottom: 10 }]} onLayout={event => { const { width, height } = event.nativeEvent.layout; setBubbleSize(prior => prior.width === width && prior.height === height ? prior : { width, height }); }}>
+  return <View ref={row} collapsable={false} pointerEvents="box-none" testID="mate-tutorial-guide" style={[s.row, (keyboard || compact) && s.compact, compact && { minHeight: 112 }]}>
+    <View collapsable={false} pointerEvents="auto" style={[s.bubble, (keyboard || compact) && { paddingTop: 10, paddingBottom: 8, paddingLeft: 20, paddingRight: 26 }]} onLayout={event => { const { width, height } = event.nativeEvent.layout; setBubbleSize(prior => prior.width === width && prior.height === height ? prior : { width, height }); }}>
       <Svg pointerEvents="none" width={bubbleSize.width} height={bubbleSize.height} viewBox="0 0 260 140" preserveAspectRatio="none" style={StyleSheet.absoluteFill} accessible={false}>
         <Path d="M128 3 C191 1 235 17 238 61 C240 74 247 82 256 87 C246 90 241 87 236 85 C228 125 186 137 126 136 C58 137 4 120 3 71 C1 25 53 3 128 3 Z" fill="#FCFAF3" fillOpacity={0.65} stroke="#292C2A" strokeWidth={1.15} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
-      <Text pointerEvents="none" accessibilityLiveRegion="polite" style={[s.words, keyboard && { fontSize: 14, lineHeight: 20 }]}>{text}</Text>
+      <Text pointerEvents="none" accessibilityLiveRegion="polite" style={[s.words, (keyboard || compact) && { fontSize: 14, lineHeight: 20 }]}>{text}</Text>
       <View collapsable={false} style={s.footer}>
         <Text pointerEvents="none" accessibilityLabel={progress} style={s.meta}>{progress}</Text>
         <View collapsable={false} style={s.actions}>
@@ -61,7 +61,7 @@ export function MateTutorialGuide({ text, progress, later, onPause, end, onEnd, 
         </View>
       </View>
     </View>
-    <Animated.View pointerEvents="none" style={[s.character, keyboard && { width: 68 }, { transform: [{ translateY: breath.interpolate({ inputRange: [0, 1], outputRange: [0, -1.5] }) }] }]}>
+    <Animated.View pointerEvents="none" style={[s.character, (keyboard || compact) && { width: 60, height: 96 }, { transform: [{ translateY: breath.interpolate({ inputRange: [0, 1], outputRange: [0, -1.5] }) }] }]}>
       <Image source={thinking ? require('../../../../assets/tutorial-guide/thinking.webp') : require('../../../../assets/tutorial-guide/neutral-coffee.webp')} resizeMode="contain" style={s.image} accessible={false} />
     </Animated.View>
   </View>;

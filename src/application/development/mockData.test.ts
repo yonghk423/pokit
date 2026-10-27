@@ -2,7 +2,7 @@ import { buildMockDiaries, buildMockMates, ensureDevelopmentMockData } from './m
 import { localStorageClient, setDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { normalizeComicScenes } from '@pages/day-plan/lib/heroDayStorage';
 import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
-import { loadDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
+import { loadDayPlanDraft, saveDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
 import { loadRoutineCatalogSelectionKeys } from '@shared/lib/storage/priorityCatalogFixedRoutinesStorage';
 import { loadGoalDetailCategoryConfig } from '@shared/lib/storage/goalDetailSettingsStorage';
 import { type AppLocale } from '@shared/lib/i18n';
@@ -35,9 +35,10 @@ it('seeds only the active sandbox, makes the mates visible, and preserves edits 
   expect(keys).toHaveLength(8);
   expect(loadRoutineCatalogSelectionKeys()).toEqual(keys);
   expect(loadGoalDetailCategoryConfig(keys[0])).toBeTruthy();
-  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { edited: true });
+  const edited = { ...library, diaries: library.diaries.map(diary => ({ ...diary, title: 'My edited title' })) };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, edited);
   expect(ensureDevelopmentMockData(false, '2026-10-26')).toBe(false);
-  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ edited: true });
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual(edited);
   setDevelopmentStorageProfile(null);
   expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ personal: true });
   expect(ensureDevelopmentMockData(true, '2026-10-26')).toBe(false);
@@ -62,4 +63,22 @@ it.each<AppLocale>(['ko', 'en', 'ja'])('adds the bookstore to an existing %s moc
   expect(updated.diaries.slice(1)).toEqual(library.diaries.slice(1));
   expect(loadDayPlanDraft()).toEqual(draft);
   expect(ensureDevelopmentMockData(false, '2026-10-26')).toBe(false);
+});
+
+it.each(['empty', 'missing'])('repairs a %s mock diary library even when the seed marker is current, without resetting mate edits', missing => {
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { personal: true });
+  setDevelopmentStorageProfile('ko');
+  ensureDevelopmentMockData(true, '2026-10-27');
+  const draft = { ...loadDayPlanDraft()!, quickMemoDraft: 'Keep my edited mock memo' };
+  saveDayPlanDraft(draft);
+  if (missing === 'empty') localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [], activeId: null, migratedLegacyKeys: [] });
+  else localStorageClient.removeItem(COMIC_DIARY_STORAGE_KEY);
+  expect(ensureDevelopmentMockData(false, '2026-10-27')).toBe(true);
+  const restored = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(restored.diaries).toHaveLength(3);
+  expect(restored.activeId).toBe(restored.diaries[0].id);
+  expect(loadDayPlanDraft()).toEqual(draft);
+  expect(ensureDevelopmentMockData(false, '2026-10-27')).toBe(false);
+  setDevelopmentStorageProfile(null);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ personal: true });
 });

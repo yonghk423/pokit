@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import Svg, { Path } from 'react-native-svg';
+import { PenFrame, penContour } from '@shared/ui/pen-frame';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -21,10 +22,12 @@ export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize =
       <View pointerEvents="none" style={s.shadow} />
       <View style={[s.face, iconOnly && s.iconFace]}>
         <PaperGrain opacity={0.25} />
-        <HanddrawnFrame color={strongFrame ? '#292B27' : FRAME} bold={strongFrame} />
-        {strongFrame ? <HanddrawnFrame color="#292B27" bold /> : null}
+        {strongFrame ? <PenFrame color={ink} /> : <HanddrawnFrame color={FRAME} />}
         <Svg width={iconOnly ? 22 : 17} height={iconOnly ? 22 : 18} viewBox="0 0 20 20" accessible={false}>
-          <Path d="M3.1 10.4Q9.9 9.8 16.7 10.1M10.2 3L9.8 17M4.2 9.5L15.7 9.4M9.3 4L9.1 15.5" fill="none" stroke={ink} strokeWidth={0.9} strokeLinecap="round" />
+          {strongFrame ? <>
+            <Path d={penContour([[3.2, 10.2], [7, 9.9], [12, 10.1], [16.8, 9.8]], 1.9, 0.4)} fill={ink} />
+            <Path d={penContour([[10.3, 3], [10, 7], [10.2, 12], [9.8, 17]], 2.1, 1.6)} fill={ink} />
+          </> : <Path d="M3.1 10.4Q9.9 9.8 16.7 10.1M10.2 3L9.8 17M4.2 9.5L15.7 9.4M9.3 4L9.1 15.5" fill="none" stroke={ink} strokeWidth={0.9} strokeLinecap="round" />}
         </Svg>
         {iconOnly ? null : <ThemedText style={{ color: ink, fontSize: labelSize, lineHeight: labelSize + 8, flexShrink: 1, textAlign: 'center' }}>{label}</ThemedText>}
       </View>

@@ -12,7 +12,7 @@ import { useServiceTutorial, tutorialStepProgress, type ServiceStep } from '../m
 import { tutorialCopy } from '../lib/tutorialCopy';
 /** The guide waits until the destination screen has finished appearing. */
 let settledRunId: string | null = null;
-export function ServiceTutorialCoach({ steps, scenePicker = false, characterChoosing = false, onSkip, onSkipStep, onEnd }: { steps: ServiceStep[]; scenePicker?: boolean; characterChoosing?: boolean; onSkip?: () => void; onSkipStep?: () => void; onEnd?: () => void }) {
+export function ServiceTutorialCoach({ steps, scenePicker = false, characterChoosing = false, inline = false, onSkip, onSkipStep, onEnd }: { steps: ServiceStep[]; scenePicker?: boolean; characterChoosing?: boolean; inline?: boolean; onSkip?: () => void; onSkipStep?: () => void; onEnd?: () => void }) {
   const state = useServiceTutorial();
   const { locale } = useTranslation(); const c = tutorialCopy(locale); const router = useRouter();
   const hasComicSteps = steps.some(step => step.startsWith('comic'));
@@ -139,14 +139,15 @@ export function ServiceTutorialCoach({ steps, scenePicker = false, characterChoo
       </View></>;
   }, [guideHeight, guideText, progress, c.skip, c.endConfirm, state.step, state.mode, skipToNext, endTutorial]);
   useEffect(() => {
-    if (!present || success || state.step === 'finish' || !layer) {
+    if (inline || !present || success || state.step === 'finish' || !layer) {
       layer?.hide(guideId);
       return;
     }
     layer.show({ id: guideId, render: renderGuide });
     return () => layer.hide(guideId);
-  }, [present, success, state.step, state.mode, layer, guideId, renderGuide]);
+  }, [inline, present, success, state.step, state.mode, layer, guideId, renderGuide]);
   if (!visible) return null;
+  if (inline) return <View testID="comic-character-inline-guide" style={{ minHeight: 112 }}>{present ? <MateTutorialGuide compact text={state.step === 'comicStart' || state.step === 'comicCharacter' ? (ko ? '함께할 주인공의 사진을 골라주세요. 아래에 이름을 적고 시작하기를 누르면 나의 이야기가 시작돼요.' : ja ? '一緒に過ごす主人公の写真を選びましょう。下に名前を書いて開始を押すと、あなたの物語が始まります。' : zh ? '選一張喜歡的主角照片，在下面寫下名字，再按開始，就能展開你的故事。' : 'Choose a photo for your character, enter their name below, then press Start to begin your story.') : state.step === 'comicName' ? (ko ? '주인공에게 어울리는 이름을 적어주세요. 입력을 마치면 키보드의 완료를 눌러주세요.' : ja ? '主人公にぴったりの名前を書いて、キーボードの完了を押しましょう。' : zh ? '替主角取個名字，輸入後按鍵盤上的完成。' : 'Give your character a name, then tap Done on the keyboard.') : state.step === 'comicReady' ? (ko ? '이제 준비됐어요. 아래 시작하기를 눌러 오늘의 이야기에 담을 장면을 골라보세요.' : ja ? '準備ができました。下の開始を押して、今日の物語に残す場面を選びましょう。' : zh ? '準備好了，按下面的開始，挑選今天故事裡的場景。' : 'You’re ready. Press Start below to choose the scenes for today’s story.') : instruction} progress={progress} later={c.skip} end={c.endConfirm} onEnd={endTutorial} onPause={skipToNext} /> : null}</View>;
   if (success) return <TutorialCompletion mode={state.mode} completedCount={new Set([...state.completed, state.mode]).size} onComplete={finishCelebration} />;
 
   if (state.step === 'finish') return <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/welcome-intro', params: { outro: '1' } })}><ThemedText>{c.start}</ThemedText></Pressable>;

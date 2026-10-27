@@ -7,6 +7,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
   onReady?: () => void;
+  showSkeletonOnMount?: boolean;
   source: ImageProps['source']; fallbackSource?: ImageProps['source']; imageKey: string;
   style: StyleProp<ViewStyle>; priority?: ImageProps['priority']; contentFit?: ImageProps['contentFit']; contentPosition?: ImageProps['contentPosition']; backgroundColor?: string;
 };
@@ -28,9 +29,9 @@ const shownImageKeys = new Set<string>();
 export function ComicSceneImage(props: Props) {
   return <ComicImageSession key={props.imageKey} {...props} />;
 }
-function ComicImageSession({ source, fallbackSource, imageKey, style, priority = 'normal', contentFit = 'contain', contentPosition, backgroundColor = '#F5E8CF', onReady }: Props) {
+function ComicImageSession({ source, fallbackSource, imageKey, style, priority = 'normal', contentFit = 'contain', contentPosition, backgroundColor = '#F5E8CF', onReady, showSkeletonOnMount = false }: Props) {
   const { t } = useTranslation();
-  const [displayed, setDisplayed] = useState<string | null>(() => shownImageKeys.has(imageKey) ? `${imageKey}:0:0` : null);
+  const [displayed, setDisplayed] = useState<string | null>(() => !showSkeletonOnMount && shownImageKeys.has(imageKey) ? `${imageKey}:0:0` : null);
   const [failed, setFailed] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [reload, setReload] = useState(0);

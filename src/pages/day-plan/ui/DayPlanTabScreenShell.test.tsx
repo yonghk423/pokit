@@ -14,7 +14,11 @@ jest.mock('@shared/lib/i18n/hooks/useTranslation', () => ({ useTranslation: () =
 jest.mock('@shared/ui/handdrawn-frame', () => ({ HanddrawnFrame: () => null }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/header-icon', () => ({ HeaderIcon: () => null }));
-jest.mock('./WeatherSummary', () => ({ WeatherSummary: () => null }));
+jest.mock('./WeatherSummary', () => ({ WeatherSummary: () => {
+  const { useTutorialGuideLayer } = jest.requireActual('@shared/ui/tutorial-guide-layer');
+  const NativeView = jest.requireActual('react-native').View;
+  return <NativeView testID="weather-guide-owner" guideOwner={useTutorialGuideLayer()} />;
+} }));
 jest.mock('./SettingsTopBarButton', () => ({ SettingsTopBarButton: () => {
   const NativeView = jest.requireActual('react-native').View;
   return <NativeView testID="fixed-settings" />;
@@ -83,3 +87,4 @@ it.each(['day-plan', 'comic-day'])('keeps %s header ownership while another tab 
   act(() => { tree.unmount(); });
   mockSegments = ['(tabs)', 'day-plan'];
 });
+

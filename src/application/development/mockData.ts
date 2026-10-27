@@ -97,7 +97,16 @@ export function ensureDevelopmentMockData(force = false, date = getLocalDateKey(
   const locale = getDevelopmentStorageProfile();
   if (!locale) return false;
   const version = `${MOCK_DATA_VERSION}:${date}`;
-  if (!force && localStorageClient.getItemRaw(SEED_KEY) === version) return addBookstoreToExistingMock(locale);
+  if (!force && localStorageClient.getItemRaw(SEED_KEY) === version) {
+    const existing = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY);
+    if (Array.isArray(existing?.diaries) && existing.diaries.length > 0) return addBookstoreToExistingMock(locale);
+    // The seed marker can survive a deleted/empty library. Repair only the
+    // missing diary preview, preserving edits to mates and other mock records.
+    const diaries = buildMockDiaries(locale, date);
+    localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, diaries);
+    localStorageClient.setJson('pokit:comic-navigation', { characterId: 'protagonist-1', screen: 'board', diaryId: diaries.activeId });
+    return true;
+  }
   const diaries = buildMockDiaries(locale, date);
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, diaries);
   localStorageClient.setJson('pokit:comic-navigation', { characterId: 'protagonist-1', screen: 'board', diaryId: diaries.activeId });

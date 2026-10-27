@@ -1,11 +1,46 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, InteractionManager, Modal, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, InteractionManager, Modal, Platform, StyleSheet, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@shared/lib/i18n';
-import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import type { ServiceMode } from '../model/serviceTutorial';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function PenCheckMark({ size, animate }: { size: number; animate: boolean }) {
+  const [progress] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    let live = true;
+    let motion: Animated.CompositeAnimation | undefined;
+    if (!animate) { progress.setValue(0); return; }
+    const start = (reduce: boolean) => {
+      if (!live) return;
+      progress.setValue(reduce ? 1 : 0);
+      if (reduce) return;
+      motion = Animated.sequence([
+        Animated.timing(progress, { toValue: 0.46, duration: 360, easing: Easing.out(Easing.quad), useNativeDriver: false }),
+        Animated.timing(progress, { toValue: 1, duration: 390, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+      ]);
+      motion.start();
+    };
+    void AccessibilityInfo.isReduceMotionEnabled().then(start, () => start(false));
+    return () => { live = false; motion?.stop(); };
+  }, [animate, progress]);
+  const ringOffset = progress.interpolate({ inputRange: [0, 0.46, 1], outputRange: [176, 0, 0] });
+  const checkOffset = progress.interpolate({ inputRange: [0, 0.46, 1], outputRange: [44, 44, 0] });
+  const scale = progress.interpolate({ inputRange: [0, 0.46, 1], outputRange: [0.88, 0.96, 1] });
+  return <Animated.View testID="tutorial-completion-pen-check" style={{ width: size, height: size, transform: [{ scale }] }}>
+    <Svg width={size} height={size} viewBox="0 0 64 64" accessible={false}>
+      <AnimatedCircle cx="32" cy="32" r="27.5" fill="#ECE9E1" stroke="#62645F" strokeWidth="4.2" strokeDasharray="176" strokeDashoffset={ringOffset} />
+      <Path d="M10 22 C12 14 18 9 25 7" fill="none" stroke="#A5A198" strokeWidth="1.3" strokeLinecap="round" />
+      <Path d="M39 57 C47 55 53 50 56 43" fill="none" stroke="#A5A198" strokeWidth="1.3" strokeLinecap="round" />
+      <AnimatedPath d="M19 33 C22 35 27 41 29 44 C35 35 42 25 49 19" fill="none" stroke="#202A35" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="44" strokeDashoffset={checkOffset as unknown as number} />
+    </Svg>
+  </Animated.View>;
+}
 
 /** Two quiet completion beats over the real service, before introducing the tray tool or finishing. */
 export function TutorialCompletion({ mode, completedCount, onComplete }: {
@@ -46,6 +81,9 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
   // so the next step only starts once the Modal has actually dismissed.
   useEffect(() => {
     if (!closing) return;
+    // A presented iOS modal owns native touch routing until onDismiss fires.
+    // A timer must never unmount its presenter while dismissal is still running.
+    if (presented && Platform.OS === 'ios') return;
     const fallback = setTimeout(complete, presented ? 700 : 0);
     return () => clearTimeout(fallback);
   }, [closing, presented, complete]);
@@ -81,7 +119,7 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
       }]}>
         <PaperGrain opacity={0.24} />
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <CompletionRadioButton checked isDark={false} appearance="ink" size={64} accessibilityLabel="" onPress={() => undefined} />
+          <PenCheckMark size={64} animate={presented} />
         </View>
         <ThemedText accessibilityRole="header" style={s.title}>{title}</ThemedText>
         <ThemedText style={s.body}>{body}</ThemedText>
@@ -94,7 +132,7 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
           <View style={s.illustration}>
             <Image source={require('../../../../assets/tutorial-guide/celebrate.webp')} style={s.image} resizeMode="contain" />
             <View pointerEvents="none" style={s.badge} accessibilityElementsHidden>
-              <CompletionRadioButton checked isDark={false} appearance="ink" size={32} accessibilityLabel="" onPress={() => undefined} />
+              <PenCheckMark size={32} animate={presented} />
             </View>
           </View>
           <ThemedText style={s.bridgeTitle}>{ko ? '좋아요, 하나 해냈어요.' : ja ? 'いいですね、ひとつできました。' : 'You did it. One lovely start.'}</ThemedText>
