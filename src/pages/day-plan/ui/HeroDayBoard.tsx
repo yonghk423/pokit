@@ -13,6 +13,7 @@ import { ComicCheck } from './HeroCheck';
 import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
 import { ComicSceneImage } from './HeroSceneImage';
 import { ComicSceneDeck } from './HeroSceneDeck';
+import { HeroCharacterNameButton } from './HeroCharacterNameButton';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { COMIC_BOARD_MODES, comicCardLayout, comicPageLayout, diagonalComicPage, diagonalPanelPath, type ComicPanel, loadComicBoardMode, saveComicBoardMode, type ComicBoardMode } from '../lib/heroBoardLayout';
 import { PenFrame } from '@shared/ui/pen-frame';
@@ -178,7 +179,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
 
   };
   const heading = <>{!hideCharacterHeading ? <View style={s.headingRow}>
-    {!hideCharacterHeading && characterName ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.character.rename')} onPress={() => { tapHaptic(); (onRenameCharacter ?? onSelectCharacter)?.(); }} style={s.characterName}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 18, lineHeight: 26, textAlign: 'center' }}>{characterName}</ThemedText></Pressable> : null}
+    {!hideCharacterHeading && characterName ? <HeroCharacterNameButton name={characterName} ink={ink} enabled={focused} fontSize={18} lineHeight={26} onPress={() => (onRenameCharacter ?? onSelectCharacter)?.()} /> : null}
   </View> : null}{!showCards ? <ThemedText style={[s.hint, { color: muted }]}>{t(diaryTitle ? 'comicDiary.sceneCount' : 'comicDay.hint', { count: items.length })}</ThemedText> : null}</>;
   const bagAction: CardToolAction | undefined = onOpenBag ? { key: 'bag', testID: 'comic-open-mate-bag', label: t('tabs.dayPlan'), onPress: () => { useServiceTutorial.getState().advance('comicTools', 'rhythmAdd', { mode: 'rhythm' }); onOpenBag(); }, tutorialSteps: ['comicTools'], icon: <MateBagIcon isDark={isDark} /> } : undefined;
   const tools = items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <CardToolsFab isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
@@ -302,7 +303,6 @@ const s = StyleSheet.create({
   headingRow: { height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 0 },
   deleteToggle: { width: 44, height: 44, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   titleGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  characterName: { width: '100%', minHeight: 44, paddingHorizontal: 48, alignItems: 'center', justifyContent: 'center' },
   heading: { fontSize: 18 }, hint: { fontSize: 12, marginBottom: 8 }, emptyIcon: { alignSelf: 'flex-start', marginTop: 2, marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
   comicCaption: { height: 52, paddingHorizontal: 7, paddingTop: 3, paddingBottom: 2, borderTopWidth: 0.5 },

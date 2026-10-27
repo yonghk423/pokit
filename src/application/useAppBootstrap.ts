@@ -1,4 +1,5 @@
 import { initializeHeroCardEditHint } from '@shared/lib/storage/heroCardEditHintStorage';
+import { initializeHeroCharacterNameHint } from '@shared/lib/storage/heroCharacterNameHintStorage';
 import { getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { loadComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -125,6 +126,7 @@ export function useAppBootstrap() {
       await initLocalStorageClient();
       if (cancelled) return;
       initializeHeroCardEditHint();
+      initializeHeroCharacterNameHint();
 
       // 첫 화면 시간 설정이 켜져 있을 때만 온보딩 이미지를 미리 올린다.
       if (FEATURE_FLAGS.dailyRhythmWindow && !loadDailyRhythmOnboardingCompleted()) {

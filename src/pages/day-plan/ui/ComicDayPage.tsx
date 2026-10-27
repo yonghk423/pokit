@@ -16,10 +16,13 @@ import { DayPlanShellBackgroundContext, useDayPlanHeaderActions } from '../model
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { ComicDiaryMenuButton } from './HeroDiaryMenuButton';
 import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentHeroPlanner';
+import { HeroCharacterNameButton } from './HeroCharacterNameButton';
+import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
 
 /** 하단 탭 — 오늘의 주인공(만화 일기) 전용 화면 */
 export function ComicDayPage() {
   const router = useRouter();
+  const focused = useContext(DayPlanTabFocusContext);
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
   const clockEpoch = useAppClockEpoch();
@@ -52,7 +55,6 @@ export function ComicDayPage() {
     };
   }, [isDark, setShellBackground, registerComicDiaryLight]);
 
-  const headerLabel = t('comicDay.character.rename');
   const diaryLabel = t(diaryTitle ? 'comicDiary.rename' : 'comicDiary.library');
   const diaryHeading = diaryTitle ?? t('comicDiary.title');
   const header = useMemo(() => (
@@ -63,13 +65,11 @@ export function ComicDayPage() {
       </View>
       {characterName ? (
         <View style={styles.characterRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel={headerLabel} onPress={() => plannerRef.current?.renameCharacter()} style={styles.characterNameHit}>
-            <ThemedText numberOfLines={1} style={[styles.title, { color: ink }]}>{characterName}</ThemedText>
-          </Pressable>
+          <HeroCharacterNameButton name={characterName} ink={ink} enabled={focused} onPress={() => plannerRef.current?.renameCharacter()} />
         </View>
       ) : null}
     </View>
-  ), [characterName, diaryTitle, diaryLabel, diaryHeading, headerLabel, ink]);
+  ), [characterName, diaryTitle, diaryLabel, diaryHeading, ink, focused]);
   useLayoutEffect(() => {
     registerHeaderActions?.(header);
   }, [registerHeaderActions, header]);
@@ -100,6 +100,4 @@ const styles = StyleSheet.create({
   headerMainRow: { height: 44, flexDirection: 'row', alignItems: 'center' },
   diaryTitleHit: { minHeight: 44, flex: 1, minWidth: 0, justifyContent: 'center' },
   characterRow: { minHeight: 26, marginLeft: 42, marginRight: 8, flexDirection: 'row', alignItems: 'center' },
-  characterNameHit: { flex: 1, minWidth: 0, justifyContent: 'center' },
-  title: { fontSize: 17, lineHeight: 23, textAlign: 'left' },
 });

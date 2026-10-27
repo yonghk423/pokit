@@ -2,6 +2,7 @@ import { buildInitialCustomFlowDetailConfig, normalizeCustomFlowDetailConfig, ty
 import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
 import type { ComicDayScene } from '@pages/day-plan/lib/heroDayStorage';
+import { COMIC_PAPER_COLORS, COMIC_PEN_COLORS } from '@pages/day-plan/lib/heroScenePalette';
 import { initialServiceProgress } from '@pages/welcome-intro/model/serviceTutorial';
 import type { AppLocale } from '@shared/lib/i18n';
 import { localStorageClient, getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
@@ -12,6 +13,8 @@ import { bookstoreSceneCopy, mockCopy, sceneImages } from './mockCopy';
 
 export const MOCK_DATA_VERSION = 1;
 const SEED_KEY = 'pokit:mock-data-version';
+const COLOR_STYLE_KEY = 'pokit:mock-color-style-version';
+const COLOR_STYLE_VERSION = JSON.stringify([2, COMIC_PAPER_COLORS, COMIC_PEN_COLORS]);
 const sceneTimes = ['07:10', '07:45', '09:20', '13:10', '18:30', '22:15', '14:00', '15:30', '12:40', '17:00', '08:10', '09:00', '13:00', '16:30', '17:20'];
 function bookstoreScene(locale: AppLocale): ComicDayScene {
   const [title, memo, tasks] = bookstoreSceneCopy[locale];
@@ -68,6 +71,61 @@ export function buildMockDiaries(locale: AppLocale, date: string): ComicDiaryLib
     return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: index === 2 ? 'puppy-companion' : 'protagonist-1', characterName: index === 2 ? copy.puppy : copy.name, scenes, createdAt: timestamp, updatedAt: timestamp };
   });
   return { version: 1, diaries, activeId: diaries[0].id, migratedLegacyKeys: [] };
+}
+
+/** The existing stories, with the same paper and ink choices offered by the editor. */
+export function buildColorMockDiaries(locale: AppLocale, date: string): ComicDiaryLibrary {
+  const library = buildMockDiaries(locale, date);
+  const label = { ko: '컬러', en: 'Color', ja: 'カラー', 'zh-TW': '彩色' }[locale];
+  let colorIndex = 0;
+  const sceneCount = library.diaries.reduce((total, diary) => total + diary.scenes.length, 0);
+  const variants = Math.max(2, Math.ceil(COMIC_PAPER_COLORS.length * 3 / sceneCount));
+  const stories = Array.from({ length: variants }, () => library.diaries).flat();
+  const diaries = stories.map((diary, index) => ({
+    ...diary,
+    id: `mock-color-diary:${locale}:${index}`,
+    title: `${label} · ${diary.title}${index < library.diaries.length ? '' : ` · ${Math.floor(index / library.diaries.length) + 1}`}`,
+    scenes: diary.scenes.map((scene, sceneIndex) => {
+      const paletteIndex = colorIndex++;
+      return {
+        ...scene,
+        id: `mock-color-scene:${locale}:${index}:${sceneIndex}`,
+        paper: COMIC_PAPER_COLORS[paletteIndex % COMIC_PAPER_COLORS.length],
+        pen: COMIC_PEN_COLORS[(paletteIndex + 3 + Math.floor(paletteIndex / COMIC_PAPER_COLORS.length) * 3) % COMIC_PEN_COLORS.length],
+        todos: scene.todos.map((todo, todoIndex) => ({ ...todo, id: `mock-color-task:${locale}:${index}:${sceneIndex}:${todoIndex}` })),
+      };
+    }),
+  }));
+  return { ...library, diaries, activeId: diaries[0].id };
+}
+
+/** Upgrade sample colors once per palette revision; preserve story edits and ordinary diaries. */
+export function addDevelopmentColorMockData(date = getLocalDateKey()): boolean {
+  if (!__DEV__) return false;
+  const locale = getDevelopmentStorageProfile();
+  if (!locale) return false;
+  const library = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY);
+  if (!Array.isArray(library?.diaries)) return false;
+  const samples = buildColorMockDiaries(locale, date);
+  const upgrade = localStorageClient.getItemRaw(COLOR_STYLE_KEY) !== COLOR_STYLE_VERSION;
+  let updated = false;
+  const diaries = library.diaries.map(diary => {
+    const sample = samples.diaries.find(item => item.id === diary.id);
+    if (!upgrade || !sample) return diary;
+    const scenes = diary.scenes.map(scene => {
+      const style = sample.scenes.find(item => item.id === scene.id);
+      if (!style || (style.paper === scene.paper && style.pen === scene.pen)) return scene;
+      updated = true;
+      return { ...scene, paper: style.paper, pen: style.pen };
+    });
+    return { ...diary, scenes };
+  });
+  const missing = samples.diaries.filter(sample => !library.diaries.some(diary => diary.id === sample.id));
+  const changed = updated || missing.length > 0 || library.activeId !== samples.activeId;
+  if (changed) localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { ...library, diaries: [...diaries, ...missing], activeId: samples.activeId });
+  localStorageClient.setItemRaw(COLOR_STYLE_KEY, COLOR_STYLE_VERSION);
+  localStorageClient.setJson('pokit:comic-navigation', { characterId: samples.diaries[0].characterId, screen: 'board', diaryId: samples.activeId });
+  return changed;
 }
 
 export function buildMockMates(locale: AppLocale, date: string) {

@@ -31,6 +31,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { newComicScene, type ComicDayScene } from '../lib/heroDayStorage';
 import { ComicDayBoard } from './HeroDayBoard';
+import { COMIC_PAPER_COLORS, COMIC_PEN_COLORS } from '../lib/heroScenePalette';
 
 type PlannerProps = { onOpenBag?: () => void; date: string; ink: string; muted: string; isDark: boolean; onTitleChange?: (title: string | null) => void; onCharacterNameChange?: (name: string | null) => void; hideCharacterHeading?: boolean };
 export type ComicDiaryHandle = { openLibrary: () => void; renameDiary: () => void; renameCharacter: () => void };
@@ -241,8 +242,14 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
           <ThemedText style={{ color: '#202020', fontSize: 19 }}>{t('comicDay.character.rename')}</ThemedText>
           <ThemedTextInput accessibilityLabel={t('comicDay.character.rename')} value={nameDraft} onChangeText={setNameDraft} maxLength={24} autoFocus selectTextOnFocus onSubmitEditing={saveName} returnKeyType="done" style={s.renameInput} />
           <View style={s.renameActions}>
-            <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); setRenameOpen(false); }} style={s.renameButton}><HanddrawnFrame color="#777D73" /><ThemedText style={{ color: '#202020' }}>{t('common.cancel')}</ThemedText></Pressable>
-            <Pressable accessibilityRole="button" accessibilityState={{ disabled: !nameDraft.trim() }} disabled={!nameDraft.trim()} onPress={() => { tapHaptic('confirm'); saveName(); }} style={[s.renameButton, { backgroundColor: 'transparent', opacity: nameDraft.trim() ? 1 : 0.4 }]}><HanddrawnFrame color="#777D73" /><ThemedText style={{ color: '#202020' }}>{t('common.save')}</ThemedText></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={() => { tapHaptic(); setRenameOpen(false); }} style={s.renameButton}>
+              <HanddrawnFrame color="#777D73" />
+              <Svg pointerEvents="none" accessible={false} width={24} height={24} viewBox="0 0 24 24"><Path d="M6.2 5.8Q11.8 12.2 17.7 18.1M17.8 6.1Q12.1 11.8 6.1 17.8" fill="none" stroke="#202020" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('common.save')} accessibilityState={{ disabled: !nameDraft.trim() }} disabled={!nameDraft.trim()} onPress={() => { tapHaptic('confirm'); saveName(); }} style={[s.renameButton, { backgroundColor: 'transparent', opacity: nameDraft.trim() ? 1 : 0.4 }]}>
+              <HanddrawnFrame color="#777D73" />
+              <Svg pointerEvents="none" accessible={false} width={24} height={24} viewBox="0 0 24 24"><Path d="M4.5 12.2Q7.6 14.5 10 18.1Q14 11.7 19.7 5.7" fill="none" stroke="#202020" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -293,7 +300,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
                 <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} style={s.paletteScroller} contentContainerStyle={s.paletteScroll}>
                   {(['paper', 'pen'] as const).map((kind, groupIndex) => <View key={kind} style={s.paletteGroup}>
                     {groupIndex === 1 ? <View style={s.paletteDivider} /> : null}
-                    {(kind === 'paper' ? ['#FFFFFF', '#C8EBDD', '#F8DEDF', '#F8E7B4', '#D5E3F6'] : ['#202020', '#60605E', '#66564F', '#243044', '#3A4634']).map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={`${t(kind === 'paper' ? 'comicDay.paper' : 'comicDay.pen')} ${color}`} accessibilityState={{ selected: selected[kind] === color }} onPress={() => { tapHaptic('select'); patch(selected.id, { [kind]: color }); }} hitSlop={3} style={s.colorTouch}>
+                    {(kind === 'paper' ? COMIC_PAPER_COLORS : COMIC_PEN_COLORS).map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={`${t(kind === 'paper' ? 'comicDay.paper' : 'comicDay.pen')} ${color}`} accessibilityState={{ selected: selected[kind] === color }} onPress={() => { tapHaptic('select'); patch(selected.id, { [kind]: color }); }} hitSlop={3} style={s.colorTouch}>
                       <View style={[s.colorRing, { borderColor: selected[kind] === color ? selected.pen : 'transparent' }]}>
                         <View style={[s.swatch, { backgroundColor: color }]} />
                       </View>
@@ -318,7 +325,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
   </View>;
 }
 const s = StyleSheet.create({
-  renameOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.18)' }, renamePaper: { width: '100%', maxWidth: 340, padding: 20, backgroundColor: '#FFFFFF' }, renameInput: { minHeight: 48, fontSize: 21, color: '#202020', marginVertical: 14, borderBottomWidth: 0.5, borderColor: '#999' }, renameActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }, renameButton: { minHeight: 38, minWidth: 60, alignItems: 'center', justifyContent: 'center' },
+  renameOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.18)' }, renamePaper: { width: '100%', maxWidth: 340, padding: 20, backgroundColor: '#FFFFFF' }, renameInput: { minHeight: 48, fontSize: 21, color: '#202020', marginVertical: 14, borderBottomWidth: 0.5, borderColor: '#999' }, renameActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }, renameButton: { height: 44, width: 44, alignItems: 'center', justifyContent: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 8 },
   headerClose: { width: 52, height: 52, marginTop: 4, marginRight: -4, alignItems: 'center', justifyContent: 'center' },
   closeButton: { marginLeft: 'auto', minWidth: 76, minHeight: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#5F655C', borderRadius: 4 },

@@ -1,15 +1,17 @@
 import { DevSettings } from 'react-native';
+import { getAppLocale } from '@shared/lib/i18n';
 import { getDevelopmentStorageProfile, setDevelopmentStorageProfile, flushLocalStorageClientWrites, clearPokitLocalStorage, type DevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
-import { ensureDevelopmentMockData } from './mockData';
+import { addDevelopmentColorMockData, ensureDevelopmentMockData } from './mockData';
 let registered = false;
 let switching = false;
-async function switchProfile(profile: DevelopmentStorageProfile | null, reset = false) {
+async function switchProfile(profile: DevelopmentStorageProfile | null, reset = false, colorSamples = false) {
   if (!__DEV__ || switching) return;
   switching = true;
   try {
     await flushLocalStorageClientWrites();
     setDevelopmentStorageProfile(profile);
     if (profile) { if (reset) await clearPokitLocalStorage(); ensureDevelopmentMockData(reset); }
+    if (profile && colorSamples) addDevelopmentColorMockData();
     await flushLocalStorageClientWrites();
     DevSettings.reload();
   } finally { switching = false; }
@@ -22,6 +24,7 @@ export function registerDevelopmentMockMenu() {
     { name: 'Mock data · English', callback: () => { void switchProfile('en'); }, shouldCollapse: true },
     { name: 'モックデータ · 日本語', callback: () => { void switchProfile('ja'); }, shouldCollapse: true },
     { name: '模擬資料 · 繁體中文', callback: () => { void switchProfile('zh-TW'); }, shouldCollapse: true },
+    { name: '컬러 목업 추가 · Color samples', callback: () => { void switchProfile(getDevelopmentStorageProfile() ?? getAppLocale(), false, true); }, shouldCollapse: true },
     { name: '목업 수정 내용 초기화 · Reset mock edits', callback: () => { const profile = getDevelopmentStorageProfile(); if (profile) void switchProfile(profile, true); }, shouldCollapse: true },
     { name: '목업 종료 · 내 데이터로 돌아가기', callback: () => { void switchProfile(null); }, shouldCollapse: true },
   ];

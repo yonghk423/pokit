@@ -1,4 +1,4 @@
-import { buildMockDiaries, buildMockMates, ensureDevelopmentMockData } from './mockData';
+import { addDevelopmentColorMockData, buildColorMockDiaries, buildMockDiaries, buildMockMates, ensureDevelopmentMockData } from './mockData';
 import { localStorageClient, setDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { normalizeComicScenes } from '@pages/day-plan/lib/heroDayStorage';
 import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
@@ -8,6 +8,73 @@ import { loadGoalDetailCategoryConfig } from '@shared/lib/storage/goalDetailSett
 import { type AppLocale } from '@shared/lib/i18n';
 
 afterEach(() => setDevelopmentStorageProfile(null));
+it.each<AppLocale>(['ko', 'en', 'ja', 'zh-TW'])('builds editable %s color samples with distinct ids and all ten paper and ink colors', locale => {
+  const original = buildMockDiaries(locale, '2026-10-27');
+  const colored = buildColorMockDiaries(locale, '2026-10-27');
+  const scenes = colored.diaries.flatMap(diary => diary.scenes);
+  expect(colored.diaries).toHaveLength(6);
+  expect(normalizeComicScenes(scenes)).toEqual(scenes);
+  expect(new Set(scenes.map(scene => scene.paper)).size).toBe(10);
+  expect(new Set(scenes.map(scene => scene.pen)).size).toBe(10);
+  expect(new Set(scenes.map(scene => `${scene.paper}:${scene.pen}`)).size).toBe(scenes.length);
+  for (const paper of new Set(scenes.map(scene => scene.paper))) {
+    expect(new Set(scenes.filter(scene => scene.paper === paper).map(scene => scene.pen)).size).toBeGreaterThanOrEqual(3);
+  }
+  const allIds = [...original.diaries, ...colored.diaries].flatMap(diary => [diary.id, ...diary.scenes.flatMap(scene => [scene.id, ...scene.todos.map(todo => todo.id)])]);
+  expect(new Set(allIds).size).toBe(allIds.length);
+  const memos = original.diaries.flatMap(diary => diary.scenes.map(scene => scene.memo));
+  expect(scenes.map(scene => scene.memo)).toEqual([...memos, ...memos]);
+});
+
+it('adds color samples only to the mock profile and preserves original and edited color diaries on repeat and reload', () => {
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { personal: true });
+  expect(addDevelopmentColorMockData('2026-10-27')).toBe(false);
+  setDevelopmentStorageProfile('ko');
+  ensureDevelopmentMockData(true, '2026-10-27');
+  const original = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  original.diaries[0].scenes[0].memo = 'Keep original edits';
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, original);
+  const draft = loadDayPlanDraft();
+  expect(addDevelopmentColorMockData('2026-10-27')).toBe(true);
+  const added = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(added.diaries).toHaveLength(9);
+  expect(added.diaries.slice(0, 3)).toEqual(original.diaries);
+  expect(added.activeId).toBe(added.diaries[3].id);
+  expect(localStorageClient.getJson('pokit:comic-navigation')).toEqual({ characterId: added.diaries[3].characterId, screen: 'board', diaryId: added.activeId });
+  added.diaries[3].scenes[0].pen = '#123456';
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, added);
+  expect(addDevelopmentColorMockData('2026-10-27')).toBe(false);
+  expect(ensureDevelopmentMockData(false, '2026-10-27')).toBe(false);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual(added);
+  expect(loadDayPlanDraft()).toEqual(draft);
+  setDevelopmentStorageProfile(null);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ personal: true });
+});
+it('upgrades existing color samples once, preserving their titles, memos, tasks and user-added scenes', () => {
+  setDevelopmentStorageProfile('en');
+  ensureDevelopmentMockData(true, '2026-10-27');
+  localStorageClient.removeItem('pokit:mock-color-style-version');
+  const original = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  const samples = buildColorMockDiaries('en', '2026-10-27');
+  const legacy = samples.diaries.slice(0, 3).map(diary => ({ ...diary, scenes: diary.scenes.map(scene => ({ ...scene, paper: '#FFFFFF', pen: '#202020' })) }));
+  legacy[0].title = 'Keep this title';
+  legacy[0].scenes[0].memo = 'Keep this memo';
+  legacy[0].scenes[0].todos[0].completed = false;
+  const customScene = { ...legacy[0].scenes[0], id: 'user-added-scene', paper: '#ABCDEF', pen: '#123456' };
+  legacy[0].scenes.push(customScene);
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { ...original, diaries: [...original.diaries, ...legacy] });
+  expect(addDevelopmentColorMockData('2026-10-27')).toBe(true);
+  const upgraded = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(upgraded.diaries).toHaveLength(9);
+  expect(upgraded.diaries.slice(0, 3)).toEqual(original.diaries);
+  expect(upgraded.diaries[3].title).toBe('Keep this title');
+  expect(upgraded.diaries[3].scenes[0]).toEqual({ ...legacy[0].scenes[0], paper: samples.diaries[0].scenes[0].paper, pen: samples.diaries[0].scenes[0].pen });
+  expect(upgraded.diaries[3].scenes.at(-1)).toEqual(customScene);
+  upgraded.diaries[3].scenes[0].paper = '#ABCDEF';
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, upgraded);
+  expect(addDevelopmentColorMockData('2026-10-27')).toBe(false);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual(upgraded);
+});
 it.each<AppLocale>(['ko', 'en', 'ja'])('builds a complete, usable %s dataset with real scene records and current mate templates', locale => {
   const date = '2026-10-26';
   const library = buildMockDiaries(locale, date);
