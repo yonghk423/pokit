@@ -15,13 +15,13 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
   const [card] = useState(() => new Animated.Value(0));
   const [bridge] = useState(() => new Animated.Value(0));
   const [message] = useState(() => new Animated.Value(0));
-  const ko = locale === 'ko'; const ja = locale === 'ja';
+  const ko = locale === 'ko'; const ja = locale === 'ja'; const zh = locale === 'zh-TW';
   const title = mode === 'rhythm'
-    ? (ko ? '첫 메이트, 완성했어요!' : ja ? '最初のカードができました！' : 'Your first mate is ready!')
-    : (ko ? '첫 장면을 담았어요!' : ja ? '最初の場面を残せました！' : 'Your first scene is here!');
+    ? (ko ? '첫 메이트, 완성했어요!' : ja ? '最初のカードができました！' : zh ? '第一個夥伴完成了！' : 'Your first mate is ready!')
+    : (ko ? '첫 장면을 담았어요!' : ja ? '最初の場面を残せました！' : zh ? '留下了第一個場景！' : 'Your first scene is here!');
   const body = mode === 'rhythm'
-    ? (ko ? '직접 만들고 열어봤네요. 잘했어요.' : ja ? '自分で作って開けました。よくできました。' : 'You made it and opened it. Well done.')
-    : (ko ? '나만의 이야기를 시작했네요. 잘했어요.' : ja ? '自分だけの物語が始まりました。よくできました。' : 'You started your own story. Well done.');
+    ? (ko ? '직접 만들고 열어봤네요. 잘했어요.' : ja ? '自分で作って開けました。よくできました。' : zh ? '你自己做好並打開了。做得好。' : 'You made it and opened it. Well done.')
+    : (ko ? '나만의 이야기를 시작했네요. 잘했어요.' : ja ? '自分だけの物語が始まりました。よくできました。' : zh ? '你開始了自己的故事。做得好。' : 'You started your own story. Well done.');
   const [open, setOpen] = useState(false);
   const [presented, setPresented] = useState(false);
   const [closing, setClosing] = useState(false);

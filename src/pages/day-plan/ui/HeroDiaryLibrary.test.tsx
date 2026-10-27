@@ -36,7 +36,7 @@ it('opens diaries, filters the library, renames with a nonempty title and offers
   act(() => { tree.unmount(); });
 });
 
-it('offers the notebook-plus illustration as the create action only for an empty unfiltered library', () => {
+it('offers the comic-page illustration as the create action only for an empty unfiltered library', () => {
   const onCreate = jest.fn();
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicDiaryLibrary diaries={[]} activeId={null} onClose={jest.fn()} onCreate={onCreate} onOpen={jest.fn()} onRename={jest.fn()} onDelete={jest.fn()} />); });

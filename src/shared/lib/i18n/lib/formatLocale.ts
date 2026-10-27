@@ -45,7 +45,7 @@ export function formatDateKeyDisplay(dateKey: string, locale?: AppLocale): strin
   if (loc === 'ko') {
     return `${mo}월 ${d}일`;
   }
-  if (loc === 'ja') {
+  if (loc === 'ja' || loc === 'zh-TW') {
     return `${mo}月${d}日`;
   }
   const date = new Date(y, mo - 1, d);
@@ -70,7 +70,7 @@ export function splitDateKeyCompact(
   if (loc === 'ko') {
     return { month: `${mo}월`, day: `${d}일` };
   }
-  if (loc === 'ja') {
+  if (loc === 'ja' || loc === 'zh-TW') {
     return { month: `${mo}月`, day: `${d}日` };
   }
   const date = new Date(y, mo - 1, d);
@@ -96,6 +96,10 @@ export function formatTimelineHeaderDate(dateKey: string, locale?: AppLocale): s
     const long = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
     return `${long[date.getDay()]}、${mo}月${d}日`;
   }
+  if (loc === 'zh-TW') {
+    const long = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    return `${long[date.getDay()]}，${mo}月${d}日`;
+  }
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
@@ -106,6 +110,9 @@ export function formatWeekdayShort(date: Date, locale?: AppLocale): string {
   }
   if (loc === 'ja') {
     return ['日', '月', '火', '水', '木', '金', '土'][date.getDay()] ?? '';
+  }
+  if (loc === 'zh-TW') {
+    return ['週日', '週一', '週二', '週三', '週四', '週五', '週六'][date.getDay()] ?? '';
   }
   return date.toLocaleDateString('en-US', { weekday: 'short' }).replace('.', '');
 }
@@ -119,6 +126,9 @@ export function formatWeekdayLabel(index: WeekdayIndex, locale?: AppLocale): str
   }
   if (loc === 'ja') {
     return ({ 0: '日', 1: '月', 2: '火', 3: '水', 4: '木', 5: '金', 6: '土' } as const)[index];
+  }
+  if (loc === 'zh-TW') {
+    return ({ 0: '週日', 1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六' } as const)[index];
   }
   const base = new Date(2024, 0, 7 + index);
   return base.toLocaleDateString('en-US', { weekday: 'short' }).replace('.', '');

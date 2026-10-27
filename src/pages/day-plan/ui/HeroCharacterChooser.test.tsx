@@ -17,22 +17,23 @@ jest.mock('../../welcome-intro/ui/ServiceTutorialTarget', () => ({ ServiceTutori
 beforeEach(() => { jest.useFakeTimers(); useServiceTutorial.setState(initialServiceProgress); });
 afterEach(() => { useServiceTutorial.setState(initialServiceProgress); jest.useRealTimers(); });
 
-it('changes the main artwork from the vertical rail and starts the character being previewed', () => {
+it('casts the chosen character, previews its scenes and starts it once after the transition', () => {
   const onStart = jest.fn();
   const character = COMIC_CHARACTERS[1];
-  const scene = character.preview[0];
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
-  const rail = tree.root.findAllByProps({ testID: `comic-character-thumbnails-${character.id}` })[0];
-  expect(rail.props.showsVerticalScrollIndicator).toBe(false);
-  const thumbnail = tree.root.findAllByProps({ testID: `comic-character-thumbnail-${character.id}-${scene.id}` })[0];
-  act(() => { thumbnail.props.onPress(); });
+  const select = tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` })[0];
+  act(() => { select.props.onPress(); });
+  expect(tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` })[0].props.accessibilityState.selected).toBe(true);
   const main = tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` })[0];
-  expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:${scene.id}:960`);
-  expect(onStart).not.toHaveBeenCalled();
-  act(() => { tree.root.findAllByProps({ testID: `comic-character-thumbnail-${character.id}-cover` })[0].props.onPress(); });
   expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:cover:960`);
-  act(() => { tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.character.startWithName' && typeof node.props.onPress === 'function')[0].props.onPress(); });
+  act(() => { tree.root.findAllByProps({ testID: `comic-character-thumbnail-${character.id}-${character.preview[0].id}` })[0].props.onPress(); });
+  expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:${character.preview[0].id}:960`);
+  const start = tree.root.findAllByProps({ testID: 'comic-character-start' })[0];
+  act(() => { start.props.onPress(); start.props.onPress(); });
+  expect(onStart).not.toHaveBeenCalled();
+  expect(tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.disabled).toBe(true);
+  act(() => { jest.advanceTimersByTime(600); });
   expect(onStart).toHaveBeenCalledTimes(1);
   expect(onStart).toHaveBeenCalledWith(character, character.name);
   act(() => { tree.unmount(); });
@@ -51,12 +52,12 @@ it('starts each new diary with the default name and keeps edited names local to 
   act(() => { input.props.onChangeText('이번 일기의 이름'); });
   act(() => { tree.root.findAllByType(ThemedTextInput)[0].props.onSubmitEditing(); });
   const start = () => tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.character.startWithName' && typeof node.props.onPress === 'function')[0];
-  act(() => { start().props.onPress(); });
+  act(() => { start().props.onPress(); jest.advanceTimersByTime(600); });
   expect(onStart).toHaveBeenLastCalledWith(character, '이번 일기의 이름');
   expect(loadComicCharacterName(character.id)).toBe('이전 일기의 이름');
   act(() => { tree.unmount(); });
   act(() => { tree = create(render()); });
-  act(() => { start().props.onPress(); });
+  act(() => { start().props.onPress(); jest.advanceTimersByTime(600); });
   expect(onStart).toHaveBeenLastCalledWith(character, character.name);
   act(() => { tree.unmount(); });
   localStorageClient.removeItem(`pokit:comic-character-name:${character.id}`);
@@ -70,12 +71,12 @@ it.each([null, 'previous-diary'])('Later starts the next screen once with diary 
   act(() => { tree = create(render()); });
   act(() => { jest.advanceTimersByTime(32); });
   act(() => { useServiceTutorial.getState().skipStep(); });
-  act(() => { jest.advanceTimersByTime(32); });
+  act(() => { jest.advanceTimersByTime(600); });
   expect(onStart).toHaveBeenCalledTimes(1);
   expect(onStart.mock.calls[0][1]).toBeTruthy();
   expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicPick', completed: [] });
   act(() => { tree.update(render()); });
-  act(() => { jest.advanceTimersByTime(32); });
+  act(() => { jest.advanceTimersByTime(600); });
   expect(onStart).toHaveBeenCalledTimes(1);
   act(() => { tree.unmount(); });
 });
@@ -86,16 +87,27 @@ it('manual start follows the Later path into comicPick and starts only once', ()
   let tree!: ReactTestRenderer;
   const render = () => <ComicCharacterChooser requireExplicitChoice onStart={onStart} ink="#222" muted="#888" isDark={false} />;
   act(() => { tree = create(render()); });
-  act(() => { tree.root.findAllByType(ThemedTextInput)[1].props.onChangeText('123'); });
+  act(() => { tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[1].id}` })[0].props.onPress(); });
+  act(() => { tree.root.findAllByType(ThemedTextInput)[0].props.onChangeText('123'); });
   expect(useServiceTutorial.getState().step).toBe('comicReady');
   act(() => { tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.character.startWithName' && typeof node.props.onPress === 'function')[0].props.onPress(); });
   expect(useServiceTutorial.getState().step).toBe('comicPick');
   expect(onStart).toHaveBeenCalledTimes(0);
-  act(() => { jest.advanceTimersByTime(64); });
+  act(() => { jest.advanceTimersByTime(700); });
   expect(onStart).toHaveBeenCalledTimes(1);
   expect(onStart.mock.calls[0]).toHaveLength(2);
   act(() => { tree.update(render()); });
-  act(() => { jest.advanceTimersByTime(64); });
+  act(() => { jest.advanceTimersByTime(700); });
   expect(onStart).toHaveBeenCalledTimes(1);
   act(() => { tree.unmount(); });
+});
+
+it('cancels an unfinished start when the chooser unmounts', () => {
+  const onStart = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
+  act(() => { tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.onPress(); });
+  act(() => { tree.unmount(); });
+  act(() => { jest.advanceTimersByTime(1000); });
+  expect(onStart).not.toHaveBeenCalled();
 });

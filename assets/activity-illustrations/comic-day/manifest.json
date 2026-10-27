@@ -4,35 +4,35 @@
     {
       "id": "01-waking-up",
       "label": "기상",
-      "file": "../optimized/wake-960.webp",
+      "file": "../optimized/23-morning-stretch-960.webp",
       "width": 720,
       "height": 960
     },
     {
       "id": "02-breakfast",
       "label": "아침 식사",
-      "file": "../optimized/breakfast-960.webp",
+      "file": "../optimized/27-breakfast-960.webp",
       "width": 720,
       "height": 960
     },
     {
       "id": "03-focused-work",
       "label": "집중",
-      "file": "../optimized/focus-960.webp",
+      "file": "../optimized/05-work-960.webp",
       "width": 720,
       "height": 960
     },
     {
       "id": "04-park-walk",
       "label": "산책",
-      "file": "../optimized/walk-960.webp",
+      "file": "../optimized/10-park-walk-960.webp",
       "width": 720,
       "height": 960
     },
     {
       "id": "05-reading",
       "label": "책읽기",
-      "file": "../optimized/read-960.webp",
+      "file": "../optimized/06-reading-960.webp",
       "width": 720,
       "height": 960
     }

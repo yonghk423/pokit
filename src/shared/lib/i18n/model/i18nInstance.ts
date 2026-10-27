@@ -4,6 +4,7 @@ import { initReactI18next } from 'react-i18next';
 import en from './messages/en.json';
 import ja from './messages/ja.json';
 import ko from './messages/ko.json';
+import zhTW from './messages/zh-TW.json';
 
 /**
  * pokit i18next 싱글톤.
@@ -15,10 +16,11 @@ void i18n.use(initReactI18next).init({
     ko: { translation: ko },
     en: { translation: en },
     ja: { translation: ja },
+    'zh-TW': { translation: zhTW },
   },
   lng: 'ko',
   fallbackLng: 'en',
-  supportedLngs: ['ko', 'en', 'ja'],
+  supportedLngs: ['ko', 'en', 'ja', 'zh-TW'],
   nonExplicitSupportedLngs: true,
   defaultNS: 'translation',
   ns: ['translation'],

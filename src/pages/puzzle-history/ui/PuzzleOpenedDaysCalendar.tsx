@@ -21,6 +21,7 @@ const LOCALE_TAG: Record<AppLocale, string> = {
   ko: 'ko-KR',
   ja: 'ja-JP',
   en: 'en-US',
+  'zh-TW': 'zh-TW',
 };
 
 type DatedPiece = {

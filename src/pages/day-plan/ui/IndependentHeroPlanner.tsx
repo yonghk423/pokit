@@ -40,6 +40,7 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   const [library, setLibrary] = useState(() => loadComicDiaryLibrary(props.date, number => t('comicDiary.defaultTitle', { number })));
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [chooserReturn, setChooserReturn] = useState<'library' | 'board' | null>(null);
   const [characterDraft, setCharacterDraft] = useState(0);
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const tutorialActive = useServiceTutorial(state => state.active && state.mode === 'comic');
@@ -72,9 +73,19 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
     // must never see comicPick pointing at a diary that has not been saved yet.
     commit(nextLibrary);
     beginComicScenePick(diaryKey);
+    setChooserReturn(null);
     setCreating(false);
     // After the picker is scheduled to show — avoids the Start finger-up landing on Close.
     Keyboard.dismiss();
+  };
+  const cancelCreate = () => {
+    Keyboard.dismiss();
+    const tutorial = useServiceTutorial.getState();
+    if (tutorial.active && tutorial.mode === 'comic') tutorial.pause();
+    if (chooserReturn === 'board' && diary && character) saveComicNavigation(character.id, 'board', diary.id);
+    setCreating(false);
+    setLibraryOpen(chooserReturn === 'library');
+    setChooserReturn(null);
   };
   const remove = (id: string) => {
     const target = library.diaries.find(item => item.id === id);
@@ -89,20 +100,20 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
       } },
     ], { cancelable: true });
   };
-  const showEmptyTutorialBoard = tutorialActive && !diary && !creating;
+  const showEmptyBoard = !diary && !creating;
   const showPlanner = Boolean(diary && character && !creating);
-  const showChooser = !showEmptyTutorialBoard && !showPlanner;
+  const showChooser = !showEmptyBoard && !showPlanner;
   return <TutorialGuideLayer><View style={{ flex: 1 }}>
     <ServiceTutorialCoach characterChoosing={showChooser} steps={showPlanner ? ['comicStart'] : ['comicStart', 'comicCharacter', 'comicName', 'comicReady']} />
-    {showEmptyTutorialBoard ? <ComicDayBoard onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} renameCharacterRef={renameCharacterRef}
+    {showEmptyBoard ? <ComicDayBoard onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} renameCharacterRef={renameCharacterRef}
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onRename={characterName => commit(updateComicDiary(library, diary!.id, { characterName }))}
-      onSelectCharacter={() => { clearComicNavigation(); setCreating(true); }} /> : <>
-      <ComicCharacterChooser key={characterDraft} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} />
+      onSelectCharacter={() => { clearComicNavigation(); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : <>
+      <ComicCharacterChooser key={characterDraft} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} onClose={chooserReturn ? cancelCreate : undefined} />
     </>}
     {libraryOpen ? <ComicDiaryLibrary diaries={library.diaries} activeId={library.activeId} initialRenameId={renameTarget}
-      onClose={() => setLibraryOpen(false)} onCreate={() => { setCharacterDraft(value => value + 1); setCreating(true); setLibraryOpen(false); }}
-      onOpen={id => { const opened = library.diaries.find(item => item.id === id)!; saveComicNavigation(opened.characterId, 'board', id); commit({ ...library, activeId: id }); setCreating(false); setLibraryOpen(false); }}
+      onClose={() => setLibraryOpen(false)} onCreate={() => { setChooserReturn('library'); setCharacterDraft(value => value + 1); setCreating(true); setLibraryOpen(false); }}
+      onOpen={id => { const opened = library.diaries.find(item => item.id === id)!; saveComicNavigation(opened.characterId, 'board', id); commit({ ...library, activeId: id }); setChooserReturn(null); setCreating(false); setLibraryOpen(false); }}
       onRename={(id, title) => commit(updateComicDiary(library, id, { title }))} onDelete={remove} /> : null}
   </View></TutorialGuideLayer>;
 });

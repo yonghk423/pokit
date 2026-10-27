@@ -8,7 +8,7 @@ export type I18nKey = keyof typeof koMessages;
 export type TParams = Record<string, string | number>;
 
 function isAppLocale(value: unknown): value is AppLocale {
-  return value === 'ko' || value === 'en' || value === 'ja';
+  return value === 'ko' || value === 'en' || value === 'ja' || value === 'zh-TW';
 }
 
 /**

@@ -1,4 +1,4 @@
-export const SUPPORTED_APP_LOCALES = ['ko', 'en', 'ja'] as const;
+export const SUPPORTED_APP_LOCALES = ['ko', 'en', 'ja', 'zh-TW'] as const;
 
 export type AppLocale = (typeof SUPPORTED_APP_LOCALES)[number];
 
@@ -10,11 +10,12 @@ export function detectDeviceLanguageTag(): string {
   return 'en';
 }
 
-/** 기기 언어 태그를 앱 지원 언어(ko/en/ja)로 축약한다. */
+/** 기기 언어 태그를 앱 지원 언어로 축약한다. 간체(zh-CN 등)는 영어 폴백. */
 export function resolveAppLocaleFromLanguageTag(languageTag: string | null | undefined): AppLocale {
   const tag = typeof languageTag === 'string' ? languageTag.trim().toLowerCase() : '';
   if (tag.startsWith('ko')) return 'ko';
   if (tag.startsWith('ja')) return 'ja';
+  if (tag.startsWith('zh-tw') || tag.startsWith('zh-hant') || tag.startsWith('zh-hk') || tag.startsWith('zh-mo')) return 'zh-TW';
   if (tag.startsWith('en')) return 'en';
   return 'en';
 }

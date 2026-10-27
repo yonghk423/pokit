@@ -1,6 +1,6 @@
 import { DEFAULT_COMIC_CHARACTER_ID } from './heroCharacters';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { COMIC_SCENES, type ComicSceneId } from './heroSceneImages';
+import { canonicalComicSceneId, type ComicSceneId } from './heroSceneImages';
 export type ComicDayScene = {
   id: string; title: string; image: ComicSceneId; time: string; memo: string;
   todos: { id: string; text: string; completed: boolean }[];
@@ -14,18 +14,24 @@ export function loadComicDay(date: string, characterId: string = DEFAULT_COMIC_C
 export function normalizeComicScenes(value: unknown): ComicDayScene[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
-  return value.filter((item): item is ComicDayScene => {
-    if (!item || typeof item.id !== 'string' || seen.has(item.id)) return false;
-    const ok = typeof item.title === 'string' && typeof item.memo === 'string' && typeof item.time === 'string'
-      && typeof item.paper === 'string' && typeof item.pen === 'string'
-      && COMIC_SCENES.some(scene => scene.id === item.image) && Array.isArray(item.todos)
-      && item.todos.every((todo: ComicDayScene['todos'][number]) => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean');
-    if (ok) seen.add(item.id);
-    return ok;
-  });
+  const scenes: ComicDayScene[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const scene = item as ComicDayScene;
+    const image = canonicalComicSceneId(scene.image);
+    if (typeof scene.id !== 'string' || seen.has(scene.id) || !image) continue;
+    const ok = typeof scene.title === 'string' && typeof scene.memo === 'string' && typeof scene.time === 'string'
+      && typeof scene.paper === 'string' && typeof scene.pen === 'string'
+      && Array.isArray(scene.todos)
+      && scene.todos.every(todo => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean');
+    if (!ok) continue;
+    seen.add(scene.id);
+    scenes.push({ ...scene, image });
+  }
+  return scenes;
 }
 export function saveComicDay(date: string, scenes: ComicDayScene[], characterId: string = DEFAULT_COMIC_CHARACTER_ID) { localStorageClient.setJson(key(date, characterId), scenes); }
 export function newComicScene(title: string): ComicDayScene {
-  return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, title, image: 'focus', time: '', memo: '', todos: [], paper: '#FFFFFF', pen: '#202020' };
+  return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, title, image: '05-work', time: '', memo: '', todos: [], paper: '#FFFFFF', pen: '#202020' };
 }
 export function validComicTime(time: string) { return time === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(time); }

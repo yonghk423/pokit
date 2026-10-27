@@ -1,4 +1,5 @@
 /** 앱 전용 루틴 그림. 저장 ID는 파일명·번역 변경과 무관하게 유지한다. */
+import type { AppLocale } from '@shared/lib/i18n/model/locale';
 import type { CustomFlowIconCategoryId } from './customFlowIconCategories';
 
 export const ROUTINE_ILLUSTRATIONS = [
@@ -112,4 +113,14 @@ export const ROUTINE_ILLUSTRATIONS = [
 
 export function getRoutineIllustration(id: string) {
   return ROUTINE_ILLUSTRATIONS.find((item) => item.id === id);
+}
+
+/** 번체 카탈로그가 생기기 전에는 아이콘 이름을 영어로 보여 준다. */
+export function routineIllustrationLabel(
+  labels: { readonly ko: string; readonly en: string; readonly ja: string } | undefined,
+  locale: AppLocale,
+): string | undefined {
+  if (!labels) return undefined;
+  if (locale === 'zh-TW') return labels.en;
+  return labels[locale];
 }

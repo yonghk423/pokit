@@ -62,6 +62,7 @@ const weatherDetailCopy = {
   ko: { title: '현재 날씨', close: '닫기', refresh: '날씨 새로고침', loading: '불러오는 중', feelsLike: '체감온도', humidity: '습도', wind: '풍속', gust: '돌풍', precipitation: '1시간 강수량', clouds: '구름량', visibility: '시정', pressure: '기압', sunrise: '일출', sunset: '일몰', none: '없음' },
   en: { title: 'Current weather', close: 'Close', refresh: 'Refresh weather', loading: 'Loading', feelsLike: 'Feels like', humidity: 'Humidity', wind: 'Wind', gust: 'Gusts', precipitation: 'Precipitation · 1h', clouds: 'Cloud cover', visibility: 'Visibility', pressure: 'Pressure', sunrise: 'Sunrise', sunset: 'Sunset', none: 'None' },
   ja: { title: '現在の天気', close: '閉じる', refresh: '天気を更新', loading: '読み込み中', feelsLike: '体感温度', humidity: '湿度', wind: '風速', gust: '突風', precipitation: '1時間降水量', clouds: '雲量', visibility: '視程', pressure: '気圧', sunrise: '日の出', sunset: '日の入り', none: 'なし' },
+  'zh-TW': { title: '目前天氣', close: '關閉', refresh: '重新整理天氣', loading: '載入中', feelsLike: '體感溫度', humidity: '濕度', wind: '風速', gust: '陣風', precipitation: '1小時雨量', clouds: '雲量', visibility: '能見度', pressure: '氣壓', sunrise: '日出', sunset: '日落', none: '無' },
 } as const;
 
 function optionalNumber(value: unknown): number | undefined {
@@ -318,7 +319,13 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
 
   if (!OPENWEATHER_KEY || !report) return null;
 
-  const labels = weatherDetailCopy[locale.startsWith('ja') ? 'ja' : locale.startsWith('en') ? 'en' : 'ko'];
+  const labels = locale === 'zh-TW'
+    ? weatherDetailCopy['zh-TW']
+    : locale.startsWith('ja')
+      ? weatherDetailCopy.ja
+      : locale.startsWith('en')
+        ? weatherDetailCopy.en
+        : weatherDetailCopy.ko;
   const outfitIndex = selectWeatherOutfit(report);
   const label = report.city ? `${report.temperature}° · ${report.city}` : `${report.temperature}°`;
   const accessibilityLabel = report.description ? `${label}, ${report.description}` : label;

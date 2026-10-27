@@ -2,10 +2,11 @@ import { SettingsPenIcon } from '../../settings/lib/settingsPen';
 import { COMIC_SCENES } from '../lib/heroSceneImages';
 import { useState } from 'react';
 import Svg, { Path } from 'react-native-svg';
-import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppModal } from '@shared/ui/app-modal';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { penContour } from '@shared/ui/pen-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -14,11 +15,21 @@ import { useTranslation } from '@shared/lib/i18n';
 import { COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { HeroEmptySceneIcon } from './HeroEmptySceneIcon';
 import { HeroEmptyDiaryIcon } from './HeroEmptyDiaryIcon';
+import { HeroCreateDiaryIcon } from './HeroCreateDiaryIcon';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
 import { ComicSceneImage } from './HeroSceneImage';
 
-const CREATE_DIARY_ICON = require('../../../../assets/diary-icons/create-diary-wake-transparent-v2.webp');
+function SearchPenLine() {
+  const [width, setWidth] = useState(320);
+  return <View pointerEvents="none" style={s.searchLine} onLayout={({ nativeEvent: { layout } }) => {
+    if (layout.width > 0) setWidth(previous => previous === layout.width ? previous : layout.width);
+  }}>
+    <Svg width="100%" height={5} viewBox={`0 0 ${width} 5`} accessible={false}>
+      <Path d={penContour([[1.5, 2.8], [width * 0.22, 2.4], [width * 0.48, 2.9], [width * 0.76, 2.5], [width - 1.5, 2.7]], 1.6, 0.6)} fill="#555A4F" />
+    </Svg>
+  </View>;
+}
 
 function writtenStamp(diary: Pick<ComicDiary, 'createdAt' | 'updatedAt'>): { date: string; time: string } | null {
   const ms = diary.updatedAt > 0 ? diary.updatedAt : diary.createdAt;
@@ -58,12 +69,13 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[s.paper, { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }]}>
         <PaperGrain opacity={0.24} /><HanddrawnFrame color="#939393" />
         <View style={s.header}><ThemedText style={s.heading}>{t('comicDiary.library')}</ThemedText><Pressable accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.close}>×</ThemedText></Pressable></View>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.create')} onPress={createDiary} style={s.create}><Image source={CREATE_DIARY_ICON} style={s.createIcon} resizeMode="contain" accessible={false} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.create')} onPress={createDiary} style={s.create}><HeroCreateDiaryIcon variant="stack" size={32} /></Pressable>
         <View style={s.searchRow}>
           <Svg pointerEvents="none" width={21} height={21} viewBox="0 0 24 24" accessible={false}>
             <Path d="M10.1 3.5C6.3 3.3 3.4 6.3 3.5 10.1C3.4 13.8 6.5 16.7 10.2 16.5C14 16.6 16.8 13.5 16.5 9.9C16.5 6.2 13.8 3.4 10.1 3.5ZM14.8 15L20.6 20.9" fill="none" stroke="#72766F" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
           <ThemedTextInput accessibilityLabel={t('comicDiary.search')} value={query} onChangeText={setQuery} style={s.search} />
+          <SearchPenLine />
         </View>
         <FlatList data={filtered} keyExtractor={diary => diary.id} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[s.list, filtered.length === 0 && s.listEmpty]} ListEmptyComponent={query.trim() ? <ThemedText style={s.empty}>{t('comicDiary.noResults')}</ThemedText> : <Pressable testID="comic-empty-diary-create" accessibilityRole="button" accessibilityLabel={t('comicDiary.create')} onPress={createDiary} style={s.emptyIconButton}><HeroEmptyDiaryIcon /></Pressable>} renderItem={({ item }) => {
           const first = item.scenes[0];
@@ -98,7 +110,7 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }, paper: { width: '87%', maxWidth: 420, flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 17 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }, heading: { color: '#252525', fontSize: 24, flex: 1 }, touch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, close: { color: '#343434', fontSize: 30 },
-  create: { alignSelf: 'flex-start', width: 72, height: 72, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }, createIcon: { width: 64, height: 64 }, action: { color: '#272727', fontSize: 19 }, searchRow: { flexDirection: 'row', alignItems: 'center', gap: 9, borderBottomWidth: 0.6, borderColor: '#A5A5A5', marginBottom: 14 }, search: { flex: 1, minWidth: 0, color: '#303030', minHeight: 44, fontSize: 15 }, list: { gap: 12, paddingBottom: 12 }, listEmpty: { flexGrow: 1, justifyContent: 'center' }, emptyIconButton: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 },
+  create: { alignSelf: 'flex-start', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }, action: { color: '#272727', fontSize: 19 }, searchRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 14 }, searchLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 5 }, search: { flex: 1, minWidth: 0, color: '#303030', minHeight: 44, fontSize: 15 }, list: { gap: 12, paddingBottom: 12 }, listEmpty: { flexGrow: 1, justifyContent: 'center' }, emptyIconButton: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 },
   rowPaper: { backgroundColor: '#FFFFFF', padding: 7 }, row: { flexDirection: 'row', alignItems: 'center' }, open: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 3, minWidth: 0 }, cover: { width: 64, height: 68 }, title: { color: '#303030', fontSize: 17, lineHeight: 24 }, count: { color: '#727272', fontSize: 13, lineHeight: 20 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 6 }, menuButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 }, rename: { paddingHorizontal: 6, paddingVertical: 8 }, renameInput: { color: '#303030', fontSize: 17, minHeight: 44, borderBottomWidth: 0.6, borderColor: '#A5A5A5' }, footer: { color: '#25231F', textAlign: 'center', fontSize: 22, lineHeight: 30, paddingVertical: 10 }, empty: { color: '#818181', fontSize: 15, textAlign: 'center', paddingVertical: 36 },
 });

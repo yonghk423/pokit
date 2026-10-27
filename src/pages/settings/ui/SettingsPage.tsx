@@ -25,7 +25,7 @@ import {
 } from '@entities/day-plan';
 import {
   fetchAnnouncements,
-  type AnnouncementLocale,
+  toAnnouncementLocale,
 } from '@entities/announcement';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
@@ -41,7 +41,7 @@ import {
 } from '@features/subscriptions';
 import { useAppearanceStore } from '@shared/lib/appearance/appearanceStore';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { t, useAppLocaleStore } from '@shared/lib/i18n';
+import { t, useAppLocaleStore, type AppLocale } from '@shared/lib/i18n';
 import {
   DEFAULT_DAY_PLAN_CHROME_SETTINGS,
   DEFAULT_DAY_PLAN_LAYOUT_MODE_VISIBILITY,
@@ -89,13 +89,13 @@ const SHOW_NOTIFICATION_SETTINGS = false;
 /** 설정 → 레이아웃 설정 — 다시 쓸 때까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_LAYOUT_SETTINGS = false;
 
-function fontLabelForId(fontId: AppFontId, locale: 'ko' | 'en' | 'ja'): string {
+function fontLabelForId(fontId: AppFontId, locale: AppLocale): string {
   if (fontId === 'kimJungWon') return t('settings.font.kimJungWon', locale);
   if (fontId === 'corncorn') return t('settings.font.corncorn', locale);
   return t('settings.font.hiMelody', locale);
 }
 
-function fontSizeLabelForId(sizeId: 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg', locale: 'ko' | 'en' | 'ja'): string {
+function fontSizeLabelForId(sizeId: 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg', locale: AppLocale): string {
   if (sizeId === 'sm') return t('settings.font.size.sm', locale);
   if (sizeId === 'smMd') return t('settings.font.size.smMd', locale);
   if (sizeId === 'md') return t('settings.font.size.md', locale);
@@ -142,7 +142,7 @@ export function SettingsPage() {
 
       let cancelled = false;
       void (async () => {
-        const result = await fetchAnnouncements(locale as AnnouncementLocale);
+        const result = await fetchAnnouncements(toAnnouncementLocale(locale));
         if (cancelled) return;
         if (!result.ok) {
           setHasUnreadAnnouncements(false);

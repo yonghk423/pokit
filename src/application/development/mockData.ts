@@ -82,11 +82,11 @@ export function buildMockMates(locale: AppLocale, date: string) {
     if (template === 'checklist') records = { checklist: copy.checklists[checklistForMate[i]].map((text, j) => ({ id: `${id}:task:${j}`, text, done: i === 0 ? true : j < (i === 1 ? 2 : 1) })) };
     if (template === 'memo') records = { lastEntry: copy.notes[0][0], recentEntries: copy.notes[0].map((text, j) => ({ dateKey: addDaysToLocalDateKey(date, -j), text })) };
     if (template === 'counter') records = {
-      activityLabel: copy.mateNames[i], unitKey: 'custom', customUnitLabel: i === 4 ? { ko: '쪽', en: 'pages', ja: 'ページ' }[locale] : { ko: '잔', en: 'glasses', ja: '杯' }[locale],
+      activityLabel: copy.mateNames[i], unitKey: 'custom', customUnitLabel: i === 4 ? { ko: '쪽', en: 'pages', ja: 'ページ', 'zh-TW': '頁' }[locale] : { ko: '잔', en: 'glasses', ja: '杯', 'zh-TW': '杯' }[locale],
       goalCount: i === 4 ? 30 : 8, currentCount: i === 4 ? 18 : 5, stepSize: 1, secondaryStepSize: i === 4 ? 10 : 2, dailyReset: true, countDateKey: date,
       history: Array.from({ length: 7 }, (_, j) => ({ dateKey: addDaysToLocalDateKey(date, j - 6), count: i === 4 ? [24, 32, 15, 0, 38, 30, 18][j] : [6, 8, 7, 4, 8, 6, 5][j] })),
     };
-    if (template === 'measurement') records = { metricLabel: { ko: '아침 체중', en: 'Morning weight', ja: '朝の体重' }[locale], unit: 'kg', currentValue: 61.4, previousValue: 61.7, useGoalValue: true, goalValue: 60, lastRecordedDateKey: date, frequency: 'once', history: Array.from({ length: 7 }, (_, j) => ({ dateKey: addDaysToLocalDateKey(date, j - 6), value: [61.9, 61.7, 61.8, 61.6, 61.5, 61.7, 61.4][j] })) };
+    if (template === 'measurement') records = { metricLabel: { ko: '아침 체중', en: 'Morning weight', ja: '朝の体重', 'zh-TW': '早晨體重' }[locale], unit: 'kg', currentValue: 61.4, previousValue: 61.7, useGoalValue: true, goalValue: 60, lastRecordedDateKey: date, frequency: 'once', history: Array.from({ length: 7 }, (_, j) => ({ dateKey: addDaysToLocalDateKey(date, j - 6), value: [61.9, 61.7, 61.8, 61.6, 61.5, 61.7, 61.4][j] })) };
     return { id, groupKey: i === 5 || i === 6 ? 'health' : 'productivity', config: normalizeCustomFlowDetailConfig(template, { ...base, ...records }) };
   });
 }

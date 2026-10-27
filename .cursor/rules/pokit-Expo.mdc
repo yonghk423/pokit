@@ -1,327 +1,62 @@
 ---
+description: 오늘의 주인공 — 제품·디자인·FSD·저장·검증 작업 기준
 alwaysApply: true
 ---
 
-pokit 프로젝트 규칙 — **Feature-Sliced Design (FSD)** 준수 · 상태관리 · 데이터 · Expo
-
-**명칭 규칙**
-- **앱 정식 명칭(스토어·홈화면·브랜드 UI):** `POKIT` (대문자)
-- **프로젝트 내부(저장소·패키지·slug·LocalStorage 키·문서·룰):** `pokit` (소문자)
-- iOS Xcode 타깃 폴더/스킴(`ios/Pokit`, `PokitLiveActivity` 등)은 플랫폼 관례상 PascalCase를 유지한다.
-
-이 프로젝트는 FSD를 **그 자체로** 지향하며, 아래 레이어 구조와 의존성 규칙을 따른다.
-
----
-
-## 1. FSD 레이어 구조 및 의존성
-
-**레이어 순서 (상위 → 하위):**  
-`app` → `pages` → `widgets` → `features` → `entities` → `shared`
-
-**의존성 규칙:**  
-상위 레이어만 하위 레이어를 import 할 수 있다. 하위 레이어는 상위 레이어를 import 하지 않는다.  
-(예: `pages`는 `widgets`, `features`, `entities`, `shared` 사용 가능. `shared`는 그 어떤 상위 레이어도 import 하지 않음.)
-
-**슬라이스(Slices) 규칙: 레이어 내부 import 금지**
-- 각 레이어에서 비즈니스 슬라이스는 “슬라이스로 쓰는 비즈니스 도메인 폴더(일반적으로 해당 레이어 하위의 1차 디렉터리)”로 본다.
-  - 예: `src/features/day-plan-notifications/*`, `src/entities/day-plan/*`, `src/widgets/<widget-name>/*`
-- 같은 레이어 안에서 서로 다른 슬라이스로의 import 는 금지한다.
-  - 예: `src/features/day-plan-notifications/*` 가 `src/features/live-activity-sync/*` 를 import 하는 형태는 금지
-- import가 꼭 필요하면 다음 중 하나로 해결한다.
-  - (1) 정말 공통인 비즈니스 로직/타입을 `src/entities` 또는 `src/shared` 로 승격
-  - (2) 여러 슬라이스를 조합하는 레벨에서(주로 `pages` 또는 `widgets`) import 하도록 구조를 조정
-
-**Slice Grouping 허용(너무 많은 슬라이스 방지)**
-- 동일 도메인의 라우트/기능이 너무 많아지면, 해당 레이어 하위에 `slice-group` 폴더를 두고 그 아래에 여러 슬라이스를 둔다.
-  - 예: `src/pages/<slice-group>/<slice>/...`
-- 이때 import 금지 규칙은 **슬라이스 단위**로 적용한다.
-  - 즉, `slice-group` 간(또는 같은 `slice-group` 내에서도) 서로 다른 슬라이스로의 import는 금지다.
-  - 공용 로직은 `src/entities` 또는 `src/shared` 로 승격하거나, 조합 레벨(`pages`/`widgets`)에서 조립한다.
-
-**세그먼트(Segments) 네이밍 규칙: 목적 기반**
-- 세그먼트 폴더명은 “기술적 목적”만 드러내야 한다.
-  - 권장: `ui`, `model`, `lib`, `api`, `config`
-- `components`, `hooks`, `utils` 처럼 “코드 성격”을 나타내는 네이밍은 지양한다.
-
-**App 레이어 규칙: slice 없이 segment만**
-- `app`(= `src/application`) 레이어는 슬라이스(비즈니스 도메인 단위 디렉터리)를 두지 않고,
-  전역에 영향을 주는 **segment**(예: provider/wrapper, 전역 스타일, entry 관련)만 둔다.
-
-**레이어별 권장 segments 범위(가이드)**
-- `pages`: `ui`(스크린/레이아웃 배선), 필요 시 `api`/`model`(페이지 전용 비즈니스 처리)
-- `widgets`: `ui`(복합 UI 블록) 중심 + 필요 시 `model`
-- `features`: `ui` + `model` + (기타는) `lib` 중심
-- `entities`: 도메인 타입/규칙 `model` 중심 (필요 시 `api`)
-- `shared`: `ui` + `lib` + `config` 중심 (전역 공용 성격)
-
-**Expo의 `app` 보호:** 프로젝트 루트의 `app/` 디렉터리는 **Expo Router 전용**이며, Expo 고유의 이름이므로 변경하거나 FSD 레이어로 사용하지 않는다. 라우트·레이아웃은 항상 루트 `app/` 에만 둔다.
-
-**경로 alias (tsconfig):**
-- `@app/*` → `src/application/*` (FSD app 레이어, 루트 `app/` 과 구분)
-- `@pages/*` → `src/pages/*`
-- `@widgets/*` → `src/widgets/*`
-- `@features/*` → `src/features/*`
-- `@entities/*` → `src/entities/*`
-- `@shared/*` → `src/shared/*`
-
----
-
-## 2. 각 레이어의 역할
-
-### 2.1 app (`src/application`)
-
-- 앱 **진입·전역** 관련 로직.
-- 전역 프로바이더, 스타일, 테마 래퍼 등.
-- **Expo의 `app`**: 루트 `app/` 은 Expo Router 전용으로 두고 변경하지 않는다. 라우팅·파일 기반 라우팅만 여기서 담당한다.
-- **FSD app 레이어**: Expo 고유 이름 `app` 과 충돌하지 않도록 `src/application` 디렉터리를 사용한다.
-
-### 2.2 pages (`src/pages`)
-
-- **라우트(스크린) 단위** 페이지 컴포넌트.
-- `widgets`·`features`·`entities`·`shared` 를 **조합**하여 화면을 구성.
-- 복잡한 비즈니스 로직은 넣지 않고, 배선(wiring)과 레이아웃에 집중.
-- 예: `src/pages/day-plan`, `src/pages/activity-session`, `src/pages/goal-detail-settings`, `src/pages/settings`.
-
-### 2.4 widgets (`src/widgets`)
-
-- **여러 feature/entity를 조합한 복합 UI 블록.**
-- 한 페이지 안에서 반복 사용되는 “큰 덩어리” (예: 데이플랜 우선순위 순서 편집, 하루 주기 시간 필드).
-- 단일 feature보다 크고, 페이지 전체보다 작은 단위.
-- 슬라이스별로 `ui/`, `model/` 등 FSD 세그먼트 구조를 가질 수 있다.
-- 예: `day-plan-priority-order`, `daily-rhythm-time-field`.
-
-### 2.5 features (`src/features`)
-
-- 사용자 **기능 단위** (액션, 유즈케이스).
-- 하나 이상의 `entities`·`shared` 를 사용해 실제 동작을 구현.
-- 내부 구조: `model/`, `ui/`, `lib/` 등.
-  - model: feature 전용 상태, hooks, 스토리지/네트워크 접근
-  - ui: 해당 feature 전용 컴포넌트
-  - lib: feature 전용 유틸
-- 예: `day-plan-notifications`, `category-reminder-notifications`, `local-notifications`, `other-category-resolve`, `live-activity-sync`(레거시).
-
-### 2.6 entities (`src/entities`)
-
-- **도메인 엔티티, 타입, 모델, 비즈니스 로직.**
-- UI·라우팅에 의존하지 않고, 순수 TypeScript/도메인 코드로 유지.
-- 예: `day-plan`, `history`, `goal-detail-settings`, `local-notifications` 의 타입·인터페이스·도메인 서비스·밸리데이션.
-- 스토어는 도메인 단위 상태일 때 `src/entities/<domain>/model/<domain>Store.ts` 에 둔다.
-
-### 2.7 shared (`src/shared`)
-
-- **도메인 무관 공용** 코드.
-- UI 컴포넌트, 훅, 유틸, 테마, 스토리지 클라이언트 등.
-- `entities`·`features`·`widgets`·`pages`·`app` 에 의존하지 않는다 (순환 참조 금지).
-- 예: `shared/ui`, `shared/lib`, `shared/config`.
-
----
-
-## 3. 새 코드 추가 시 위치 (FSD 기준)
-
-- **도메인 개념/모델/핵심 규칙** → `src/entities` 에 타입·모델·서비스 추가.
-- **사용자 기능(액션/유즈케이스)** → `src/features/<feature-name>` 에 model/ui/lib 구성.
-- **페이지를 구성하는 복합 블록** → `src/widgets/<widget-name>`.
-- **라우트되는 전체 화면** → `src/pages/<route-name>`, 필요한 widgets/features 조합.
-- **앱 전역 프로바이더/스타일** → `src/application`.
-- **도메인 무관 공용** → `src/shared`.
-
----
-
-## 4. pokit 도메인 (entities)
-
-- **DayPlan**: 오늘 일정(시간 블록·우선순위·실행 상태). `dayPlanStore`, `dayPlanDraftStore`, `dayPlanRuntimeStore`로 분리.
-- **History**: 일별 집중·완료 지표, 배지/마일스톤. `historyStore`.
-- **GoalDetailSettings**: 카테고리별 목표 상세 설정(독서·운동 등). `goalDetailSettingsStore` 및 per-category 설정 모듈.
-- **LocalNotifications**: OS 알림 권한 상태. `localNotificationsStore`.
-
-위 도메인은 `src/entities` 아래에 정의한다. **레거시 Routine/RoutineExecution 엔티티는 제거**되었으며, 제품 핵심은 **데이플랜 → 앱 내 세션(`activity-session`)** 흐름이다.
-
----
-
-## 5. 상태관리 (Zustand)
-
-- 전역·여러 레이어에서 공유되는 상태는 zustand 스토어로 관리.
-- **위치:**
-  - 도메인 레벨 → `src/entities/<domain>/model/<domain>Store.ts`
-  - feature 전용 → `src/features/<feature>/model/<feature>Store.ts`
-- 컴포넌트에는 비즈니스 로직을 두지 않고, 스토어의 actions/selectors 로 처리.
-- 스토어는 클라이언트 도메인/뷰 상태에 집중 (서버 캐시 대신).
-
----
-
-## 6. 데이터 영속화 (LocalStorage)
-
-- 백엔드 없이 **LocalStorage** 를 1차 저장소로 사용.
-- 접근은 **공용 모듈**을 통해서만: `src/shared/lib/storage` 또는 `src/shared/lib/persistence`.
-- 키 예: `pokit:day-plan`, `pokit:history-daily-stats`, `pokit:goal-detail-settings`, `pokit:settings`.
-- 저장 구조는 `src/entities` 의 타입/모델과 일치시킨다.
-
----
-
-## 7. UI 스타일 가이드
-
-- 카드 기반 레이아웃; 중요한 정보는 큰 카드, 나머지는 섹션별 카드 리스트.
-- 섹션 헤더 + “See all” 패턴.
-- 필터: 상단 칩 (All / Morning / Focus 등).
-- CTA: primary 강조, 보조는 outline/secondary.
-- 진행도: 프로그레스 바 + % 텍스트로 표시.
-- **확인·저장 등 primary CTA 면색:** `RetroFlatColors.*.bgMint` / `primaryContainer` **민트**로 통일한다. 검정·네이비·`PRIMARY`(모노크롬)를 CTA 면색으로 쓰지 않는다. 글자색은 민트 위 틸 잉크(`primary` / `primaryOn`).
-- **버튼 pressed 피드백:** `Pressable`/`Touchable` 누를 때 **배경색·테두리색·글자색·opacity로 면 컬러가 바뀌지 않게** 한다. (`pressed ? hoverBg : bg`, `pressed && { opacity: … }` 등 금지.) 피드백은 햅틱·미세한 translate(눌림 오프셋)만 허용한다.
-
-### 7.0 브랜드 컬러 (Primary)
-
-- **앱 기본 강조색**: 모노크롬 기준 `rgb(0, 0, 0)` (순수 검정). 다크 배경 위 강조는 별도로 밝은 전경(`#FAFAFA` 등)을 둔다.
-- 코드에서는 `rgba(0, 0, 0, alpha)` 형태로 사용. 전역 값은 `src/shared/config/theme.ts`의 `Colors.primary`, `PrimaryColor` 참고.
-- 버튼, FAB, 탭 활성, 아이콘 강조 등 primary 역할에 이 색을 사용한다.
-
-### 7.0.1 UI 표시 언어 (ko/en/ja)
-
-- **앱 이름 "POKIT"을 제외한** 사용자 대면 UI 텍스트는 **한국어(ko)·영어(en)·일본어(ja)** 를 지원한다.
-- 기본 규칙은 **기기 언어 자동 감지**다.
-  - 기기 언어가 `ko`면 한국어를 표시한다.
-  - 기기 언어가 `ja`면 일본어를 표시한다.
-  - 그 외 언어는 **영어(en)로 폴백**한다.
-- 화면 문구, 버튼 라벨, 빈 상태 메시지, 탭 제목, 설정 항목, 에러/토스트 문구, 알림 본문까지 같은 로케일 규칙을 따른다.
-- 한국어 UI에서 사용자 대면 용어는 **「루틴」**을 기본으로 쓴다. **「리듬」** 표기는 쓰지 않는다. 일본어 UI에서는 **「ルーチン」**을 쓴다. 데이플랜·알림 등에서는 **「일정」「항목」「집중」** 등으로 통일해도 된다. 코드·API·파일명의 `customFlow`·`flow` 식별자는 내부용으로 유지한다.
-- 코드/주석/변수명은 기존 프로젝트 컨벤션을 따르고, 사용자 대면 문자열은 로케일 사전(`src/shared/lib/i18n/model/messages/{ko,en,ja}.json`)과 번역 함수를 통해 관리한다.
-
-## 7.1.0 오늘 탭 노트 — 키패드가 본문을 가리지 않음 (고정)
-
-- **검증된 동작:** 키패드가 올라와도 노트 본문이 가려지지 않는다. 서식·툴바를 붙여도 이 경로를 바꾸지 않는다.
-- **상세 불변·금지 목록:** `.cursor/rules/study-note-keyboard.mdc`
-- **기준 코드:** `StudyNoteCanvas` + `studyNoteKeyboardBottomPad`. `DayPlanPage`의 `KeyboardAvoidingView`는 `dayNote`에서 disabled.
-
-## 7.1 초기 화면(Empty State) 규칙 — 데이플랜 온보딩
-
-- 앱 최초 진입 또는 **하루 주기(시작·마무리 시각) 온보딩**이 완료되지 않았을 때, `day-plan` 화면은 `DailyRhythmOnboardingGate`로 첫 설정을 유도한다.
-- 데이플랜 본문이 비어 있을 때는 섹션별 빈 상태 힌트(우선순위·고정 항목 등)로 다음 행동을 안내한다.
-- 네비게이션(라우팅) 규칙:
-  - `features`·`widgets`의 UI는 콜백만 받고, **expo-router 이동 자체는 `pages` 또는 `app/` 라우트에서 처리**한다.
-  - 즉, `features`·`widgets`는 라우팅을 직접 import/호출하지 않는다.
-
-## 7.2 플로우·세션 경험 (현재 제품 기준)
-
-- **현재 컨셉:** 사용자는 **오늘 일정(`day-plan`)**에서 시간 블록·플로우를 쌓고, 실행 중에는 **앱 내 `activity-session`** 화면에서 타이머·진행도·카테고리별 카드로 세션을 이어 간다. 이것이 **주 경험**이다.
-- **Live Activity / ActivityKit:** **현재 제품 스코프에서 제외**되었다. 저장소에 `live-activity-sync`·iOS Live Activity 타깃 등이 **남아 있을 수 있으나**, 신규 기능·우선순위·카피를 설계할 때 **“잠금화면이 핵심”**이라는 전제를 두지 않는다.
-- Android 잠금화면 등은 현재 범위에서 제외한다.
-
-### 7.2.1 제품 목표 (What) — 앱 내 세션
-
-- 사용자는 **`activity-session`**(및 관련 위젯 카드)에서 아래를 확인·제어할 수 있어야 한다.
-  - 현재 플로우 제목/보조 정보
-  - 남은 시간(실시간)
-  - 진행도(프로그레스)
-  - 핵심 액션(일시정지/완료 등)
-- 잠금화면 Live Activity를 **전제로 한 UX 요구사항은 적용하지 않는다** (아래 §7.2.6 이하는 **레거시 참고**).
-
-### 7.2.2 FSD 책임 분리 (Where)
-
-- `entities` (도메인 규칙·타입)
-  - `day-plan`: 오늘 블록(순서·구간) 및 다음 블록 파생 규칙, 실행 런타임 상태
-  - `history`: 완료·집중 지표 집계
-- `features` (유즈케이스)
-  - `day-plan-notifications` 등: 알림 동기화
-  - `live-activity-sync`(iOS): **레거시/재도입 대비** 코드가 있을 수 있으나, **현재 제품 필수 경로 아님**
-- `pages` (조립)
-  - `day-plan`: 시작점 선택/배선
-  - `activity-session`: **실행 중 세션의 주 화면**(세션 UI는 현재 페이지 내부에 구현)
-  - `goal-detail-settings`: 카테고리별 설정만(미리보기 UI 없음)
-  - `flow-review`: 목표 설정 완료 후 검토·시작
-- `app` (`src/application`)
-  - 전역 hydrate 및 동기화 부트스트랩(`useAppBootstrap`)
-
-### 7.2.3 실시간·상태 원칙 (How)
-
-- 타이머는 “초 감소값”만 신뢰하지 말고, 가능한 한 **절대 시각 기반 계산**을 우선한다.
-- 상태 변경 이벤트(`pause/resume/finish/skip`) 발생 시 **도메인 상태를 먼저 갱신**한다.
-- Live Activity를 다시 쓰게 되면, 그때 **네이티브 표면과의 동기화**를 별도 규칙으로 정한다 (현재는 필수 아님).
-- 앱 재진입 시 **도메인 상태**를 기준으로 세션 UI를 복원한다.
-
-### 7.2.4 구현 우선순위 (MVP, 앱 내)
-
-- 1단계: 현재 플로우 + 남은 시간 + 진행도 표시 (`activity-session` 화면)
-- 2단계: 세션 액션(일시정지/완료 등)과 일정/스토어 연동 안정화
-- 3단계: 완료/건너뛰기 시 다음 플로우 반영 등 흐름 고도화
-- 4단계: 세부 코칭 텍스트/점수/고급 시각효과
-
-### 7.2.5 코드 작성 원칙
-
-- 세션·일정 연동 로직은 `features`·`entities`에 두고, **페이지는 배선** 위주로 유지한다.
-- `shared` 레이어는 `entities/features/pages`를 import 하지 않는다.
-- 사용자 대면 텍스트는 한글 원칙을 유지한다.
-
-### 7.2.6 (레거시 참고) Live Activity 잠금화면 UI·크기 기준 — ActivityKit / Swift
-
-**현재 제품에서 Live Activity를 필수로 구현하지 않는다.** 다시 잠금화면 배너를 다룰 때 아래를 참고한다.
-
-잠금화면 Live Activity의 **최종 레이아웃·행간·적응형 폴백(Preferred/Compact) 기준은 iOS SwiftUI(ActivityKit)** 이다.
-
-- **(재도입 시)** 목표 상세 **잠금화면형 미리보기**는 현재 제품에 **포함하지 않는다**(과거 `*Preview.tsx`·`active-session-card` 제거됨). Live Activity를 다시 켤 때 RN 미리보기를 되살릴지는 별도 결정한다.
-- 기기에서는 시스템 머티리얼·다크모드에 따라 실제 픽셀이 미세하게 달라질 수 있다.
-
-**구현 위치**
-
-- 잠금화면 배너 본문: `ios/PokitLiveActivity/PokitLiveActivityWidget.swift` 의 `PokitLiveActivityView`
-- `ContentState`·payload 타입: `ios/PokitShared/PokitLiveActivityAttributes.swift`
-- RN → 네이티브 upsert: `ios/Pokit/PokitLiveActivity.swift` 및 `src/features/live-activity-sync/*`
-
-**높이·폭(시스템)**
-
-- 배너의 **전체 높이·폭 상한**은 Apple이 정한다. 개발자가 임의로 “2배 높이” 등으로 뷰 컨테이너를 늘리는 API는 없다.
-- **가능한 한 크게** 보이게 하려면 **내용의 intrinsic 높이**(폰트·패딩·행 수·버튼 높이)를 키우되, 작은 기기·큰 텍스트 크기에서는 **잘림**이 나지 않게 해야 한다.
-
-**적응형 레이아웃(필수 패턴)**
-
-- 독서 등 **카테고리 전용** 잠금화면 UI는 **`ViewThatFits(in: .vertical)`** 로 구성한다.
-  - **1순위(Preferred)**: 시스템이 수용할 수 있는 범위에서 **최대 비주얼**(큰 숫자·넉넉한 세로 간격·버튼 `compact: false` 등).
-  - **2순위(Compact)**: 공간이 부족할 때만 쓰는 **축소 레이아웃**(작은 폰트·얇은 진행 바·버튼 `compact: true` 등).
-- 기기 모델명으로 분기하지 않는다. **SwiftUI가 제안하는 공간**과 `ViewThatFits`가 자동으로 최적 후보를 고른다.
-- 가로는 **`maxWidth: .infinity`**·`HStack` 균등 분 등으로 **주어진 폭을 최대 활용**한다.
-
-**현재 POKIT “기준 스펙”(독서 모드, Preferred 대략치)**
-
-아래는 에이전트/인간이 Live Activity 독서 카드를 손볼 때의 **기본 앵커**다. 세부 수치는 출시 전조정 가능하되, **Preferred ↔ Compact 2단 + 세로 `ViewThatFits`** 구조는 유지한다.
-
-- 카드: 둥근 사각형, 배경 `Color.black.opacity(0.40)` 전후, 코너 반경 **~16**
-- 카드 패딩: 가로 **~12**, 세로 **~11**
-- 헤더 행: 책 아이콘 **30×30**, 키커 **~9pt**, 제목 **~15pt heavy**, 우측 **컴팩트 타이머 ~17pt** (카운트다운은 동일 스타일 유지)
-- 지표 행: 큰 값 **~26pt** / 보조 **~22pt**, 라벨 **~9pt**, 지표 1~3개 가로 분할
-- 진행 바: 트랙 높이 **~6**, 채움·트랙 대비는 밝은 흰색 계열
-- 액션: `일시정지`·`완료` — **Preferred** 에서는 `.caption`·세로 패딩 **~7**, **Compact** 에서는 `.caption2`·패딩 축소
-
-**커스텀 카테고리 확장**
-
-- 카테고리별 UI는 `categoryKey`(및 필요 시 전용 payload, 예: `readingDataConfig`)로 분기한다.
-- 새 카테고리 추가 시에도 **동일 원칙**: SwiftUI 단일 진실, **세로 `ViewThatFits` + Preferred/Compact** 권장.
-
-### 7.2.7 (레거시 참고) 목표 상세 미리보기 — **현재 미사용**
-
-**목표 상세의 잠금화면형/세션형 RN 미리보기(`*Preview.tsx`, `GoalDetailCategoryModule.Preview`, `widgets/active-session-card`)는 제거되었다.** 목표 상세는 `*Settings.tsx` 설정 UI만 제공한다.
-
-Live Activity를 다시 켤 때 RN 미리보기를 재도입할 경우, Swift `PokitLiveActivityWidget.swift` 배너 UI와 정보 구조·한글 카피를 맞추는 것을 검토한다. **현재는** `activity-session` 앱 UI 일관성을 우선한다.
-
-### 7.2.8 목표 상세 설정 — 배경 원형·블롭(Ornament) 금지
-
-**적용 범위:** `src/pages/goal-detail-settings/**` 및 여기에 조립되는 카테고리별 설정 UI(예: `ui/category/*/ui/*Settings.tsx`).
-
-- **금지:** 화면·섹션 **뒤쪽**에 깔리는 장식용 **원형 UI**(큰 원·타원, `borderRadius`로 만든 **블롭**, 코너에 두는 **글로우 오브 / kinetic orb**, `absolute` + `blur` 조합의 **장식용 원형 레이어** 등). “시안에 있어서”라도 목표 상세 설정에서는 **넣지 않는다**.
-- **허용:** 카드·행·버튼 등 **콘텐츠 자체**의 일부로서의 작은 아이콘 배경 원, **목표 상세 설정 카드 내부**의 정보 UI는 본 항의 “배경 장식”과 구분한다.
-- **대안:** 배경은 **단색 또는 단순 평면**(`backgroundColor`), 구분은 **카드/보더/섀도우**로만 표현한다.
-- **유지보수:** 이미 들어간 배경용 원형 레이어는 **제거**하는 것이 원칙이다.
-
----
-
-## 8. Expo CLI 정책
-
-- 에이전트는 **사용자 명시적 허락 없이** Expo CLI 명령을 실행하지 않는다.
-- 필요 시 (1) 명령과 이유 설명, (2) 실행 여부 확인 후 진행. 허락 없으면 명령어만 안내.
-- **`expo prebuild` / `npx expo prebuild` 는 에이전트가 실행하지 않는다.**  
-  - 네이티브 `ios/`·`android/` 를 재생성하는 명령으로, 저장소·빌드·팀 협업에 큰 영향을 줄 수 있다.  
-  - 필요하면 **명령과 주의사항만 안내**하고, 실행은 **사용자가 직접** 하거나, 사용자가 **명시적으로 에이전트 실행을 요청한 경우에만** 예외로 허용한다.
-
----
-
-## 9. 기타
-
-- 로그인/회원·**Profile(프로필)** 은 현재 계획에 없음. 앱 설정은 **`src/pages/settings`**(Settings 탭)으로 둔다.
-- POKIT 은 “일상의 **플로우**를 존중하는 잠금 화면 스타일 집중 앱” 방향을 유지한다.
+# 오늘의 주인공 프로젝트 규칙
+
+갱신일: 2026-10-27
+
+## 제품과 문서
+
+- 제품명은 **오늘의 주인공**입니다. 중심 경험은 장면을 골라 하루를 구성하고 할 일과 메모를 남기는 다이어리입니다.
+- 메이트와 반복 설정은 하루를 준비하고 실행하는 보조 기능입니다. 세션·타이머를 앱 전체의 주 경험으로 가정하지 않습니다.
+- [정체성과 용어](../../docs/product/identity.md), [현재 기능](../../docs/product/current-product.md), [종이와 만년필 디자인](../../docs/design/paper-and-ink.md)을 우선 참고합니다.
+- 저장소·slug·저장 키·네이티브 타깃의 `pokit` 식별자는 호환성을 유지합니다. 문구를 바꾸면서 식별자를 일괄 치환하지 않습니다.
+- 공개 여부는 `src/shared/config/featureFlags.ts`와 실제 진입 경로를 확인합니다. 숨긴 기능은 임의로 다시 노출하지 않습니다.
+
+## 구조와 책임
+
+- 레이어는 `src/application → pages → widgets → features → entities → shared` 순서입니다. 루트 `app/`은 Expo Router 전용입니다.
+- 상위 레이어가 하위 레이어를 사용합니다. 새 코드에서 같은 레이어의 서로 다른 슬라이스를 직접 결합하지 않습니다.
+- 도메인 규칙·파생 값은 entities 또는 적절한 model/lib에, 기능은 features에, 복합 UI는 widgets에, 페이지 조립과 탐색은 pages/app에 둡니다.
+- 하위 UI는 탐색 콜백을 받고 라우팅은 조립 지점에서 처리합니다.
+- `shared`가 pages/features/entities를 import하지 않도록 합니다.
+- 현재 코드에 남은 의존성 문제를 문서 수정의 일부로 임의 리팩터링하지 않습니다.
+
+## 상태와 기록
+
+- 화면 한 곳의 입력·모달은 로컬 상태, 공유 도메인 상태는 기존 Zustand 스토어를 우선합니다.
+- 영속화는 `src/shared/lib/storage/localStorageClient.ts`와 도메인 저장 헬퍼를 경유합니다.
+- 일기 이름·장면·메모·할 일은 해당 기록에 속합니다. 새 일기 초안에 기존 일기의 이름과 선택을 재사용하지 않습니다.
+- 기존 `pokit:*` 키와 ID를 유지합니다. 삭제·마이그레이션·초기화 작업은 사용자 기록에 미치는 범위를 확인합니다.
+- 타이머는 절대 시각과 도메인 상태로 복원합니다. 원격 공지 연결을 개인 기록 동기화라고 설명하지 않습니다.
+
+## 디자인과 입력
+
+- 밝고 차분한 종이 면, 잉크 중심의 글자·선, 필압과 약한 겹선이 있는 만년필 스타일을 사용합니다.
+- 일반 버튼·선택 상태에 민트 면이나 브라운 면을 기본 적용하지 않습니다.
+- `PenFrame`, `penContour`, 기존 만년필 아이콘을 먼저 검토합니다. 토큰의 `bgMint`, `RetroFlatColors` 같은 이름 자체를 시각적 지침으로 해석하지 않습니다.
+- 부드러운 모서리를 적용하고 이미지·모달의 클리핑을 함께 맞춥니다. 전체 UI를 직각이나 큰 알약 모양으로 강제하지 않습니다.
+- 카드 회전·상세 전환을 보존합니다. 모션을 없애는 방식으로 이미지 중복이나 레이아웃 문제를 가리지 않습니다.
+- iPhone·iPad·좁은 창의 실제 공간에 반응합니다. 주인공 선택 미리보기와 큰 장면 카드의 크기를 구분합니다.
+- 스크롤 막대를 숨기더라도 스크롤은 유지합니다. 아이콘에는 번역된 접근성 이름과 충분한 터치 영역을 제공합니다.
+- 장면 이미지는 960px 계열을 사용합니다. 작은 해상도의 캐시가 큰 화면에 고정되지 않게 확인합니다.
+- 줄 있는 입력은 긴 글·스크롤·키보드 상태에서도 읽을 수 있어야 합니다. 노트 키보드는 [전용 규칙](study-note-keyboard.mdc)을 확인합니다.
+
+## 문구와 튜토리얼
+
+- 현재 지원 언어는 `src/shared/lib/i18n/model/locale.ts`를 기준으로 합니다. 사용자 문자열은 번역 사전과 번역 함수를 사용합니다.
+- 앱 이름, 주인공 캐릭터, 장면, 오늘의 메이트를 구분합니다. 모든 기능을 같은 명칭으로 치환하지 않습니다.
+- 빈 보관함은 빈 노트 + 추가 동작으로 안내하고 검색 결과 없음과 구분합니다.
+- 튜토리얼의 직접 조작과 ‘나중에’는 같은 다음 상태를 따릅니다. 실제 버튼 위에 만년필 대상 표시가 맞아야 합니다.
+- 날씨 조회 실패 시 요약을 숨기는 동작을 유지하고 튜토리얼 진행이 막히지 않는지 확인합니다.
+
+## Expo와 검증
+
+- 사용자가 이미 승인한 작업·실행 범위는 유지하며 같은 승인을 반복해서 요구하지 않습니다.
+- 사용자 허가 범위에 포함되지 않은 Expo CLI 실행은 명령과 이유를 설명하고 확인합니다.
+- `expo prebuild`는 네이티브 프로젝트를 재생성하므로 사용자가 에이전트 실행을 명시적으로 요청한 경우에만 실행합니다.
+- 변경에 맞는 관련 테스트와 타입·코드 검사를 실행합니다. 기존 실패와 새 실패를 구분합니다.
+- 문서만 수정할 때는 링크·경로·폐기된 참조를 검증합니다. 불필요하게 앱을 실행하거나 네이티브 프로젝트를 다시 만들지 않습니다.
+- [회귀 확인 목록](../../docs/regression-checklist.md) 중 영향받는 화면·OS 항목을 확인합니다.

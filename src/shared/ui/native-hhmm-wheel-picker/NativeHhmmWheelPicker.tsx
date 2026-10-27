@@ -33,6 +33,7 @@ export type NativeHhmmWheelPickerProps = {
 function localeTagForPicker(locale: AppLocale): string {
   if (locale === 'ko') return 'ko-KR';
   if (locale === 'ja') return 'ja-JP';
+  if (locale === 'zh-TW') return 'zh-TW';
   return 'en-US';
 }
 

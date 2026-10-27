@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { fetchAnnouncements, type AnnouncementLocale } from '@entities/announcement';
+import { fetchAnnouncements, toAnnouncementLocale } from '@entities/announcement';
 import { useAnnouncementRefreshWhileVisible } from '@features/announcement-home-nudge';
 import { useDayPlanChromeSettingsStore } from '@entities/day-plan';
 import { RetroFlatColors } from '@shared/config/retroFlat';
@@ -100,7 +100,7 @@ export function SettingsTopBarButton({ c: _c }: Props) {
       setHasUnreadAnnouncements(false);
       return;
     }
-    const result = await fetchAnnouncements(locale as AnnouncementLocale);
+    const result = await fetchAnnouncements(toAnnouncementLocale(locale));
     if (!result.ok) {
       setHasUnreadAnnouncements(false);
       return;

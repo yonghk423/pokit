@@ -31,6 +31,7 @@ describe('appStoreStorefrontPath', () => {
     expect(appStoreStorefrontPath('ko')).toBe('kr');
     expect(appStoreStorefrontPath('ja')).toBe('jp');
     expect(appStoreStorefrontPath('en')).toBe('us');
+    expect(appStoreStorefrontPath('zh-TW')).toBe('tw');
   });
 });
 

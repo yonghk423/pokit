@@ -54,20 +54,20 @@ export function WelcomeIntroPage() {
   };
   if (!finished) return <View style={[s.screen, { paddingTop: insets.top }]}>
     <View style={s.introHeader}><View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <ThemedText accessibilityRole="header" style={[s.brand, { textAlign: 'left', fontSize: 22 }]}>{locale === 'ko' ? '튜토리얼' : locale === 'ja' ? 'チュートリアル' : 'Tutorial'}</ThemedText>
-    </View>{saved.step !== 'finish' && (saved.routineKey || saved.sceneKey) ? <Pressable accessibilityRole="button" onPress={() => start()} style={{ marginRight: 18 }}><ThemedText style={s.small}>{locale === 'ko' ? '이어서' : locale === 'ja' ? '続きから' : 'Resume'}</ThemedText></Pressable> : null}<Pressable accessibilityRole="button" hitSlop={10} onPress={skip}><ThemedText style={s.small}>{c.skip}</ThemedText></Pressable></View>
+      <ThemedText accessibilityRole="header" style={[s.brand, { textAlign: 'left', fontSize: 22 }]}>{locale === 'ko' ? '튜토리얼' : locale === 'ja' ? 'チュートリアル' : locale === 'zh-TW' ? '教學' : 'Tutorial'}</ThemedText>
+    </View>{saved.step !== 'finish' && (saved.routineKey || saved.sceneKey) ? <Pressable accessibilityRole="button" onPress={() => start()} style={{ marginRight: 18 }}><ThemedText style={s.small}>{locale === 'ko' ? '이어서' : locale === 'ja' ? '続きから' : locale === 'zh-TW' ? '繼續' : 'Resume'}</ThemedText></Pressable> : null}<Pressable accessibilityRole="button" hitSlop={10} onPress={skip}><ThemedText style={s.small}>{c.skip}</ThemedText></Pressable></View>
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[s.content, { paddingTop: 12, paddingBottom: 16, gap: 14 }]}>
         <View style={{ height: introImageHeight, alignItems: 'center', justifyContent: 'center' }}>
           <TutorialSceneBackdrop width={Math.max(1, width - 48)} height={introImageHeight} />
           <TutorialHeroImage width={introImageHeight * 940 / 1672} height={introImageHeight} />
         </View>
-        <ThemedText accessibilityRole="header" style={s.heading}>{locale === 'ko' ? '오늘의 주인공은 나' : locale === 'ja' ? '今日の主人公は、あなた' : 'You are today’s main character'}</ThemedText>
-        <ThemedText style={s.body}>{locale === 'ko' ? '주인공을 고르고, 나의 하루를 장면으로 담아보세요.\n메모와 할 일을 기록하고, 수납장 도구의 메이트 카드로 하루를 챙길 수 있어요.' : locale === 'ja' ? '主人公を選び、一日を場面に残しましょう。メモやタスクを記録し、収納トレイのメイトカードで一日を整えられます。' : 'Choose a character and capture your day in scenes. Add notes and tasks, then use Mate cards in the tray tool to care for your day.'}</ThemedText>
+        <ThemedText accessibilityRole="header" style={s.heading}>{locale === 'ko' ? '오늘의 주인공은 나' : locale === 'ja' ? '今日の主人公は、あなた' : locale === 'zh-TW' ? '今天的主角是我' : 'You are today’s main character'}</ThemedText>
+        <ThemedText style={s.body}>{locale === 'ko' ? '주인공을 고르고, 나의 하루를 장면으로 담아보세요.\n메모와 할 일을 기록하고, 수납장 도구의 메이트 카드로 하루를 챙길 수 있어요.' : locale === 'ja' ? '主人公を選び、一日を場面に残しましょう。メモやタスクを記録し、収納トレイのメイトカードで一日を整えられます。' : locale === 'zh-TW' ? '選一個主角，把一天收成場景。\n記下筆記和待辦，也能用收納工具裡的夥伴卡片照顧這一天。' : 'Choose a character and capture your day in scenes. Add notes and tasks, then use Mate cards in the tray tool to care for your day.'}</ThemedText>
 
       </ScrollView>
       <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 16) }}>
-        <Pressable accessibilityRole="button" testID="tutorial-start-hero" style={s.button} onPress={() => start('comic')}><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{locale === 'ko' ? '시작하기' : locale === 'ja' ? 'はじめる' : 'Start'}</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" testID="tutorial-start-hero" style={s.button} onPress={() => start('comic')}><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{locale === 'ko' ? '시작하기' : locale === 'ja' ? 'はじめる' : locale === 'zh-TW' ? '開始' : 'Start'}</ThemedText></Pressable>
       </View>
     </View>
   </View>;

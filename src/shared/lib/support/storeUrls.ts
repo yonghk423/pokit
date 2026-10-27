@@ -7,9 +7,10 @@ export const APP_STORE_IOS_ID = '6762331629';
 export const PLAY_STORE_PACKAGE_ID = 'com.yonghee.pokit';
 
 /** 앱 UI 로케일 → App Store 스토어프론트 경로 */
-export function appStoreStorefrontPath(locale: AppLocale | string | undefined): 'kr' | 'us' | 'jp' {
+export function appStoreStorefrontPath(locale: AppLocale | string | undefined): 'kr' | 'us' | 'jp' | 'tw' {
   if (locale === 'ko') return 'kr';
   if (locale === 'ja') return 'jp';
+  if (locale === 'zh-TW') return 'tw';
   return 'us';
 }
 

@@ -137,13 +137,13 @@ export async function flushLocalStorageClientWrites(): Promise<void> {
 
 const DEV_PROFILE_KEY = 'pokit:dev-mock:profile';
 const DEV_PROFILE_PREFIX = 'pokit:dev-mock:';
-export type DevelopmentStorageProfile = 'ko' | 'en' | 'ja';
+export type DevelopmentStorageProfile = 'ko' | 'en' | 'ja' | 'zh-TW';
 /** Development datasets never read or write the person's normal storage keys. */
 export function getDevelopmentStorageProfile(): DevelopmentStorageProfile | null {
   if (!__DEV__) return null;
   try {
     const value = storage ? storage.getItem(DEV_PROFILE_KEY) : memoryStorage.get(DEV_PROFILE_KEY);
-    return value === 'ko' || value === 'en' || value === 'ja' ? value : null;
+    return value === 'ko' || value === 'en' || value === 'ja' || value === 'zh-TW' ? value : null;
   } catch { return null; }
 }
 function physicalStorageKey(key: string): string {

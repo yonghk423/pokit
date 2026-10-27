@@ -34,35 +34,35 @@ export function ServiceTutorialCoach({ steps, scenePicker = false, characterChoo
     const timer = setTimeout(() => { routedFinish.current = run; router.push({ pathname: '/welcome-intro', params: { outro: '1' } }); }, 500);
     return () => clearTimeout(timer);
   }, [visible, state.step, state.runId, router]);
-  const ko = locale === 'ko'; const ja = locale === 'ja';
+  const ko = locale === 'ko'; const ja = locale === 'ja'; const zh = locale === 'zh-TW';
   const copy: Record<ServiceStep, string> = {
-    comicTools: ko ? '수납장 아이콘을 눌러보세요. 주인공의 하루를 챙기는 메이트 카드가 들어 있어요.' : ja ? '収納トレイを押しましょう。主人公の一日を支えるメイトカードがあります。' : 'Tap the tray tool. Mate cards help you care for your character’s day.',
-    rhythmTemplate: ko ? '기록 방식을 고르고 만들기를 눌러요.' : ja ? '記録方法を選んで作成しましょう。' : 'Choose a record type and press Create.',
-    comicCharacter: ko ? '함께할 주인공을 골라주세요.' : ja ? '主人公を選びましょう。' : 'Choose your character.',
-    comicName: ko ? '주인공의 이름을 적어주세요.' : ja ? '主人公の名前を書きましょう。' : 'Enter your character’s name.',
-    comicReady: ko ? '아래 시작하기를 눌러요.' : ja ? '下の開始を押しましょう。' : 'Press Start below.',
-    comicReturn: ko ? '장면이 담겼어요. 아래 시작 버튼을 눌러요.' : ja ? '下の開始で戻りましょう。' : 'Scene added. Press Start below.',
+    comicTools: ko ? '수납장 아이콘을 눌러보세요. 주인공의 하루를 챙기는 메이트 카드가 들어 있어요.' : ja ? '収納トレイを押しましょう。主人公の一日を支えるメイトカードがあります。' : zh ? '點一下收納工具。裡面有照顧主角這一天的夥伴卡片。' : 'Tap the tray tool. Mate cards help you care for your character’s day.',
+    rhythmTemplate: ko ? '기록 방식을 고르고 만들기를 눌러요.' : ja ? '記録方法を選んで作成しましょう。' : zh ? '選好記錄方式，再按建立。' : 'Choose a record type and press Create.',
+    comicCharacter: ko ? '함께할 주인공을 골라주세요.' : ja ? '主人公を選びましょう。' : zh ? '選一個要一起的主角。' : 'Choose your character.',
+    comicName: ko ? '주인공의 이름을 적어주세요.' : ja ? '主人公の名前を書きましょう。' : zh ? '寫下主角的名字。' : 'Enter your character’s name.',
+    comicReady: ko ? '아래 시작하기를 눌러요.' : ja ? '下の開始を押しましょう。' : zh ? '按下面的開始。' : 'Press Start below.',
+    comicReturn: ko ? '장면이 담겼어요. 아래 시작 버튼을 눌러요.' : ja ? '下の開始で戻りましょう。' : zh ? '場景放好了。按下面的開始。' : 'Scene added. Press Start below.',
 
-    rhythmAdd: ko ? '카드 그리드의 +를 눌러 메이트를 추가해요.' : ja ? 'カード一覧の＋からメイトを追加しましょう。' : 'Tap + in the card grid to add a Mate.',
-    rhythmPicker: ko ? '왼쪽 위 +로 새 메이트를 만들어요.' : ja ? '左上の＋から新しいカードを作りましょう。' : 'Tap the create-card + at the top left.',
-    rhythmForm: ko ? '이름을 적고 다음을 눌러요.' : ja ? '名前と記録方法を選んで、カードを作りましょう。' : 'Choose a name and a record type, then create your card.',
-    rhythmOpen: ko ? (state.routineKey ? '만든 카드 어디든 눌러 열어보세요.' : '메이트를 만들면 카드를 눌러 열 수 있어요.') : ja ? '作ったカードを押して開きましょう。' : 'Tap your new mate to open it.',
-    rhythmRecord: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 입력은 선택이에요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : 'Try writing and tapping around, then press × or Close when you’re done.',
+    rhythmAdd: ko ? '카드 그리드의 +를 눌러 메이트를 추가해요.' : ja ? 'カード一覧の＋からメイトを追加しましょう。' : zh ? '按卡片清單的 + 來新增夥伴。' : 'Tap + in the card grid to add a Mate.',
+    rhythmPicker: ko ? '왼쪽 위 +로 새 메이트를 만들어요.' : ja ? '左上の＋から新しいカードを作りましょう。' : zh ? '用左上角的 + 做一張新夥伴卡片。' : 'Tap the create-card + at the top left.',
+    rhythmForm: ko ? '이름을 적고 다음을 눌러요.' : ja ? '名前と記録方法を選んで、カードを作りましょう。' : zh ? '寫下名字，再按下一步。' : 'Choose a name and a record type, then create your card.',
+    rhythmOpen: ko ? (state.routineKey ? '만든 카드 어디든 눌러 열어보세요.' : '메이트를 만들면 카드를 눌러 열 수 있어요.') : ja ? '作ったカードを押して開きましょう。' : zh ? (state.routineKey ? '點一下做好的卡片，把它打開。' : '做好夥伴之後，點卡片就能打開。') : 'Tap your new mate to open it.',
+    rhythmRecord: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 입력은 선택이에요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : zh ? '看過之後按 × 或關閉就完成。輸入可以稍後再寫。' : 'Try writing and tapping around, then press × or Close when you’re done.',
     rhythmCheck: c.rhythmSuccess,
     rhythmSuccess: c.rhythmSuccess,
-    comicStart: characterChoosing ? (ko ? '주인공을 고르고 이름을 적은 뒤, 시작하기를 눌러주세요.' : ja ? '主人公を選び、名前を書いたら開始を押してください。' : 'Choose a character, enter a name, then press Start.') : (ko ? '그림 아래 +로 첫 장면을 담아요.' : ja ? '絵の下の＋から、最初の場面を作りましょう。' : 'Tap + below the picture to create your first scene.'),
-    comicPick: ko ? '담고 싶은 장면을 눌러주세요.' : ja ? '好きな場面を選んだら、下の開始ボタンを押しましょう。' : 'Choose a scene, then use the Start button below to return.',
+    comicStart: characterChoosing ? (ko ? '주인공을 고르고 이름을 적은 뒤, 시작하기를 눌러주세요.' : ja ? '主人公を選び、名前を書いたら開始を押してください。' : zh ? '選好主角、寫下名字，再按開始。' : 'Choose a character, enter a name, then press Start.') : (ko ? '그림 아래 +로 첫 장면을 담아요.' : ja ? '絵の下の＋から、最初の場面を作りましょう。' : zh ? '按圖下面的 +，留下第一個場景。' : 'Tap + below the picture to create your first scene.'),
+    comicPick: ko ? '담고 싶은 장면을 눌러주세요.' : ja ? '好きな場面を選んだら、下の開始ボタンを押しましょう。' : zh ? '點一個想留下的場景。' : 'Choose a scene, then use the Start button below to return.',
     comicOpen: c.comicOpen,
-    comicMemo: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 기록은 나중에 해도 좋아요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : 'Try writing and tapping around, then press × or Close when you’re done.',
-    comicTask: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 기록은 나중에 해도 좋아요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : 'Try writing and tapping around, then press × or Close when you’re done.',
-    comicCheck: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 기록은 나중에 해도 좋아요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : 'Try writing and tapping around, then press × or Close when you’re done.',
+    comicMemo: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 기록은 나중에 해도 좋아요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : zh ? '看過之後按 × 或關閉就完成。紀錄可以稍後再寫。' : 'Try writing and tapping around, then press × or Close when you’re done.',
+    comicTask: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 기록은 나중에 해도 좋아요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : zh ? '看過之後按 × 或關閉就完成。紀錄可以稍後再寫。' : 'Try writing and tapping around, then press × or Close when you’re done.',
+    comicCheck: ko ? '둘러본 뒤 × 또는 닫기로 닫으면 완료예요. 기록은 나중에 해도 좋아요.' : ja ? '書いて操作してみたら、×か閉じるボタンを押してください。' : zh ? '看過之後按 × 或關閉就完成。紀錄可以稍後再寫。' : 'Try writing and tapping around, then press × or Close when you’re done.',
     comicSuccess: c.comicSuccess,
-    comicWeather: ko ? '날씨 아이콘을 눌러 오늘의 날씨 정보를 확인해보세요.' : ja ? '天気アイコンを押して、今日の天気を確認しましょう。' : 'Tap the weather icon to see today’s weather.',
+    comicWeather: ko ? '날씨 아이콘을 눌러 오늘의 날씨 정보를 확인해보세요.' : ja ? '天気アイコンを押して、今日の天気を確認しましょう。' : zh ? '點天氣圖示，看看今天的天氣。' : 'Tap the weather icon to see today’s weather.',
     finish: c.closingBody,
   };
   const { current, total } = tutorialStepProgress(state.mode, state.step);
   const instruction = copy[state.step];
-  const lead = ko ? `${current}번째!` : ja ? `${current}番目！` : `Step ${current}.`;
+  const lead = ko ? `${current}번째!` : ja ? `${current}番目！` : zh ? `第${current}步！` : `Step ${current}.`;
   const layer = useTutorialGuideLayer();
   const guideId = useId();
   const [guideHeight, setGuideHeight] = useState(0);

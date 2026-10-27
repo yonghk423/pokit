@@ -36,7 +36,7 @@ import {
 import { BookSearchSheet, type BookSearchSelection } from './BookSearchSheet';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
+import { useTranslation, type AppLocale } from '@shared/lib/i18n';
 import {
   clearReadingBookstoreSearchGuidePending,
   clearReadingBookstoreTapGuidePending,
@@ -105,12 +105,12 @@ function resolveLatestReadingDateKey(entry: ReadingBookEntry): string | null {
   return keys.length > 0 ? keys[keys.length - 1]! : null;
 }
 
-function formatReadingListDateKey(dateKey: string, locale: 'ko' | 'en' | 'ja'): string {
+function formatReadingListDateKey(dateKey: string, locale: AppLocale): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
   if (!m) return dateKey;
   const month = parseInt(m[2], 10);
   const day = parseInt(m[3], 10);
-  if (locale === 'ja') return `${month}月${day}日`;
+  if (locale === 'ja' || locale === 'zh-TW') return `${month}月${day}日`;
   if (locale === 'en') return `${month}/${day}`;
   return `${month}월 ${day}일`;
 }

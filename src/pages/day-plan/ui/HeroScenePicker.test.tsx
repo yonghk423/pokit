@@ -29,20 +29,20 @@ it('connects images in tap order immediately and preserves selection across view
     return wrapped.props.children;
   };
   expect(gallery().props.numColumns).toBe(3);
-  act(() => { card('wake').props.onToggle('wake'); });
-  act(() => { card('focus').props.onToggle('focus'); });
-  act(() => { card('walk').props.onToggle('walk'); });
+  act(() => { card('23-morning-stretch').props.onToggle('23-morning-stretch'); });
+  act(() => { card('05-work').props.onToggle('05-work'); });
+  act(() => { card('10-park-walk').props.onToggle('10-park-walk'); });
   const sequence = () => tree.root.findByType(ComicSceneSequence).props.scenes as ComicDayScene[];
-  expect(sequence().map(scene => scene.image)).toEqual(['wake', 'focus', 'walk']);
+  expect(sequence().map(scene => scene.image)).toEqual(['23-morning-stretch', '05-work', '10-park-walk']);
   expect(onChange).toHaveBeenCalledTimes(3);
   for (const [label, columns] of [['comicDay.viewTwo', 2], ['comicDay.viewOne', 1]] as const) {
     act(() => { button(label).props.onPress(); });
     expect(gallery().props.numColumns).toBe(columns);
-    expect(card('focus').props.order).toBe(2);
-    expect(sequence().map(scene => scene.image)).toEqual(['wake', 'focus', 'walk']);
+    expect(card('05-work').props.order).toBe(2);
+    expect(sequence().map(scene => scene.image)).toEqual(['23-morning-stretch', '05-work', '10-park-walk']);
   }
-  act(() => { card('focus').props.onToggle('focus'); });
-  expect(sequence().map(scene => scene.image)).toEqual(['wake', 'walk']);
+  act(() => { card('05-work').props.onToggle('05-work'); });
+  expect(sequence().map(scene => scene.image)).toEqual(['23-morning-stretch', '10-park-walk']);
   act(() => { tree.unmount(); tree = create(<Harness />); });
   expect(gallery().props.numColumns).toBe(1);
   act(() => { tree.unmount(); });

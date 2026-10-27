@@ -234,6 +234,6 @@ export function resolveDailyQuote(
   const index = hashDateKey(dateKey.trim()) % list.length;
   const entry = list[index]!;
   const text =
-    locale === 'ja' ? entry.ja : locale === 'en' ? entry.en : entry.ko;
+    locale === 'ja' ? entry.ja : locale === 'ko' ? entry.ko : entry.en;
   return { id: entry.id, author: entry.author, text };
 }

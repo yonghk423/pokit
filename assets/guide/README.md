@@ -1,11 +1,11 @@
-# 사용 설명서 실기기 캡처 (선택)
+# 사용 설명서 그림
 
-가이드는 기본적으로 **실제 UI 라벨·구조를 복제한 도해 + 번호 콜아웃**으로 설명합니다.
+앱 안의 설명서는 현재 공개된 화면과 실제 UI 라벨을 기준으로 만듭니다. 주인공·장면·메이트를 구분하고 기능 플래그가 꺼진 화면을 대표 동작으로 안내하지 않습니다.
 
-나중에 실기기/시뮬레이터 PNG를 넣으려면:
+- 설명 내용: `src/pages/guide-book/lib/guideBookPages.ts`
+- 그림 구현: `src/pages/guide-book/ui/GuideBookFigures.tsx`
+- 화면 조립: `src/pages/guide-book/ui/GuideBookPage.tsx`
 
-1. 상태 바를 포함한 세로 캡처를 `assets/guide/{screenshot-key}.png` 로 저장
-2. `src/pages/guide-book/ui/GuideBookFigures.tsx` 의 `SCREENSHOTS` 맵에
-   `require('../../../assets/guide/xxx.png')` 를 등록
+이미지를 추가할 때는 실제 에셋 등록 방식을 먼저 확인합니다. 존재하지 않는 스크린샷 맵이나 예전 파일명을 가정해 require 경로를 만들지 않습니다. 실기기 캡처는 앱 UI를 임의로 재구성하지 않고 지원 언어와 현재 화면에 맞춥니다.
 
-screenshot-key 예: `today-overview`, `routine-list`, `settings` (`guideBookPages.ts` 참고)
+제품 기준은 [정체성](../../docs/product/identity.md), 시각적 기준은 [종이와 만년필 디자인](../../docs/design/paper-and-ink.md)을 참고합니다.

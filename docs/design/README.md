@@ -1,10 +1,10 @@
-# POKIT Design Docs
+# 오늘의 주인공 디자인
 
-스토리북 도입 전 **UI/UX 단일 레퍼런스** 모음.
+갱신일: 2026-10-27
 
-| 문서 | 용도 |
-|------|------|
-| [`DESIGN_CONCEPT.md`](./DESIGN_CONCEPT.md) | 레트로 시티팝 정체성, 컴포넌트 규칙, Cursor 프롬프트 (한글) |
-| [`city-pop-minimalist.md`](./city-pop-minimalist.md) | 색·타이포·간격 토큰 YAML + Brand & Style (영문 원문) |
+- [종이와 만년필 디자인](paper-and-ink.md): 화면·색·선·글꼴·모션·반응형 기준
+- [일러스트와 아이콘](illustrations-and-icons.md): 장면 이미지, 작은 아이콘, 생성과 에셋 관리
+- [제품 정체성과 용어](../product/identity.md): 기능이 전달할 경험과 문구
+- [회귀 확인 목록](../regression-checklist.md): 화면 작업 후 확인할 동작
 
-코드 구현: `src/shared/config/retroFlat.ts`, `src/shared/config/theme.ts`
+이 문서들은 현재 제품의 디자인 기준입니다. 코드의 `RetroFlatColors`, `CityPopSpacing`, `bgMint` 등 기존 이름은 호환성 때문에 남을 수 있으며 이름 자체를 새 디자인의 지침으로 해석하지 않습니다.

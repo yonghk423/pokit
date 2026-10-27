@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   fetchAnnouncements,
   type Announcement,
+  toAnnouncementLocale,
   type AnnouncementLocale,
 } from '@entities/announcement';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
@@ -128,7 +129,7 @@ function AnnouncementListCard({
 export function AnnouncementsPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const locale = useAppLocaleStore((s) => s.locale) as AnnouncementLocale;
+  const locale = toAnnouncementLocale(useAppLocaleStore((s) => s.locale));
   const isDark = useColorScheme() === 'dark';
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const insets = useSafeAreaInsets();

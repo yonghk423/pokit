@@ -1,11 +1,6 @@
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 
 export const COMIC_SCENES = [
-  { id: 'wake', source: require('../../../../assets/activity-illustrations/optimized/wake-960.webp'), label: 'comicDay.wake' },
-  { id: 'breakfast', source: require('../../../../assets/activity-illustrations/optimized/breakfast-960.webp'), label: 'comicDay.breakfast' },
-  { id: 'focus', source: require('../../../../assets/activity-illustrations/optimized/focus-960.webp'), label: 'comicDay.focus' },
-  { id: 'walk', source: require('../../../../assets/activity-illustrations/optimized/walk-960.webp'), label: 'comicDay.walk' },
-  { id: 'read', source: require('../../../../assets/activity-illustrations/optimized/read-960.webp'), label: 'comicDay.read' },
   { id: '01-exercise', source: require('../../../../assets/activity-illustrations/optimized/01-exercise-960.webp'), label: 'comicDay.activity.01-exercise' },
   { id: '02-study', source: require('../../../../assets/activity-illustrations/optimized/02-study-960.webp'), label: 'comicDay.activity.02-study' },
   { id: '03-meeting', source: require('../../../../assets/activity-illustrations/optimized/03-meeting-960.webp'), label: 'comicDay.activity.03-meeting' },
@@ -79,12 +74,27 @@ export const COMIC_SCENES = [
   { id: 'puppy-seaside', source: require('../../../../assets/activity-illustrations/puppy/puppy-seaside-960.webp'), label: 'comicDay.puppy.seaside' },
 ] as const;
 export type ComicSceneId = typeof COMIC_SCENES[number]['id'];
+/** Short ids that were byte-identical copies of the numbered scenes. */
+const LEGACY_SCENE_IDS: Record<string, ComicSceneId> = {
+  wake: '23-morning-stretch',
+  breakfast: '27-breakfast',
+  focus: '05-work',
+  walk: '10-park-walk',
+  read: '06-reading',
+};
+export function canonicalComicSceneId(value: unknown): ComicSceneId | null {
+  const id = typeof value === 'string' ? LEGACY_SCENE_IDS[value] ?? value : value;
+  return COMIC_SCENES.some(scene => scene.id === id) ? id as ComicSceneId : null;
+}
 const STORAGE_KEY = 'pokit:comic-scene-images';
 export function loadComicScenes(): Record<string, ComicSceneId> {
   try {
     const raw: unknown = JSON.parse(localStorageClient.getItemRaw(STORAGE_KEY) ?? '{}');
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-    return Object.fromEntries(Object.entries(raw).filter(([, value]) => COMIC_SCENES.some(scene => scene.id === value)));
+    return Object.fromEntries(Object.entries(raw).flatMap(([key, value]) => {
+      const id = canonicalComicSceneId(value);
+      return id ? [[key, id] as const] : [];
+    }));
   } catch { return {}; }
 }
 export function saveComicScene(key: string, scene: ComicSceneId) {
@@ -96,11 +106,14 @@ export function resolveComicScene(key: string, label: string, choices: Record<st
   const chosen = COMIC_SCENES.find(scene => scene.id === choices[key]);
   if (chosen) return chosen;
   const text = `${key} ${label}`.toLowerCase();
-  if (/read|book|독서|책|読書/.test(text)) return COMIC_SCENES[4];
-  if (/walk|run|exercise|산책|러닝|운동|스트레칭|散歩/.test(text)) return COMIC_SCENES[3];
-  if (/breakfast|meal|food|아침|식사|섭취|복용|朝食/.test(text)) return COMIC_SCENES[1];
-  if (/wake|sleep|기상|수면|起床/.test(text)) return COMIC_SCENES[0];
-  return COMIC_SCENES[2];
+  if (/read|book|독서|책|読書/.test(text)) return sceneById('06-reading');
+  if (/walk|run|exercise|산책|러닝|운동|스트레칭|散歩/.test(text)) return sceneById('10-park-walk');
+  if (/breakfast|meal|food|아침|식사|섭취|복용|朝食/.test(text)) return sceneById('27-breakfast');
+  if (/wake|sleep|기상|수면|起床/.test(text)) return sceneById('23-morning-stretch');
+  return sceneById('05-work');
+}
+function sceneById(id: ComicSceneId) {
+  return COMIC_SCENES.find(scene => scene.id === id) ?? COMIC_SCENES[0];
 }
 
 /** Activity-based categories for both character collections. Overlap is intentional. */
@@ -120,16 +133,16 @@ export const COMIC_SCENE_CATEGORIES = [
 ] as const;
 export type ComicSceneCategory = typeof COMIC_SCENE_CATEGORIES[number]['id'];
 const CATEGORY_IMAGES = {
-  preparation: ['wake', '23-morning-stretch', '24-making-bed', '25-skincare', '26-getting-dressed'],
-  food: ['puppy-meal', 'puppy-water', 'puppy-treat', 'breakfast', '15-eating', '27-breakfast', '28-cooking', '44-baking'],
+  preparation: ['23-morning-stretch', '24-making-bed', '25-skincare', '26-getting-dressed'],
+  food: ['puppy-meal', 'puppy-water', 'puppy-treat', '15-eating', '27-breakfast', '28-cooking', '44-baking'],
   cafe: ['09-coffee-tablet', '52-reading-cafe'],
-  work: ['focus', '02-study', '03-meeting', '05-work', '08-study-hoodie', '17-web-browsing'],
+  work: ['02-study', '03-meeting', '05-work', '08-study-hoodie', '17-web-browsing'],
   exercise: ['puppy-ball-play', 'puppy-fetch', 'puppy-stretch', '01-exercise', '12-weights', '13-yoga', '14-headphone-run', '19-hiking', '20-swimming', '23-morning-stretch', '36-cycling'],
-  outdoors: ['puppy-park-walk', 'puppy-grass-sniff', 'puppy-seaside', 'walk', '10-park-walk', '19-hiking', '41-pet-walk', '46-camping', '54-seaside-trip'],
+  outdoors: ['puppy-park-walk', 'puppy-grass-sniff', 'puppy-seaside', '10-park-walk', '19-hiking', '41-pet-walk', '46-camping', '54-seaside-trip'],
   home: ['puppy-bath', 'puppy-towel', 'puppy-window-watch', 'puppy-wait-door', '04-laundry', '24-making-bed', '29-dishes', '30-vacuuming', '31-organizing-closet', '32-watering-plants', '47-fold-laundry', '48-recycling', '55-window-magazine'],
   travel: ['puppy-car-ride', 'puppy-seaside', '21-airport-travel', '22-driving', '34-subway-commute', '35-bus-ride', '46-camping', '54-seaside-trip'],
   shopping: ['18-shopping', '33-grocery-shopping', '56-bookstore'],
-  hobbies: ['puppy-ball-play', 'puppy-fetch', 'read', '06-reading', '07-movie-home', '11-photography', '16-cinema', '37-journaling', '38-listening-music', '39-piano-practice', '40-video-call', '43-sketching', '44-baking', '45-board-game', '49-guitar', '52-reading-cafe', '53-diary-in-bed', '55-window-magazine', '56-bookstore'],
+  hobbies: ['puppy-ball-play', 'puppy-fetch', '06-reading', '07-movie-home', '11-photography', '16-cinema', '37-journaling', '38-listening-music', '39-piano-practice', '40-video-call', '43-sketching', '44-baking', '45-board-game', '49-guitar', '52-reading-cafe', '53-diary-in-bed', '55-window-magazine', '56-bookstore'],
   rest: ['puppy-nap', 'puppy-window-watch', '13-yoga', '42-meditation', '50-nap', '51-sleeping-in-bed', '55-window-magazine'],
 } satisfies Record<Exclude<ComicSceneCategory, 'all'>, readonly ComicSceneId[]>;
 export function comicSceneMatchesCategory(id: ComicSceneId, category: ComicSceneCategory): boolean {

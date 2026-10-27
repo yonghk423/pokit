@@ -1406,7 +1406,7 @@ export function PriorityBasedPlanSection({
       || preparedTutorialRun.current === tutorialRunId) return;
     preparedTutorialRun.current = tutorialRunId;
     handleCreateCustomFlow({
-      name: locale === 'ko' ? '나의 첫 메이트' : locale === 'ja' ? '最初のメイト' : 'My first mate',
+      name: locale === 'ko' ? '나의 첫 메이트' : locale === 'ja' ? '最初のメイト' : locale === 'zh-TW' ? '我的第一個夥伴' : 'My first mate',
       groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY,
       icon: 'routine:reading', accentColor: '#80C9B7', templateKey: 'memo',
     });

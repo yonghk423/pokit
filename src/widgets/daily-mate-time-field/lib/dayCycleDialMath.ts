@@ -148,7 +148,7 @@ export function formatHoursShort(minutes: number): string {
 /** 다이얼 표시용 — `5h 30m`, 정시면 `16h`, 1시간 미만이면 `45m`. */
 export function formatBalanceDuration(
   minutes: number,
-  _locale: 'ko' | 'en' | 'ja' = 'ko',
+  _locale: 'ko' | 'en' | 'ja' | 'zh-TW' = 'ko',
 ): string {
   const total = Math.max(0, Math.round(minutes));
   const hours = Math.floor(total / 60);

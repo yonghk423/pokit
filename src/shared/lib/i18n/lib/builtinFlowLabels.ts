@@ -89,6 +89,53 @@ const BUILTIN_FLOW_SUMMARY_EN: Record<string, string> = {
   'customFlow:preset_good_posture': 'Check posture and sit/stand tall.',
 };
 
+const BUILTIN_FLOW_ZH: Record<string, string> = {
+  'customFlow:preset_pokit_week_tour': '快速看看今日的主角',
+  'customFlow:preset_daily_bed': '整理床鋪',
+  'customFlow:preset_daily_clean': '快速打掃',
+  'customFlow:preset_daily_laundry': '洗衣服',
+  'customFlow:preset_daily_wash': '盥洗',
+  'customFlow:preset_daily_recycle': '資源回收',
+  'customFlow:preset_daily_exercise': '週末跑步',
+  'customFlow:preset_daily_shopping': '購物',
+  'customFlow:preset_abstain': '戒除',
+  'customFlow:preset_stretching': '伸展',
+  'customFlow:preset_focus': '專注',
+  'customFlow:preset_intermittent_fasting': '間歇斷食',
+  'customFlow:preset_good_posture': '端正姿勢',
+  'customFlow:builtin_hobby_draw': '素描練習',
+  'customFlow:builtin_hobby_guitar': '吉他練習',
+  'customFlow:builtin_hobby_photo': '拍照',
+  'customFlow:builtin_hobby_cooking': '料理實驗',
+  'customFlow:builtin_hobby_hiking': '登山健行',
+  'customFlow:builtin_family_call': '打電話給家人',
+  'customFlow:builtin_family_friends': '和朋友見面',
+  'customFlow:builtin_family_parents': '關心父母',
+  'customFlow:builtin_family_community': '社群時間',
+  'customFlow:builtin_family_partner': '和伴侶的時間',
+  'customFlow:builtin_mind_gratitude': '感恩日記',
+  'customFlow:builtin_mind_pledge': '今天的約定',
+  'customFlow:builtin_mind_nap': '小睡',
+  'customFlow:builtin_mind_music': '聽音樂',
+  'customFlow:builtin_mind_detox': '數位排毒',
+};
+
+const BUILTIN_FLOW_SUMMARY_ZH: Record<string, string> = {
+  'customFlow:preset_pokit_week_tour': '點項目會打開說明。「知道了」會勾選。也可以一次做完。',
+  'customFlow:preset_daily_bed': '早上整理床鋪，輕鬆開始一天。',
+  'customFlow:preset_daily_clean': '把房間或客廳快速收拾一下。',
+  'customFlow:preset_daily_laundry': '洗衣服，或把衣服摺好收起來。',
+  'customFlow:preset_daily_wash': '在一天的開始或結束時整理好自己。',
+  'customFlow:preset_daily_recycle': '分類後拿去回收。',
+  'customFlow:preset_daily_exercise': '週末輕鬆跑一跑。',
+  'customFlow:preset_daily_shopping': '買食材或日用品。',
+  'customFlow:preset_abstain': '停掉想戒的習慣。',
+  'customFlow:preset_stretching': '伸展身體，讓它鬆開。',
+  'customFlow:preset_focus': '不受打擾，專心做一件事。',
+  'customFlow:preset_intermittent_fasting': '守住間歇斷食的時段。',
+  'customFlow:preset_good_posture': '檢查姿勢並調整。',
+};
+
 const BUILTIN_FLOW_SUMMARY_JA: Record<string, string> = {
   'customFlow:preset_pokit_week_tour':
     '項目をタップすると説明が開きます。「了解」でチェック。全部まとめて進めてOKです。',
@@ -113,12 +160,16 @@ export function getBuiltinFlowDefaultLabel(flowId: string, locale: AppLocale): s
   if (locale === 'ja') {
     return BUILTIN_FLOW_JA[flowId] ?? null;
   }
+  if (locale === 'zh-TW') {
+    return BUILTIN_FLOW_ZH[flowId] ?? null;
+  }
   return BUILTIN_FLOW_KO[flowId] ?? null;
 }
 
 export function getBuiltinFlowDefaultSummary(flowId: string, locale: AppLocale): string | null {
   if (locale === 'en') return BUILTIN_FLOW_SUMMARY_EN[flowId] ?? null;
   if (locale === 'ja') return BUILTIN_FLOW_SUMMARY_JA[flowId] ?? null;
+  if (locale === 'zh-TW') return BUILTIN_FLOW_SUMMARY_ZH[flowId] ?? null;
   const flow = [...DEFAULT_BUILTIN_CUSTOM_FLOWS, ...LEGACY_REMOVED_BUILTIN_CUSTOM_FLOWS].find(
     (row) => row.id === flowId,
   );
@@ -129,11 +180,11 @@ export function getBuiltinFlowKoDefaultLabel(flowId: string): string | null {
   return BUILTIN_FLOW_KO[flowId] ?? null;
 }
 
-/** 저장 표시명이 내장 루틴의 ko/en/ja 기본명 중 하나인지 */
+/** 저장 표시명이 내장 루틴의 기본명 중 하나인지 */
 export function isBuiltinFlowDefaultDisplayName(flowId: string, displayName: string): boolean {
   const trimmed = displayName.trim();
   if (!trimmed) return false;
-  return (['ko', 'en', 'ja'] as const).some(
+  return (['ko', 'en', 'ja', 'zh-TW'] as const).some(
     (locale) => getBuiltinFlowDefaultLabel(flowId, locale) === trimmed,
   );
 }

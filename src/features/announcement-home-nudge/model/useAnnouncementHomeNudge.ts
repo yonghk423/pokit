@@ -3,8 +3,8 @@ import { Linking, Platform } from 'react-native';
 
 import {
   fetchAnnouncements,
+  toAnnouncementLocale,
   type Announcement,
-  type AnnouncementLocale,
 } from '@entities/announcement';
 import { getNativeAppVersion } from '@shared/lib/app-version/nativeAppVersion';
 import { useAppLocaleStore } from '@shared/lib/i18n';
@@ -18,7 +18,7 @@ import { pickHomeNudgeAnnouncement } from '../lib/pickHomeNudgeAnnouncement';
 import { useAnnouncementRefreshWhileVisible } from './useAnnouncementRefreshWhileVisible';
 
 export function useAnnouncementHomeNudge() {
-  const locale = useAppLocaleStore((s) => s.locale) as AnnouncementLocale;
+  const locale = toAnnouncementLocale(useAppLocaleStore((s) => s.locale));
   const [notice, setNotice] = useState<Announcement | null>(null);
   /** in-flight fetch가 dismiss 이후 notice를 다시 덮어쓰지 않게 */
   const fetchGenRef = useRef(0);

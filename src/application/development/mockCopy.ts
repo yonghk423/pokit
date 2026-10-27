@@ -2,12 +2,12 @@ import type { AppLocale } from '@shared/lib/i18n';
 import type { ComicSceneId } from '@pages/day-plan/lib/heroSceneImages';
 
 type SceneCopy = [title: string, memo: string, tasks: string[]];
-export const sceneImages: ComicSceneId[] = ['wake', '27-breakfast', '05-work', '09-coffee-tablet', '10-park-walk', '53-diary-in-bed', '46-camping', '11-photography', '54-seaside-trip', '56-bookstore', 'puppy-park-walk', 'puppy-meal', 'puppy-ball-play', 'puppy-bath', 'puppy-nap'];
+export const sceneImages: ComicSceneId[] = ['23-morning-stretch', '27-breakfast', '05-work', '09-coffee-tablet', '10-park-walk', '53-diary-in-bed', '46-camping', '11-photography', '54-seaside-trip', '56-bookstore', 'puppy-park-walk', 'puppy-meal', 'puppy-ball-play', 'puppy-bath', 'puppy-nap'];
 type MockCopy = {
   name: string; puppy: string; titles: [string, string, string]; scenes: SceneCopy[];
   mateNames: string[]; summaries: string[]; checklists: string[][]; notes: string[][];
 };
-export const mockCopy: Record<AppLocale, MockCopy> = {
+const mockCopyByLocale: Record<'ko' | 'en' | 'ja', MockCopy> = {
   ko: {
     name: '서연', puppy: '보리', titles: ['바쁜 하루에도 내 속도로', '바람 따라 떠난 주말', '보리의 소소한 하루'],
     scenes: [
@@ -82,9 +82,19 @@ export const mockCopy: Record<AppLocale, MockCopy> = {
   },
 };
 
+export const mockCopy: Record<AppLocale, MockCopy> = {
+  ...mockCopyByLocale,
+  'zh-TW': mockCopyByLocale.en,
+};
+
 /** An after-work stop, separate from the bookshop in the weekend diary. */
-export const bookstoreSceneCopy: Record<AppLocale, SceneCopy> = {
+const bookstoreSceneCopyByLocale: Record<'ko' | 'en' | 'ja', SceneCopy> = {
   ko: ['서점에서 책 고르기', '퇴근길에 서점에 들러 읽고 싶었던 책 세 권을 비교했다. 목차만 보고 고르지 않으려고 각 책의 첫 장을 조금씩 읽었다. 이번에는 짧게 나눠 읽을 수 있는 에세이 한 권을 골랐다. 당장 사지 않은 소설은 제목을 적어 두고, 집에 있는 책을 다 읽은 뒤 다시 만나기로 했다.', ['후보 세 권의 첫 장 읽어 보기', '이번 달 책 예산 안에서 한 권 고르기', '읽고 싶은 책 목록에 소설 추가하기']],
   en: ['Choosing a book at the bookshop', 'I stopped at the bookshop after work and compared three books from my reading list. Rather than deciding from the contents page alone, I read a little of each opening chapter. I chose an essay collection I can dip into on busy evenings. The novel can wait: I saved its title and will come back after finishing the book on my bedside table.', ['Read the opening pages of three candidates', 'Choose one book within this month’s budget', 'Save the novel to my reading wish list']],
   ja: ['本屋で次の一冊を選ぶ', '仕事帰りに本屋へ寄り、気になっていた三冊を比べた。目次だけで決めず、それぞれ最初の章を少しずつ読んでみる。今回は忙しい夜にも少しずつ読めそうなエッセイを一冊選んだ。小説はタイトルを控えて、枕元の本を読み終えてからまた会いに来よう。', ['候補三冊の最初のページを読む', '今月の本の予算内で一冊選ぶ', '読みたい本のリストに小説を追加する']],
+};
+
+export const bookstoreSceneCopy: Record<AppLocale, SceneCopy> = {
+  ...bookstoreSceneCopyByLocale,
+  'zh-TW': bookstoreSceneCopyByLocale.en,
 };

@@ -34,4 +34,34 @@ const ja: Copy = {
   brand: 'YOUR DAY', label: '一緒にやってみよう', skip: 'あとで', practice: '練習用の画面 · 実際の記録には追加されません',
   chooseTitle: '自分らしい一日をつくる、ふたつの方法', chooseBody: 'どちらから始めましょうか？', chooseHint: '先に始めてみるチュートリアルを選んでください', rhythm: 'リズムカード', comic: '漫画日記', rhythmDesc: 'やることとルーチンをカードで整理', comicDesc: '場面を選んで一行で残す', rhythmAdd: 'まずは＋を押して、自分のためのカードを作りましょう。', comicAdd: '＋を押して、覚えておきたい場面を追加しましょう。', rhythmPick: 'チェックリストを選んで、気軽に始めましょう。', comicPick: '今の気分に合う場面をひとつ選んでください。', rhythmOpen: '最初のカードができました。押して開いてみましょう。', comicOpen: '最初の場面です。押して物語を添えましょう。', rhythmWrite: '今日の気分を一行書いて、保存を押してください。', comicWrite: 'この瞬間に残しておきたい気持ちを一行書きましょう。', taskCoach: 'この場面でやってみたい小さなことも書いてみましょう。', completeCoach: '記録できたら、横の丸を押してください。', checklist: 'チェックリスト', mood: '今日の気分', prompt: '今日の気分を一行残す', moodHint: '今、どんな気持ちですか？', memoHint: '今日はゆっくり始めたい。', taskHint: '例：一度ゆっくり深呼吸する', save: '保存', addTask: 'やることを追加', add: '追加する', open: 'カードを開く', successTitle: 'できましたね！', rhythmSuccess: '最初のカードができました。よくできました！', comicSuccess: '最初の場面を作って開けました。よくできました！', nextComic: '次は漫画日記を試しましょう', nextRhythm: '次はリズムカードを試しましょう', seeExamples: '記録のある一日を見てみる', examplesTitle: 'こんなふうに彩れます', examplesBody: 'カードを横にめくって、自分らしい一日を探しましょう。', examplesLabel: 'サンプル', closingTitle: '今日の主役は、あなた。', closingBody: '小さな実践ひとつ、残したい瞬間ひとつから。\nこれからの一日も、一緒につくりましょう。', start: '自分の一日を始める', review: 'アプリを評価する', later: '今すぐ始める', reviewBody: '最初の記録はいかがでしたか？感想を聞かせてもらえたらうれしいです。', walk: '散歩', focus: '集中', rest: '自分のための時間', walkMemo: 'いつもの道で、新しい景色に出会った。', focusMemo: '今日は自分のペースで、ひとつずつ。', restMemo: '少し立ち止まると、心にも余裕ができた。', water: 'コップ一杯の水', waterMemo: '自分をいたわる小さな始まり', waterTask: 'ゆっくり一杯飲む', reading: '本と過ごす時間', readingMemo: '心に残った一文を書き留める', readingTask: '読みたい分だけ読む', replay: 'チュートリアル', replayDesc: '追加と記録を一緒に体験しましょう', done: '完了', endTitle: 'チュートリアルを終了しますか？', endBody: 'このボタンは今の手順には必要ありません。', endConfirm: '終了', endStay: '続ける',
 };
-export function tutorialCopy(locale: AppLocale): Copy { return locale === 'ja' ? ja : locale === 'en' ? en : ko; }
+const zh: Copy = {
+  brand: '今日的主角', label: '一起試試看', skip: '稍後', practice: '練習空間 · 不會寫進真正的紀錄',
+  chooseTitle: '把一天留給自己的兩種方式', chooseBody: '想先從哪一個開始？',
+  chooseHint: '請先選一個想試的教學',
+  rhythm: '今日夥伴', comic: '今日的主角', rhythmDesc: '用卡片整理待辦和例行', comicDesc: '選一個場景，留下一行',
+  rhythmAdd: '先按 +，做一張給自己的卡片。', comicAdd: '這次按 +，留下想記住的場景。',
+  rhythmPick: '選一個待辦檢查，輕輕開始。', comicPick: '選一個現在喜歡的場景。',
+  rhythmOpen: '第一張卡片好了。要打開看看嗎？', comicOpen: '這是你的第一個場景。打開來把故事補上吧。',
+  rhythmWrite: '用一行寫下今天的心情，再按儲存。', comicWrite: '用一行寫下想留在這一刻的心情。',
+  taskCoach: '也寫下一件想在這個場景做的小事。',
+  completeCoach: '記好了就按旁邊的圓圈。',
+  checklist: '待辦檢查', mood: '今天的心情', prompt: '用一行留下今天的心情',
+  moodHint: '現在的心情是什麼？', memoHint: '今天想慢慢開始。', taskHint: '例如：深深吸一口氣',
+  save: '儲存', addTask: '新增待辦', add: '新增', open: '打開卡片',
+  successTitle: '很好，你自己做到了！', rhythmSuccess: '第一個今日夥伴完成了。做得好！', comicSuccess: '你做出並打開了第一個場景。做得好！',
+  nextComic: '接下來也試試今日的主角', nextRhythm: '接下來也試試今日夥伴', seeExamples: '看看填好的一天',
+  examplesTitle: '可以這樣填滿', examplesBody: '左右滑動卡片，找找適合自己的一天。', examplesLabel: '範例',
+  closingTitle: '今天的主角，是你。', closingBody: '一個小小的行動，一個想留下的瞬間。\n往後的每一天，也一起填滿吧。',
+  start: '開始我的一天', review: '評價 App', later: '現在開始', reviewBody: '第一次的紀錄感覺如何？也歡迎留下意見。',
+  walk: '散步', focus: '專注', rest: '留給自己的時間', walkMemo: '在熟悉的路上，也遇見了新的風景。', focusMemo: '今天用自己的速度，一件一件來。', restMemo: '停一下，心裡也有了餘裕。',
+  water: '一杯水', waterMemo: '照顧自己的小小開始', waterTask: '慢慢喝完一杯',
+  reading: '讀書的時間', readingMemo: '記下一個留在心裡的句子', readingTask: '讀到自己想停的地方',
+  replay: '教學', replayDesc: '一邊新增、一邊記錄，一起學', done: '完成',
+  endTitle: '要結束教學嗎？', endBody: '這個按鈕不是現在這一步需要的。', endConfirm: '結束', endStay: '繼續',
+};
+export function tutorialCopy(locale: AppLocale): Copy {
+  if (locale === 'ja') return ja;
+  if (locale === 'zh-TW') return zh;
+  if (locale === 'en') return en;
+  return ko;
+}

@@ -8,7 +8,7 @@ export const COMIC_CHARACTERS = [{
   name: 'comicDay.character.one',
   description: 'comicDay.character.description',
   cover: COMIC_SCENE_THUMBNAILS['46-camping'],
-  preview: [COMIC_SCENES[2], COMIC_SCENES[3], COMIC_SCENES[4]],
+  preview: ['05-work', '10-park-walk', '06-reading'].map(id => COMIC_SCENES.find(scene => scene.id === id)!),
   scenes: COMIC_SCENES.filter(scene => !scene.id.startsWith('puppy-')),
 }, {
   id: 'puppy-companion',

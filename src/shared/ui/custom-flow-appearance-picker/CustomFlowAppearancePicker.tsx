@@ -18,7 +18,7 @@ import {
   type CustomFlowIconCategoryId,
   type CustomFlowIconOption,
 } from '@shared/lib/customFlowAppearanceCatalog';
-import { getRoutineIllustration } from '@shared/lib/routineIllustrationCatalog';
+import { getRoutineIllustration, routineIllustrationLabel } from '@shared/lib/routineIllustrationCatalog';
 import { useTranslation } from '@shared/lib/i18n';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -301,7 +301,7 @@ export function CustomFlowAppearancePicker({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
-                        accessibilityLabel={t('appearance.pickIconA11y', { name: getRoutineIllustration(iconName)?.labels[locale] ?? iconName })}
+                        accessibilityLabel={t('appearance.pickIconA11y', { name: routineIllustrationLabel(getRoutineIllustration(iconName)?.labels, locale) ?? iconName })}
                         onPress={() => handleSelectIcon(iconName)}
                         style={[
                           styles.iconChip,

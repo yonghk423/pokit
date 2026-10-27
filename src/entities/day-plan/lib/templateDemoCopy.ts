@@ -129,10 +129,48 @@ const JA: TemplateDemoCopy = {
   },
 };
 
+const ZH: TemplateDemoCopy = {
+  experienceName: '體驗',
+  measurementMetricLabel: '體重',
+  healthDoseLabel: '綜合維他命',
+  counterActivityLabel: '伏地挺身',
+  journalPrompt: '今天心情如何？',
+  journalEntries: [
+    { text: '昨天還可以', mood: '普通' },
+    { text: '運動完心情很好', mood: '很好' },
+  ],
+  memoLastEntry: '出門前把充電器和耳機放進袋子',
+  memoRecent: [
+    '採買：雞蛋、牛奶、沙拉食材',
+    '醫院預約 — 星期四下午 3 點',
+    '讀到第 30 頁（第 4 章）',
+    '團隊回顧：整理下週衝刺目標',
+    '洗衣、摺衣服完成',
+  ],
+  reminderLabels: ['早上的營養品', '一杯水', '晚上的藥'],
+  focusMemo: '打開勿擾模式',
+  checklistItems: ['喝一杯水', '伸展 5 分鐘', '打開窗戶換氣'],
+  abstainItems: ['深夜看手機', '零食和宵夜', '社群無限滑動'],
+  previewLines: {
+    checklist: ['□ 喝水', '□ 伸展'],
+    abstain: ['✓ 深夜看手機', '□ 零食'],
+    measurement: ['體重、血壓、睡眠等', '單位和目標'],
+    healthIntake: ['早上、中午、晚上需要的時段', '設定服用時間'],
+    fasting: ['目前和目標體重', '每週減重目標'],
+    habit: ['今天完成 ✓', '連續 5 天'],
+    counter: ['名稱和目標', '+1 / 趨勢'],
+    focus: ['專注 25 分鐘', '剩下 12 分鐘'],
+    journal: ['今天心情：很好', '一行筆記'],
+    memo: ['採買、預約、待辦', '短短留下再儲存'],
+    reminder: ['藥、水、用餐通知', '依時間設定文字'],
+  },
+};
+
 const BY_LOCALE: Record<AppLocale, TemplateDemoCopy> = {
   ko: KO,
   en: EN,
   ja: JA,
+  'zh-TW': ZH,
 };
 
 export function getTemplateDemoCopy(locale?: AppLocale): TemplateDemoCopy {

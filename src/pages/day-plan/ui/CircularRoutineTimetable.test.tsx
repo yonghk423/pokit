@@ -137,8 +137,8 @@ it('opens comic scenes with existing details and keeps add, time and completion 
   expect(onComplete).toHaveBeenCalledWith('read');
   expect(tree.root.findByType(ComicSceneDetail).props.item).toEqual(item);
   expect(tree.root.findAllByType(ThemedText).some(node => node.props.children === 'Existing details')).toBe(true);
-  act(() => { tree.root.findByType(ComicSceneDetail).props.onChoose('walk'); });
-  expect(tree.root.findByType(ComicDayBoard).props.choices.read).toBe('walk');
+  act(() => { tree.root.findByType(ComicSceneDetail).props.onChoose('10-park-walk'); });
+  expect(tree.root.findByType(ComicDayBoard).props.choices.read).toBe('10-park-walk');
   act(() => { tree.unmount(); });
 });
 
