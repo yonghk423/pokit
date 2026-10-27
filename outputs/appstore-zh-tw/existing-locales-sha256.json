@@ -1,0 +1,42 @@
+{
+  "2026-10-26-6.9-inch": {
+    "kr/05-large-widget.png": "cd267aa28bd9271f18cdfcf8b5fb24964628c7d277c8db6c6be319bf44476f64",
+    "kr/03-day-overview.png": "5cd35db3b94422a6750cc659995eec2e38622459eb3d920e44795b8ba964c1cd",
+    "kr/01-your-scenes.png": "55dfcc485f8cf5e7e173545a8f3ddc57dd715b07c9d1ed09d9ef071be19e2473",
+    "kr/06-small-widget.png": "48fa7c278b0b8ef5595e0bd940203d9b5cf852d6fb942853c247bc1c1bb52c01",
+    "kr/04-mate-cards.png": "9f679bd42eac243a1e43103384d9254643ef02d5961dcf9b494f0d85a1546db1",
+    "kr/02-notes-and-todos.png": "afe51f59e78ff37b8d5be8377df8e551c189ded16d47251d3bcd61c76e43c7fa",
+    "ja/05-large-widget.png": "a7ebeb6e33f546d3619500c28f4958737a88de07b432d90fa08019b541dea9db",
+    "ja/03-day-overview.png": "95241a04f2d0ec2792ef5b8223ce5bc26cb63bb8217aa653f1c57507f215d213",
+    "ja/01-your-scenes.png": "e5cfd09d1a8f689413037ca6d32e0a4b0107a4d5b031b7e5fa63e8b23a1acf8b",
+    "ja/06-small-widget.png": "5159295b7be6c7bde2d0ae6bd8d4631e86627efa19133ba01f65e95dfa25a82b",
+    "ja/04-mate-cards.png": "b0a7caa79dd495576b573824591d8a54157d3d5ac20e3fa9524ef7a546a10da2",
+    "ja/02-notes-and-todos.png": "6e96dee019bebc6c9ec39bf60bbb549268701e4b72c35ac7f10348024f369bbd",
+    "us/05-large-widget.png": "f0e75f22e3c163062e2fa2e129aa12d057f02a413c71dd6a1d952006278d7962",
+    "us/03-day-overview.png": "7113eab7059887434c69096e133c8f2b406142f9801ce5d9b4eedf63520a7bcd",
+    "us/01-your-scenes.png": "d3c2f003ff9d290adb0303af39eb625e7b61acfa40c87a69ede9f09332563719",
+    "us/06-small-widget.png": "157b30a827ef92e5f25e56a0ecf24aa6f80659e656f5459218062abb7b3cafd6",
+    "us/04-mate-cards.png": "b5805e03d81f217d4511dc0ef9179f94f8b999ba4f31af4e2a6e0e10f817e17e",
+    "us/02-notes-and-todos.png": "0c516017f34984a7379f3858e9b48c2b6a26a9cf8a166f998bf97f95c3bc97a6"
+  },
+  "2026-10-26-ipad-13-inch": {
+    "kr/05-large-widget.png": "b9e0af92e2b3ddd8a98301ad096aea3a8772368cb8a2b4393ae21d47381b25ad",
+    "kr/03-day-overview.png": "1c73a4ad19ef75980dc51af0024fd85b56f0baef33768a29c5875eda3d2cdd3b",
+    "kr/01-your-scenes.png": "ddad34911a8faf0eaa770b8bf5fec1ad93c502892159ceb836571ad11c023d33",
+    "kr/06-small-widget.png": "ba13150595cf4d16118f952fb3324b19b610de570a0cdbc672bcd0a4092edb10",
+    "kr/04-mate-cards.png": "41ab0680c18fa63fc69bef805136f70d5c87a15f24069a84ca4806138fd3c456",
+    "kr/02-notes-and-todos.png": "4b2df383c00349e808d5f33cf3a105344771fdc0cdbe5bd3e2f189a1e21b5cdb",
+    "ja/05-large-widget.png": "20842f52c345582410ab0704714429be01ebf5a4f4474aa859df425970554926",
+    "ja/03-day-overview.png": "3f61a4d0eb4732254b8a330e594d0953994a294506feb5e8026210f9e540fead",
+    "ja/01-your-scenes.png": "f4367c427bf740bff5d5476dbb6205f6eb39c3cc4bc06a263c1d366e0c02e32f",
+    "ja/06-small-widget.png": "6938ee1a1c9ac4d8196b05e9a18821e31266e2375f4b519a6524d409f11a3689",
+    "ja/04-mate-cards.png": "e5ab1df59eab7018fff1e6856ce91e3580a972f4a4bd3ddceb6f6a385c2e1b03",
+    "ja/02-notes-and-todos.png": "493327d50907a8dc758fa758211c36a9d348e0b99fc6583c8d6685acb9b705b7",
+    "us/05-large-widget.png": "b3c8c6820e1960f394d70f3f3877794cf94ab84e7cc21def8954126b14e5f406",
+    "us/03-day-overview.png": "21708ef77ae88e926c9fc95208d3dae61835d94c75e42c9042dccac92ffe117f",
+    "us/01-your-scenes.png": "587db31d345698f6dd4aa150454621e7f7eb10b7338354d188fe6be506d78ea9",
+    "us/06-small-widget.png": "d7aac1b2227760ab5033a949925db440f6ace214abab442b1fe7640b730dff73",
+    "us/04-mate-cards.png": "b7ad36cfe1e91c575c90770cc39bcbe0c85302a404974d862e01f6d6789d28a4",
+    "us/02-notes-and-todos.png": "29a7425feb7ce0c570445e811578ef8962da5614a142eae8cef263cbef6fce4c"
+  }
+}

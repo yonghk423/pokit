@@ -20,7 +20,7 @@ jest.mock('react-native-gesture-handler', () => ({
   GestureDetector: ({ children }: { children: unknown }) => children,
   Gesture: { Pan: () => {
     const gesture: Record<string, unknown> = {};
-    for (const name of ['enabled', 'activeOffsetX', 'failOffsetY', 'onStart', 'onUpdate', 'onEnd', 'onFinalize']) gesture[name] = (value: unknown) => { gesture[name + 'Value'] = value; return gesture; };
+    for (const name of ['enabled', 'activeOffsetX', 'failOffsetY', 'shouldCancelWhenOutside', 'onStart', 'onUpdate', 'onEnd', 'onFinalize']) gesture[name] = (value: unknown) => { gesture[name + 'Value'] = value; return gesture; };
     return gesture;
   } },
 }));

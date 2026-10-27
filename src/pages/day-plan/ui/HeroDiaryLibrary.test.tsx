@@ -52,3 +52,22 @@ it('offers the comic-page illustration as the create action only for an empty un
   expect(add()).toBeDefined();
   act(() => { tree.unmount(); });
 });
+
+it('shows each diary protagonist name and supports searching by that name', () => {
+  const diaries = [
+    { id: 'named-one', title: 'Morning', characterId: 'protagonist-1', characterName: '유리', scenes: [newComicScene('운동')], createdAt: 0, updatedAt: 0 },
+    { id: 'named-two', title: 'Evening', characterId: 'protagonist-1', characterName: '민지', scenes: [], createdAt: 0, updatedAt: 0 },
+  ];
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicDiaryLibrary diaries={diaries} activeId="named-one" onClose={jest.fn()} onCreate={jest.fn()} onOpen={jest.fn()} onRename={jest.fn()} onDelete={jest.fn()} />); });
+  const button = (label: string) => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
+  expect(button('comicDiary.open:Morning').props.accessibilityHint).toBe('유리');
+  expect(button('comicDiary.open:Evening').props.accessibilityHint).toBe('민지');
+  expect(tree.root.findAll(node => node.props.children === '유리').length).toBeGreaterThan(0);
+  expect(tree.root.findAll(node => node.props.children === '민지').length).toBeGreaterThan(0);
+  const search = tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDiary.search')!;
+  act(() => search.props.onChangeText('민지'));
+  expect(button('comicDiary.open:Morning')).toBeUndefined();
+  expect(button('comicDiary.open:Evening')).toBeDefined();
+  act(() => tree.unmount());
+});

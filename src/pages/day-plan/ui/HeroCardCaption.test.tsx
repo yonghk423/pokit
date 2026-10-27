@@ -1,0 +1,84 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { Keyboard, Modal } from 'react-native';
+import { HeroCardCaption } from './HeroCardCaption';
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
+jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.requireActual('react-native').TextInput }));
+jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').Modal }));
+jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
+jest.mock('@shared/ui/handdrawn-frame', () => ({ HanddrawnFrame: () => null }));
+jest.mock('@shared/lib/ui-font', () => ({ useAppFontSizeScale: () => 1, scaleTypeSize: (size: number) => size }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('@shared/lib/haptics/tapHaptic', () => ({ tapHaptic: jest.fn() }));
+
+it('edits title and memo together, validates the title, and saves only on explicit save', () => {
+  const onSave = jest.fn();
+  const onOpen = jest.fn();
+  const onEditingChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardCaption title="운동하기" memo="기존 요약" number={1} ink="#222" muted="#777" onSave={onSave} onOpen={onOpen} onEditingChange={onEditingChange} />); });
+  const button = (id: string) => tree.root.findAll(node => node.props.testID === id && typeof node.props.onPress === 'function')[0];
+  const input = (label: string) => tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === label)!;
+  const action = (label: string) => tree.root.findAll(node => typeof node.props.onPress === 'function' && node.props.accessibilityLabel === label).at(-1)!;
+  act(() => button('hero-card-edit').props.onPress());
+  expect(onOpen).not.toHaveBeenCalled();
+  expect(onEditingChange).toHaveBeenLastCalledWith(true);
+  expect(input('comicDay.memo').props.value).toBe('기존 요약');
+  act(() => input('comicDay.sceneTitle').props.onChangeText('   '));
+  expect(action('common.save').props.disabled).toBe(true);
+  act(() => input('comicDay.sceneTitle').props.onChangeText('  아침 운동  '));
+  act(() => input('comicDay.memo').props.onChangeText('  몸을 가볍게 풀었다.  '));
+  expect(onSave).not.toHaveBeenCalled();
+  act(() => action('common.save').props.onPress());
+  expect(onSave).toHaveBeenCalledWith({ title: '아침 운동', memo: '몸을 가볍게 풀었다.' });
+  expect(onEditingChange).toHaveBeenLastCalledWith(false);
+  expect(tree.root.findAllByType(ThemedTextInput)).toHaveLength(0);
+  act(() => tree.unmount());
+});
+
+it('cancels drafts without changing saved text and permits clearing a memo', () => {
+  const onSave = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardCaption title="운동하기" memo="기존 요약" number={1} ink="#222" muted="#777" onSave={onSave} />); });
+  const edit = () => tree.root.findAll(node => node.props.testID === 'hero-card-edit' && typeof node.props.onPress === 'function')[0];
+  const input = () => tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDay.memo')!;
+  const action = (label: string) => tree.root.findAll(node => typeof node.props.onPress === 'function' && node.props.accessibilityLabel === label).at(-1)!;
+  act(() => edit().props.onPress());
+  act(() => input().props.onChangeText('discard this'));
+  act(() => action('common.cancel').props.onPress());
+  expect(onSave).not.toHaveBeenCalled();
+  act(() => edit().props.onPress());
+  expect(input().props.value).toBe('기존 요약');
+  act(() => input().props.onChangeText(''));
+  act(() => action('common.save').props.onPress());
+  expect(onSave).toHaveBeenCalledWith({ title: '운동하기', memo: '' });
+  act(() => tree.unmount());
+});
+
+
+it('keeps the draft when dismissing the keyboard and focuses the summary from the title', () => {
+  const onSave = jest.fn();
+  const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardCaption title="운동하기" number={1} ink="#222" muted="#777" onSave={onSave} />); });
+  act(() => tree.root.findAll(node => node.props.testID === 'hero-card-edit' && typeof node.props.onPress === 'function')[0].props.onPress());
+  const input = (label: string) => tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === label)!;
+  const titleFocus = jest.spyOn(input('comicDay.sceneTitle').props.ref.current, 'focus');
+  const memoFocus = jest.spyOn(input('comicDay.memo').props.ref.current, 'focus');
+  act(() => tree.root.findByType(Modal).props.onShow());
+  expect(titleFocus).toHaveBeenCalledTimes(1);
+  memoFocus.mockClear();
+  act(() => input('comicDay.sceneTitle').props.onSubmitEditing());
+  expect(memoFocus).toHaveBeenCalledTimes(1);
+  act(() => input('comicDay.memo').props.onChangeText('작성 중인 요약'));
+  act(() => tree.root.findAll(node => node.props.testID === 'hero-card-dismiss-keyboard' && typeof node.props.onPress === 'function')[0].props.onPress());
+  expect(dismiss).toHaveBeenCalledTimes(1);
+  expect(onSave).not.toHaveBeenCalled();
+  expect(input('comicDay.memo').props.value).toBe('작성 중인 요약');
+  act(() => tree.root.findByType(Modal).props.onRequestClose());
+  expect(tree.root.findAllByType(ThemedTextInput)).toHaveLength(0);
+  expect(onSave).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+  dismiss.mockRestore();
+});

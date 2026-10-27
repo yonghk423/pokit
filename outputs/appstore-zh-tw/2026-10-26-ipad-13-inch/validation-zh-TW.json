@@ -1,0 +1,66 @@
+{
+  "images": 6,
+  "passed": true,
+  "files": [
+    {
+      "file": "zh-TW/01-your-scenes.png",
+      "width": 2048,
+      "height": 2732,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "bytes": 3413217,
+      "sha256": "da25c1b780e35b04c673ea9f89b85a90a0daae0118ae337b1653d017d57b2e9c"
+    },
+    {
+      "file": "zh-TW/02-notes-and-todos.png",
+      "width": 2048,
+      "height": 2732,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "bytes": 1820597,
+      "sha256": "67db8cfe8d8a378f0fb97b3875bd326186720d7eb6077e98efbdb97c47bae36f"
+    },
+    {
+      "file": "zh-TW/03-day-overview.png",
+      "width": 2048,
+      "height": 2732,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "bytes": 3353765,
+      "sha256": "239d38871833689425d7a1a4a25027ba7164a20b681404545b8e3ad31e041dbe"
+    },
+    {
+      "file": "zh-TW/04-mate-cards.png",
+      "width": 2048,
+      "height": 2732,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "bytes": 2673838,
+      "sha256": "abc596ebe99cb52004ef2c8e897578df3e895874d1ee5a07de050b0ffc43b7dd"
+    },
+    {
+      "file": "zh-TW/05-large-widget.png",
+      "width": 2048,
+      "height": 2732,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "bytes": 2025720,
+      "sha256": "8f1eaa5336edc7250f8a20ae99c4bc0540fa1a16cb5a4c2a1e6e420903927a5b"
+    },
+    {
+      "file": "zh-TW/06-small-widget.png",
+      "width": 2048,
+      "height": 2732,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "bytes": 2095025,
+      "sha256": "5d1bb2b156ccdb40ebcbaf71c5b3e267f8c4ccb9f5b80c93853f8c3856dcec87"
+    }
+  ]
+}

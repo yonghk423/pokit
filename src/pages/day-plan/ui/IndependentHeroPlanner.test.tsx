@@ -408,3 +408,19 @@ it('keeps already mounted diary surfaces in sync when a replay creates its tutor
   act(() => { first.unmount(); second.unmount(); });
   jest.useRealTimers();
 });
+
+it('persists inline card edits without changing the image, tasks or other scenes', () => {
+  const scene = { ...newComicScene('운동하기'), memo: '이전 메모', todos: [{ id: 'todo-1', text: '스트레칭', completed: true }] };
+  const other = newComicScene('독서');
+  saveComicDay('2026-10-21', [scene, other]);
+  let tree!: ReactTestRenderer;
+  const render = () => <IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />;
+  act(() => { tree = create(render()); });
+  act(() => { openCharacterChooser(tree)?.props.onStart(COMIC_CHARACTERS[0]); });
+  act(() => { tree.root.findAllByType(ComicScenePicker)[0]?.props.onClose(); });
+  act(() => { tree.root.findByType(ComicDayBoard).props.onEditCard(scene.id, { title: '아침 운동', memo: '몸을 가볍게 풀었다.' }); });
+  expect(loadComicDay('2026-10-21')).toEqual([{ ...scene, title: '아침 운동', memo: '몸을 가볍게 풀었다.' }, other]);
+  act(() => { tree.unmount(); tree = create(render()); });
+  expect(tree.root.findByType(ComicDayBoard).props.items[0]).toEqual(expect.objectContaining({ label: '아침 운동', memo: '몸을 가볍게 풀었다.' }));
+  act(() => tree.unmount());
+});

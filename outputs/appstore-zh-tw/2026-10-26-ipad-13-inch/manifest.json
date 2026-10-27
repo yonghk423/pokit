@@ -1,0 +1,182 @@
+[
+  {
+    "locale": "kr",
+    "file": "kr/01-your-scenes.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "나의 하루를, 한 장면씩."
+  },
+  {
+    "locale": "kr",
+    "file": "kr/02-notes-and-todos.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "떠오른 생각과 작은 할 일을 함께."
+  },
+  {
+    "locale": "kr",
+    "file": "kr/03-day-overview.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "흩어진 순간이 나만의 한 페이지로."
+  },
+  {
+    "locale": "kr",
+    "file": "kr/04-mate-cards.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "하루를 챙기는 작은 메이트."
+  },
+  {
+    "locale": "kr",
+    "file": "kr/05-large-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "앱을 열기 전에도, 오늘이 보여요."
+  },
+  {
+    "locale": "kr",
+    "file": "kr/06-small-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "기억하고 싶은 순간, 홈 화면 가까이에."
+  },
+  {
+    "locale": "ja",
+    "file": "ja/01-your-scenes.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "何気ない一日を、 あなたの物語に。"
+  },
+  {
+    "locale": "ja",
+    "file": "ja/02-notes-and-todos.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "心に浮かんだことも、 小さな予定も。"
+  },
+  {
+    "locale": "ja",
+    "file": "ja/03-day-overview.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "一日のひとこまを、 一枚のページに。"
+  },
+  {
+    "locale": "ja",
+    "file": "ja/04-mate-cards.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "毎日に寄り添う、 小さなメイト。"
+  },
+  {
+    "locale": "ja",
+    "file": "ja/05-large-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "アプリを開く前に、 今日が見える。"
+  },
+  {
+    "locale": "ja",
+    "file": "ja/06-small-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "大切なひとこまを、 いつもそばに。"
+  },
+  {
+    "locale": "us",
+    "file": "us/01-your-scenes.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "Your day, one scene at a time."
+  },
+  {
+    "locale": "us",
+    "file": "us/02-notes-and-todos.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "A place for thoughts. And little to-dos."
+  },
+  {
+    "locale": "us",
+    "file": "us/03-day-overview.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "Little moments. One lovely day."
+  },
+  {
+    "locale": "us",
+    "file": "us/04-mate-cards.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "Little cards. A little more ease."
+  },
+  {
+    "locale": "us",
+    "file": "us/05-large-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "A little of today, right on your Home Screen."
+  },
+  {
+    "locale": "us",
+    "file": "us/06-small-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "Keep a moment close to home."
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/01-your-scenes.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "把日常， 寫成自己的故事。",
+    "subtitle": "用手繪場景，收藏屬於你的每一天"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/02-notes-and-todos.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "隨手記下想法， 也收好小小待辦。",
+    "subtitle": "每個場景都能寫備忘、勾選今天的待辦"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/03-day-overview.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "把零散的片刻， 收進同一頁。",
+    "subtitle": "一天的日常場景，隨時一眼回顧"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/04-mate-cards.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "照顧日常的， 小小夥伴。",
+    "subtitle": "從出門準備到閱讀習慣，都放進卡片裡"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/05-large-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "還沒打開 App， 就看見今天。",
+    "subtitle": "在主畫面查看今天的場景與待辦"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/06-small-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "想留住的片刻， 就在主畫面。",
+    "subtitle": "用小工具，把喜歡的日常留在身邊"
+  }
+]

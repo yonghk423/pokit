@@ -3,7 +3,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { syncWeatherToWidget } from '../lib/weatherWidgetSync';
@@ -188,6 +188,8 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedOutfit, setSelectedOutfit] = useState<number | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
+  const [refreshRotation] = useState(() => new Animated.Value(0));
+  const refreshAnimation = useRef<Animated.CompositeAnimation | null>(null);
   const requestInFlight = useRef(false);
   const loadWeatherRef = useRef<(force?: boolean) => Promise<void>>(async () => undefined);
   const alive = useRef(true);
@@ -200,6 +202,50 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
       retryTimer.current = null;
     }
   }, []);
+
+  const startRefreshAnimation = useCallback(() => {
+    refreshAnimation.current?.stop();
+    refreshRotation.setValue(0);
+    const loop = Animated.loop(Animated.timing(refreshRotation, {
+      toValue: 1,
+      duration: 850,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }));
+    refreshAnimation.current = loop;
+    loop.start();
+  }, [refreshRotation]);
+
+  const finishRefreshAnimation = useCallback(() => {
+    const current = refreshAnimation.current;
+    if (!current) return;
+    current.stop();
+    refreshAnimation.current = null;
+    refreshRotation.stopAnimation(value => {
+      const remaining = value > 0.995 ? 0 : 1 - value;
+      if (remaining === 0) {
+        refreshRotation.setValue(0);
+        return;
+      }
+      const settle = Animated.timing(refreshRotation, {
+        toValue: 1,
+        duration: Math.max(140, Math.round(850 * remaining)),
+        easing: Easing.linear,
+        useNativeDriver: true,
+      });
+      refreshAnimation.current = settle;
+      settle.start(({ finished }) => {
+        if (refreshAnimation.current !== settle) return;
+        refreshAnimation.current = null;
+        if (finished) refreshRotation.setValue(0);
+      });
+    });
+  }, [refreshRotation]);
+
+  useEffect(() => () => {
+    refreshAnimation.current?.stop();
+    refreshRotation.stopAnimation();
+  }, [refreshRotation]);
 
   const loadWeather = useCallback(async (force = false) => {
     if (!OPENWEATHER_KEY || requestInFlight.current) return;
@@ -403,10 +449,15 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
               disabled={loading}
               onPress={() => {
                 if (permissionBlocked) void Linking.openSettings();
-                else void loadWeather(true);
+                else if (!requestInFlight.current) {
+                  startRefreshAnimation();
+                  void loadWeather(true).finally(finishRefreshAnimation);
+                }
               }}
               style={[styles.refreshButton, { borderColor: muted, opacity: loading ? 0.55 : 1 }]}>
-              <RefreshMark color={ink} />
+              <Animated.View style={{ transform: [{ rotate: refreshRotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
+                <RefreshMark color={ink} />
+              </Animated.View>
             </Pressable>
           </View>
         </View>

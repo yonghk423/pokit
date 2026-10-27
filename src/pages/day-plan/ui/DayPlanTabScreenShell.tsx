@@ -2,10 +2,11 @@ import { DAY_PLAN_TOOLBAR_TOP_PADDING } from '../lib/dayPlanDeckMetrics';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useTranslation } from '@shared/lib/i18n';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scaleTypeSize, useAppFontSizeScale } from '@shared/lib/ui-font';
 import { useShallow } from 'zustand/react/shallow';
 
 import { consumePendingWidgetPlanMode, useDayPlanDraftStore } from '@entities/day-plan';
@@ -67,6 +68,13 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const segments = useSegments();
   const params = useLocalSearchParams<{ planMode?: string | string[] }>();
   const insets = useSafeAreaInsets();
+  const appFontScale = useAppFontSizeScale();
+  const { fontScale } = useWindowDimensions();
+  // Weather has a 28px button and 22px text line. Reserve its final height before
+  // either the location request or the asynchronously registered title is ready.
+  const weatherHeight = Math.max(28, Math.ceil(scaleTypeSize(22, appFontScale) * fontScale));
+  const characterHeight = Math.max(26, Math.ceil(scaleTypeSize(23, appFontScale) * fontScale));
+  const comicHeaderHeight = Math.max(44 + characterHeight, 46 + weatherHeight);
   const inTabs = segments.some((segment) => segment === '(tabs)');
   const isComicTab = tabName ? tabName === 'comic-day' : segments.some(segment => segment === 'comic-day');
   const isDayPlanTab = tabName ? tabName === 'day-plan' : inTabs
@@ -147,12 +155,12 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             fixedMiddle={isComicTab}
             trailingAlign={isComicTab ? 'start' : 'center'}
             trailing={
-              <View style={isComicTab ? styles.comicTrailing : styles.trailingRow}>
+              <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: comicHeaderHeight }] : styles.trailingRow}>
                 <View style={styles.trailingRow}>
                   <SettingsTopBarButton c={c} />
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View>
-                {isComicTab ? <View style={styles.comicWeather}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View> : null}
+                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View> : null}
               </View>
             }
           />

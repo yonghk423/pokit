@@ -1,9 +1,10 @@
 import { useLayoutEffect } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { DayPlanTabScreenShell } from './DayPlanTabScreenShell';
 import { useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 
+let mockWeatherAvailable = true;
 let mockPlanMode = 'priority';
 let mockSegments = ['(tabs)', 'day-plan'];
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }), useSegments: () => mockSegments, useLocalSearchParams: () => ({}) }));
@@ -17,7 +18,8 @@ jest.mock('@shared/ui/header-icon', () => ({ HeaderIcon: () => null }));
 jest.mock('./WeatherSummary', () => ({ WeatherSummary: () => {
   const { useTutorialGuideLayer } = jest.requireActual('@shared/ui/tutorial-guide-layer');
   const NativeView = jest.requireActual('react-native').View;
-  return <NativeView testID="weather-guide-owner" guideOwner={useTutorialGuideLayer()} />;
+  const guideOwner = useTutorialGuideLayer();
+  return mockWeatherAvailable ? <NativeView testID="weather-guide-owner" guideOwner={guideOwner} style={{ height: 28 }} /> : null;
 } }));
 jest.mock('./SettingsTopBarButton', () => ({ SettingsTopBarButton: () => {
   const NativeView = jest.requireActual('react-native').View;
@@ -88,3 +90,28 @@ it.each(['day-plan', 'comic-day'])('keeps %s header ownership while another tab 
   mockSegments = ['(tabs)', 'day-plan'];
 });
 
+
+it('reserves the full comic header before weather and title arrive and retains it after failure', async () => {
+  mockWeatherAvailable = false;
+  mockPlanMode = 'priority';
+  let tree!: ReactTestRenderer;
+  const render = (withTitle: boolean) => <DayPlanTabScreenShell tabName="comic-day">{withTitle ? <RegisterActions onPress={jest.fn()} /> : <View />}</DayPlanTabScreenShell>;
+  await act(async () => { tree = create(render(false)); });
+  const dimensions = () => ({
+    header: StyleSheet.flatten(tree.root.findAllByProps({ testID: 'comic-header-trailing' })[0].props.style).minHeight,
+    weather: StyleSheet.flatten(tree.root.findAllByProps({ testID: 'comic-header-weather-slot' })[0].props.style).minHeight,
+  });
+  const reserved = dimensions();
+  expect(reserved.weather).toBeGreaterThanOrEqual(28);
+  expect(reserved.header).toBe(46 + reserved.weather);
+  mockWeatherAvailable = true;
+  await act(async () => tree.update(render(true)));
+  expect(tree.root.findAllByProps({ testID: 'weather-guide-owner' }).length).toBeGreaterThan(0);
+  expect(dimensions()).toEqual(reserved);
+  mockWeatherAvailable = false;
+  await act(async () => tree.update(render(true)));
+  expect(tree.root.findAllByProps({ testID: 'weather-guide-owner' })).toHaveLength(0);
+  expect(dimensions()).toEqual(reserved);
+  act(() => tree.unmount());
+  mockWeatherAvailable = true;
+});

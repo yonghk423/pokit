@@ -1,3 +1,4 @@
+import type { HeroCardText } from './HeroCardCaption';
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { MateBagIcon } from './MateBagIcon';
 import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
@@ -40,7 +41,7 @@ let lastBoardWidth = 0;
 type BoardItem = Omit<CircularRoutineItem, 'completed'> & { completed?: boolean; memo?: string };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
 type SceneLibrary = readonly typeof COMIC_SCENES[number][];
-export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
+export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
   onOpenBag?: () => void;
   sceneLibrary?: SceneLibrary;
   hideCharacterHeading?: boolean;
@@ -48,6 +49,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
   diaryTitle?: string;
   items: BoardItem[]; onOpen: (key: string, card?: HeroCardOpen) => void; onComplete?: (key: string) => void;
   onRemove?: (key: string) => void;
+  onEditCard?: (key: string, text: HeroCardText) => void;
   onRemoveMany?: (keys: string[]) => void;
   characterName?: string; onSelectCharacter?: () => void; onRenameCharacter?: () => void;
   onAdd: () => void; onEditTime?: (key: string, label: string) => void;
@@ -206,7 +208,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
     {cardsFirst ? <Animated.View testID="comic-card-deck-layer" pointerEvents={showCards ? 'auto' : 'none'} accessibilityElementsHidden={!showCards} importantForAccessibility={showCards ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, deckVisibility]}>
       <View style={[s.deckHeading, hideCharacterHeading && { height: DAY_PLAN_DECK_TOP }]}>{hideCharacterHeading ? null : heading}</View>
       <View style={s.deckStage}>
-        <ComicSceneDeck detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
+        <ComicSceneDeck detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onEditCard={onEditCard} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
       </View>
       <ServiceTutorialTarget steps={showCards ? ['comicStart'] : []} style={s.deckAdd}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget>
     </Animated.View> : null}

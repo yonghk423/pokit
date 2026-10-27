@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, Easing, runOnJS, runOnUI, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { loopDeckIndex, overlayCardPose } from '../lib/overlayCardDeck';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -8,6 +8,8 @@ import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 export type HeroCardStackHandle = { turnTo: (index: number) => void };
 type Props = {
   active: number; count: number; width: number; height: number; cardWidth: number; cardHeight: number; top: number; enabled: boolean;
+  overviewGesture?: PanGesture;
+  swipeEnabled?: boolean;
   renderPage: (index: number, interactive: boolean, focused: boolean) => ReactNode; onChange: (index: number) => void;
 };
 function StackCard({ index, position, direction, width, cardWidth, cardHeight, top, children, interactive }: {
@@ -26,7 +28,7 @@ function StackCard({ index, position, direction, width, cardWidth, cardHeight, t
 }
 
 /** Intact live cards use the mate deck's pose; no snapshots, image slicing or decode gate. */
-export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ active, count, width, height, cardWidth, cardHeight, top, enabled, renderPage, onChange }, ref) {
+export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, renderPage, onChange }, ref) {
   const [cursor, setCursor] = useState(() => active + count);
   const base = count > 1 ? cursor : 0;
   const reported = useSharedValue(active);
@@ -74,7 +76,7 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
     }));
   };
   useImperativeHandle(ref, () => ({ turnTo(next) {
-    if (!enabled || next < 0 || next >= count) return;
+    if (!enabled || !swipeEnabled || next < 0 || next >= count) return;
     runOnUI(() => {
       'worklet';
       if (tracking.get()) return;
@@ -89,7 +91,10 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
       settle(current + delta);
     })();
   } }));
-  const gesture = Gesture.Pan().enabled(enabled && count > 1).activeOffsetX([-12, 12]).failOffsetY([-12, 12])
+  // A thumb sweeps in an arc from the lower corners. Allow that initial vertical
+  // drift before claiming a horizontal turn, and keep tracking past the edge.
+  const gesture = Gesture.Pan().enabled(enabled && swipeEnabled && count > 1)
+    .activeOffsetX([-8, 8]).failOffsetY([-40, 40]).shouldCancelWhenOutside(false)
     .onStart(event => {
       cancelAnimation(position);
       dragOrigin.set(position.get());
@@ -111,7 +116,10 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
     .onFinalize((_event, success) => { if (!success && tracking.get()) settle(destination.get()); });
   // Like the mate deck, virtual copies keep three layers visible through either boundary.
   const indices = count > 1 ? Array.from({ length: 6 }, (_, offset) => base - 1 + offset) : count === 1 ? [0] : [];
-  return <GestureDetector gesture={gesture}><View testID="comic-card-stack" style={[s.root, { width, height }]}>
+  // Both gestures share one native surface. A held thumb sweep must get a chance
+  // to turn before the long-press overview gesture can claim the same touch.
+  const deckGesture = overviewGesture ? Gesture.Exclusive(gesture, overviewGesture) : gesture;
+  return <GestureDetector gesture={deckGesture}><View testID="comic-card-stack" collapsable={false} style={[s.root, { width, height }]}>
     {indices.map(index => <StackCard key={index} index={index} position={position} direction={direction} width={width} cardWidth={cardWidth} cardHeight={cardHeight} top={top}
       interactive={enabled && index === base}>{renderPage(loopDeckIndex(index, count), enabled && index === base, index === base)}</StackCard>)}
   </View></GestureDetector>;

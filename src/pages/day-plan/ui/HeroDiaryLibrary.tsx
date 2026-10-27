@@ -1,3 +1,4 @@
+import { loadComicCharacterName } from '../lib/heroCharacterName';
 import { SettingsPenIcon } from '../../settings/lib/settingsPen';
 import { COMIC_SCENES } from '../lib/heroSceneImages';
 import { useState } from 'react';
@@ -61,7 +62,9 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
   const [renamingId, setRenamingId] = useState<string | null>(initialRenameId ?? null);
   const [draft, setDraft] = useState(() => diaries.find(item => item.id === initialRenameId)?.title ?? '');
   const save = () => { if (renamingId && draft.trim()) { tapHaptic('confirm'); onRename(renamingId, draft); setRenamingId(null); } };
-  const filtered = diaries.filter(diary => diary.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const characterNameFor = (diary: ComicDiary) => diary.characterName?.trim() || loadComicCharacterName(diary.characterId) || t((COMIC_CHARACTERS.find(character => character.id === diary.characterId) ?? COMIC_CHARACTERS[0]).name);
+  const searchQuery = query.trim().toLocaleLowerCase();
+  const filtered = diaries.filter(diary => [diary.title, characterNameFor(diary)].some(value => value.toLocaleLowerCase().includes(searchQuery)));
   const createDiary = () => { tapHaptic(); onCreate(); };
   return <AppModal visible transparent animationType="fade" onRequestClose={onClose}>
     <View style={s.overlay}>
@@ -81,12 +84,20 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
           const first = item.scenes[0];
           const source = first ? COMIC_SCENE_THUMBNAILS[first.image] : COMIC_CHARACTERS.find(character => character.id === item.characterId)!.cover;
           const heading = titleWithWrittenTime(item.title, writtenStamp(item));
+          const characterName = characterNameFor(item);
           return <View style={s.rowPaper}>
             <HanddrawnFrame color={activeId === item.id ? '#171510' : '#B9B9B9'} bold={activeId === item.id} />
             <View style={s.row}>
-              <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.open', { title: heading })} accessibilityState={{ selected: activeId === item.id }} onPress={() => { tapHaptic(); onOpen(item.id); }} style={s.open}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.open', { title: heading })} accessibilityHint={characterName} accessibilityState={{ selected: activeId === item.id }} onPress={() => { tapHaptic(); onOpen(item.id); }} style={s.open}>
                 <ComicSceneImage imageKey={`diary:${item.id}:${first?.image ?? 'cover'}`} source={source} fallbackSource={first ? COMIC_SCENES.find(scene => scene.id === first.image)!.source : COMIC_CHARACTERS.find(character => character.id === item.characterId)!.preview[0].source} style={s.cover} />
-                <View style={{ flex: 1 }}><ThemedText numberOfLines={2} style={s.title}>{heading}</ThemedText>{item.scenes.length ? <ThemedText style={s.count}>{t('comicDiary.sceneCount', { count: item.scenes.length })}</ThemedText> : <View style={{ marginTop: 3 }}><HeroEmptySceneIcon color="#777" size={24} /></View>}</View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <ThemedText numberOfLines={2} style={s.title}>{heading}</ThemedText>
+                  <View style={s.metadata}>
+                    <ThemedText numberOfLines={1} style={s.characterName}>{characterName}</ThemedText>
+                    <ThemedText style={s.count}>·</ThemedText>
+                    {item.scenes.length ? <ThemedText style={s.count}>{t('comicDiary.sceneCount', { count: item.scenes.length })}</ThemedText> : <HeroEmptySceneIcon color="#777" size={24} />}
+                  </View>
+                </View>
               </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.manage', { title: item.title })} accessibilityState={{ expanded: menuId === item.id }} style={s.touch} onPress={() => { tapHaptic('select'); setRenamingId(null); setMenuId(menuId === item.id ? null : item.id); }}><Svg width={19} height={15} viewBox="0 0 19 15" accessible={false}>
                 <Path d="M3.1 6.2C4.4 6 4.6 7.1 4.3 7.9C3.9 8.7 2.6 8.5 2.5 7.6C2.3 6.9 2.5 6.4 3.1 6.2Z M9.3 6.1C10.5 6.2 10.6 7.5 10 8.1C9.4 8.7 8.2 8.3 8.3 7.4C8.2 6.7 8.6 6.1 9.3 6.1Z M15.1 6.2C16.2 6 16.8 7.2 16.2 8C15.7 8.8 14.3 8.3 14.3 7.5C14.2 6.8 14.5 6.4 15.1 6.2Z" fill="#363636" />
@@ -112,5 +123,6 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }, heading: { color: '#252525', fontSize: 24, flex: 1 }, touch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, close: { color: '#343434', fontSize: 30 },
   create: { alignSelf: 'flex-start', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }, action: { color: '#272727', fontSize: 19 }, searchRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 14 }, searchLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 5 }, search: { flex: 1, minWidth: 0, color: '#303030', minHeight: 44, fontSize: 15 }, list: { gap: 12, paddingBottom: 12 }, listEmpty: { flexGrow: 1, justifyContent: 'center' }, emptyIconButton: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 },
   rowPaper: { backgroundColor: '#FFFFFF', padding: 7 }, row: { flexDirection: 'row', alignItems: 'center' }, open: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 3, minWidth: 0 }, cover: { width: 64, height: 68 }, title: { color: '#303030', fontSize: 17, lineHeight: 24 }, count: { color: '#727272', fontSize: 13, lineHeight: 20 },
+  metadata: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }, characterName: { color: '#4C5149', fontSize: 14, lineHeight: 20, flexShrink: 1 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 6 }, menuButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 }, rename: { paddingHorizontal: 6, paddingVertical: 8 }, renameInput: { color: '#303030', fontSize: 17, minHeight: 44, borderBottomWidth: 0.6, borderColor: '#A5A5A5' }, footer: { color: '#25231F', textAlign: 'center', fontSize: 22, lineHeight: 30, paddingVertical: 10 }, empty: { color: '#818181', fontSize: 15, textAlign: 'center', paddingVertical: 36 },
 });

@@ -1,0 +1,56 @@
+[
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/01-your-scenes.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "把日常， 寫成自己的故事。",
+    "subtitle": "用手繪場景，收藏屬於你的每一天"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/02-notes-and-todos.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "隨手記下想法， 也收好小小待辦。",
+    "subtitle": "每個場景都能寫備忘、勾選今天的待辦"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/03-day-overview.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "把零散的片刻， 收進同一頁。",
+    "subtitle": "一天的日常場景，隨時一眼回顧"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/04-mate-cards.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "照顧日常的， 小小夥伴。",
+    "subtitle": "從出門準備到閱讀習慣，都放進卡片裡"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/05-large-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "還沒打開 App， 就看見今天。",
+    "subtitle": "在主畫面查看今天的場景與待辦"
+  },
+  {
+    "locale": "zh-TW",
+    "appStoreLocale": "zh-Hant",
+    "file": "zh-TW/06-small-widget.png",
+    "width": 2048,
+    "height": 2732,
+    "headline": "想留住的片刻， 就在主畫面。",
+    "subtitle": "用小工具，把喜歡的日常留在身邊"
+  }
+]

@@ -228,6 +228,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
     <ComicDayBoard onOpenBag={onOpenBag} sceneLibrary={character.scenes} detailOpen={!!selected && detailFrontReady} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} characterName={customName ?? t(character.name)} onRenameCharacter={rename} onSelectCharacter={onSelectCharacter} items={scenes.map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, icon: '', faceColor: scene.paper, inkColor: scene.pen }))}
       ink={ink} muted={muted} isDark={isDark} choices={Object.fromEntries(scenes.map(scene => [scene.id, scene.image]))}
       onOpen={open}
+      onEditCard={(id, text) => patch(id, text)}
       onRemove={removeScene}
       onRemoveMany={removeScenes}
       onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicPick'); showPicker(true); }} />

@@ -1,3 +1,4 @@
+import { HeroCardCaption } from './HeroCardCaption';
 import { ComicSceneDeck } from './HeroSceneDeck';
 import { HeroCardStack } from './HeroCardStack';
 import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
@@ -163,9 +164,10 @@ it('copies layout coordinates before React processes queued state updates', () =
 jest.mock('./HeroCardStack', () => {
   const React = jest.requireActual('react');
   const { View } = jest.requireActual('react-native');
-  return { HeroCardStack: React.forwardRef(function MockStack({ active, enabled, width, cardWidth, renderPage, onChange }: { active: number; enabled: boolean; width: number; cardWidth: number; renderPage: (index: number, interactive: boolean, focused: boolean) => unknown; onChange: (index: number) => void }, ref: unknown) {
+  const { GestureDetector } = jest.requireMock('react-native-gesture-handler');
+  return { HeroCardStack: React.forwardRef(function MockStack({ active, enabled, overviewGesture, width, cardWidth, renderPage, onChange }: { overviewGesture?: unknown; active: number; enabled: boolean; width: number; cardWidth: number; renderPage: (index: number, interactive: boolean, focused: boolean) => unknown; onChange: (index: number) => void }, ref: unknown) {
     React.useImperativeHandle(ref, () => ({ turnTo: onChange }));
-    return <View testID="comic-card-stack" width={width} cardWidth={cardWidth}>{renderPage(active, enabled, true)}</View>;
+    return <GestureDetector gesture={overviewGesture ?? {}}><View testID="comic-card-stack" width={width} cardWidth={cardWidth}>{renderPage(active, enabled, true)}</View></GestureDetector>;
   }) };
 });
 
@@ -265,4 +267,49 @@ it('scrolls overflowing thumbnail rows and keeps a short row still', () => {
   expect(scroll().props.scrollEnabled).toBe(false);
   expect(StyleSheet.flatten(scroll().props.contentContainerStyle).justifyContent).toBe('center');
   act(() => tree.unmount());
+});
+
+it('edits the active card in place and pauses deck gestures until saving', () => {
+  const onOpen = jest.fn();
+  const onEditCard = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneDeck items={[{ key: 'inline-one', label: '운동하기' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onEditCard={onEditCard} />); });
+  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 650 } } }));
+  act(() => jest.advanceTimersByTime(50));
+  const caption = () => tree.root.findByType(HeroCardCaption);
+  act(() => caption().props.onEditingChange(true));
+  expect(tree.root.findByType(HeroCardStack).props.swipeEnabled).toBe(false);
+  expect(tree.root.findByType(HeroCardStack).props.enabled).toBe(true);
+  expect(onOpen).not.toHaveBeenCalled();
+  act(() => { caption().props.onSave({ title: '아침 운동', memo: '개운하다.' }); caption().props.onEditingChange(false); });
+  expect(onEditCard).toHaveBeenCalledWith('inline-one', { title: '아침 운동', memo: '개운하다.' });
+  expect(tree.root.findByType(HeroCardStack).props.swipeEnabled).toBe(true);
+  act(() => tree.unmount());
+});
+
+it('keeps the edit icon in the return-animation front so the title does not shift during handoff', () => {
+  const onOpen = jest.fn();
+  let tree!: ReactTestRenderer;
+  let front!: ReactTestRenderer;
+  const items = [{ key: 'return-one', label: '운동하기', memo: '가볍게 몸을 풀었다.' }];
+  const render = (detailOpen: boolean) => <ComicSceneDeck items={items} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onEditCard={jest.fn()} detailOpen={detailOpen} />;
+  const options = { createNodeMock: () => ({ scrollTo: jest.fn(), measure: jest.fn(), measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => callback(12, 180, 326, 500) }) };
+  act(() => { tree = create(render(false), options); });
+  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 650 } } }));
+  act(() => jest.advanceTimersByTime(50));
+  tree.root.findAllByType(View).filter(node => node.props.collapsable === false).forEach(node => {
+    node.instance.measureInWindow = (callback: (x: number, y: number, width: number, height: number) => void) => callback(12, 180, 326, 500);
+  });
+  act(() => tree.root.findAll(node => node.props.accessibilityLabel === '운동하기' && !node.props.accessibilityState && typeof node.props.onPress === 'function')[0].props.onPress());
+  const opened = onOpen.mock.calls[0][1];
+  expect(tree.root.findByType(HeroCardCaption).props.showEdit).toBe(true);
+  act(() => { tree.update(render(true)); });
+  expect(tree.root.findByType(HeroCardCaption).props.showEdit).toBe(true);
+  act(() => opened.readCurrent((current: { front: React.ReactElement }) => { front = create(current.front); }));
+  const icon = front.root.findAll(node => node.props.testID === 'hero-card-edit' && typeof node.props.onPress === 'function')[0];
+  expect(icon).toBeDefined();
+  expect(icon.props.disabled).toBe(true);
+  act(() => tree.update(render(false)));
+  expect(tree.root.findByType(HeroCardCaption).props.showEdit).toBe(true);
+  act(() => { front.unmount(); tree.unmount(); });
 });
