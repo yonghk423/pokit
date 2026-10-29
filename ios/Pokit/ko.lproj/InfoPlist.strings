@@ -1,5 +1,5 @@
 /* Korean — system permission strings & display name */
 "CFBundleDisplayName" = "오늘의 주인공";
 "NSPhotoLibraryUsageDescription" = "노트에 첨부할 사진을 앨범에서 선택하려면 사진 접근 권한이 필요해요.";
-"NSPhotoLibraryAddUsageDescription" = "선택한 사진을 노트 첨부용으로 보관하려면 사진 접근 권한이 필요해요.";
+"NSPhotoLibraryAddUsageDescription" = "완성된 장면을 사진 앱에 저장하려면 사진 추가 권한이 필요해요.";
 "NSMotionUsageDescription" = "현재 날씨를 보여 줄 때 기기 방향을 확인하는 데 동작 센서를 사용할 수 있어요. 움직임 기록은 저장하지 않아요.";

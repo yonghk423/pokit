@@ -41,3 +41,10 @@ app-example
 
 # generated native folders (iOS tracked in repo)
 /android
+
+# Local AI relay quota and generated images
+.hero-ai-dev/
+
+# Supabase CLI state and local release checks
+supabase/.temp/
+tmp/hero-ai-release/

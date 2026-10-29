@@ -41,10 +41,6 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import {
-  rescheduleDayPlanNotifications,
-  syncPriorityDayStartAlarm,
-} from '@features/day-plan-notifications';
-import {
   buildLiveActivityPayloadForBlock,
   clearQuickMemoPhotoFromLiveActivity,
   endLiveActivityAndDismiss,
@@ -59,7 +55,6 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { t } from '@shared/lib/i18n';
 import {
   loadDailyRhythmOnboardingCompleted,
-  loadPriorityDayStartAlarm,
   loadQuickMemoLockPrefs,
   markDailyRhythmOnboardingCompleted,
   markDailyRhythmOnboardingCompletedAndFlush,
@@ -394,21 +389,6 @@ export function DayPlanPage({
     return () => clearInterval(id);
   }, []);
 
-  /** 데이플랜에서 시작 시각만 바꿔도 알람 시각이 따라가게 (연속 호출·중복 예약 방지) */
-  const priorityStartAlarmSyncRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!loadPriorityDayStartAlarm().enabled) return;
-    const target = priorityStart;
-    if (priorityStartAlarmSyncRef.current === target) return;
-    const timer = setTimeout(() => {
-      void (async () => {
-        const ok = await syncPriorityDayStartAlarm({ enabled: true, startHhmm: target });
-        if (ok) priorityStartAlarmSyncRef.current = target;
-      })();
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [priorityStart]);
-
   useEffect(() => {
     if (planMode !== 'priority') return;
     if (priorityCategoryOrder.length > 0) return;
@@ -448,10 +428,6 @@ export function DayPlanPage({
     },
     [applyPriorityPlanCalendarRange, setPriorityEnd, setPriorityStart, syncOvernightPriorityPlanDates],
   );
-
-  const syncScheduledNotifications = useCallback(() => {
-    void rescheduleDayPlanNotifications();
-  }, []);
 
   /** 씬은 탭 아래까지 이미 분리됨 — 스크롤 말줄임만 최소(기본 6px) */
   const scrollContentBottomPad = useMemo(() => tabBarScrollBottomInset(insets.bottom), [insets.bottom]);
@@ -539,7 +515,6 @@ export function DayPlanPage({
           planState.removeQuickMemo(memo.id);
         }
         setQuickMemoDraft('');
-        syncScheduledNotifications();
         // 빈 저장: reconcile(end) + endAndSuspend 이중 호출 방지 → dismiss 한 경로만
         void (async () => {
           const dismissed = await endLiveActivityAndDismiss();
@@ -593,7 +568,6 @@ export function DayPlanPage({
         removeQuickMemo(m.id);
       }
 
-      syncScheduledNotifications();
       // reconcile + upsertAndSuspend를 같이 치면 Live Activity가 두 장 쌓일 수 있음 → 저장 경로는 upsert 한 번만.
       void (async () => {
         const prefs = loadQuickMemoLockPrefs();
@@ -672,7 +646,6 @@ export function DayPlanPage({
         return;
       }
 
-      syncScheduledNotifications();
       endFocusedLiveActivity();
       setIsFocusStarted(true);
       return;
@@ -804,7 +777,6 @@ export function DayPlanPage({
         }
       }
       completeBlocks(pendingFlowBlocks.map((b) => b.id));
-      void rescheduleDayPlanNotifications();
     }
 
     setIsFocusStarted(false);

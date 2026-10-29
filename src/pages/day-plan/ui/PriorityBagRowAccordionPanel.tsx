@@ -16,11 +16,6 @@ import {
   useGoalDetailSettingsStore,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
-import {
-  isMedicineReminderCategory,
-  syncMedicineReminderNotifications,
-} from '@features/day-plan-notifications';
 import type { GoalDetailCategoryKey } from '@pages/goal-detail-settings/model/types';
 import { resolveGoalDetailModuleForTarget } from '@pages/goal-detail-settings/ui/category';
 import { RoutineSummaryField } from '@pages/goal-detail-settings/ui/category/lib/RoutineSummaryField';
@@ -42,7 +37,6 @@ import {
   resolvePokitWeekTourStepIndex,
   saveGoalDetailCategoryConfig,
 } from '@shared/lib/storage';
-import { prefetchPuzzleGuideAssets } from '@shared/lib/puzzle-guide-assets';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import { UiSurfacePresentationProvider } from '@shared/ui/presentation';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -220,8 +214,6 @@ export function PriorityBagRowAccordionPanel({
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSummaryCommitRef = useRef<(() => void) | null>(null);
-  const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reminderNotifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isWeekTour = isPokitWeekTourFlowId(categoryKey);
 
   const goalDetailRevision = useGoalDetailSettingsStore((s) => s.revision);
@@ -257,30 +249,8 @@ export function PriorityBagRowAccordionPanel({
       }
       pendingSummaryCommitRef.current?.();
       pendingSummaryCommitRef.current = null;
-      if (medicineReminderSyncTimerRef.current) {
-        clearTimeout(medicineReminderSyncTimerRef.current);
-      }
-      if (reminderNotifyTimerRef.current) {
-        clearTimeout(reminderNotifyTimerRef.current);
-      }
     };
   }, []);
-
-  /**
-   * 오늘 탭에서 바꾼 알림 시각을 OS 예약에 맞춘다.
-   * 설정 화면만 규칙을 저장하면, 여기 시각과 다른 때에 울린다.
-   */
-  useEffect(() => {
-    if (resolveCustomFlowTemplateKey(rawConfig) !== 'reminder') return;
-    if (reminderNotifyTimerRef.current) clearTimeout(reminderNotifyTimerRef.current);
-    reminderNotifyTimerRef.current = setTimeout(() => {
-      reminderNotifyTimerRef.current = null;
-      void persistReminderTemplateNotificationRule(categoryKey, rawConfig);
-    }, 450);
-    return () => {
-      if (reminderNotifyTimerRef.current) clearTimeout(reminderNotifyTimerRef.current);
-    };
-  }, [categoryKey, rawConfig]);
 
   /**
    * 오늘 탭에서 실제로 떠날 때만 팁을 닫는다.
@@ -361,15 +331,6 @@ export function PriorityBagRowAccordionPanel({
           : next;
       saveGoalDetailCategoryConfig(categoryKey, merged);
       setRevision((n) => n + 1);
-      if (isMedicineReminderCategory(categoryKey, merged)) {
-        if (medicineReminderSyncTimerRef.current) {
-          clearTimeout(medicineReminderSyncTimerRef.current);
-        }
-        medicineReminderSyncTimerRef.current = setTimeout(() => {
-          medicineReminderSyncTimerRef.current = null;
-          void syncMedicineReminderNotifications();
-        }, 450);
-      }
     },
     [categoryKey, rawConfig],
   );
@@ -472,7 +433,6 @@ export function PriorityBagRowAccordionPanel({
     if (!FEATURE_FLAGS.puzzle) return;
     if (loadPokitWeekTourPuzzleNudgeSeen()) return;
     clearPuzzleNudgeTimer();
-    void prefetchPuzzleGuideAssets();
     puzzleNudgeTimerRef.current = setTimeout(() => {
       puzzleNudgeTimerRef.current = null;
       if (loadPokitWeekTourPuzzleNudgeSeen()) return;

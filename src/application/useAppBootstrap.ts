@@ -1,9 +1,10 @@
+import { getSupabaseUrl } from '@shared/config/supabase';
+import { migrateHeroAiAuthSession } from '@shared/lib/supabase/heroAiSecureStorage';
 import { initializeHeroCardEditHint } from '@shared/lib/storage/heroCardEditHintStorage';
 import { initializeHeroCharacterNameHint } from '@shared/lib/storage/heroCharacterNameHintStorage';
 import { getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { loadComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -28,32 +29,14 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
-import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { useAppSessionStore } from '@shared/lib/app-session';
-import {
-  reconcileReminderTemplateNotificationRules,
-  syncCategoryReminderNotifications,
-} from '@features/category-reminder-notifications';
-import {
-  syncIncompleteRoutineReminderNotifications,
-  syncMedicineReminderNotifications,
-  syncPriorityDayEndAlarm,
-  syncPriorityDayStartAlarm,
-  syncRoutineStartNotifications,
-  syncWaterReminderNotifications,
-} from '@features/day-plan-notifications';
 import {
   reconcileLiveActivityFromPlan,
   syncLiveActivityIfSessionInProgress,
 } from '@features/live-activity-sync';
-import { useLocalNotifications } from '@features/local-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useSubscriptionStore } from '@features/subscriptions';
-import {
-  addLocalNotificationReceivedListener,
-  addLocalNotificationResponseListener,
-} from '@shared/lib/notifications';
 import { logAppOpen } from '@shared/lib/analytics';
 import { initCrashlytics } from '@shared/lib/crashlytics';
 
@@ -65,8 +48,6 @@ import {
   flushLocalStorageClientWrites,
   initLocalStorageClient,
   loadDailyRhythmOnboardingCompleted,
-  loadPriorityDayEndAlarm,
-  loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
 } from '@shared/lib/storage';
 import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyMateOnboardingAssets';
@@ -109,22 +90,19 @@ function hydrateAppState() {
 }
 
 /**
- * 앱 전역 부트스트랩: hydrate + 알림 리스너 + Live Activity 동기화.
+ * 앱 전역 부트스트랩: hydrate + Live Activity 동기화.
  * Expo Router `app/_layout.tsx`의 루트 컴포넌트에서 한 번 호출한다.
  */
 export function useAppBootstrap() {
-  const router = useRouter();
-  useLocalNotifications();
   const [isReady, setIsReady] = useState(false);
-  const priorityStart = useDayPlanDraftStore((s) => s.priorityStart);
-  const priorityEnd = useDayPlanDraftStore((s) => s.priorityEnd);
-  const waterReminderSyncEpoch = useDayPlanDraftStore((s) => s.waterReminderSyncEpoch);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       await initLocalStorageClient();
       if (cancelled) return;
+      // Best-effort launch migration; AI requests retry securely if storage is temporarily unavailable.
+      void migrateHeroAiAuthSession(getSupabaseUrl()).catch(() => undefined);
       initializeHeroCardEditHint();
       initializeHeroCharacterNameHint();
 
@@ -184,139 +162,6 @@ export function useAppBootstrap() {
   }), []);
 
 
-  useEffect(() => {
-    if (!isReady) return;
-    const { enabled: startEnabled } = loadPriorityDayStartAlarm();
-    const endAlarm = loadPriorityDayEndAlarm();
-    const { priorityStart: initialPriorityStart } = useDayPlanDraftStore.getState();
-    void (async () => {
-      await syncPriorityDayStartAlarm({ enabled: startEnabled, startHhmm: initialPriorityStart });
-      await syncPriorityDayEndAlarm({
-        enabled: endAlarm.enabled,
-        reminderHhmm: endAlarm.reminderHhmm,
-        reminderNextDay: endAlarm.reminderNextDay,
-      });
-      reconcileReminderTemplateNotificationRules();
-      await syncCategoryReminderNotifications();
-      await syncMedicineReminderNotifications();
-      await syncRoutineStartNotifications();
-      await syncIncompleteRoutineReminderNotifications();
-    })();
-  }, [isReady]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    return useDayPlanStore.subscribe((state, prev) => {
-      if (state.blocks !== prev.blocks || state.dateKey !== prev.dateKey) {
-        void syncCategoryReminderNotifications();
-        void syncMedicineReminderNotifications();
-        void syncRoutineStartNotifications();
-      }
-    });
-  }, [isReady]);
-
-  /** 적용하기 on/off · 그룹 항목 변경 시 시간 알림·시작 알림 예약 재동기화 */
-  useEffect(() => {
-    if (!isReady) return;
-    return useFixedFlowSetsStore.subscribe((state, prev) => {
-      if (
-        state.todayAppliedRevision === prev.todayAppliedRevision &&
-        state.activeSetIds === prev.activeSetIds &&
-        state.sets === prev.sets
-      ) {
-        return;
-      }
-      void syncCategoryReminderNotifications();
-      void syncMedicineReminderNotifications();
-      void syncRoutineStartNotifications();
-    });
-  }, [isReady]);
-
-  /** 담기에서 저장한 전역 루틴 시작 시각 변경 시 시작 알림 재예약 */
-  useEffect(() => {
-    if (!isReady) return;
-    return useRoutineStartTimesStore.subscribe((state, prev) => {
-      if (state.byCategoryKey === prev.byCategoryKey) return;
-      void syncRoutineStartNotifications();
-    });
-  }, [isReady]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    return useDayPlanDraftStore.subscribe((state, prev) => {
-      if (
-        state.priorityCategoryOrder === prev.priorityCategoryOrder &&
-        state.prioritySectionsCategoryOrder === prev.prioritySectionsCategoryOrder
-      ) {
-        return;
-      }
-      void syncCategoryReminderNotifications();
-      void syncMedicineReminderNotifications();
-      void syncRoutineStartNotifications();
-    });
-  }, [isReady]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    void syncWaterReminderNotifications({
-      routineStartHhmm: priorityStart,
-      routineEndHhmm: priorityEnd,
-    });
-  }, [isReady, priorityStart, priorityEnd, waterReminderSyncEpoch]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    return addLocalNotificationResponseListener((data) => {
-      if (data.eventType === 'categoryReminder') {
-        router.push('/day-plan');
-        return;
-      }
-      if (data.eventType === 'routineStart') {
-        router.push('/day-plan');
-        return;
-      }
-      if (data.eventType === 'incompleteRoutineReminder') {
-        router.push('/day-plan');
-        return;
-      }
-      if (data.eventType === 'priorityDayEnd') {
-        router.push('/day-plan');
-        return;
-      }
-      if (data.eventType === 'medicineDoseReminder') {
-        const bid = typeof data.blockId === 'string' ? data.blockId : '';
-        if (bid) {
-          router.push({ pathname: '/activity-session', params: { blockId: bid } });
-        } else {
-          router.push('/day-plan');
-        }
-        return;
-      }
-      if (data.eventType === 'waterIntervalReminder') {
-        const bid = typeof data.blockId === 'string' ? data.blockId : '';
-        if (bid) {
-          router.push({ pathname: '/activity-session', params: { blockId: bid } });
-        } else {
-          router.push('/day-plan');
-        }
-        return;
-      }
-      const blockId = typeof data.blockId === 'string' ? data.blockId : '';
-      if (!blockId) return;
-      router.push({ pathname: '/activity-session', params: { blockId } });
-    });
-  }, [isReady, router]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    return addLocalNotificationReceivedListener((data) => {
-      if (data.eventType !== 'start') return;
-      if (data.startNotifyKind === 'reminder5m') return;
-      const blockId = typeof data.blockId === 'string' ? data.blockId : '';
-      if (!blockId) return;
-      reconcileLiveActivityFromPlan();
-    });
-  }, [isReady]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -328,12 +173,6 @@ export function useAppBootstrap() {
         syncTodayTabWithFixedRoutineApply();
         seedPokitWeekTourIntoTodayIfNeeded();
         syncLiveActivityIfSessionInProgress();
-        void useLocalNotificationsStore.getState().refreshPermission();
-        void syncCategoryReminderNotifications();
-        void syncMedicineReminderNotifications();
-        void syncRoutineStartNotifications();
-        void syncIncompleteRoutineReminderNotifications();
-        useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
         registerOtherCategoryResolverFromStorage();
         void useSubscriptionStore.getState().refreshCustomerInfo();
       } else {

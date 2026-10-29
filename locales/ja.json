@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "YOUR DAY",
     "NSPhotoLibraryUsageDescription": "ノートに添付する写真をアルバムから選ぶには、写真へのアクセス許可が必要です。",
-    "NSPhotoLibraryAddUsageDescription": "ノートに添付した写真を保存するには、写真へのアクセス許可が必要です。",
+    "NSPhotoLibraryAddUsageDescription": "完成したシーンを写真に保存するため、写真の追加を許可してください。",
     "NSLocationWhenInUseUsageDescription": "現在の天気を表示するため、アプリ使用中のみおおよその位置を確認します。位置情報は保存しません。"
   },
   "android": {

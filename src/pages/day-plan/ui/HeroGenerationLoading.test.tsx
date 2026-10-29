@@ -1,0 +1,24 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { Animated } from 'react-native';
+import { HeroGenerationLoading } from './HeroGenerationLoading';
+jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string, values?: Record<string, unknown>) => `${key}:${JSON.stringify(values ?? {})}` }) }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
+it('shows actual elapsed time and completed count, switches to the long-wait hint, and cleans up timers', async () => {
+  jest.useFakeTimers();
+  const stop = jest.fn();
+  const loop = jest.spyOn(Animated, 'loop').mockReturnValue({ start: jest.fn(), stop, reset: jest.fn() } as never);
+  const clearTimer = jest.spyOn(global, 'clearInterval');
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroGenerationLoading completed={1} total={3} />); });
+  act(() => jest.advanceTimersByTime(91000));
+  const json = JSON.stringify(tree.toJSON());
+  expect(json).toContain('1:31');
+  expect(json).toContain('comicDay.loading.longer');
+  expect(json).toContain('comicDay.ai.processing');
+  await act(async () => { tree.unmount(); await jest.runOnlyPendingTimersAsync(); });
+  expect(stop).toHaveBeenCalled();
+  expect(clearTimer).toHaveBeenCalled();
+  loop.mockRestore(); clearTimer.mockRestore();
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});

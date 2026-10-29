@@ -1,6 +1,7 @@
 import { tutorialCopy } from '../../welcome-intro/lib/tutorialCopy';
 import { resetServiceTutorialSession } from '../../welcome-intro/model/serviceTutorial';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { PRIVACY_POLICY_URL } from '@shared/config/privacyPolicy';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { restartAppSession } from '@shared/lib/app-session';
 import * as Haptics from 'expo-haptics';
@@ -29,7 +30,6 @@ import {
 } from '@entities/announcement';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
-import { useLocalNotificationsStore } from '@entities/local-notifications';
 import { clearPuzzleRevealSeen, usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
@@ -48,7 +48,6 @@ import {
   ensureDefaultPriorityCatalog,
   loadAnnouncementReadIds,
   loadFixedFlowSetsState,
-  loadPriorityDayStartAlarm,
   resetAppLocalData,
   saveDayPlan,
   saveDayPlanChromeSettings,
@@ -64,11 +63,10 @@ import {
   SUPPORT_EMAIL,
 } from '@shared/lib/support';
 import { useAppFontStore, type AppFontId } from '@shared/lib/ui-font';
+import { openWebLink } from '@shared/lib/url/openWebLink';
 import { SettingsPenIcon as IconSymbol } from '../lib/settingsPen';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
-
-import { prefetchPuzzleGuideAssets } from '@shared/lib/puzzle-guide-assets';
 
 import {
   buildSettingsPalette,
@@ -82,9 +80,6 @@ const SHOW_POKIT_PRO_SETTINGS = false;
 
 /** 화면 테마(라이트/다크) 설정 — 출시 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_APPEARANCE_SETTINGS = false;
-
-/** 설정 → 알림 섹션 — 다시 쓸 때까지 숨김 (`true`로 바꾸면 다시 표시) */
-const SHOW_NOTIFICATION_SETTINGS = false;
 
 /** 설정 → 레이아웃 설정 — 다시 쓸 때까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_LAYOUT_SETTINGS = false;
@@ -130,12 +125,9 @@ export function SettingsPage() {
       priorityEnd: s.priorityEnd,
     })),
   );
-  const [dayStartAlarmOn, setDayStartAlarmOn] = useState(() => loadPriorityDayStartAlarm().enabled);
 
   useFocusEffect(
     useCallback(() => {
-      setDayStartAlarmOn(loadPriorityDayStartAlarm().enabled);
-      if (FEATURE_FLAGS.puzzle) void prefetchPuzzleGuideAssets();
       if (SHOW_POKIT_PRO_SETTINGS) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
       }
@@ -303,7 +295,6 @@ export function SettingsPage() {
       // 스토리지만 비우고 퍼즐 스토어를 안 비우면 sync 시 목업이 다시 저장된다
       clearPuzzleRevealSeen();
       usePuzzleHistoryStore.getState().reloadFromStorage();
-      await useLocalNotificationsStore.getState().refreshPermission();
       resetServiceTutorialSession();
       // Navigate first: the remount keeps the navigator state, so the intro is what reopens fresh.
       if (router.canDismiss()) router.dismissAll();
@@ -420,7 +411,6 @@ export function SettingsPage() {
                       </ThemedText>
                       <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                         {formatHhmmClockKo(priorityStart)} – {formatHhmmClockKo(priorityEnd)}
-                        {dayStartAlarmOn ? t('settings.dayPlanStartAlarmOn', locale) : ''}
                       </ThemedText>
                     </View>
                   </View>
@@ -490,29 +480,6 @@ export function SettingsPage() {
               </Pressable>
             ) : null}
           </SettingsSection>
-
-          {SHOW_NOTIFICATION_SETTINGS ? (
-            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-              <Pressable
-                style={[chrome.item, { borderTopColor: p.border }]}
-                onPress={tap(() => router.push('/notification-settings'))}
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.a11y.notification', locale)}>
-                <View style={chrome.itemLeft}>
-                  <SettingsRowIcon name="bell.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
-                  <View style={chrome.itemTextWrap}>
-                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                      {t('settings.notificationTitle', locale)}
-                    </ThemedText>
-                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                      {t('settings.notificationDesc', locale)}
-                    </ThemedText>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-              </Pressable>
-            </SettingsSection>
-          ) : null}
 
           {SHOW_APPEARANCE_SETTINGS ? (
             <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
@@ -671,6 +638,33 @@ export function SettingsPage() {
                   </ThemedText>
                   <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
                     {SUPPORT_EMAIL}
+                  </ThemedText>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+            <Pressable
+              style={[chrome.item, { borderTopColor: p.border }]}
+              onPress={tap(() => {
+                void openWebLink(PRIVACY_POLICY_URL).then((opened) => {
+                  if (!opened) {
+                    Alert.alert(
+                      t('settings.privacyPolicy.openFailedTitle', locale),
+                      t('settings.privacyPolicy.openFailedBody', locale),
+                    );
+                  }
+                });
+              })}
+              accessibilityRole="link"
+              accessibilityLabel={t('settings.privacyPolicy.title', locale)}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon name="book.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                    {t('settings.privacyPolicy.title', locale)}
+                  </ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                    {t('settings.privacyPolicy.desc', locale)}
                   </ThemedText>
                 </View>
               </View>

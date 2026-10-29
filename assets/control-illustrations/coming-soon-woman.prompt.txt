@@ -1,0 +1,2 @@
+Mode: built-in image_gen extraction/edit.
+Prompt: Extract the approved black-and-white cartoon woman from the coming-soon UI mockup: side profile, black bob hair, looking up through a camera, white blouse and tote strap. Preserve simple contour style, neutral black and white only, transparent exterior. No circle, paper background, UI or text.

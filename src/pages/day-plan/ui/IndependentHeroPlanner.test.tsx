@@ -264,13 +264,13 @@ jest.mock('./HeroCardStack', () => {
   }) };
 });
 
-it('keeps the tutorial active and opens scenes when a named puppy is started manually', () => {
+it('keeps the tutorial active and opens scenes when the named protagonist is started manually', () => {
   jest.useFakeTimers();
   const { initialServiceProgress, useServiceTutorial } = require('../../welcome-intro/model/serviceTutorial');
   useServiceTutorial.setState({ ...initialServiceProgress, active: true, mode: 'comic', step: 'comicCharacter', runId: 'manual-start' });
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
-  act(() => { tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[1].id}` })[0].props.onPress(); });
+  act(() => { tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[0].id}` })[0].props.onPress(); });
   const input = tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDay.character.nameHint')!;
   act(() => { input.props.onChangeText('123'); });
   const chooser = tree.root.findByType(ComicCharacterChooser);
@@ -283,13 +283,13 @@ it('keeps the tutorial active and opens scenes when a named puppy is started man
   expect(picker.props.embedded).toBe(true);
   expect(tree.root.findAllByProps({ testID: 'comic-scene-picker-inline' }).length).toBeGreaterThan(0);
   expect(picker.findAllByType(Modal)).toHaveLength(0);
-  expect(picker.props.library[0].id).toMatch(/^puppy-/);
+  expect(picker.props.library.every((item: { id: string }) => !item.id.startsWith('puppy-'))).toBe(true);
   expect(loadComicDay('2026-10-21')).toEqual([]);
   // Even if the screen remounts with an old board route, the tutorial must
   // automatically display step 5 instead of the empty initial board.
   const startedDiary = useServiceTutorial.getState().diaryKey;
   act(() => { tree.unmount(); });
-  saveComicNavigation(COMIC_CHARACTERS[1].id, 'board', startedDiary);
+  saveComicNavigation(COMIC_CHARACTERS[0].id, 'board', startedDiary);
   act(() => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
   picker = tree.root.findByType(ComicScenePicker);
   expect(picker.props.embedded).toBe(true);
@@ -369,7 +369,7 @@ it.each(['start', 'later'])('continues from the main + at comicStart through %s 
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
   act(() => tree.root.findByType(ComicDayBoard).props.onAdd());
-  act(() => tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[1].id}` })[0].props.onPress());
+  act(() => tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[0].id}` })[0].props.onPress());
   act(() => tree.root.findAllByType(ThemedTextInput).find(node => node.props.testID === 'comic-character-name')!.props.onChangeText('함께'));
   if (action === 'start') {
     act(() => tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.onPress());
@@ -379,7 +379,7 @@ it.each(['start', 'later'])('continues from the main + at comicStart through %s 
   act(() => { jest.advanceTimersByTime(700); });
   expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicPick' });
   const picker = tree.root.findByType(ComicScenePicker);
-  expect(picker.props.library[0].id).toMatch(/^puppy-/);
+  expect(picker.props.library.every((item: { id: string }) => !item.id.startsWith('puppy-'))).toBe(true);
   const saved = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!;
   expect(saved.diaries.find(diary => diary.id === useServiceTutorial.getState().diaryKey)?.characterName).toBe('함께');
   act(() => tree.unmount());

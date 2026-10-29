@@ -2,7 +2,7 @@ import { DEFAULT_COMIC_CHARACTER_ID } from './heroCharacters';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { canonicalComicSceneId, type ComicSceneId } from './heroSceneImages';
 export type ComicDayScene = {
-  id: string; title: string; image: ComicSceneId; time: string; memo: string;
+  id: string; title: string; image: ComicSceneId; artworkUri?: string; time: string; memo: string;
   todos: { id: string; text: string; completed: boolean }[];
   paper: string; pen: string;
 };
@@ -26,7 +26,7 @@ export function normalizeComicScenes(value: unknown): ComicDayScene[] {
       && scene.todos.every(todo => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean');
     if (!ok) continue;
     seen.add(scene.id);
-    scenes.push({ ...scene, image });
+    scenes.push({ ...scene, image, artworkUri: typeof scene.artworkUri === 'string' && scene.artworkUri.startsWith('file://') ? scene.artworkUri : undefined });
   }
   return scenes;
 }

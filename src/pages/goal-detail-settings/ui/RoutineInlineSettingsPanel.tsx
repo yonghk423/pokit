@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
@@ -7,20 +7,12 @@ import {
   normalizeMedicineDetailConfig,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
-  resolveCustomFlowTemplateKey,
-  useDayPlanDraftStore,
   useDayPlanRuntimeStore,
   useDayPlanStore,
   useGoalDetailSettingsStore,
   categoryReminderLabelKo,
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
-import {
-  isMedicineReminderCategory,
-  syncMedicineReminderNotifications,
-} from '@features/day-plan-notifications/model/syncMedicineReminderNotifications';
-import { RoutineStartNotifyField } from '@features/day-plan-notifications/ui/RoutineStartNotifyField';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   loadGoalDetailCategoryConfig,
@@ -63,18 +55,6 @@ function withPreservedRoutineFields(categoryKey: string, next: unknown): unknown
   return o;
 }
 
-function waterReminderSyncFingerprint(raw: unknown): string {
-  if (!raw || typeof raw !== 'object') return '';
-  const o = raw as Record<string, unknown>;
-  return JSON.stringify({
-    reminderEnabled: o.reminderEnabled,
-    reminderIntervalMin: o.reminderIntervalMin,
-    reminderCustomMin: o.reminderCustomMin,
-    smartNotification: o.smartNotification,
-    reminderTimes: o.reminderTimes,
-  });
-}
-
 /**
  * 일정 수정 시트 등에 끼워 넣는 루틴 설정 본문.
  * 세션·진행 UI는 데이플랜 아코디언에서 다루고, 여기서는 「루틴 설정」메타만 둡니다.
@@ -91,7 +71,6 @@ export function RoutineInlineSettingsPanel({
   const { t } = useTranslation();
   const key = categoryKey as GoalDetailCategoryKey;
   const [dataConfig, setDataConfig] = useState<unknown>(() => loadGoalDetailCategoryConfig(key) ?? {});
-  const medicineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blocks = useDayPlanStore((s) => s.blocks);
   const activeBlockId = useDayPlanRuntimeStore((s) => s.activeBlockId);
   const goalDetailRevision = useGoalDetailSettingsStore((s) => s.revision);
@@ -99,13 +78,6 @@ export function RoutineInlineSettingsPanel({
   useEffect(() => {
     setDataConfig(loadGoalDetailCategoryConfig(key) ?? {});
   }, [key, goalDetailRevision]);
-
-  useEffect(
-    () => () => {
-      if (medicineTimerRef.current) clearTimeout(medicineTimerRef.current);
-    },
-    [],
-  );
 
   /** 실제 activity-session 활성 블록만 ‘실행 중’ — 오늘 담기 자동 집중(isFocusStarted)과 구분 */
   const isCategoryRunning = useCallback(
@@ -131,23 +103,6 @@ export function RoutineInlineSettingsPanel({
       setDataConfig(persisted);
       saveGoalDetailCategoryConfig(key, persisted);
       registerOtherCategoryResolverFromStorage();
-
-      if (isMedicineReminderCategory(key, persisted)) {
-        if (medicineTimerRef.current) clearTimeout(medicineTimerRef.current);
-        medicineTimerRef.current = setTimeout(() => {
-          medicineTimerRef.current = null;
-          void syncMedicineReminderNotifications();
-        }, 450);
-      }
-      if (key === 'water') {
-        const prevWater = loadGoalDetailCategoryConfig('water');
-        if (waterReminderSyncFingerprint(prevWater) !== waterReminderSyncFingerprint(persisted)) {
-          useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
-        }
-      }
-      if (isCustomFlowCategoryKey(key) && resolveCustomFlowTemplateKey(persisted) === 'reminder') {
-        void persistReminderTemplateNotificationRule(key, persisted);
-      }
       if (key === 'medicine') {
         normalizeMedicineDetailConfig(persisted);
       }
@@ -195,13 +150,6 @@ export function RoutineInlineSettingsPanel({
             muted={muted}
           />
         ) : null}
-        <RoutineStartNotifyField
-          categoryKey={key}
-          ink={ink}
-          muted={muted}
-          border={border}
-          isDark={isDark}
-        />
       </View>
     </View>
   );

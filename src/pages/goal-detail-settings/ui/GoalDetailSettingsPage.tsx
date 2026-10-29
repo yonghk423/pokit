@@ -25,7 +25,6 @@ import {
   normalizeOtherDetailConfig,
   resolveBlockCategoryKey,
   resolveCategoryKeyFromLabel,
-  resolveCustomFlowTemplateKey,
   useDayPlanDraftStore,
   useGoalDetailSettingsStore,
   useDayPlanRuntimeStore,
@@ -36,13 +35,6 @@ import {
   type DayPlanBlock,
 } from '@entities/day-plan';
 import { readRoutineDisplayNameFromConfig } from '@entities/day-plan/lib/routineDisplayName';
-import {
-  isMedicineReminderCategory,
-  rescheduleDayPlanNotifications,
-  RoutineStartNotifyField,
-  syncMedicineReminderNotifications,
-} from '@features/day-plan-notifications';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { reconcileLiveActivityFromPlan } from '@features/live-activity-sync';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
@@ -150,17 +142,6 @@ function buildLoadedDataByBlockId(targets: EditingTarget[]): Record<string, unkn
     }
   }
   return next;
-}
-
-function waterReminderSyncFingerprint(raw: unknown): string {
-  const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  return JSON.stringify({
-    goalMl: o.goalMl,
-    reminderPreset: o.reminderPreset,
-    reminderCustomMin: o.reminderCustomMin,
-    smartNotification: o.smartNotification,
-    reminderTimes: o.reminderTimes,
-  });
 }
 
 /** 자동 저장 레이스로 필드가 빠진 페이로드가 이전 값을 지우는 것을 막는다. */
@@ -327,35 +308,14 @@ export function GoalDetailSettingsPage() {
     [targets],
   );
   const [patchByBlockId, setPatchByBlockId] = useState<Record<string, unknown>>({});
-  const medicineReminderSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setPatchByBlockId({});
   }, [targetBlockIdsKey]);
 
-  useEffect(() => {
-    for (const t of targets) {
-      if (!isCustomFlowCategoryKey(t.categoryKey)) continue;
-      const cfg =
-        loadedDataByBlockId[t.blockId] ?? loadGoalDetailCategoryConfig(t.categoryKey);
-      if (resolveCustomFlowTemplateKey(cfg) === 'reminder') {
-        void persistReminderTemplateNotificationRule(t.categoryKey, cfg);
-      }
-    }
-  }, [loadedDataByBlockId, targetBlockIdsKey, targets]);
-
   const dataByBlockId = useMemo(
     () => ({ ...loadedDataByBlockId, ...patchByBlockId }),
     [loadedDataByBlockId, patchByBlockId],
-  );
-
-  useEffect(
-    () => () => {
-      if (medicineReminderSyncTimerRef.current) {
-        clearTimeout(medicineReminderSyncTimerRef.current);
-      }
-    },
-    [],
   );
 
   const handleChangeDataConfig = useCallback((target: EditingTarget, next: unknown) => {
@@ -379,27 +339,6 @@ export function GoalDetailSettingsPage() {
     saveGoalDetailBlockConfig(target.blockId, persisted);
     saveGoalDetailCategoryConfig(target.categoryKey, persisted);
     registerOtherCategoryResolverFromStorage();
-    if (isMedicineReminderCategory(target.categoryKey, persisted)) {
-      if (medicineReminderSyncTimerRef.current) {
-        clearTimeout(medicineReminderSyncTimerRef.current);
-      }
-      medicineReminderSyncTimerRef.current = setTimeout(() => {
-        medicineReminderSyncTimerRef.current = null;
-        void syncMedicineReminderNotifications();
-      }, 450);
-    }
-    if (target.categoryKey === 'water') {
-      const prevWater = loadGoalDetailCategoryConfig('water');
-      if (waterReminderSyncFingerprint(prevWater) !== waterReminderSyncFingerprint(persisted)) {
-        useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
-      }
-    }
-    if (
-      isCustomFlowCategoryKey(target.categoryKey) &&
-      resolveCustomFlowTemplateKey(persisted) === 'reminder'
-    ) {
-      void persistReminderTemplateNotificationRule(target.categoryKey, persisted);
-    }
   }, []);
 
   const handleDeleteRoutine = useCallback(
@@ -472,11 +411,6 @@ export function GoalDetailSettingsPage() {
       });
     }
 
-    void (async () => {
-      await rescheduleDayPlanNotifications();
-      await syncMedicineReminderNotifications();
-      useDayPlanDraftStore.getState().bumpWaterReminderSyncEpoch();
-    })();
   }, [blocks, dataByBlockId, router, sortedTargets, targets]);
 
   const previewTitleForBlock = useCallback(
@@ -774,12 +708,6 @@ export function GoalDetailSettingsPage() {
                     muted={c.onVariant}
                   />
                 ) : null}
-                <RoutineStartNotifyField
-                  categoryKey={categoryKey}
-                  ink={c.onSurface}
-                  muted={c.onVariant}
-                  border={c.border}
-                />
               </View>
             ) : null}
 

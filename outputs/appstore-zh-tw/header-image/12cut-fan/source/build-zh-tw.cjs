@@ -7,7 +7,7 @@ GlobalFonts.registerFromPath(path.join(fontDir,'TraditionalSerif.ttf'),'Traditio
 const face='TraditionalPen';
 const smoother=v=>{v=Math.max(0,Math.min(1,v));return v*v*v*(v*(v*6-15)+10)};
 const ease=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v)};
-(async()=>{fs.mkdirSync(O,{recursive:true});const paper=await loadImage(R+'/assets/color-textures/clean-paper.webp');const arts=await Promise.all(['56-bookstore','10-park-walk','11-photography','19-hiking','09-coffee-tablet','33-grocery-shopping','35-bus-ride','28-cooking','41-pet-walk','38-listening-music','07-movie-home','53-diary-in-bed'].map(n=>loadImage(R+'/assets/activity-illustrations/optimized/'+n+'-960.webp')));
+(async()=>{fs.mkdirSync(O,{recursive:true});const paper=await loadImage(R+'/assets/color-textures/clean-paper.webp');const arts=await Promise.all(['56-bookstore','10-park-walk','11-photography','19-hiking','09-coffee-tablet','33-grocery-shopping','35-bus-ride','28-cooking','41-pet-walk','38-listening-music','07-movie-home','53-diary-in-bed'].map(n=>loadImage(R+'/assets/activity-illustrations/protagonist-1/'+n+'-960.webp')));
 const c=createCanvas(3840,1646),x=c.getContext('2d');
 
 const copy=JSON.parse(fs.readFileSync(path.join(__dirname,'copy-zh-tw.json'),'utf8'));

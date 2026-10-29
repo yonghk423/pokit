@@ -3,12 +3,10 @@ import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
 
 /**
- * 하루 일과 온보딩 전용 일러스트.
- * 히어로: `assets/onboarding/` · 시작·마무리: `assets/routine-icons/`
+ * 하루 일과 온보딩의 시작·마무리 썸네일.
+ * 시작·마무리: `assets/routine-icons/`
  */
 export const dailyRhythmOnboardingAssets = {
-  /** 히어로 — 아침 러닝 */
-  hero: require('../../../../assets/onboarding/hero.jpg') as number,
   /** 하루 시작 행 — 아침 브런치 */
   startThumb: require('../../../../assets/routine-icons/meal.webp') as number,
   /** 하루 마무리 행 — 노을 실루엣 */

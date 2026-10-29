@@ -30,7 +30,7 @@ describe('settingsStorage', () => {
 
   it('returns default priority day start alarm when missing', () => {
     expect(loadPriorityDayStartAlarm()).toEqual({
-      enabled: true,
+      enabled: false,
       notificationId: null,
     });
   });

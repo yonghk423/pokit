@@ -15,6 +15,7 @@
       "@shared/*": ["./src/shared/*"]
     }
   },
+  "exclude": ["supabase/functions"],
   "include": [
     "**/*.ts",
     "**/*.tsx",

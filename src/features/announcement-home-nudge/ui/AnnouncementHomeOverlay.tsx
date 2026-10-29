@@ -17,7 +17,7 @@ type Props = {
   onUpdatePress: () => void;
 };
 
-/** Floats above either home layout without reserving space in the routine list. */
+/** 오늘의 주인공 화면 위에 뜨는 공지. 목록 높이는 차지하지 않는다. */
 export function AnnouncementHomeOverlay({ announcement, onDismiss, onUpdatePress }: Props) {
   const focused = useIsFocused();
   const isDark = useColorScheme() === 'dark';

@@ -39,7 +39,7 @@ function LayoutDiagram({ mode, ink, size = 42 }: { mode: ComicBoardMode; ink: st
 /** Last measured grid width, so switching back from the deck paints panels at their final size. */
 let lastBoardWidth = 0;
 
-type BoardItem = Omit<CircularRoutineItem, 'completed'> & { completed?: boolean; memo?: string };
+type BoardItem = Omit<CircularRoutineItem, 'completed'> & { completed?: boolean; memo?: string; artworkUri?: string };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
 type SceneLibrary = readonly typeof COMIC_SCENES[number][];
 export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
@@ -153,7 +153,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
         {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} onPress={() => { tapHaptic(); openItem(item.key); }} accessibilityLabel={item.label} /></Svg> : null}
         <View pointerEvents="box-none" style={diagonal ? { marginLeft: diagonal.side === 'right' ? diagonal.slant + 2 : 2, marginRight: diagonal.side === 'left' ? diagonal.slant + 2 : 2, paddingTop: 1 } : undefined}>
         <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
-          <ComicSceneImage contentFit="contain" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${resolveComicScene(item.key, item.label, choices).id}:960`} source={COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id]} fallbackSource={resolveComicScene(item.key, item.label, choices).source} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
+          <ComicSceneImage contentFit="contain" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${item.artworkUri ?? resolveComicScene(item.key, item.label, choices).id}:960`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id]} fallbackSource={resolveComicScene(item.key, item.label, choices).source} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
         </Pressable>
         <View style={[s.comicCaption, { borderTopColor: muted, height: captionHeight }]}>
           <View style={s.captionMeta}>

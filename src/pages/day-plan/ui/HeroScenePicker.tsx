@@ -1,3 +1,4 @@
+import { SELECTABLE_COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import { TutorialGuideLayer } from '@shared/ui/tutorial-guide-layer';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
@@ -31,7 +32,7 @@ function GridIcon({ columns, ink }: { columns: number; ink: string }) {
     })}
   </Svg>;
 }
-export function ComicScenePicker({ scenes, onChange, onClose, library = COMIC_SCENES, embedded = false }: { embedded?: boolean; library?: readonly typeof COMIC_SCENES[number][]; scenes: ComicDayScene[]; onChange: (scenes: ComicDayScene[]) => void; onClose: () => void }) {
+export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTABLE_COMIC_CHARACTERS[0].scenes, embedded = false }: { targetDiaryId?: string; embedded?: boolean; library?: readonly typeof COMIC_SCENES[number][]; scenes: ComicDayScene[]; onChange: (scenes: ComicDayScene[]) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   useEffect(() => {

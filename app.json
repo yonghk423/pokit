@@ -8,7 +8,7 @@
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
     "notification": {
-      "icon": "./assets/app-icon3.png",
+      "icon": "./assets/app-icon4.png",
       "color": "#000000"
     },
     "newArchEnabled": true,
@@ -66,9 +66,19 @@
     "plugins": [
       "expo-router",
       [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "완성된 장면을 사진 앱에 저장하려면 사진 추가 권한이 필요해요.",
+          "granularPermissions": [],
+          "photosPermission": "노트에 첨부할 사진을 앨범에서 선택하려면 사진 접근 권한이 필요해요."
+        }
+      ],
+      [
         "expo-image-picker",
         {
-          "photosPermission": "노트에 첨부할 사진을 앨범에서 선택하려면 사진 접근 권한이 필요해요."
+          "photosPermission": "노트에 첨부할 사진을 앨범에서 선택하려면 사진 접근 권한이 필요해요.",
+          "cameraPermission": "주인공과 장면에 사용할 사진을 촬영하려면 카메라 접근 권한이 필요해요.",
+          "microphonePermission": false
         }
       ],
       [
@@ -100,7 +110,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/app-icon3.png",
+          "icon": "./assets/app-icon4.png",
           "color": "#000000",
           "defaultChannel": "default"
         }
@@ -136,7 +146,15 @@
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

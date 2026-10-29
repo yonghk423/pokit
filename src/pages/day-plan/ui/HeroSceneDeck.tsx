@@ -15,7 +15,7 @@ import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 
-export type ComicDeckItem = { key: string; label: string; memo?: string; faceColor?: string; inkColor?: string };
+export type ComicDeckItem = { key: string; label: string; artworkUri?: string; memo?: string; faceColor?: string; inkColor?: string };
 
 const THUMB = 44;
 const THUMB_GAP = 8;
@@ -126,8 +126,8 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage contentFit="cover" backgroundColor={face} imageKey={`${scene.id}:960`}
-              source={COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage contentFit="cover" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
           </Pressable>
             <HeroCardCaption key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
@@ -176,8 +176,8 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
             tapHaptic();
             turnRef.current?.turnTo(index);
           }} style={[s.thumb, { backgroundColor: selected ? '#EDE9DF' : face }]}>
-            <ComicSceneImage contentFit="contain" backgroundColor={face} imageKey={`${scene.id}:960`}
-              source={COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
+            <ComicSceneImage contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
               style={StyleSheet.absoluteFill} />
             <HanddrawnFrame color={selected ? '#514C43' : isDark ? '#D5D5D5' : '#77786F'} bold={selected} />
           </Pressable>;

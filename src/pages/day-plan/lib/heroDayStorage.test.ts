@@ -25,3 +25,10 @@ it('keeps existing records in protagonist 1 and isolates future character record
   expect(loadComicDay('2026-10-21', 'protagonist-2')).toEqual([other]);
   localStorageClient.removeItem('pokit:comic-day:protagonist-2:2026-10-21');
 });
+
+
+it('retains locally saved AI artwork when a diary is reloaded', () => {
+  const scene = { ...newComicScene('Generated'), artworkUri: 'file:///documents/hero-ai/test.png' };
+  saveComicDay('2026-10-21', [scene]);
+  expect(loadComicDay('2026-10-21')[0].artworkUri).toBe(scene.artworkUri);
+});

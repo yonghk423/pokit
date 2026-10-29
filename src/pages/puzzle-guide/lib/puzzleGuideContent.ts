@@ -4,7 +4,8 @@
 
 import type { AppLocale } from '@shared/lib/i18n/model/locale';
 import { t, type I18nKey } from '@shared/lib/i18n';
-import type { PuzzleGuideImageId } from '@shared/lib/puzzle-guide-assets';
+
+export type PuzzleGuideImageId = 'wall' | 'target' | 'photo' | 'tip';
 
 export type PuzzleGuideSlide = {
   id: PuzzleGuideImageId;

@@ -1,0 +1,3 @@
+Built-in image_gen background-extraction edit.
+Reference: user supplied _ (7).jpeg.
+Prompt: Preserve the supplied camera-and-hands artwork, dark lens, long wrists and shutter rays; remove empty exterior white background and excessive margin, keep the inside of hands and camera opaque white, transparent outside. Do not restyle or simplify.

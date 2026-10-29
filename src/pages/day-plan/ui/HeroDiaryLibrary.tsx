@@ -82,7 +82,7 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
         </View>
         <FlatList data={filtered} keyExtractor={diary => diary.id} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[s.list, filtered.length === 0 && s.listEmpty]} ListEmptyComponent={query.trim() ? <ThemedText style={s.empty}>{t('comicDiary.noResults')}</ThemedText> : <Pressable testID="comic-empty-diary-create" accessibilityRole="button" accessibilityLabel={t('comicDiary.create')} onPress={createDiary} style={s.emptyIconButton}><HeroEmptyDiaryIcon /></Pressable>} renderItem={({ item }) => {
           const first = item.scenes[0];
-          const source = first ? COMIC_SCENE_THUMBNAILS[first.image] : COMIC_CHARACTERS.find(character => character.id === item.characterId)!.cover;
+          const source = first?.artworkUri ? { uri: first.artworkUri } : first ? COMIC_SCENE_THUMBNAILS[first.image] : COMIC_CHARACTERS.find(character => character.id === item.characterId)!.cover;
           const heading = titleWithWrittenTime(item.title, writtenStamp(item));
           const characterName = characterNameFor(item);
           return <View style={s.rowPaper}>

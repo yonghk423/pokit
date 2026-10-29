@@ -1,3 +1,6 @@
+import { getPendingHeroAiJob, type PendingHeroAiJob } from '../lib/heroAiClient';
+import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
+import type { HeroAiResult } from '../lib/heroAiClient';
 import { HeroCardFlip, type HeroCardFlipHandle, type HeroCardOpen } from './HeroCardFlip';
 import { TutorialGuideLayer } from '@shared/ui/tutorial-guide-layer';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
@@ -40,6 +43,8 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   const renameCharacterRef = useRef<(() => void) | null>(null);
   const { t } = useTranslation();
   const [library, setLibrary] = useState(() => loadComicDiaryLibrary(props.date, number => t('comicDiary.defaultTitle', { number })));
+  const [recoveryJob, setRecoveryJob] = useState<PendingHeroAiJob | null>(null);
+  useEffect(() => { let active = true; void getPendingHeroAiJob().then(job => { if (active) setRecoveryJob(job); }).catch(() => undefined); return () => { active = false; }; }, []);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [chooserReturn, setChooserReturn] = useState<'library' | 'board' | null>(null);
@@ -90,6 +95,20 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
     // After the picker is scheduled to show — avoids the Start finger-up landing on Close.
     Keyboard.dismiss();
   };
+  const createGenerated = (images: HeroAiResult[], name: string) => {
+    const applied = library.diaries.find(item => images.every(image => item.scenes.some(scene => scene.artworkUri === image.uri)));
+    if (applied) { commit({ ...library, activeId: applied.id }); saveComicNavigation(applied.characterId, 'board', applied.id); setCreating(false); return; }
+    const character = COMIC_CHARACTERS[0];
+    let number = library.diaries.length + 1;
+    while (library.diaries.some(item => item.title === t('comicDiary.defaultTitle', { number }))) number++;
+    let next = createComicDiary(library, character.id, t('comicDiary.defaultTitle', { number }), name);
+    const id = next.activeId!;
+    const scenes = images.map((image, index) => ({ ...newComicScene(image.sceneId ? t(character.scenes.find(scene => scene.id === image.sceneId)!.label) : t('comicDay.ai.sceneTitle', { count: index + 1 })), image: image.sceneId ?? character.scenes[0].id, artworkUri: image.uri }));
+    next = updateComicDiary(next, id, { scenes });
+    commit(next); saveComicNavigation(character.id, 'board', id);
+    if (useServiceTutorial.getState().active) useServiceTutorial.getState().pause();
+    setChooserReturn(null); setCreating(false); Keyboard.dismiss();
+  };
   const cancelCreate = () => {
     Keyboard.dismiss();
     const tutorial = useServiceTutorial.getState();
@@ -121,8 +140,16 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onRename={characterName => commit(updateComicDiary(library, diary!.id, { characterName }))}
       onSelectCharacter={() => { clearComicNavigation(); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : <>
-      <ComicCharacterChooser key={characterDraft} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} onClose={chooserReturn ? cancelCreate : undefined} />
+      <ComicCharacterChooser key={characterDraft} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} onGenerated={createGenerated} onClose={chooserReturn ? cancelCreate : undefined} />
     </>}
+    {recoveryJob ? <Modal visible onRequestClose={() => setRecoveryJob(null)}><View style={{ flex: 1, paddingTop: 40, paddingBottom: 24 }}><HeroPersonalizationFlow recoveryJob={recoveryJob} onClose={() => setRecoveryJob(null)} onApply={images => { const target = library.diaries.find(item => item.id === recoveryJob.targetDiaryId);
+      if (target) {
+        const character = COMIC_CHARACTERS[0];
+        const scenes = images.map((image, index) => ({ ...newComicScene(image.sceneId ? t(character.scenes.find(scene => scene.id === image.sceneId)!.label) : t('comicDay.ai.sceneTitle', { count: index + 1 })), image: image.sceneId ?? character.scenes[0].id, artworkUri: image.uri }));
+        commit({ ...updateComicDiary(library, target.id, { scenes: [...target.scenes, ...scenes.filter(scene => !target.scenes.some(existing => existing.artworkUri === scene.artworkUri))] }), activeId: target.id });
+        saveComicNavigation(target.characterId, 'board', target.id);
+      } else createGenerated(images, recoveryJob.characterName ?? loadComicCharacterName(COMIC_CHARACTERS[0].id) ?? t(COMIC_CHARACTERS[0].name));
+      setRecoveryJob(null); }} /></View></Modal> : null}
     {libraryOpen ? <ComicDiaryLibrary diaries={library.diaries} activeId={library.activeId} initialRenameId={renameTarget}
       onClose={() => setLibraryOpen(false)} onCreate={() => { setChooserReturn('library'); setCharacterDraft(value => value + 1); setCreating(true); setLibraryOpen(false); }}
       onOpen={id => { const opened = library.diaries.find(item => item.id === id)!; saveComicNavigation(opened.characterId, 'board', id); commit({ ...library, activeId: id }); setChooserReturn(null); setCreating(false); setLibraryOpen(false); }}
@@ -164,7 +191,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
   const selected = scenes.find(scene => scene.id === selectedId);
   const selectedArtwork = selected ? character.scenes.find(scene => scene.id === selected.image) ?? character.scenes[0] : null;
   const artworkAsset = selectedArtwork ? NativeImage.resolveAssetSource(selectedArtwork.source) : null;
-  const detailImageRatio = selectedArtwork?.id === '04-laundry' ? 1.5
+  const detailImageRatio = selected?.artworkUri ? 2 / 3 : selectedArtwork?.id === '04-laundry' ? 1.5
     : artworkAsset && artworkAsset.width > 0 && artworkAsset.height > 0 ? artworkAsset.width / artworkAsset.height : 1.5;
   const detailImageWidth = Math.min(width - 24, 580);
   const update = (next: ComicDayScene[]) => { setScenes(next); onUpdate(next); };
@@ -226,14 +253,14 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
   };
   return <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }}>
     {!selected ? <ServiceTutorialCoach steps={['comicTools', 'comicOpen', 'comicMemo', 'comicTask', 'comicCheck', 'comicSuccess']} /> : null}
-    <ComicDayBoard onOpenBag={onOpenBag} sceneLibrary={character.scenes} detailOpen={!!selected && detailFrontReady} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} characterName={customName ?? t(character.name)} onRenameCharacter={rename} onSelectCharacter={onSelectCharacter} items={scenes.map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, icon: '', faceColor: scene.paper, inkColor: scene.pen }))}
+    <ComicDayBoard onOpenBag={onOpenBag} sceneLibrary={character.scenes} detailOpen={!!selected && detailFrontReady} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} characterName={customName ?? t(character.name)} onRenameCharacter={rename} onSelectCharacter={onSelectCharacter} items={scenes.map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, artworkUri: scene.artworkUri, icon: '', faceColor: scene.paper, inkColor: scene.pen }))}
       ink={ink} muted={muted} isDark={isDark} choices={Object.fromEntries(scenes.map(scene => [scene.id, scene.image]))}
       onOpen={open}
       onEditCard={(id, text) => patch(id, text)}
       onRemove={removeScene}
       onRemoveMany={removeScenes}
       onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicPick'); showPicker(true); }} />
-    {pickerVisible ? <ComicScenePicker embedded library={character.scenes} scenes={scenes} onChange={update} onClose={() => showPicker(false)} /> : null}
+    {pickerVisible ? <ComicScenePicker targetDiaryId={diary.id} embedded library={character.scenes} scenes={scenes} onChange={update} onClose={() => showPicker(false)} /> : null}
     <Modal visible={renameOpen} transparent animationType="fade" onRequestClose={() => setRenameOpen(false)}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.renameOverlay}>
         <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); setRenameOpen(false); }} />
@@ -255,7 +282,7 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
       </KeyboardAvoidingView>
     </Modal>
     {selected ? <HeroCardFlip ref={flipRef} cornerRadius={16} imageAspectRatio={detailImageRatio} isDark={isDark} card={openedCard} paper={selected.paper} closeLabel={t('common.close')} onClosed={finishClose} onFrontReady={markDetailFrontReady} onRestoreFront={restoreDetailFront}
-      fallbackFront={<ComicSceneImage contentFit="cover" backgroundColor={selected.paper} imageKey={`${selected.image}:flip-front`} source={(character.scenes.find(scene => scene.id === selected.image) ?? character.scenes[0]).source} style={{ width: '100%', height: '100%' }} />}>
+      fallbackFront={<ComicSceneImage contentFit="cover" backgroundColor={selected.paper} imageKey={`${selected.artworkUri ?? selected.image}:flip-front`} source={selected.artworkUri ? { uri: selected.artworkUri } : (character.scenes.find(scene => scene.id === selected.image) ?? character.scenes[0]).source} style={{ width: '100%', height: '100%' }} />}>
           <ServiceTutorialTarget steps={['comicMemo', 'comicTask', 'comicCheck']} spotlight={false} style={{ flex: 1 }}>
           <PaperGrain />
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -263,11 +290,11 @@ function CharacterComicPlanner({ ink, muted, isDark, character, diary, onUpdate,
             <ServiceTutorialCoach steps={['comicMemo', 'comicTask', 'comicCheck', 'comicSuccess']} onSkipStep={() => { flipRef.current?.close(); }} onEnd={() => { flipRef.current?.close(); }} />
             <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
               <ThemedTextInput accessibilityLabel={t('comicDay.sceneTitle')} value={selected.title} onChangeText={title => patch(selected.id, { title })} style={[s.title, { color: selected.pen }]} maxLength={80} placeholder={t('comicDay.sceneTitle')} placeholderTextColor="#888" />
-              <ComicSceneImage contentFit="cover" contentPosition={selectedArtwork?.id === '04-laundry' ? 'top' : undefined} backgroundColor={selected.paper} imageKey={`${selected.image}:original`} source={selectedArtwork!.source} style={{ width: '100%', height: detailImageWidth / detailImageRatio }} />
+              <ComicSceneImage contentFit="cover" contentPosition={selectedArtwork?.id === '04-laundry' ? 'top' : undefined} backgroundColor={selected.paper} imageKey={`${selected.artworkUri ?? selected.image}:original`} source={selected.artworkUri ? { uri: selected.artworkUri } : selectedArtwork!.source} style={{ width: '100%', height: detailImageWidth / detailImageRatio }} />
               <View style={s.detailFields}>
               <ThemedText style={[s.section, { color: selected.pen }]}>{t('comicDay.change')}</ThemedText>
               <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flexGrow: 0 }}>
-                {character.scenes.map(scene => <Pressable key={scene.id} accessibilityRole="button" accessibilityLabel={t(scene.label)} accessibilityState={{ selected: scene.id === selected.image }} onPress={() => { tapHaptic('select'); patch(selected.id, { image: scene.id }); }} style={{ width: 76, padding: 5 }}>
+                {character.scenes.map(scene => <Pressable key={scene.id} accessibilityRole="button" accessibilityLabel={t(scene.label)} accessibilityState={{ selected: scene.id === selected.image }} onPress={() => { tapHaptic('select'); patch(selected.id, { image: scene.id, artworkUri: undefined }); }} style={{ width: 76, padding: 5 }}>
                   {scene.id === selected.image ? <PenFrame color={selected.pen} /> : null}
                   <ComicSceneImage imageKey={`${scene.id}:960`} source={COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source} style={{ width: 64, height: 45 }} />
                   <ThemedText numberOfLines={1} style={{ color: selected.pen, fontSize: 11 }}>{t(scene.label)}</ThemedText>

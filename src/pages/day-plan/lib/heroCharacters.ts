@@ -19,3 +19,6 @@ export const COMIC_CHARACTERS = [{
   scenes: PUPPY_SCENES,
 }] as const;
 export type ComicCharacter = typeof COMIC_CHARACTERS[number];
+
+/** New diaries offer the human protagonist only; retain legacy characters for saved diaries. */
+export const SELECTABLE_COMIC_CHARACTERS = [COMIC_CHARACTERS[0]] as const;

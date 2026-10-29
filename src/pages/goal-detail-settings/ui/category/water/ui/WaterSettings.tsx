@@ -2,24 +2,14 @@ import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useShallow } from 'zustand/react/shallow';
 
 import {
-  buildWaterRoutineReminderSlots,
-  formatHhmmClockKo,
-  formatMinuteOfDayKo,
   MAX_WATER_QUICK_ADD_PRESETS,
-  MAX_WATER_REMINDER_TIMES,
-  parseHHmmToMinutes,
   useDayPlanDraftStore,
-  waterReminderIntervalMinutes,
 } from '@entities/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
-import { IconSymbol } from '@shared/ui/icon-symbol';
-import { OutlinedSwitch } from '@shared/ui/outlined-switch';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useUiSurfacePresentation } from '@shared/ui/presentation';
-import { paletteForReminderTimeCard, SnappedTimePickerField } from '@widgets/daily-mate-time-field';
 
 import { useGoalDetailSettingsPalette } from '../../lib/settingsPalette';
 import { SettingsProgressBand } from '../../lib/SettingsProgressBand';
@@ -37,8 +27,6 @@ import {
   type WaterDetailDataConfig,
   type WaterReminderPreset,
 } from './waterConfig';
-
-const MAX_TIME_SLOTS = MAX_WATER_REMINDER_TIMES;
 
 function parseGoalLitersToMl(text: string): number {
   const t = text.replace(',', '.').trim();
@@ -103,7 +91,6 @@ export function WaterSettings({
     () => resolveRoutineTitleFallback(categoryKey, rhythmTitle),
     [categoryKey, rhythmTitle],
   );
-  const timeFieldPalette = useMemo(() => paletteForReminderTimeCard(isDark).timeField, [isDark]);
   const isNote = useUiSurfacePresentation() === 'note';
 
   const structuralKey = useMemo(() => waterStructuralConfigKey(dataConfig), [dataConfig]);
@@ -126,7 +113,6 @@ export function WaterSettings({
   const [reminderTimes, setReminderTimes] = useState<string[]>(() => seedWater(dataConfig).reminderTimes);
   const [summary, setSummary] = useState(() => seedWater(dataConfig).summary);
   const [displayName, setDisplayName] = useState(() => seedWater(dataConfig).displayName);
-  const [openSlotIndex, setOpenSlotIndex] = useState<number | null>(null);
 
   const lastRef = useRef<string | null>(null);
   const hydratedStructuralKey = useRef<string | null>(null);
@@ -136,15 +122,6 @@ export function WaterSettings({
   useEffect(() => {
     useDayPlanDraftStore.getState().hydrate();
   }, []);
-
-  const { priorityStart, priorityEnd } = useDayPlanDraftStore(
-    useShallow((s) => ({ priorityStart: s.priorityStart, priorityEnd: s.priorityEnd })),
-  );
-
-  const routineWindowLine = useMemo(
-    () => `${formatHhmmClockKo(priorityStart)} – ${formatHhmmClockKo(priorityEnd)}`,
-    [priorityEnd, priorityStart],
-  );
 
   useEffect(() => {
     if (hydratedStructuralKey.current === structuralKey) return;
@@ -162,8 +139,7 @@ export function WaterSettings({
     setReminderTimes(next.reminderTimes);
     setSummary(next.summary);
     setDisplayName(next.displayName);
-    setOpenSlotIndex(null);
-  }, [dataConfig, structuralKey, priorityEnd, priorityStart]);
+  }, [dataConfig, structuralKey]);
 
   const buildDraftPayload = useCallback((): WaterDetailDataConfig => {
     const customMin = Math.max(
@@ -185,8 +161,6 @@ export function WaterSettings({
     displayName,
     drankMl,
     goalMl,
-    priorityEnd,
-    priorityStart,
     quickAddPresetsMl,
     reminderCustomMin,
     reminderPreset,
@@ -251,11 +225,6 @@ export function WaterSettings({
     };
   }, [onChangeDataConfig]);
 
-  const customMinNum = Math.max(
-    15,
-    Math.min(24 * 60, parseInt(reminderCustomMin, 10) || 90),
-  );
-
   const onPickPresetMl = (ml: number) => {
     setGoalMl(ml);
     setGoalLStr((ml / 1000).toFixed(1));
@@ -301,71 +270,6 @@ export function WaterSettings({
     setAddPresetDraft('');
     setShowAddPresetInput(false);
   };
-
-  const updateTimeAt = useCallback((index: number, hhmm: string) => {
-    setReminderTimes((prev) => {
-      const next = [...prev];
-      next[index] = hhmm;
-      return next;
-    });
-  }, []);
-
-  const addTimeSlot = useCallback(() => {
-    if (reminderTimes.length >= MAX_TIME_SLOTS) return;
-    const seed = reminderTimes.length > 0 ? reminderTimes[reminderTimes.length - 1]! : '09:00';
-    setReminderTimes((prev) => [...prev, seed]);
-    setOpenSlotIndex(reminderTimes.length);
-  }, [reminderTimes]);
-
-  const removeTimeAt = useCallback((index: number) => {
-    setReminderTimes((prev) => prev.filter((_, i) => i !== index));
-    setOpenSlotIndex(null);
-  }, []);
-
-  const fillTimesFromInterval = useCallback(() => {
-    const interval = waterReminderIntervalMinutes({
-      reminderPreset,
-      reminderCustomMin: customMinNum,
-    });
-    const slots = buildWaterRoutineReminderSlots({
-      routineStartHhmm: priorityStart,
-      routineEndHhmm: priorityEnd,
-      intervalMinutes: interval,
-    });
-    const filled = slots.map((s) =>
-      `${String(Math.floor(s.wallMinuteOfDay / 60)).padStart(2, '0')}:${String(s.wallMinuteOfDay % 60).padStart(2, '0')}`,
-    );
-    if (filled.length === 0) {
-      Alert.alert(t('alert.permission.title'), t('goalDetail.water.noFillTimes'));
-      return;
-    }
-    const label =
-      reminderPreset === '60'
-        ? t('goalDetail.water.intervalHour1')
-        : reminderPreset === '120'
-          ? t('goalDetail.water.intervalHour2')
-          : t('goalDetail.water.intervalMinutes', { min: customMinNum });
-    Alert.alert(
-      t('goalDetail.water.bulkFillTitle'),
-      t('goalDetail.water.bulkFillMessage', { label, count: filled.length }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('goalDetail.water.bulkFillConfirm'),
-          onPress: () => setReminderTimes(filled.slice(0, MAX_TIME_SLOTS)),
-        },
-      ],
-    );
-  }, [customMinNum, priorityEnd, priorityStart, reminderPreset, t]);
-
-  const reminderRows = useMemo(
-    (): { key: WaterReminderPreset; label: string }[] => [
-      { key: '60', label: t('goalDetail.water.intervalHour1') },
-      { key: '120', label: t('goalDetail.water.intervalHour2') },
-      { key: 'custom', label: t('goalDetail.water.intervalCustom') },
-    ],
-    [t],
-  );
 
   return (
     <View style={[styles.shell, embedded && styles.shellEmbedded]}>
@@ -533,139 +437,6 @@ export function WaterSettings({
           </View>
         </View>
 
-        <View style={[styles.row, isNote && styles.rowNote]}>
-          <Text style={styles.rowTitle}>{t('goalDetail.water.smartNotify')}</Text>
-          <OutlinedSwitch
-            value={smartNotification}
-            onValueChange={setSmartNotification}
-            trackColor={{ false: T.surfaceContainerHighest, true: T.primary }}
-            thumbColor="#fff"
-            ios_backgroundColor={T.surfaceContainerHighest}
-          />
-        </View>
-
-        {smartNotification ? (
-          <>
-            <View style={[styles.routineWindowBand, isNote && styles.routineWindowBandNote]}>
-              <Text style={styles.routineWindowLabel}>{t('goalDetail.water.routineWindow')}</Text>
-              <Text style={styles.routineWindowTime}>{routineWindowLine}</Text>
-            </View>
-
-            <View style={[styles.timesSection, isNote && styles.timesSectionNote]}>
-              <Text style={styles.timesSectionTitle}>{t('goalDetail.water.notifyTimes')}</Text>
-              <Text style={styles.timesSectionHint}>
-                {t('goalDetail.water.notifyTimesHint')}
-              </Text>
-
-              {reminderTimes.length === 0 ? (
-                <Text style={styles.timesEmpty}>{t('goalDetail.water.noNotifyTimes')}</Text>
-              ) : (
-                reminderTimes.map((hhmm, index) => (
-                  <View key={`water-time-${index}`} style={styles.slotRow}>
-                    <View style={styles.slotField}>
-                      <SnappedTimePickerField
-                        label={index === 0 ? t('goalDetail.water.notifyTimeLabel') : t('goalDetail.water.extraTimeLabel', { index: index + 1 })}
-                        valueHhmm={hhmm}
-                        onChangeHhmm={(next) => updateTimeAt(index, next)}
-                        expanded={openSlotIndex === index}
-                        onToggleExpand={() =>
-                          setOpenSlotIndex((j) => (j === index ? null : index))
-                        }
-                        isDark={isDark}
-                        palette={timeFieldPalette}
-                        snapStepMinutes={1}
-                        compact
-                      />
-                    </View>
-                    {reminderTimes.length > 1 ? (
-                      <Pressable
-                        onPress={() => { tapHaptic('warn'); removeTimeAt(index); }}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('goalDetail.water.removeTimeA11y', { index: index + 1 })}
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.removeBtn, pressed && { opacity: 0.65 }]}>
-                        <Text style={styles.removeBtnText}>{t('common.delete')}</Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ))
-              )}
-
-              {reminderTimes.length < MAX_TIME_SLOTS ? (
-                <Pressable
-                  onPress={() => { tapHaptic(); addTimeSlot(); }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('goalDetail.water.addTimeA11y')}
-                  style={({ pressed }) => [styles.addLink, pressed && { opacity: 0.75 }]}>
-                  <Text style={styles.addLinkText}>{t('goalDetail.water.addTimeLink')}</Text>
-                </Pressable>
-              ) : null}
-
-              {reminderTimes.length > 0 ? (
-                <Text style={styles.timesSummary}>
-                  {reminderTimes
-                    .map((t) => {
-                      const m = parseHHmmToMinutes(t);
-                      return m === null ? t : formatMinuteOfDayKo(m);
-                    })
-                    .join(', ')}
-                </Text>
-              ) : null}
-            </View>
-
-            <View style={[styles.bulkFillBlock, isNote && styles.bulkFillBlockNote]}>
-              <Text style={styles.bulkFillTitle}>{t('goalDetail.water.bulkFillOptional')}</Text>
-              <View style={styles.reminderList}>
-                {reminderRows.map((row) => {
-                  const selected = reminderPreset === row.key;
-                  return (
-                    <Pressable
-                      key={row.key}
-                      onPress={() => { tapHaptic('select'); setReminderPreset(row.key); }}
-                      style={styles.reminderBtn}>
-                      <Text style={[styles.reminderBtnText, selected && styles.reminderBtnTextOn]}>
-                        {row.label}
-                      </Text>
-                      {selected ? (
-                        <IconSymbol name="checkmark.circle.fill" size={20} color={T.primary} />
-                      ) : (
-                        <View style={styles.radioOuter} />
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {reminderPreset === 'custom' ? (
-                <View style={styles.customRow}>
-                  <Text style={styles.customRowLabel}>{t('goalDetail.water.intervalMinutesLabel')}</Text>
-                  <TextInput
-                    value={reminderCustomMin}
-                    onChangeText={(t) => setReminderCustomMin(t.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    style={styles.customInput}
-                  />
-                </View>
-              ) : null}
-              <Pressable
-                onPress={() => { tapHaptic(); fillTimesFromInterval(); }}
-                accessibilityRole="button"
-                accessibilityLabel={t('goalDetail.water.bulkFillBtnA11y')}
-                style={({ pressed }) => [
-                  styles.bulkFillBtn,
-                  isNote && styles.bulkFillBtnNote,
-                  pressed && { opacity: 0.88 },
-                ]}>
-                <Text style={[styles.bulkFillBtnText, isNote && { color: T.primary }]}>
-                  {t('goalDetail.water.bulkFillBtn')}
-                </Text>
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <Text style={styles.smartOffHint}>
-            {t('goalDetail.water.smartNotifyHint')}
-          </Text>
-        )}
       </View>
     </View>
   );

@@ -4,13 +4,13 @@ import { AppState } from 'react-native';
 
 import { getSupabaseClient, isSupabaseConfigured } from '@shared/lib/supabase';
 
-/** 오늘 탭에 머무는 동안에도 새 공지를 다시 받는다. */
+/** 오늘의 주인공 탭에 머무는 동안에도 새 공지를 다시 받는다. */
 const ANNOUNCEMENT_REFRESH_MS = 8_000;
 
 type AnnouncementRealtimeChannel = ReturnType<ReturnType<typeof getSupabaseClient>['channel']>;
 
 /**
- * 오늘 탭은 홈 넛지와 상단 버튼이 이 훅을 같이 쓴다.
+ * 오늘의 주인공 탭은 홈 공지와 상단 버튼이 이 훅을 같이 쓴다.
  * `channel(name)`은 같은 이름을 재사용하고, 이미 join 중이면 `.on('postgres_changes')`가 던진다.
  * 포커스 이펙트가 같은 틱에 두 번 돌면 `Date.now()` 이름이 겹치므로 채널은 하나만 둔다.
  */

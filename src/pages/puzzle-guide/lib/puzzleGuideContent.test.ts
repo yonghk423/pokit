@@ -1,5 +1,3 @@
-import { getPuzzleGuideImage } from '@shared/lib/puzzle-guide-assets';
-
 import { getPuzzleGuideSlides } from './puzzleGuideContent';
 
 describe('getPuzzleGuideSlides', () => {
@@ -14,14 +12,5 @@ describe('getPuzzleGuideSlides', () => {
   it('returns slides for en and ja', () => {
     expect(getPuzzleGuideSlides('en')).toHaveLength(4);
     expect(getPuzzleGuideSlides('ja')).toHaveLength(4);
-  });
-});
-
-describe('getPuzzleGuideImage', () => {
-  it('resolves every slide image', () => {
-    expect(getPuzzleGuideImage('wall')).toBeTruthy();
-    expect(getPuzzleGuideImage('target')).toBeTruthy();
-    expect(getPuzzleGuideImage('photo')).toBeTruthy();
-    expect(getPuzzleGuideImage('tip')).toBeTruthy();
   });
 });

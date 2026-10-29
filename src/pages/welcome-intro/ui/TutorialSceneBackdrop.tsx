@@ -4,12 +4,12 @@ import { AccessibilityInfo, Animated, AppState, Easing, StyleSheet, View } from 
 import Svg, { Defs, Image as SvgImage, Mask, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 const SCENES = [
-  require('../../../../assets/activity-illustrations/optimized/06-reading-960.webp'),
-  require('../../../../assets/activity-illustrations/optimized/10-park-walk-960.webp'),
-  require('../../../../assets/activity-illustrations/optimized/23-morning-stretch-960.webp'),
-  require('../../../../assets/activity-illustrations/optimized/25-skincare-960.webp'),
-  require('../../../../assets/activity-illustrations/optimized/20-swimming-960.webp'),
-  require('../../../../assets/activity-illustrations/optimized/11-photography-960.webp'),
+  require('../../../../assets/activity-illustrations/protagonist-1/06-reading-960.webp'),
+  require('../../../../assets/activity-illustrations/protagonist-1/10-park-walk-960.webp'),
+  require('../../../../assets/activity-illustrations/protagonist-1/23-morning-stretch-960.webp'),
+  require('../../../../assets/activity-illustrations/protagonist-1/25-skincare-960.webp'),
+  require('../../../../assets/activity-illustrations/protagonist-1/20-swimming-960.webp'),
+  require('../../../../assets/activity-illustrations/protagonist-1/11-photography-960.webp'),
 ];
 const POSITIONS = [
   { left: -0.07, top: -0.05, angle: -8 },

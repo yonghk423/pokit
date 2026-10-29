@@ -1,0 +1,2 @@
+Mode: built-in image_gen edit.
+Final prompt: Two overlapping instant-photo frames with a small circular plus badge. Inside front photo, only an anonymous solid black head-and-shoulders human silhouette; no facial features, hands or clothing detail. Rear photo blank. Refined hand-inked paper borders. Black and neutral white only, no color or sepia. Transparent background. No text, pencil or tape.

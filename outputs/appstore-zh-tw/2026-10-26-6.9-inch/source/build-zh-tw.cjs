@@ -76,8 +76,8 @@ return c;}
  for(const d of ['zh-TW','previews','source/localized-ui'])fs.mkdirSync(path.join(OUT,d),{recursive:true});
  for(const key of ['hero','detail','overview','mates'])images[key]=await loadImage(path.join(OUT,'source/originals',key+'.png'));
  paper=await loadImage(path.join(ROOT,'assets/color-textures/clean-paper.webp'));
- art.wake=await loadImage(path.join(ROOT,'assets/activity-illustrations/optimized/23-morning-stretch-960.webp'));
- art.night=await loadImage(path.join(ROOT,'assets/activity-illustrations/optimized/53-diary-in-bed-960.webp'));
+ art.wake=await loadImage(path.join(ROOT,'assets/activity-illustrations/protagonist-1/23-morning-stretch-960.webp'));
+ art.night=await loadImage(path.join(ROOT,'assets/activity-illustrations/protagonist-1/53-diary-in-bed-960.webp'));
  const l='zh-TW';const screens=['hero','detail','overview','mates'].map(k=>uiScreen(k,l));screens.push(widget(l),widget(l,true));
  for(let n=0;n<6;n++){
   fs.writeFileSync(path.join(OUT,'source/localized-ui',l+'-'+names[n]+'.png'),screens[n].toBuffer('image/png'));

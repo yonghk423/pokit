@@ -1,7 +1,7 @@
 PODS:
   - EXApplication (57.0.3):
     - ExpoModulesCore
-  - EXConstants (57.0.21):
+  - EXConstants (57.0.22):
     - ExpoModulesCore
   - EXJSONUtils (57.0.2)
   - EXManifests (57.0.2):
@@ -181,7 +181,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - ExpoAsset (57.0.19):
+  - ExpoAsset (57.0.20):
     - ExpoModulesCore
   - ExpoClipboard (57.0.2):
     - ExpoModulesCore
@@ -219,6 +219,9 @@ PODS:
     - React-Core
   - ExpoMailComposer (57.0.2):
     - ExpoModulesCore
+  - ExpoMediaLibrary (57.0.5):
+    - ExpoModulesCore
+    - React-Core
   - ExpoModulesCore (57.0.22):
     - ExpoModulesJSI
     - hermes-engine
@@ -259,6 +262,10 @@ PODS:
   - ExpoRouter (57.0.26):
     - ExpoModulesCore
     - RNScreens
+  - ExpoSecureStore (57.0.4):
+    - ExpoModulesCore
+  - ExpoSharing (57.0.24):
+    - ExpoModulesCore
   - ExpoSplashScreen (57.0.10):
     - ExpoModulesCore
   - ExpoStoreReview (57.0.3):
@@ -2795,12 +2802,15 @@ DEPENDENCIES:
   - ExpoLocation (from `../node_modules/expo-location/ios`)
   - "ExpoLogBox (from `../node_modules/@expo/log-box`)"
   - ExpoMailComposer (from `../node_modules/expo-mail-composer/ios`)
+  - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-jsi/apple`)
   - ExpoModulesWorklets (from `../node_modules/expo-modules-core`)
   - ExpoModulesWorkletsAdapter (from `../node_modules/expo-modules-core`)
   - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
   - ExpoRouter (from `../node_modules/expo-router/ios`)
+  - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
+  - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoStoreReview (from `../node_modules/expo-store-review/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
@@ -2981,6 +2991,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@expo/log-box"
   ExpoMailComposer:
     :path: "../node_modules/expo-mail-composer/ios"
+  ExpoMediaLibrary:
+    :path: "../node_modules/expo-media-library/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoModulesJSI:
@@ -2993,6 +3005,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-notifications/ios"
   ExpoRouter:
     :path: "../node_modules/expo-router/ios"
+  ExpoSecureStore:
+    :path: "../node_modules/expo-secure-store/ios"
+  ExpoSharing:
+    :path: "../node_modules/expo-sharing/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoStoreReview:
@@ -3193,7 +3209,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   EXApplication: a727f05eb8592f0bc764f6ab8d51eacc158652ec
-  EXConstants: b4e9051547ee9b8337155565fbdbe66036865120
+  EXConstants: 8a0eb5e2553569c0e6710b73a8d90d1ce358c153
   EXJSONUtils: a49e3ef80dff762108e5690c7b2f360675dcf7f6
   EXManifests: 4c53b2602e03ccf44d0b4ff9c5d655b2c5acba3f
   Expo: 1f24ff5decaa02797c291613d62c74f2d70cefdc
@@ -3201,7 +3217,7 @@ SPEC CHECKSUMS:
   expo-dev-launcher: b66f6669ca63a6fb5eebcfc7142e1fc7af6b8301
   expo-dev-menu: 364a1edcb597e86c50a70f6af68559c00ca1e016
   expo-dev-menu-interface: 7a59e803916fbfd1b96c75ff91ea8dddac7e722f
-  ExpoAsset: 78dbecc7bc9f60d839fb37ba8b10317b64779685
+  ExpoAsset: 2581425f9b581b4fce3c83ffc9f28528d1c4ee68
   ExpoClipboard: 15b8cc88075d7c50af165ed8fca0a76915903bba
   ExpoDevice: 5c638e530304a51992263ab5c1cab726f992b9dc
   ExpoDomWebView: beaec034e51bd028428b98bb1f2633ab79c6d095
@@ -3217,12 +3233,15 @@ SPEC CHECKSUMS:
   ExpoLocation: 8bb4a4f4ed4f74ef16933b1fe9461a6c91e365a2
   ExpoLogBox: 80957303325cd4439137765c90a87d7f22aaf2ff
   ExpoMailComposer: 664b85b27b64b4cfadc982a58c83272c080b04b7
+  ExpoMediaLibrary: 341321256621e7bf220b6272c42fedcb095607d0
   ExpoModulesCore: 3868105e4f56a39148214cd97b1bfd6f7067a4f7
   ExpoModulesJSI: 0853c5456f7926218337a8e007c12b75fb10bdc3
   ExpoModulesWorklets: 1fb83b3dfe735f8c940ce8a69ca2904f164e888b
   ExpoModulesWorkletsAdapter: 8ac2d43f516ea454fc318e23016bc6e829e8fcbb
   ExpoNotifications: b91c7c9e21df9b9649b382d8fbf297262c6c4c76
   ExpoRouter: 28d168cab7e3036b34eeafcb6c21ddf578f51650
+  ExpoSecureStore: ff1fd5e073957417ba8f9dec0bebcbd55a60e747
+  ExpoSharing: 4f0529a876e307b0dc5463f80dd318e4c1457c77
   ExpoSplashScreen: 856060f5724dc4fca4d69a2d18a161e3baa37019
   ExpoStoreReview: a70a18f8ec77262d6c63a6578ce4de3b3ee8ddf0
   ExpoSymbols: 37a3a6e5847edb08b83a5ee04d3b46525e205f00

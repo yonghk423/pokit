@@ -53,3 +53,28 @@ it('reorders complete scene objects and clamps movement to the sequence boundari
   expect(moveComicScene(scenes, 1, -10)).toEqual([scenes[1], scenes[0], scenes[2]]);
   expect(moveComicScene(scenes, 0, 99)[2].memo).toBe('Keep this note');
 });
+
+it('shows the gallery directly without source tabs and preserves existing selection', () => {
+  let tree!: ReactTestRenderer;
+  const onChange = jest.fn();
+  const scene = { ...newComicScene('work'), image: '05-work' as const };
+  act(() => { tree = create(<ComicScenePicker scenes={[scene]} onChange={onChange} onClose={jest.fn()} />); });
+  const gallery = () => tree.root.findAllByType(FlatList).find(node => node.props.numColumns != null)!;
+  const card = (id: string) => {
+    const list = gallery();
+    const item = list.props.data.find((entry: { id: string }) => entry.id === id);
+    return list.props.renderItem({ item, index: 0 }).props.children;
+  };
+  expect(tree.root.findAll(node => typeof node.props.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('comicDay.photo.tab.'))).toHaveLength(0);
+  expect(card('05-work').props.order).toBe(1);
+  expect(onChange).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+});
+
+it('does not offer human face replacement for the puppy scene library', () => {
+  const { COMIC_CHARACTERS } = jest.requireActual('../lib/heroCharacters');
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicScenePicker library={COMIC_CHARACTERS[1].scenes} scenes={[]} onChange={jest.fn()} onClose={jest.fn()} />); });
+  expect(tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.photo.tab.face')).toHaveLength(0);
+  act(() => tree.unmount());
+});

@@ -2,10 +2,9 @@ import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,12 +16,6 @@ import {
 } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
-import {
-  getPuzzleGuideImage,
-  prefetchPuzzleGuideAssets,
-  PUZZLE_GUIDE_STAGE_CREAM,
-  PUZZLE_GUIDE_STAGE_CREAM_DARK,
-} from '@shared/lib/puzzle-guide-assets';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
@@ -34,7 +27,7 @@ const SOFT_SHADOW = 2;
 const SOFT_SHADOW_LIGHT = 'rgba(24, 26, 46, 0.22)';
 const SOFT_SHADOW_DARK = 'rgba(0, 0, 0, 0.45)';
 
-/** 퍼즐 설명서 — 사진·짧은 설명. 넘김은 즉시 전환(흔들림 애니메이션 없음). */
+/** 퍼즐 설명서 — 짧은 설명. 넘김은 즉시 전환(흔들림 애니메이션 없음). */
 export function PuzzleGuidePage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
@@ -43,59 +36,10 @@ export function PuzzleGuidePage() {
   const rf = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const slides = useMemo(() => getPuzzleGuideSlides(locale), [locale]);
   const [index, setIndex] = useState(0);
-  const [loadedIds, setLoadedIds] = useState<Record<string, true>>({});
   const last = index >= slides.length - 1;
   const item = slides[index]!;
   const softShadow = isDark ? SOFT_SHADOW_DARK : SOFT_SHADOW_LIGHT;
   const progressRatio = index / Math.max(1, slides.length - 1);
-  const stageCream = isDark ? PUZZLE_GUIDE_STAGE_CREAM_DARK : PUZZLE_GUIDE_STAGE_CREAM;
-  const currentLoaded = Boolean(loadedIds[item.id]);
-  const skeletonPulse = useRef(new Animated.Value(0.55)).current;
-  const skeletonFace = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-  const skeletonBlock = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
-
-  useEffect(() => {
-    if (currentLoaded) {
-      skeletonPulse.stopAnimation();
-      skeletonPulse.setValue(0.55);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(skeletonPulse, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(skeletonPulse, {
-          toValue: 0.45,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => {
-      loop.stop();
-    };
-  }, [currentLoaded, skeletonPulse]);
-
-  const mountedIndexes = useMemo(() => {
-    const next = new Set<number>([index]);
-    if (index > 0) next.add(index - 1);
-    if (index < slides.length - 1) next.add(index + 1);
-    // 첫 진입 시 다음 장까지 미리 마운트
-    if (index === 0 && slides.length > 2) next.add(2);
-    return [...next].sort((a, b) => a - b);
-  }, [index, slides.length]);
-
-  useEffect(() => {
-    void prefetchPuzzleGuideAssets();
-  }, []);
-
-  const markLoaded = useCallback((id: string) => {
-    setLoadedIds((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
-  }, []);
 
   const close = useCallback(() => {
     if (router.canGoBack()) {
@@ -139,7 +83,6 @@ export function PuzzleGuidePage() {
     });
 
   const accentFace = isDark ? item.accentDark : item.accent;
-  const chipInk = isDark ? '#F1EFFF' : rf.text;
 
   return (
     <ThemedView style={[styles.screen, { backgroundColor: rf.bg }]} lightColor={rf.bg} darkColor={rf.bg}>
@@ -214,91 +157,6 @@ export function PuzzleGuidePage() {
         </View>
 
         <GestureDetector gesture={swipe}>
-          <View style={styles.stageArea}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.stageShadow,
-                {
-                  backgroundColor: softShadow,
-                  transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
-                },
-              ]}
-            />
-            <View style={[styles.stage, { backgroundColor: stageCream }]}>
-              <View
-                style={[
-                  styles.stepChipShell,
-                  { marginRight: SOFT_SHADOW, marginBottom: SOFT_SHADOW },
-                ]}>
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.stepChipShadow,
-                    {
-                      backgroundColor: softShadow,
-                      transform: [{ translateX: SOFT_SHADOW }, { translateY: SOFT_SHADOW }],
-                    },
-                  ]}
-                />
-                <View style={[styles.stepChip, { backgroundColor: accentFace }]}>
-                  <ThemedText
-                    style={[styles.stepChipText, { color: chipInk }, cityPopFont('800')]}
-                    lightColor={chipInk}
-                    darkColor={chipInk}>
-                    {String(index + 1).padStart(2, '0')}
-                  </ThemedText>
-                </View>
-              </View>
-
-              {mountedIndexes.map((i) => {
-                const slide = slides[i]!;
-                const active = i === index;
-                return (
-                  <Image
-                    key={slide.id}
-                    source={getPuzzleGuideImage(slide.id)}
-                    style={[
-                      styles.photo,
-                      {
-                        opacity: active && loadedIds[slide.id] ? 1 : 0,
-                      },
-                    ]}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    priority={active || i === index + 1 ? 'high' : 'low'}
-                    transition={0}
-                    recyclingKey={`puzzle-guide-${slide.id}`}
-                    accessibilityLabel={slide.title}
-                    accessibilityIgnoresInvertColors
-                    pointerEvents={active ? 'auto' : 'none'}
-                    onLoad={() => markLoaded(slide.id)}
-                  />
-                );
-              })}
-
-              {!currentLoaded ? (
-                <Animated.View
-                  style={[styles.stageSkeleton, { opacity: skeletonPulse }]}
-                  pointerEvents="none"
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants">
-                  <View style={[styles.skeletonFill, { backgroundColor: skeletonFace }]} />
-                  <View style={styles.skeletonBlocks}>
-                    <View style={[styles.skeletonBarWide, { backgroundColor: skeletonBlock }]} />
-                    <View style={[styles.skeletonBarMid, { backgroundColor: skeletonBlock }]} />
-                    <View style={styles.skeletonCards}>
-                      <View style={[styles.skeletonCard, { backgroundColor: skeletonBlock }]} />
-                      <View style={[styles.skeletonCard, { backgroundColor: skeletonBlock }]} />
-                      <View style={[styles.skeletonCard, { backgroundColor: skeletonBlock }]} />
-                    </View>
-                  </View>
-                </Animated.View>
-              ) : null}
-            </View>
-          </View>
-        </GestureDetector>
-
         <View style={styles.copyCardShell}>
           <View
             pointerEvents="none"
@@ -341,6 +199,7 @@ export function PuzzleGuidePage() {
             ) : null}
           </View>
         </View>
+        </GestureDetector>
 
         <View
           style={[

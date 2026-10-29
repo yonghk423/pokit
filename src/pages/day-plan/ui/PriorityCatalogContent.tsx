@@ -32,7 +32,6 @@ import {
   useFixedFlowSetsStore,
   useGoalDetailSettingsStore,
 } from '@entities/day-plan';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
@@ -545,9 +544,6 @@ export function PriorityCatalogContent({
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
-      if (templateKey === 'reminder') {
-        void persistReminderTemplateNotificationRule(id, next);
-      }
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);

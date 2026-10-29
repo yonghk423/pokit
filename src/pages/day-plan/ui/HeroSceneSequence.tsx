@@ -57,7 +57,7 @@ export function ComicSceneSequence({ scenes, onChange, onStart }: { scenes: Comi
               onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'increment') onChange(moveComicScene(scenes, index, index + 1)); if (event.nativeEvent.actionName === 'decrement') onChange(moveComicScene(scenes, index, index - 1)); }}
               delayLongPress={350} onLongPress={() => { tapHaptic('select'); drag.current = { id: scene.id, moving: false }; setDragId(scene.id); }}>
               <View style={s.number}><ThemedText style={s.ink}>{String(index + 1).padStart(2, '0')}</ThemedText></View>
-              <ComicSceneImage imageKey={`${scene.image}:960`} source={COMIC_SCENE_THUMBNAILS[scene.image]} fallbackSource={COMIC_SCENES.find(item => item.id === scene.image)!.source} style={s.image} />
+              <ComicSceneImage imageKey={`${scene.artworkUri ?? scene.image}:960`} source={scene.artworkUri ? { uri: scene.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.image]} fallbackSource={COMIC_SCENES.find(item => item.id === scene.image)!.source} style={s.image} />
               <ThemedText numberOfLines={1} style={s.caption}>{scene.title}</ThemedText>
             </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.removeFromSequence', { label: scene.title })} onPress={() => { tapHaptic('warn'); onChange(scenes.filter(item => item.id !== scene.id)); }} hitSlop={5} style={s.remove}><ThemedText style={s.ink}>×</ThemedText></Pressable>

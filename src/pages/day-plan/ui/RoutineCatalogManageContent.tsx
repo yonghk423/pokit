@@ -18,7 +18,6 @@ import {
   useFixedFlowSetsStore,
   type CustomFlowTemplateKey,
 } from '@entities/day-plan';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -183,9 +182,6 @@ export function RoutineCatalogManageContent() {
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
-      if (templateKey === 'reminder') {
-        void persistReminderTemplateNotificationRule(id, next);
-      }
       appendCustomFlowCatalogEntry({ id, groupKey: DEFAULT_CUSTOM_FLOW_GROUP_KEY });
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);

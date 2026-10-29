@@ -1,0 +1,8 @@
+project_id = "pokit"
+
+[functions.hero-ai]
+# User JWTs are validated by auth.getUser inside the function, supporting current signing keys.
+verify_jwt = false
+
+[auth]
+enable_anonymous_sign_ins = true

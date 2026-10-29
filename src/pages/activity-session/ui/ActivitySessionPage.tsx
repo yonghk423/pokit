@@ -39,7 +39,6 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { AladinAttributionLine, openAladinProductPage } from '@features/aladin-book-search';
-import { rescheduleDayPlanNotifications } from '@features/day-plan-notifications';
 import {
   buildLiveActivityChecklistRows,
   buildLiveActivityPayloadForBlock,
@@ -435,7 +434,6 @@ export function ActivitySessionPage() {
     }
     completeBlock(block.id);
     const s = useDayPlanStore.getState();
-    void rescheduleDayPlanNotifications();
     const next = getNextPendingAfter(
       filterDayPlanFlowBlocks(s.blocks),
       block.id,

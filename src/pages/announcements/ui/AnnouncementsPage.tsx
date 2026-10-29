@@ -297,11 +297,14 @@ export function AnnouncementsPage() {
                       }
                       style={styles.row}>
                       <View style={styles.rowText}>
-                        <ThemedText style={[styles.rowTitle, { color: rf.text }]} numberOfLines={2}>
-                          {item.title}
-                        </ThemedText>
-                        <ThemedText style={[styles.rowDesc, { color: rf.textMuted }]} numberOfLines={1}>
-                          {meta}
+                        <View style={styles.titleLine}>
+                          {unread ? <View style={styles.unreadDot} accessibilityElementsHidden /> : null}
+                          <ThemedText style={[styles.rowTitle, { color: rf.text }]} numberOfLines={2}>
+                            {item.title}
+                          </ThemedText>
+                        </View>
+                        <ThemedText style={[styles.rowDesc, { color: unread ? BADGE : rf.textMuted }]} numberOfLines={1}>
+                          {unread ? `${t('announcements.unreadHint')} · ${meta}` : meta}
                         </ThemedText>
                       </View>
                       <IconSymbol name="chevron.right" size={14} color={rf.textMuted} />
@@ -447,7 +450,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rowText: { flex: 1, gap: 2, minWidth: 0 },
-  rowTitle: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
+  titleLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: BADGE, flexShrink: 0 },
+  rowTitle: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
   rowDesc: { fontSize: 11, fontWeight: '500', lineHeight: 15 },
   iconShell: {
     position: 'relative',

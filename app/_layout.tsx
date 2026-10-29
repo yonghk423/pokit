@@ -4,7 +4,6 @@ import { useAppAlertStore } from '@shared/lib/app-alert';
 import { useAppSessionStore } from '@shared/lib/app-session';
 import { AppAlertRoot } from '@shared/ui/app-alert';
 import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
-import { prepareRhythmArtwork } from '@pages/day-plan/lib/mateArtworkCache';
 import { prepareSurfaceTextures } from '@shared/ui/surface-texture/textureCache';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -74,7 +73,7 @@ export default function RootLayout() {
     let active = true;
     // Keep startup bounded even if an asset fails or a development server stalls.
     const timeout = setTimeout(() => { if (active) setIconsReady(true); }, 2000);
-    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures(), prepareRhythmArtwork()]).finally(() => {
+    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures()]).finally(() => {
       clearTimeout(timeout);
       if (active) setIconsReady(true);
     });
@@ -154,10 +153,6 @@ export default function RootLayout() {
                     options={{ headerShown: false, presentation: 'card' }}
                   />
                   <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
-                  <Stack.Screen
-                    name="notification-settings"
-                    options={{ headerShown: false, presentation: 'card' }}
-                  />
                   <Stack.Screen
                     name="announcements"
                     options={{ headerShown: false, presentation: 'card' }}

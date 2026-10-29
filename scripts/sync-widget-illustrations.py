@@ -5,7 +5,7 @@ import json
 
 root = Path(__file__).resolve().parents[1]
 cat = root / 'ios/PokitLiveActivity/ComicScenes.xcassets'
-opt_comics = root / 'assets/activity-illustrations/optimized'
+opt_comics = root / 'assets/activity-illustrations/protagonist-1'
 
 
 def write_contents(dest: Path, filename: str) -> None:

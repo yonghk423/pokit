@@ -1,0 +1,2 @@
+Mode: built-in image_gen.
+Prompt: Two overlapping empty instant photographs, hand-inked black outlines on solid neutral white photo paper, small circular plus badge at lower right. Completely blank opaque white interiors. Transparent exterior. No person, silhouette, scenery, color, text, tape or pencil.

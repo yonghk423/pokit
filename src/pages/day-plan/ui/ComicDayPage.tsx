@@ -12,6 +12,11 @@ import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } fro
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import {
+  AnnouncementHomeOverlay,
+  useAnnouncementHomeNudge,
+} from '@features/announcement-home-nudge';
+
 import { DayPlanShellBackgroundContext, useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { ComicDiaryMenuButton } from './HeroDiaryMenuButton';
@@ -37,6 +42,7 @@ export function ComicDayPage() {
     const character = COMIC_CHARACTERS.find(item => item.id === initialDiary?.characterId);
     return initialDiary?.characterName ?? (character ? loadComicCharacterName(character.id) ?? t(character.name) : null);
   });
+  const announcementHome = useAnnouncementHomeNudge();
   const registerHeaderActions = useDayPlanHeaderActions();
   const setShellBackground = useContext(DayPlanShellBackgroundContext);
   const { registerComicDiaryLight } = useDayPlanTabBridge();
@@ -77,6 +83,11 @@ export function ComicDayPage() {
 
   return (
     <View style={[styles.root, { backgroundColor: surface }]}>
+      <AnnouncementHomeOverlay
+        announcement={announcementHome.notice}
+        onDismiss={announcementHome.dismiss}
+        onUpdatePress={() => { void announcementHome.openStore(); }}
+      />
       {!registerHeaderActions ? header : null}
       <IndependentComicPlanner
         ref={plannerRef}

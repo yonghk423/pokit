@@ -1,7 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-import { syncRoutineStartNotifications } from '@features/day-plan-notifications';
 import {
   loadDayMealSlotSchedule,
   saveDayMealSlotSchedule,
@@ -29,7 +28,6 @@ export function useDayMealSlotSchedule() {
       const saved = saveDayMealSlotSchedule(next);
       setSchedule(saved);
       setRevision((n) => n + 1);
-      void syncRoutineStartNotifications();
       return saved;
     },
     [],
@@ -53,7 +51,6 @@ export function useDayMealSlotSchedule() {
           return prev;
         }
         setRevision((n) => n + 1);
-        void syncRoutineStartNotifications();
         return saved;
       });
       return saved;

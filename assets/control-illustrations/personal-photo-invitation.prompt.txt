@@ -1,0 +1,2 @@
+Built-in image_gen edit.
+Prompt: Two overlapping instant portrait photographs with a woman with loosely tied hair and a simple shirt, hand drawn black fountain-pen lines and fine hatching. Neutral white/light gray photographic paper, strictly monochrome, transparent background. Small plus badge at lower right. No landscape, chromatic colors, text, pencil or tape. Match the literary pen illustration of the supplied reference.

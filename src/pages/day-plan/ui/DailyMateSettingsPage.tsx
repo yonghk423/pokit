@@ -1,4 +1,3 @@
-import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -6,12 +5,10 @@ import { Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { syncPriorityDayStartAlarm } from '@features/day-plan-notifications';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { formatDateKeyCompact } from '@shared/lib/i18n/lib/formatLocale';
 import {
-  loadPriorityDayStartAlarm,
   savePriorityDayRollMode,
   syncDayMealSlotScheduleWithPriorityWindow,
 } from '@shared/lib/storage';
@@ -114,22 +111,6 @@ export function DailyRhythmSettingsPage() {
       syncOvernightPriorityPlanDates();
       syncDayMealSlotScheduleWithPriorityWindow(start, end);
       savePriorityDayRollMode('reset');
-
-      // 알림 on/off는 설정 → 알림 탭에서 관리. 시각만 바뀌면 스케줄 재동기화.
-      const dayStartAlarm = loadPriorityDayStartAlarm();
-      if (dayStartAlarm.enabled) {
-        const startOk = await syncPriorityDayStartAlarm({
-          enabled: true,
-          startHhmm: start,
-        });
-        if (!startOk) {
-          // 뒤로가기 전에 이 화면에서 안내 (확인 후 이동)
-          Alert.alert(t('alert.permission.title'), t('alert.permission.message'), [
-            { text: t('common.confirm'), onPress: () => router.back() },
-          ]);
-          return;
-        }
-      }
 
       router.back();
     },

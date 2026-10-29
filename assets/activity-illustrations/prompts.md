@@ -1,6 +1,4 @@
-# 장면 일러스트 생성 기록
-
-기존 장면의 제작 당시 프롬프트를 보존한 자료입니다. 현재 장면·파일 목록은 `src/pages/day-plan/lib/heroSceneImages.ts`와 `heroSceneThumbnails.ts`를 기준으로 확인합니다. 아래 PNG 파일명은 생성 당시의 이름이며 앱은 960px 계열 WebP를 사용합니다. 새 화면·캐릭터의 공통 제품 지침은 [일러스트와 아이콘](../../docs/design/illustrations-and-icons.md)을 따릅니다.
+# 새 캐릭터 일상 활동 56종
 
 내장 이미지 생성 도구 사용. 승인된 운동 시안을 공통 얼굴·그림체 참조로 사용합니다. 독서 이미지는 승인된 시안을 그대로 사용합니다. 영화 시안은 포인트 색만 겨자색으로 바꿉니다.
 
@@ -333,4 +331,10 @@ Use the attached APPROVED illustration as the ONLY visual reference. Create anot
 참조: references/01-exercise-style-v3.png
 
 Use the attached APPROVED illustration as the ONLY visual reference. Create another page from this exact series. Preserve this same adult East Asian woman: small softly rounded oval face, simple small dark eyes, tiny nose and soft small mouth, dark wavy hair with loose curled wisps. Same slender long body and small head-to-body ratio. Match the economical slightly rough black ink outlines, scratchy black filled clothing and flat warm cream paper shapes. No detailed face rendering, glossy modern manga shading or dense realistic hatching. Portrait canvas, medium-long observational view, whole figure including feet visible where natural, woman occupies about 55 to 65 percent of canvas height with generous empty cream space. Natural candid everyday moment, gaze toward activity, no viewer gaze or staged smile. Keep environment sparse with only essential objects. Exactly ONE small localized colored accent as specified; ALL other objects, skin, clothes and backgrounds remain warm ivory paper and near-black sepia ink. No other colors, no color wash, no text, logos, watermark, borders or panels. Vary scene and suitable clothing, but retain original woman's facial identity and simple illustration style. SCENE: Reading a large thin flexible lifestyle magazine while seated at an open window, light curtain gently billowing and loose hair wisps in breeze, cream T-shirt and dark loose trousers, same face and wavy loose bun. Full seated figure with ample white-cream room, simple window bench. Magazine shows only small monochrome editorial picture blocks, no readable words. Accent: one small cover strip muted olive; all inside pages remain ink/cream.
+
+## 56-bookstore.png — 서점에서 책 고르기
+
+참조: references/56-bookstore-user-provided.png
+
+User-provided approved illustration. Use the supplied artwork as-is; it is a new bookstore browsing scene for the existing protagonist collection.
 

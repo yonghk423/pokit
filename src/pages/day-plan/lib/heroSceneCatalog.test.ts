@@ -8,10 +8,10 @@ import ko from '@shared/lib/i18n/model/messages/ko.json';
 
 afterEach(() => localStorageClient.removeItem('pokit:comic-day:catalog-test'));
 it('includes every activity photo and the five comic images with searchable labels', () => {
-  const optimized = readdirSync(resolve(__dirname, '../../../../assets/activity-illustrations/optimized')).filter(file => file.endsWith('-960.webp'));
+  const optimized = readdirSync(resolve(__dirname, '../../../../assets/activity-illustrations/protagonist-1')).filter(file => file.endsWith('-960.webp'));
   const activityIds = manifest.map(item => item.id);
-  expect(optimized.filter(file => /^\d{2}-/.test(file)).map(file => file.replace(/-960\.webp$/, '')).sort()).toEqual([...activityIds].sort());
-  expect(optimized.every(file => /^\d{2}-/.test(file))).toBe(true);
+  expect(optimized.filter(file => /^\d{2,3}-/.test(file)).map(file => file.replace(/-960\.webp$/, '')).sort()).toEqual([...activityIds].sort());
+  expect(optimized.every(file => /^\d{2,3}-/.test(file))).toBe(true);
   expect(COMIC_SCENES).toHaveLength(activityIds.length + 15);
   expect(new Set(COMIC_SCENES.map(scene => scene.id)).size).toBe(COMIC_SCENES.length);
   for (const item of manifest) expect(COMIC_SCENES.some(scene => scene.id === item.id)).toBe(true);

@@ -60,10 +60,6 @@ import {
   type CustomFlowTemplateKey,
   type PriorityMarkColorId,
 } from '@entities/day-plan';
-import {
-  isRoutineStartNotifyEnabled,
-  persistRoutineStartNotifyToggle,
-} from '@features/day-plan-notifications';
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 import { useChunkedPaintLimit } from '@shared/lib/chunked-list-paint';
 import { ListRowSkeletonStack, SmoothEnter } from '@shared/ui/list-row-skeleton';
@@ -377,8 +373,6 @@ type FlowCardProps = {
   ) => void;
   /** 키패드에 가리지 않도록 패널을 스크롤 영역 안으로 */
   onEnsureVisibleAboveKeyboard?: (windowY: number, height: number) => void;
-  startNotifyEnabled?: boolean;
-  onToggleStartNotify?: () => void;
   onOpenSettings: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onDelete: () => void;
@@ -413,8 +407,6 @@ function FlowItemCard({
   baseDateKey,
   onChangeSpineTime,
   onEnsureVisibleAboveKeyboard,
-  startNotifyEnabled = false,
-  onToggleStartNotify,
   onOpenSettings,
   onToggleEnabled,
   onDelete,
@@ -514,32 +506,6 @@ function FlowItemCard({
 
   const handleToggleMealSlot = (slot: DayMealSlot) => {
     onToggleMealSlot?.(slot);
-  };
-
-  const showStartNotify = Boolean(
-    (showSpineTimePicker && onChangeSpineTime) || (showMealSlotPicker && onToggleMealSlot),
-  );
-  const canStartNotify = showSpineTimePicker
-    ? spineStartMinutes != null && spineEndMinutes != null
-    : mealSlots.length > 0;
-
-  const handleToggleStartNotify = () => {
-    if (!canStartNotify) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      if (showMealSlotPicker && onToggleMealSlot) {
-        setMealSlotExpanded(true);
-        Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.pickMealSlot'));
-        return;
-      }
-      if (showSpineTimePicker && onChangeSpineTime) {
-        setSpineTimeExpanded(true);
-        Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.pickStartEnd'));
-        return;
-      }
-      Alert.alert(t('alert.startNotify.title'), t('alert.startNotify.pickStartTime'));
-      return;
-    }
-    onToggleStartNotify?.();
   };
 
   return (
@@ -669,25 +635,6 @@ function FlowItemCard({
                 color={spineTimeIconHighlighted ? actionInk : actionMuted}
               />
             </Reanimated.View>
-          </FlowBrutalActionButton>
-        ) : null}
-        {showStartNotify && onToggleStartNotify ? (
-          <FlowBrutalActionButton plain
-            accessibilityLabel={t('fixedRoutine.startNotifyA11y', { label, state: startNotifyEnabled ? t('common.on') : t('common.off') })}
-            accessibilityState={{ selected: startNotifyEnabled }}
-            borderColor={line}
-            backgroundColor={actionBg}
-            pressedBg={actionHoverBg}
-            shadowColor={actionSoftShadow}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              handleToggleStartNotify();
-            }}>
-            <IconSymbol
-              name={startNotifyEnabled ? 'bell.fill' : 'bell'}
-              size={13}
-              color={startNotifyEnabled ? actionInk : canStartNotify ? actionInk : actionMuted}
-            />
           </FlowBrutalActionButton>
         ) : null}
         <FlowBrutalActionButton plain
@@ -987,8 +934,6 @@ type GroupAccordionProps = {
     endsNextCalendarDay: boolean,
   ) => void;
   onEnsureVisibleAboveKeyboard?: (windowY: number, height: number) => void;
-  isStartNotifyEnabled?: (categoryKey: string) => boolean;
-  onToggleStartNotify?: (categoryKey: string) => void;
   onOpenCategorySettings: (categoryKey: string) => void;
   markColorByKey?: Record<string, PriorityMarkColorId>;
   onSelectMarkColor?: (categoryKey: string, color: PriorityMarkColorId | null) => void;
@@ -1036,8 +981,6 @@ function GroupAccordion({
   onToggleItemMealSlot,
   onChangeItemSpineTime,
   onEnsureVisibleAboveKeyboard,
-  isStartNotifyEnabled,
-  onToggleStartNotify,
   onOpenCategorySettings,
   markColorByKey,
   onSelectMarkColor,
@@ -1425,12 +1368,6 @@ function GroupAccordion({
                       : undefined
                   }
                   onEnsureVisibleAboveKeyboard={onEnsureVisibleAboveKeyboard}
-                  startNotifyEnabled={isStartNotifyEnabled?.(item.categoryKey) ?? false}
-                  onToggleStartNotify={
-                    onToggleStartNotify
-                      ? () => onToggleStartNotify(item.categoryKey)
-                      : undefined
-                  }
                   onOpenSettings={() => onOpenCategorySettings(item.categoryKey)}
                   onToggleEnabled={(enabled) => onToggleItem(item.categoryKey, enabled)}
                   onDelete={() => onDeleteItem(item.categoryKey, itemLabel)}
@@ -1943,7 +1880,6 @@ export function FixedRoutinePage({
     persistSchedule: persistMealSlotSchedule,
     syncWithPriorityWindow: syncMealSlotScheduleWithPriorityWindow,
   } = useDayMealSlotSchedule();
-  const [startNotifyRevision, setStartNotifyRevision] = useState(0);
 
   useEffect(() => {
     syncMealSlotScheduleWithPriorityWindow(
@@ -1952,50 +1888,6 @@ export function FixedRoutinePage({
       isOvernightHhmmRange(priorityStart, priorityEnd),
     );
   }, [priorityStart, priorityEnd, syncMealSlotScheduleWithPriorityWindow]);
-
-  const handleToggleStartNotify = useCallback(async (categoryKey: string) => {
-    const nextEnabled = !isRoutineStartNotifyEnabled(categoryKey);
-    const applyToggle = async () => {
-      const ok = await persistRoutineStartNotifyToggle(categoryKey, nextEnabled);
-      setStartNotifyRevision((n) => n + 1);
-      if (nextEnabled && !ok) {
-        Alert.alert(t('alert.permission.title'), t('alert.permission.message'));
-        return;
-      }
-      void Haptics.notificationAsync(
-        nextEnabled && ok
-          ? Haptics.NotificationFeedbackType.Success
-          : Haptics.NotificationFeedbackType.Warning,
-      );
-    };
-
-    if (nextEnabled) {
-      Alert.alert(
-        t('routineNotify.title'),
-        t('routineNotify.toggleEnableConfirmMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('common.confirm'),
-            onPress: () => {
-              void applyToggle();
-            },
-          },
-        ],
-      );
-      return;
-    }
-
-    await applyToggle();
-  }, []);
-
-  const isStartNotifyEnabledForCategory = useCallback(
-    (categoryKey: string) => {
-      void startNotifyRevision;
-      return isRoutineStartNotifyEnabled(categoryKey);
-    },
-    [startNotifyRevision],
-  );
 
   const completedCategoryKeysFromPlan = useMemo(() => {
     const doneBlockIds = new Set([...completedBlockIds, ...skippedBlockIds]);
@@ -2647,10 +2539,6 @@ export function FixedRoutinePage({
                         void Haptics.selectionAsync();
                       }}
                       onEnsureVisibleAboveKeyboard={ensureVisibleAboveKeyboard}
-                      isStartNotifyEnabled={isStartNotifyEnabledForCategory}
-                      onToggleStartNotify={(categoryKey) => {
-                        void handleToggleStartNotify(categoryKey);
-                      }}
                       onOpenCategorySettings={openCategorySettings}
                       markColorByKey={priorityCategoryImportance}
                       onSelectMarkColor={onSelectFixedMarkColor}

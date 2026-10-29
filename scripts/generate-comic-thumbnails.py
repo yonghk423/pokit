@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / 'assets/activity-illustrations'
-OUTPUT = ASSETS / 'optimized'
+OUTPUT = ASSETS / 'protagonist-1'
 OUTPUT.mkdir(exist_ok=True)
 MASTERS = ROOT / 'outputs/activity-illustration-masters'
 activity = json.loads((ASSETS / 'manifest.json').read_text())
@@ -38,7 +38,7 @@ for key in keys:
             image.save(OUTPUT / f'{key}-{size}.webp', 'WEBP', quality=80, method=6)
 
 rows = ''.join(
-    f"  '{key}': require('../../../../assets/activity-illustrations/optimized/{key}-960.webp'),\n"
+    f"  '{key}': require('../../../../assets/activity-illustrations/protagonist-1/{key}-960.webp'),\n"
     for key in keys
 )
 rows += ''.join(

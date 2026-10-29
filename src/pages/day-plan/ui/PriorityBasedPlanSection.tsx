@@ -130,11 +130,6 @@ import { IconSymbol } from '@shared/ui/icon-symbol';
 import { HeaderIcon } from '@shared/ui/header-icon';
 import { ThemedText } from '@shared/ui/themed-text';
 
-import {
-  AnnouncementHomeOverlay,
-  useAnnouncementHomeNudge,
-} from '@features/announcement-home-nudge';
-import { persistReminderTemplateNotificationRule } from '@features/category-reminder-notifications';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import { MealSlotScheduleEditButton, MealSlotTimelineView } from '@widgets/day-plan-meal-slot-timeline';
 import { SpineTimelineView } from '@widgets/day-plan-spine-timeline';
@@ -455,7 +450,6 @@ export function PriorityBasedPlanSection({
   const showTimetable = true;
   const hideDailyQuoteSetting = useDayPlanChromeSettingsStore((s) => s.settings.hideDailyQuote);
   const hideDailyQuote = !FEATURE_FLAGS.dailyQuote || hideDailyQuoteSetting;
-  const announcementHome = useAnnouncementHomeNudge();
   const insets = useSafeAreaInsets();
   const bottomTabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -1323,9 +1317,6 @@ export function PriorityBasedPlanSection({
         ...(templateDataConfig ? { templateSeed: templateDataConfig } : {}),
       });
       saveGoalDetailCategoryConfig(id, next);
-      if (templateKey === 'reminder') {
-        void persistReminderTemplateNotificationRule(id, next);
-      }
       appendCustomFlowCatalogEntry({ id, groupKey: safeGroupKey });
       registerOtherCategoryResolverFromStorage();
       void loadGoalDetailCategoryConfig(id);
@@ -2511,7 +2502,6 @@ export function PriorityBasedPlanSection({
 
   return (
     <View style={[styles.prioritySectionRoot, { backgroundColor: surfaceBg }]}>
-      <AnnouncementHomeOverlay announcement={announcementHome.notice} onDismiss={announcementHome.dismiss} onUpdatePress={() => { void announcementHome.openStore(); }} />
       <ScheduledRoutineCalendarSheet
         visible={scheduledRoutineSheetOpen}
         isDark={isDark}
