@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import * as Haptics from 'expo-haptics';
@@ -546,7 +547,7 @@ export function ReadingSettings({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.reading.addBook')}
-                onPress={() => setAddSheetVisible(true)}
+                onPress={() => { tapHaptic(); setAddSheetVisible(true); }}
                 style={[styles.headerIconBtn, { backgroundColor: headerBtnFace }]}>
                 <PaperGrain /><HanddrawnFrame color={c.onVariant} /><IconSymbol name="plus" size={23} color={c.onSurface} />
               </Pressable>
@@ -574,6 +575,7 @@ export function ReadingSettings({
                   accessibilityRole="button"
                   accessibilityLabel={t('goalDetail.reading.searchBook')}
                   onPress={() => {
+                    tapHaptic();
                     dismissSearchGuide();
                     setSearchSheetVisible(true);
                   }}
@@ -670,6 +672,7 @@ export function ReadingSettings({
                     accessibilityLabel={t('goalDetail.reading.closeSearch')}
                     hitSlop={8}
                     onPress={() => {
+                      tapHaptic();
                       setLibraryQuery('');
                       setListSearchActive(false);
                     }}
@@ -682,7 +685,7 @@ export function ReadingSettings({
                   accessibilityRole="button"
                   accessibilityLabel={t('goalDetail.reading.searchList')}
                   hitSlop={8}
-                  onPress={() => setListSearchActive(true)}
+                  onPress={() => { tapHaptic(); setListSearchActive(true); }}
                   style={styles.listSearchTriggerBtn}>
                   <ThemedText style={[styles.listSearchTrigger, { color: c.onVariant }]}>
                     {t('goalDetail.reading.search')}

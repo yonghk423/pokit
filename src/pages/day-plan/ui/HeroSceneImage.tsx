@@ -6,7 +6,8 @@ import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
-  onReady?: () => void;
+  fillPortrait?: boolean;
+  onReady?: () => void; transitionDuration?: number;
   showSkeletonOnMount?: boolean;
   source: ImageProps['source']; fallbackSource?: ImageProps['source']; imageKey: string;
   style: StyleProp<ViewStyle>; priority?: ImageProps['priority']; contentFit?: ImageProps['contentFit']; contentPosition?: ImageProps['contentPosition']; backgroundColor?: string;
@@ -29,8 +30,10 @@ const shownImageKeys = new Set<string>();
 export function ComicSceneImage(props: Props) {
   return <ComicImageSession key={props.imageKey} {...props} />;
 }
-function ComicImageSession({ source, fallbackSource, imageKey, style, priority = 'normal', contentFit = 'contain', contentPosition, backgroundColor = '#F5E8CF', onReady, showSkeletonOnMount = false }: Props) {
+function ComicImageSession({ source, fallbackSource, imageKey, style, priority = 'normal', contentFit = 'contain', contentPosition, backgroundColor = '#F5E8CF', onReady, showSkeletonOnMount = false, transitionDuration = 0, fillPortrait = false }: Props) {
   const { t } = useTranslation();
+  const dimensions = typeof source === 'number' ? NativeImage.resolveAssetSource(source) : null;
+  const [portrait, setPortrait] = useState(() => !!dimensions && dimensions.height > dimensions.width);
   const [displayed, setDisplayed] = useState<string | null>(() => !showSkeletonOnMount && shownImageKeys.has(imageKey) ? `${imageKey}:0:0` : null);
   const [failed, setFailed] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -47,9 +50,10 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   const retry = () => { shownImageKeys.delete(imageKey); setFailed(null); setDisplayed(null); setAttempt(0); setReload(value => value + 1); };
   return <View style={[{ overflow: 'hidden', backgroundColor }, style]}>
     <Image key={key} source={resolvedSource} recyclingKey={key}
-      style={StyleSheet.absoluteFill} contentFit={contentFit} contentPosition={contentPosition}
+      style={StyleSheet.absoluteFill} contentFit={fillPortrait && portrait ? 'cover' : contentFit} contentPosition={contentPosition}
       useAppleWebpCodec={false} cachePolicy={attempt > 0 || reload > 0 ? 'none' : 'memory-disk'}
-      allowDownscaling={false} enforceEarlyResizing={false} priority={priority} transition={0}
+      allowDownscaling={false} enforceEarlyResizing={false} priority={priority} transition={transitionDuration}
+      onLoad={event => { if (fillPortrait && event.source.width > 0 && event.source.height > 0) setPortrait(event.source.height > event.source.width); }}
       onDisplay={() => { shownImageKeys.add(imageKey); setDisplayed(key); setFailed(null); onReady?.(); }} onError={event => {
         shownImageKeys.delete(imageKey);
         setFailed(key);

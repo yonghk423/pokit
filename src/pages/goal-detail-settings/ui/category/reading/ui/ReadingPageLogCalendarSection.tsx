@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useRef } from 'react';
@@ -194,7 +195,7 @@ export function ReadingPageLogCalendarSection({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('goalDetail.reading.prevMonth')}
-          onPress={() => onChangeMonthStart(addMonths(monthStart, -1))}
+          onPress={() => { tapHaptic('select'); onChangeMonthStart(addMonths(monthStart, -1)); }}
           hitSlop={8}
           style={styles.navBtn}>
           <IconSymbol name="chevron.left" size={16} color={palette.onSurface} />
@@ -203,7 +204,7 @@ export function ReadingPageLogCalendarSection({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('goalDetail.reading.nextMonth')}
-          onPress={() => onChangeMonthStart(addMonths(monthStart, 1))}
+          onPress={() => { tapHaptic('select'); onChangeMonthStart(addMonths(monthStart, 1)); }}
           hitSlop={8}
           style={styles.navBtn}>
           <IconSymbol name="chevron.right" size={16} color={palette.onSurface} />

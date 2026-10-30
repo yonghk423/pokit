@@ -1,12 +1,14 @@
 import type { AlertButton, AlertOptions } from 'react-native';
 import { create } from 'zustand';
 
+export type AppAlertOptions = AlertOptions & { buttonLayout?: 'horizontal' | 'vertical' };
+
 export type AppAlertRequest = {
   id: number;
   title: string;
   message?: string;
   buttons: AlertButton[];
-  options?: AlertOptions;
+  options?: AppAlertOptions;
 };
 
 type AfterClose = (action: () => void) => void;
@@ -60,7 +62,7 @@ export const useAppAlertStore = create<AppAlertState>((set, get) => ({
 
 /** Native Alert.alert-compatible entry point; business callbacks remain at the call site. */
 export const AppAlert = {
-  alert(title: string, message?: string, buttons?: AlertButton[], options?: AlertOptions): void {
+  alert(title: string, message?: string, buttons?: AlertButton[], options?: AppAlertOptions): void {
     useAppAlertStore.getState().enqueue({ title, message, buttons: buttons?.slice() ?? [], options });
   },
 };

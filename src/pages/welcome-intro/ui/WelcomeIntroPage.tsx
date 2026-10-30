@@ -78,8 +78,8 @@ export function WelcomeIntroPage() {
       <ThemedText style={s.brand}>{c.brand}</ThemedText>
       <ThemedText accessibilityRole="header" style={s.heading}>{c.closingTitle}</ThemedText>
       <Pressable accessibilityRole="button" style={[s.button, s.buttonTiltUp]} onPress={() => { tapHaptic(); void openAppStoreWriteReview(); }}><PaperGrain opacity={0.28} /><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{c.review}</ThemedText></Pressable>
-      <Pressable accessibilityRole="button" style={[s.button, s.buttonTiltDown]} onPress={() => { tutorial.pause(); close(); }}><PaperGrain opacity={0.28} /><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{c.later}</ThemedText></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => { router.setParams({ outro: undefined, chooseNext: undefined, endReview: undefined }); }}><ThemedText style={s.small}>{c.replay}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" style={[s.button, s.buttonTiltDown]} onPress={() => { tapHaptic(); tutorial.pause(); close(); }}><PaperGrain opacity={0.28} /><PenFrame color="#171510" /><ThemedText style={s.buttonLabel}>{c.later}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); router.setParams({ outro: undefined, chooseNext: undefined, endReview: undefined }); }}><ThemedText style={s.small}>{c.replay}</ThemedText></Pressable>
     </ScrollView>
   </View>;
 }

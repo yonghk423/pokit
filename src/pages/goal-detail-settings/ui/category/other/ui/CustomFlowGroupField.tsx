@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -224,6 +225,7 @@ export function CustomFlowGroupField({ groupKey, onChangeGroupKey }: Props) {
               accessibilityRole="button"
               accessibilityLabel={t('common.cancel')}
               onPress={() => {
+                tapHaptic();
                 setIsAddingGroup(false);
                 setNewGroupLabel('');
               }}

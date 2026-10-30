@@ -1,3 +1,6 @@
+import { faceRejections, validateFace } from './faceValidation.ts';
+import { generationRequest, validateStory, type HeroStory } from './generationRequest.ts';
+import { notifyCompletion } from './notify.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -5,6 +8,7 @@ const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization,apikey,content-type,x-client-info', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' };
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const limitBytes = 18000000;
+const activeRenders = new Map<string, AbortController>();
 async function body(req: Request) {
   if (Number(req.headers.get('content-length') ?? 0) > limitBytes) throw new Error('too_large');
   const reader=req.body?.getReader(); if(!reader) throw new Error('invalid_request');
@@ -36,27 +40,31 @@ async function job(user: string,id: string) {
   return { id,status:processing?'processing':outputs.every(o=>o.state==='completed')?'completed':'failed',results,
     remaining:await remaining(user),error:outputs.find(o=>o.error)?.error, pending:outputs.filter(o=>o.state==='reserved').map(o=>o.index) };
 }
-const style='Delicate imperfect black fountain-pen lines with varying ink pressure, warm cream paper, sparse olive accents, gentle simplified everyday manga face. No realistic shading, no text, no logos or UI.';
-async function render(user: string,id: string,index: number,mode: string,base: Blob,reference: Blob) {
+async function render(user: string,id: string,index: number,mode: string,base: Blob,reference?: Blob,story?: HeroStory) {
   let rejected=false;let resultReceived=false;
+  const renderKey=`${id}:${index}`, controller=new AbortController();
+  activeRenders.set(renderKey,controller);
+  const timeout=setTimeout(()=>controller.abort(),110000);
   try{
-    const form=new FormData();form.set('model','gpt-image-2');form.set('quality','low');form.set('size','1024x1536');form.set('output_format','png');form.set('n','1');
-    form.set('prompt',mode==='face'
-      ? 'Image1 is the existing cartoon edit target. Image2 is the person reference photo. Automatically find the person face. Change ONLY the protagonist face and hair to resemble that person in the original cartoon drawing style. Keep body, clothing, pose, expression, head position and scale, framing and entire background unchanged. Do not paste a realistic face. '+style
-      : 'Image1 is the source photo. Image2 is a STYLE reference only. Cartoonize the ENTIRE source photo, preserving people and likeness, pose, clothes, objects and composition. Match image2 ink and paper style, but do NOT copy its person or scene. '+style);
-    form.append('image[]',base,'base.jpg');form.append('image[]',reference,'reference.jpg');
-    const response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:`Bearer ${Deno.env.get('OPENAI_API_KEY')}`},body:form,signal:AbortSignal.timeout(110000)});
+    const current=await admin.from('hero_ai_outputs').select('state').eq('job_id',id).eq('index',index).single();
+    if(current.error)throw new Error('database_error');
+    if(current.data.state!=='processing'){clearTimeout(timeout);activeRenders.delete(renderKey);return;}
+    const form=generationRequest(mode,base,reference,story);
+    const response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:`Bearer ${Deno.env.get('OPENAI_API_KEY')}`},body:form,signal:controller.signal});
     if(!response.ok){rejected=true;throw new Error(response.status===401?'api_key_invalid':response.status===429?'api_quota':'generation_failed');}
     const payload=await response.json();if(!payload.data?.[0]?.b64_json)throw new Error('empty_result');resultReceived=true;
     const bytes=Uint8Array.from(atob(payload.data[0].b64_json),c=>c.charCodeAt(0));
     const path=`${user}/${id}/${index}.png`;
     const upload=await admin.storage.from('hero-ai-results').upload(path,bytes,{contentType:'image/png',upsert:false});
     if(upload.error)throw new Error('storage_error');
-    const saved=await admin.from('hero_ai_outputs').update({state:'completed',object_path:path,error:null}).eq('job_id',id).eq('index',index).eq('state','processing');
+    const saved=await admin.from('hero_ai_outputs').update({state:'completed',object_path:path,error:null}).eq('job_id',id).eq('index',index).eq('state','processing').select('index');
+    if(!saved.error&&!saved.data?.length)await admin.storage.from('hero-ai-results').remove([path]);
     if(saved.error)throw new Error('database_error');
   }catch(error){
     await admin.from('hero_ai_outputs').update({state:rejected?'failed':'uncertain',error:error instanceof Error && ['api_key_invalid','api_quota','generation_failed','empty_result','storage_error','database_error'].includes(error.message)?error.message:resultReceived?'save_failed':'interrupted'}).eq('job_id',id).eq('index',index).eq('state','processing');
   }
+  clearTimeout(timeout);activeRenders.delete(renderKey);
+  await notifyCompletion(admin,id,Deno.env.get('EXPO_ACCESS_TOKEN')).catch(() => undefined);
 }
 async function cleanup(){
  const {data:outputs,error}=await admin.from('hero_ai_outputs').select('job_id,index,object_path,hero_ai_jobs!inner(created_at)').lt('hero_ai_jobs.created_at',new Date(Date.now()-24*3600000).toISOString()).not('object_path','is',null).limit(100);
@@ -75,10 +83,33 @@ Deno.serve(async(req: Request)=>{
   const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'');if(!token)return json({error:'unauthorized'},401);
   const auth=await admin.auth.getUser(token);if(auth.error||!auth.data.user)return json({error:'unauthorized'},401);const user=auth.data.user.id;
   if(req.method==='GET'&&path==='/health')return json({ready:Boolean(Deno.env.get('OPENAI_API_KEY')),remaining:await remaining(user)});
+  const cancelMatch=path.match(/^\/jobs\/([a-zA-Z0-9-]{8,80})\/cancel$/);
+  if(req.method==='POST'&&cancelMatch){
+   const id=cancelMatch[1];await owned(user,id);
+   // Failed slots do not consume user generation quota. Retain started_at so
+   // cancelled upstream calls still count toward the separate attempt guard.
+   const cancelled=await admin.from('hero_ai_outputs').update({state:'failed',error:'cancelled'}).eq('job_id',id).select('index,object_path');
+   if(cancelled.error)throw new Error('database_error');
+   for(const output of cancelled.data??[])activeRenders.get(`${id}:${output.index}`)?.abort();
+   await admin.from('hero_ai_notifications').delete().eq('job_id',id);
+   const paths=(cancelled.data??[]).map(o=>o.object_path).filter(Boolean);
+   if(paths.length)await admin.storage.from('hero-ai-results').remove(paths);
+   return json({cancelled:true,remaining:await remaining(user)});
+  }
+  const notificationMatch=path.match(/^\/jobs\/([a-zA-Z0-9-]{8,80})\/notification$/);
+  if(req.method==='POST'&&notificationMatch){
+   const id=notificationMatch[1];await owned(user,id);const data=await body(req);
+   if(typeof data.token!=='string'||data.token.length>250||! /^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/.test(data.token)||!['ko','en','ja','zh-TW'].includes(data.locale))return json({error:'invalid_request'},400);
+   const {error}=await admin.from('hero_ai_notifications').upsert({job_id:id,push_token:data.token,locale:data.locale},{onConflict:'job_id',ignoreDuplicates:true});
+   if(error)return json({error:'database_error'},500);
+   EdgeRuntime.waitUntil(notifyCompletion(admin,id,Deno.env.get('EXPO_ACCESS_TOKEN')).catch(()=>undefined));
+   return json({ok:true});
+  }
   const match=path.match(/^\/jobs\/([a-zA-Z0-9-]{8,80})(?:\/render\/([0-2]))?$/);
   if(req.method==='GET'&&match&&!match[2])return json(await job(user,match[1]));
   if(req.method==='POST'&&path==='/jobs'){
    const data=await body(req);if(!/^[a-zA-Z0-9-]{8,80}$/.test(data.id)||!['face','photo'].includes(data.mode)||!Number.isInteger(data.count)||data.count<1||data.count>3)return json({error:'invalid_request'},400);
+   if(data.mode==='face'){jpeg(data.reference);await validateFace(user,data.reference,Deno.env.get('OPENAI_API_KEY'));}
    const reserved=await admin.rpc('hero_ai_reserve',{p_user:user,p_id:data.id,p_mode:data.mode,p_count:data.count});
    if(reserved.error){const code=['daily_limit','service_limit','request_conflict'].find(c=>reserved.error.message.includes(c));return json({error:code??'database_error'},code==='daily_limit'||code==='service_limit'?429:409);}
    return json(await job(user,data.id),201);
@@ -86,11 +117,20 @@ Deno.serve(async(req: Request)=>{
   if(req.method==='POST'&&match&&match[2]){
    if(!Deno.env.get('OPENAI_API_KEY'))return json({error:'unavailable'},503);
    const current=await owned(user,match[1]);const index=Number(match[2]);if(index>=current.count)return json({error:'invalid_request'},400);
-   const data=await body(req);const base=jpeg(data.base),reference=jpeg(data.reference);
+   const data=await body(req);const story=validateStory(data.story);const base=jpeg(data.base),reference=current.mode==='face'||(story?.source==='photo'&&data.reference)?jpeg(data.reference):undefined;
+   if(current.mode==='face'){
+    try { await validateFace(user,data.reference,Deno.env.get('OPENAI_API_KEY')); }
+    catch(error){
+     const code=error instanceof Error?error.message:'face_check_unavailable';
+     // Legacy/recovered reservations must not keep quota for rejected photos.
+     if(faceRejections.some(value=>value===code)) await admin.from('hero_ai_outputs').update({state:'failed',error:code}).eq('job_id',match[1]).eq('state','reserved');
+     throw error;
+    }
+   }
    const claim=await admin.rpc('hero_ai_claim',{p_user:user,p_id:match[1],p_index:index});if(claim.error){const code=['attempt_limit','service_limit'].find(c=>claim.error.message.includes(c));return json({error:code??'database_error'},code?429:500);}
-   if(claim.data)EdgeRuntime.waitUntil(render(user,match[1],index,current.mode,base,reference));
+   if(claim.data)EdgeRuntime.waitUntil(render(user,match[1],index,current.mode,base,reference,story));
    return json({accepted:true},202);
   }
   return json({error:'not_found'},404);
- }catch(error){const code=error instanceof Error?error.message:'invalid_request';return json({error:['not_found','invalid_image','too_large','database_error'].includes(code)?code:'invalid_request'},code==='not_found'?404:400);}
+ }catch(error){const code=error instanceof Error?error.message:'invalid_request';return json({error:['not_found','invalid_image','too_large','database_error','face_check_unavailable',...faceRejections].includes(code)?code:'invalid_request'},code==='not_found'?404:400);}
 });

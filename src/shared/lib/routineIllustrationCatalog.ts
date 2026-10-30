@@ -1,6 +1,7 @@
 /** 앱 전용 루틴 그림. 저장 ID는 파일명·번역 변경과 무관하게 유지한다. */
 import type { AppLocale } from '@shared/lib/i18n/model/locale';
 import type { CustomFlowIconCategoryId } from './customFlowIconCategories';
+import { ROUTINE_ILLUSTRATIONS_ADDITIONAL } from './routineIllustrationsAdditional';
 
 export const ROUTINE_ILLUSTRATIONS = [
   { id: 'routine:exercise', category: 'exercise', labels: { ko: '운동', en: 'Exercise', ja: '運動' }, keywords: '운동 헬스 산책 달리기 dumbbell workout fitness walk run 筋トレ 散歩' },
@@ -104,6 +105,7 @@ export const ROUTINE_ILLUSTRATIONS = [
   { id: 'routine:meeting', category: 'people', labels: {"ko": "약속", "en": "Meetup", "ja": "待ち合わせ"}, keywords: "약속 Meetup 待ち合わせ meeting" },
   { id: 'routine:anniversary', category: 'people', labels: {"ko": "기념일", "en": "Anniversary", "ja": "記念日"}, keywords: "기념일 Anniversary 記念日 anniversary" },
   { id: 'routine:abstain', category: 'health', labels: { ko: '금지', en: 'Abstain', ja: '禁止' }, keywords: '금지 절제 나쁜 습관 abstain avoid stop bad habits 禁止 我慢' },
+  ...ROUTINE_ILLUSTRATIONS_ADDITIONAL,
 ] as const satisfies readonly {
   id: string;
   category: CustomFlowIconCategoryId;

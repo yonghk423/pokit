@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { PaperControl as Pressable } from '@shared/ui/paper-control';
@@ -723,7 +724,7 @@ function JournalTemplateView({
             return (
               <Pressable
                 key={m}
-                onPress={() => setMood(selected ? '' : m)}
+                onPress={() => { tapHaptic('select'); setMood(selected ? '' : m); }}
                 style={[
                   styles.moodChip,
                   {

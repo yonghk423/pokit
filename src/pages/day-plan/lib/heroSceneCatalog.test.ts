@@ -12,7 +12,7 @@ it('includes every activity photo and the five comic images with searchable labe
   const activityIds = manifest.map(item => item.id);
   expect(optimized.filter(file => /^\d{2,3}-/.test(file)).map(file => file.replace(/-960\.webp$/, '')).sort()).toEqual([...activityIds].sort());
   expect(optimized.every(file => /^\d{2,3}-/.test(file))).toBe(true);
-  expect(COMIC_SCENES).toHaveLength(activityIds.length + 15);
+  expect(COMIC_SCENES).toHaveLength(activityIds.length);
   expect(new Set(COMIC_SCENES.map(scene => scene.id)).size).toBe(COMIC_SCENES.length);
   for (const item of manifest) expect(COMIC_SCENES.some(scene => scene.id === item.id)).toBe(true);
   for (const scene of COMIC_SCENES) expect(ko[scene.label]).toBeTruthy();
@@ -41,9 +41,17 @@ it('assigns every image to an activity category and supports meaningful overlaps
 it('ships only 960px artwork with one source for every scene', () => {
   const { COMIC_SCENE_THUMBNAILS } = require('./heroSceneThumbnails');
   expect(Object.keys(COMIC_SCENE_THUMBNAILS).sort()).toEqual(COMIC_SCENES.map(scene => scene.id).sort());
-  for (const folder of ['optimized', 'puppy']) {
+  for (const folder of ['protagonist-1']) {
     const files = readdirSync(resolve(__dirname, '../../../../assets/activity-illustrations', folder));
     expect(files.filter(file => file.endsWith('-480.webp'))).toEqual([]);
     expect(files.filter(file => file.endsWith('.webp')).every(file => file.endsWith('-960.webp'))).toBe(true);
   }
+});
+
+
+it('contains no discontinued puppy artwork or character in any random image source', () => {
+  const { COMIC_CHARACTERS } = require('./heroCharacters');
+  expect(COMIC_CHARACTERS).toHaveLength(1);
+  expect(COMIC_CHARACTERS[0].id).toBe('protagonist-1');
+  expect(COMIC_SCENES.every(scene => !scene.id.startsWith('puppy-'))).toBe(true);
 });

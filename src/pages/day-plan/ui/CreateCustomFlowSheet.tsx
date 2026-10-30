@@ -314,7 +314,7 @@ export function CreateCustomFlowSheet({
                     value={name}
                     onChangeText={(v) => setName(v.slice(0, NAME_MAX))}
                     accessibilityLabel={t('createFlow.nameLabel')}
-                    placeholder=""
+                    placeholder={t('appearance.namePlaceholder')}
                     placeholderTextColor={isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
                     maxLength={NAME_MAX}
                     returnKeyType="done"

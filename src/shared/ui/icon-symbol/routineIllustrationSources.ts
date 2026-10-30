@@ -1,4 +1,6 @@
-/** Metro가 해상도별 WebP를 자동 선택한다. */
+/** 루틴 그림 원본 에셋. 기존 WebP와 신규 PNG를 함께 등록한다. */
+import { routineGeneratedIllustrationSources } from './routineGeneratedIllustrationSources';
+
 export const routineIllustrationSources: Record<string, number> = {
   'routine:exercise': require('../../../../assets/routine-icons/exercise.webp'),
   'routine:reading': require('../../../../assets/routine-icons/reading.webp'),
@@ -101,4 +103,5 @@ export const routineIllustrationSources: Record<string, number> = {
   'routine:meeting': require('../../../../assets/routine-icons/meeting.webp'),
   'routine:anniversary': require('../../../../assets/routine-icons/anniversary.webp'),
   'routine:abstain': require('../../../../assets/routine-icons/abstain.webp'),
+  ...routineGeneratedIllustrationSources,
 };

@@ -7,3 +7,9 @@ export const DayPlanShellBackgroundContext = createContext<((color: string | nul
 export function useDayPlanHeaderActions() {
   return useContext(DayPlanHeaderActionsContext);
 }
+
+/** Controls immediately before weather in the comic header. */
+export const DayPlanWeatherActionsContext = createContext<Dispatch<SetStateAction<ReactNode>> | null>(null);
+
+/** Centered controls independent of the title and weather widths. */
+export const DayPlanHeaderCenterActionsContext = createContext<Dispatch<SetStateAction<ReactNode>> | null>(null);

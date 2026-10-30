@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useState } from 'react';
 import { View, KeyboardAvoidingView, Platform, Pressable, StyleSheet } from 'react-native';
 import { AppModal } from '@shared/ui/app-modal';
@@ -136,11 +137,11 @@ export function FixedRoutineSectionTabs({
             accessibilityLabel={t('catalog.renameTabTitle')} returnKeyType="done" onSubmitEditing={save}
             style={{ color: activeText, borderBottomWidth: 1, borderBottomColor: divider, paddingVertical: 10, fontSize: 16 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Pressable accessibilityRole="button" onPress={() => { if (!editing) return; const next = { ...labels }; delete next[editing.key]; writeRoutineTabLabels(next); setLabels(next); setEditing(null); }} style={{ paddingVertical: 10 }}>
+            <Pressable accessibilityRole="button" onPress={() => { if (!editing) return; tapHaptic('select'); const next = { ...labels }; delete next[editing.key]; writeRoutineTabLabels(next); setLabels(next); setEditing(null); }} style={{ paddingVertical: 10 }}>
               <ThemedText style={{ color: inactiveText }}>{t('catalog.resetTabName')}</ThemedText>
             </Pressable>
             <View style={{ flex: 1 }} />
-            <Pressable accessibilityRole="button" onPress={() => setEditing(null)} style={{ paddingVertical: 10 }}><ThemedText style={{ color: activeText }}>{t('common.cancel')}</ThemedText></Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); setEditing(null); }} style={{ paddingVertical: 10 }}><ThemedText style={{ color: activeText }}>{t('common.cancel')}</ThemedText></Pressable>
             <Pressable accessibilityRole="button" accessibilityState={{ disabled: !draft.trim() }} disabled={!draft.trim()} onPress={save} style={{ paddingVertical: 10, opacity: draft.trim() ? 1 : 0.35 }}><ThemedText style={{ color: activeText }}>{t('common.save')}</ThemedText></Pressable>
           </View>
         </View>

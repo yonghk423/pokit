@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { HeroPhotoPreview, HeroPhotoImporting } from './HeroPhotoPreview';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
-import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { PenFrame } from '@shared/ui/pen-frame';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { requestHeroPhotoUseNotice } from '../lib/heroPhotoUseNotice';
 
@@ -27,14 +28,20 @@ export function HeroPhotoIcon({ camera = false }: { camera?: boolean }) {
 }
 
 /** Selection is local only. Never upload a photo before a generation service is configured. */
-export function HeroPhotoSource({ mode, uri, onChange, selectionLimit = 1, onSelect, actionsOnly = false, compactPreview = false, previewHeight = 145 }: { mode: 'face' | 'photo'; uri: string | null; onChange: (uri: string) => void; selectionLimit?: number; onSelect?: (uris: string[]) => void; actionsOnly?: boolean; compactPreview?: boolean; previewHeight?: number }) {
+export function HeroPhotoSource({ mode, uri, onChange, selectionLimit = 1, onSelect, actionsOnly = false, compactPreview = false, previewHeight = 145, selectedUris = [], onOpenSaved }: { onOpenSaved?: () => void; mode: 'face' | 'photo'; uri: string | null; onChange: (uri: string) => void; selectionLimit?: number; onSelect?: (uris: string[]) => void; actionsOnly?: boolean; compactPreview?: boolean; previewHeight?: number; selectedUris?: string[] }) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [openingCamera, setOpeningCamera] = useState(false);
   const choose = async (camera: boolean) => {
-    if (busy) return;
+    if (busyRef.current || selectionLimit <= 0) return;
+    busyRef.current = true;
+    setOpeningCamera(camera);
     tapHaptic();
     setBusy(true);
     try {
+      // Paint the pressed/loading state before native picker presentation begins.
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const acknowledged = await requestHeroPhotoUseNotice({
         title: t('comicDay.photo.notice.title'),
         message: t('comicDay.photo.notice.message'),
@@ -51,29 +58,39 @@ export function HeroPhotoSource({ mode, uri, onChange, selectionLimit = 1, onSel
       }
       const result = camera
         ? await picker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: false })
-        : await picker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: false, allowsMultipleSelection: selectionLimit > 1, selectionLimit });
+        : await picker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: false, allowsMultipleSelection: selectionLimit > 1, selectionLimit: Math.max(1, selectionLimit) });
       if (!result.canceled && result.assets[0]?.uri) {
         onChange(result.assets[0].uri);
-        onSelect?.(result.assets.map(asset => asset.uri));
+        onSelect?.(result.assets.slice(0, Math.max(1, selectionLimit)).map(asset => asset.uri));
       }
     } catch {
       Alert.alert(t('comicDay.photo.pickError'));
-    } finally { setBusy(false); }
+    } finally { busyRef.current = false; setBusy(false); }
   };
   const face = mode === 'face';
+  const previews = selectedUris.length ? selectedUris.slice(0, 3) : uri ? [uri] : [];
   return <View style={[s.root, face && s.compact, compactPreview && { padding: 0, gap: 8 }]}>
     {actionsOnly ? null : face ? <View style={s.faceRow}>
       <View style={s.avatar}>{uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} /> : <HeroPhotoIcon />}</View>
       <View style={{ flex: 1 }}><ThemedText style={s.label}>{t('comicDay.photo.facePhoto')}</ThemedText><ThemedText style={s.hint}>{t('comicDay.photo.faceHint')}</ThemedText></View>
-    </View> : <Pressable testID="hero-photo-preview" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void choose(false)} style={[s.preview, compactPreview && [s.compactPreview, { height: previewHeight, maxHeight: previewHeight }]]}>
-      <HanddrawnFrame color="#92928D" />
-      {uri ? <Image accessibilityLabel={t('comicDay.photo.original')} source={{ uri }} style={s.image} resizeMode="contain" /> : <View style={s.placeholder}><HeroPhotoIcon /><ThemedText style={s.hint}>{t('comicDay.photo.photoHint')}</ThemedText></View>}
-      {uri ? <ThemedText style={s.original}>{t('comicDay.photo.original')}</ThemedText> : null}
+    </View> : <Pressable testID="hero-photo-preview" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')} disabled={busy || selectionLimit <= 0} accessibilityState={{ disabled: busy || selectionLimit <= 0 }} onPress={() => choose(false)} style={[s.preview, compactPreview && [s.compactPreview, { height: previewHeight, maxHeight: previewHeight }]]}>
+      <PenFrame color="#252822" />
+      {previews.length ? <View style={s.previewInset}><View testID="hero-source-photo-row" style={s.previewRow}>{previews.map((photo, index) => <HeroPhotoPreview key={`${photo}-${index}`} uri={photo} resizeMode="contain" style={s.previewPhoto} />)}</View></View> : <View style={s.placeholder}><HeroPhotoIcon /><ThemedText style={s.hint}>{t('comicDay.photo.photoHint')}</ThemedText></View>}
+      {busy ? <HeroPhotoImporting camera={openingCamera} /> : null}
     </Pressable>}
     <View style={s.actions}>
-      {[false, true].map(camera => <Pressable key={String(camera)} accessibilityRole="button" accessibilityLabel={t(camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void choose(camera)} style={[s.action, busy && { opacity: 0.45 }]}>
-        <HanddrawnFrame color="#777872" /><HeroPhotoIcon camera={camera} /><ThemedText style={s.label}>{t(camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')}</ThemedText>
+      {[false, true].map(camera => <Pressable key={String(camera)} accessibilityRole="button" accessibilityLabel={t(camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')} disabled={busy || selectionLimit <= 0} accessibilityState={{ disabled: busy || selectionLimit <= 0 }} onPress={() => choose(camera)} style={[s.action, (busy || selectionLimit <= 0) && { opacity: 0.45 }]}>
+        <PenFrame color="#252822" />{busy && openingCamera === camera ? <ActivityIndicator size="small" color="#53594F" /> : <HeroPhotoIcon camera={camera} />}<ThemedText numberOfLines={1} adjustsFontSizeToFit style={[s.label, onOpenSaved && s.actionLabel]}>{t(busy && openingCamera === camera ? 'comicDay.photo.opening' : camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')}</ThemedText>
       </Pressable>)}
+      {onOpenSaved ? <Pressable testID="hero-saved-open" accessibilityRole="button" accessibilityLabel={t('comicDay.saved.title')} onPress={() => { tapHaptic(); onOpenSaved(); }} style={s.action}>
+        <PenFrame color="#252822" />
+            <Svg width={23} height={23} viewBox="0 0 32 32" accessible={false}>
+              <Path d="M8 5.3 26.2 4.5 27.1 23.7M5.1 8.1 23.4 7.4 24.2 27.3 5.8 28Z" fill="none" stroke="#252822" strokeWidth={1.35} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d="m8.1 11 12.8-.5.4 11.7-12.8.5Z M8.9 21.7l4-5.4 3.2 3.1 2.5-3.6 2.5 5.6M12.2 13.6c0-2-2.8-1.9-2.7.1.1 1.7 2.8 1.7 2.7-.1Z" fill="none" stroke="#252822" strokeWidth={0.85} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d="m10.2 25.2 9.3-.4M29 9.3l.4 16.6M7.7 29.8l13.8-.5" fill="none" stroke="#252822" strokeWidth={0.55} strokeLinecap="round" />
+            </Svg>
+        <ThemedText numberOfLines={1} adjustsFontSizeToFit style={[s.label, s.actionLabel]}>{t('comicDay.saved.title')}</ThemedText>
+      </Pressable> : null}
     </View>
     {!face && !actionsOnly && !compactPreview ? <ThemedText style={s.hint}>{t('comicDay.photo.photoCaption')}</ThemedText> : null}
   </View>;
@@ -82,7 +99,11 @@ const s = StyleSheet.create({
   root: { gap: 16, padding: 20 }, compact: { gap: 10, paddingHorizontal: 18, paddingVertical: 12 },
   faceRow: { flexDirection: 'row', alignItems: 'center', gap: 14 }, avatar: { width: 64, height: 64, borderRadius: 32, overflow: 'hidden', borderWidth: 0.8, borderColor: '#92928D', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F6F1' },
   label: { color: '#252822', fontSize: 15, lineHeight: 22 }, hint: { color: '#73746E', fontSize: 13, lineHeight: 20 },
-  actions: { flexDirection: 'row', gap: 12 }, action: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, padding: 8 },
+  actionLabel: { fontSize: 12, lineHeight: 18, flexShrink: 1 },
+  actions: { flexDirection: 'row', gap: 8 }, action: { flex: 1, flexBasis: 0, minWidth: 0, height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 5, paddingVertical: 8 },
+  previewInset: { position: 'absolute', top: 12, bottom: 12, left: 12, right: 12, overflow: 'hidden' },
+  previewRow: { flex: 1, minHeight: 0, flexDirection: 'row', alignItems: 'stretch', gap: 8, overflow: 'hidden' },
+  previewPhoto: { flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' },
   compactPreview: { aspectRatio: undefined, height: 145, maxHeight: 145 },
-  preview: { width: '100%', aspectRatio: 1, maxHeight: 360, padding: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F6F1' }, image: { width: '100%', flex: 1 }, original: { color: '#70756B', fontSize: 13, paddingTop: 6 }, placeholder: { alignItems: 'center', gap: 14, padding: 24 },
+  preview: { width: '100%', aspectRatio: 1, maxHeight: 360, padding: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F6F1', overflow: 'hidden' }, placeholder: { alignItems: 'center', gap: 14, padding: 24 },
 });

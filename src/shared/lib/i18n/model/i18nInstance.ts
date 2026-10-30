@@ -21,7 +21,8 @@ void i18n.use(initReactI18next).init({
   lng: 'ko',
   fallbackLng: 'en',
   supportedLngs: ['ko', 'en', 'ja', 'zh-TW'],
-  nonExplicitSupportedLngs: true,
+  // App locales are already normalized; keep the explicitly supported zh-TW resource.
+  nonExplicitSupportedLngs: false,
   defaultNS: 'translation',
   ns: ['translation'],
   keySeparator: false,

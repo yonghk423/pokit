@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { RoutineActionIcon } from '@shared/ui/routine-action-icon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -176,7 +177,7 @@ export function WeightLogCalendarSection({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('goalDetail.fasting.prevMonth')}
-          onPress={() => setMonthStart((m) => addMonths(m, -1))}
+          onPress={() => { tapHaptic('select'); setMonthStart((m) => addMonths(m, -1)); }}
           hitSlop={8}
           style={styles.navBtn}>
           <HanddrawnFrame color="#9BA491" />
@@ -186,7 +187,7 @@ export function WeightLogCalendarSection({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('goalDetail.fasting.nextMonth')}
-          onPress={() => setMonthStart((m) => addMonths(m, 1))}
+          onPress={() => { tapHaptic('select'); setMonthStart((m) => addMonths(m, 1)); }}
           hitSlop={8}
           style={styles.navBtn}>
           <HanddrawnFrame color="#9BA491" />

@@ -101,11 +101,11 @@ it('returns to the card deck when delete mode started there is turned off', () =
 });
 
 
-it('shows the protagonist name without the section title and reveals tools through the drawer', () => {
+it('hides the retired protagonist name and reveals tools through the drawer', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicDayBoard diaryTitle="Diary" characterName="주인공1" items={[{ key: 'one', label: 'First', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} onRemoveMany={jest.fn()} />); });
   expect(tree.root.findAll(node => node.props.children === 'comicDay.title')).toHaveLength(0);
-  expect(tree.root.findAll(node => node.props.children === '주인공1').length).toBeGreaterThan(0);
+  expect(tree.root.findAll(node => node.props.children === '주인공1')).toHaveLength(0);
   expect(tree.root.findByType(require('./CardToolsFab').CardToolsFab).props.concept).toBe('film');
   const drawer = () => tree.root.findAll(node => node.props.testID === 'comic-card-tools-fab' && typeof node.props.onPress === 'function' && isVisible(node))[0];
   expect(drawer().props.accessibilityState.expanded).toBe(false);
@@ -114,7 +114,7 @@ it('shows the protagonist name without the section title and reveals tools throu
   act(() => { tree.unmount(); });
 });
 
-it('uses a held upward swipe for overview, a held downward swipe to return, and no long-press deletion', () => {
+it('uses a held upward swipe for overview, a held downward swipe to return, alongside photo long-press deletion', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicDayBoard diaryTitle="Diary" items={[{ key: 'one', label: 'First', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} onRemove={jest.fn()} onRemoveMany={jest.fn()} />); });
   const { GestureDetector } = jest.requireMock('react-native-gesture-handler');
@@ -123,7 +123,7 @@ it('uses a held upward swipe for overview, a held downward swipe to return, and 
   act(() => jest.advanceTimersByTime(50));
   const up = tree.root.findAllByType(GestureDetector).find(node => node.props.gesture.activateAfterLongPressValue === 350)!.props.gesture;
   expect(up.enabledValue).toBe(true);
-  expect(tree.root.findAll(node => typeof node.props.onLongPress === 'function')).toHaveLength(0);
+  expect(tree.root.findAll(node => typeof node.props.onLongPress === 'function').length).toBeGreaterThan(0);
   act(() => { up.onEndValue({ translationY: -20 }, true); });
   expect(deck().length).toBeGreaterThan(0);
   act(() => { up.onEndValue({ translationY: -90 }, true); });
@@ -277,6 +277,7 @@ it('edits the active card in place and pauses deck gestures until saving', () =>
   act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 650 } } }));
   act(() => jest.advanceTimersByTime(50));
   const caption = () => tree.root.findByType(HeroCardCaption);
+  expect(caption().props.onOpen).toBeUndefined();
   act(() => caption().props.onEditingChange(true));
   expect(tree.root.findByType(HeroCardStack).props.swipeEnabled).toBe(false);
   expect(tree.root.findByType(HeroCardStack).props.enabled).toBe(true);
@@ -312,4 +313,34 @@ it('keeps the edit icon in the return-animation front so the title does not shif
   act(() => tree.update(render(false)));
   expect(tree.root.findByType(HeroCardCaption).props.showEdit).toBe(true);
   act(() => { front.unmount(); tree.unmount(); });
+});
+
+it('offers deletion on a photo long press without opening details', () => {
+  const onOpen = jest.fn(); const onRemove = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneDeck items={[{ key: 'delete-photo', label: 'Photo' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onRemove={onRemove} />); });
+  const photo = tree.root.findAll(node => node.props.accessibilityLabel === 'Photo' && typeof node.props.onLongPress === 'function')[0];
+  expect(photo.props.delayLongPress).toBe(500);
+  act(() => photo.props.onLongPress());
+  expect(onRemove).toHaveBeenCalledWith('delete-photo');
+  expect(onOpen).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+});
+
+it('animates an appended card into the stack without replaying on memo edits', () => {
+  const timing = jest.spyOn(Animated, 'timing');
+  let tree!: ReactTestRenderer;
+  const first = { key: 'arrival-one', label: 'First' };
+  const second = { key: 'arrival-two', label: '' };
+  const render = (items: { key: string; label: string; memo?: string }[]) => <ComicSceneDeck items={items} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} />;
+  act(() => { tree = create(render([first])); });
+  act(() => { tree.update(render([first, second])); });
+  const arrivals = () => timing.mock.calls.filter(([, config]) => config.duration === 300);
+  expect(arrivals().length).toBeGreaterThan(0);
+  expect(arrivals()[0][1]).toMatchObject({ toValue: 1, useNativeDriver: true });
+  const count = arrivals().length;
+  act(() => { tree.update(render([first, { ...second, memo: 'Edited' }])); });
+  expect(arrivals()).toHaveLength(count);
+  act(() => tree.unmount());
+  timing.mockRestore();
 });

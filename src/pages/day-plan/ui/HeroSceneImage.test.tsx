@@ -105,3 +105,16 @@ it('keeps chooser artwork covered until native display even when a previous moun
   expect(tree.root.findAllByProps({ testID: 'comic-image-skeleton' })).toHaveLength(0);
   act(() => { tree.unmount(); });
 });
+
+it('fills portrait photos while preserving landscape and square photos in full', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage fillPortrait source={{ uri: 'mixed-photo' }} imageKey="portrait-fill" contentFit="contain" style={{ width: 100, height: 120 }} />); });
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  act(() => image().props.onLoad({ source: { width: 600, height: 1000 } }));
+  expect(image().props.contentFit).toBe('cover');
+  act(() => image().props.onLoad({ source: { width: 1000, height: 600 } }));
+  expect(image().props.contentFit).toBe('contain');
+  act(() => image().props.onLoad({ source: { width: 600, height: 600 } }));
+  expect(image().props.contentFit).toBe('contain');
+  act(() => tree.unmount());
+});

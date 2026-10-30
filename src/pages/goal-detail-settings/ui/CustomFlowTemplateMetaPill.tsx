@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
@@ -173,7 +174,7 @@ export function CustomFlowTemplateMetaPill({
                   accessibilityRole="button"
                   accessibilityLabel={t('common.cancel')}
                   hitSlop={10}
-                  onPress={() => setPickerOpen(false)}
+                  onPress={() => { tapHaptic(); setPickerOpen(false); }}
                   style={({ pressed }) => [
                     styles.sheetCloseBtn,
                     { backgroundColor: faceBg },

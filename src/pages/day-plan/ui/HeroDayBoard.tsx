@@ -1,3 +1,5 @@
+import { HeroRandomDraftCard, type HeroRandomDraftHandle } from './HeroRandomDraftCard';
+import { HeroEntryActions } from './HeroEntryActions';
 import type { HeroCardText } from './HeroCardCaption';
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { MateBagIcon } from './MateBagIcon';
@@ -13,10 +15,8 @@ import { ComicCheck } from './HeroCheck';
 import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
 import { ComicSceneImage } from './HeroSceneImage';
 import { ComicSceneDeck } from './HeroSceneDeck';
-import { HeroCharacterNameButton } from './HeroCharacterNameButton';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { COMIC_BOARD_MODES, comicCardLayout, comicPageLayout, diagonalComicPage, diagonalPanelPath, type ComicPanel, loadComicBoardMode, saveComicBoardMode, type ComicBoardMode } from '../lib/heroBoardLayout';
-import { PenFrame } from '@shared/ui/pen-frame';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { Image } from 'expo-image';
@@ -42,8 +42,13 @@ let lastBoardWidth = 0;
 type BoardItem = Omit<CircularRoutineItem, 'completed'> & { completed?: boolean; memo?: string; artworkUri?: string };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
 type SceneLibrary = readonly typeof COMIC_SCENES[number][];
-export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
+export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftChange, onActiveSceneChange, hideEntryActions = false, sceneLibrary = COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
   onOpenBag?: () => void;
+  onAddPhoto?: () => void;
+  hideEntryActions?: boolean;
+  onActiveSceneChange?: (id: string) => void;
+  onDraftChange?: (image: ComicSceneId, text: HeroCardText) => void;
+  onCreateRandom?: (image: ComicSceneId, text: HeroCardText, addAnother?: boolean) => void;
   sceneLibrary?: SceneLibrary;
   hideCharacterHeading?: boolean;
   detailOpen?: boolean;
@@ -57,6 +62,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
 }) {
   const { t } = useTranslation();
   const focused = useContext(DayPlanTabFocusContext);
+  const randomDraftRef = useRef<HeroRandomDraftHandle>(null);
   const [emptyScene] = useState(() => sceneLibrary[Math.floor(Math.random() * sceneLibrary.length)] ?? COMIC_SCENES[0]);
   const [viewMode, updateViewMode] = useState(loadComicBoardMode);
   const animateLayout = () => LayoutAnimation.configureNext({
@@ -116,6 +122,8 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
   const { width: windowWidth } = useWindowDimensions();
   const [boardWidth, setBoardWidth] = useState(() => lastBoardWidth || Math.max(1, windowWidth - 32));
   const [sourceFrame, setSourceFrame] = useState<HeroDeckFrame>({ active: 0, width: Math.max(1, windowWidth - 24), height: 320 });
+  const activeKey = items[sourceFrame.active]?.key;
+  useEffect(() => { if (activeKey) onActiveSceneChange?.(activeKey); }, [activeKey, onActiveSceneChange]);
   const [stageWidth, setStageWidth] = useState(windowWidth);
   const [gridTop, setGridTop] = useState(0);
   const gridScrollRef = useRef<ScrollView>(null);
@@ -150,9 +158,9 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
       enabled={cardsFirst} source={sourceFrame} stageWidth={stageWidth} sourceTop={(hideCharacterHeading ? DAY_PLAN_DECK_TOP : 56) + (sourceFrame.top ?? 0)}
       parentTop={gridTop + pageTop} style={panel ? { position: 'absolute', left: panel.left, top: panel.top, width: panel.width, height: panel.height } : { width: layout.width }}>
       <View pointerEvents="box-none" style={[s.card, { backgroundColor: item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF'), borderColor: muted }, panel && { height: panel.height }, diagonal && { borderWidth: 0, backgroundColor: 'transparent', overflow: 'visible' }]}>
-        {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} onPress={() => { tapHaptic(); openItem(item.key); }} accessibilityLabel={item.label} /></Svg> : null}
+        {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} /></Svg> : null}
         <View pointerEvents="box-none" style={diagonal ? { marginLeft: diagonal.side === 'right' ? diagonal.slant + 2 : 2, marginRight: diagonal.side === 'left' ? diagonal.slant + 2 : 2, paddingTop: 1 } : undefined}>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
+        <Pressable accessibilityRole="button" accessibilityLabel={item.label} delayLongPress={500} onLongPress={!deleteMode && onRemove ? () => { tapHaptic('warn'); onRemove(item.key); } : undefined} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
           <ComicSceneImage contentFit="contain" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${item.artworkUri ?? resolveComicScene(item.key, item.label, choices).id}:960`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id]} fallbackSource={resolveComicScene(item.key, item.label, choices).source} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
         </Pressable>
         <View style={[s.comicCaption, { borderTopColor: muted, height: captionHeight }]}>
@@ -163,15 +171,15 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
             </Pressable> : null}
           </View>
           <View style={s.captionTitleRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel={item.label} onPress={() => { tapHaptic(); openItem(item.key); }} style={{ flex: 1, minHeight: 27, justifyContent: 'center' }}>
+            <View style={{ flex: 1, minHeight: 27, justifyContent: 'center' }}>
               <ThemedText numberOfLines={1} style={{ color: cardInk, fontSize: small ? 11 : wide ? 15 : 12, lineHeight: 20 }}>{item.label}</ThemedText>
-            </Pressable>
+            </View>
             {onComplete ? <CompletionRadioButton checked={item.completed ?? false} isDark={isDark} size={20} appearance="ink" motion="gentle" accessibilityLabel={item.label} onPress={() => onComplete(item.key)} /> : null}
             {onRemoveMany && deleteMode ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('comicDay.selectForDeletion', { label: item.label })} accessibilityState={{ checked: selectedKeys.includes(item.key) }} onPress={() => { tapHaptic('select'); toggleSelected(item.key); }} style={s.panelRemove}><ComicCheck tone="destructive" checked={selectedKeys.includes(item.key)} size={25} /></Pressable> : onRemove && deleteMode ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.removeFromSequence', { label: item.label })} onPress={() => { tapHaptic('warn'); onRemove(item.key); }} hitSlop={5} style={[s.panelRemove, { backgroundColor: isDark ? '#262B28' : '#FFFFFF' }]}><ThemedText style={{ color: ink, fontSize: 17, lineHeight: 22 }}>×</ThemedText></Pressable> : null}
           </View>
-          {memo ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.memo')} onPress={() => { tapHaptic(); openItem(item.key); }} style={{ minHeight: 17 }}>
+          {memo ? <View style={{ minHeight: 17 }}>
             <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{ color: cardInk, opacity: 0.75, fontSize: small ? 10 : 11, lineHeight: 16 }}>{memo}</ThemedText>
-          </Pressable> : null}
+          </View> : null}
         </View>
         </View>
       </View>
@@ -179,7 +187,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
 
   };
   const heading = <>{!hideCharacterHeading ? <View style={s.headingRow}>
-    {!hideCharacterHeading && characterName ? <HeroCharacterNameButton name={characterName} ink={ink} enabled={focused} fontSize={18} lineHeight={26} onPress={() => (onRenameCharacter ?? onSelectCharacter)?.()} /> : null}
+
   </View> : null}{!showCards ? <ThemedText style={[s.hint, { color: muted }]}>{t(diaryTitle ? 'comicDiary.sceneCount' : 'comicDay.hint', { count: items.length })}</ThemedText> : null}</>;
   const bagAction: CardToolAction | undefined = onOpenBag ? { key: 'bag', testID: 'comic-open-mate-bag', label: t('tabs.dayPlan'), onPress: () => { useServiceTutorial.getState().advance('comicTools', 'rhythmAdd', { mode: 'rhythm' }); onOpenBag(); }, tutorialSteps: ['comicTools'], icon: <MateBagIcon isDark={isDark} /> } : undefined;
   const tools = items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <CardToolsFab isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
@@ -190,7 +198,8 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
   const canvas = isDark ? '#262B28' : '#F7F6F4';
   if (!items.length) return <View style={{ flex: 1, backgroundColor: canvas }}>
     <View style={[s.deckHeading, hideCharacterHeading && { height: DAY_PLAN_DECK_TOP }]}>{hideCharacterHeading ? null : heading}</View>
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16 }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, paddingTop: onCreateRandom ? (hideEntryActions ? 12 : 76) : 24, gap: 16 }}>
+      {onCreateRandom ? <HeroRandomDraftCard ref={randomDraftRef} onChange={onDraftChange} scene={emptyScene} ink={ink} muted={muted} isDark={isDark} onSave={onCreateRandom} /> : <>
       <ServiceTutorialTarget steps={['comicStart']} style={{ width: '100%', maxWidth: 440 }}><Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.add')} onPress={() => { tapHaptic(); onAdd(); }} style={{ width: '100%', aspectRatio: 1.15, borderRadius: 18, overflow: 'hidden' }}>
         <ComicSceneImage
           priority="high"
@@ -201,15 +210,17 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
           style={StyleSheet.absoluteFill}
         />
       </Pressable></ServiceTutorialTarget>
-      <ServiceTutorialTarget steps={['comicStart']}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget>
+      </>}
+      <ServiceTutorialTarget steps={['comicStart']}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onCreateRandom ? () => { const text = randomDraftRef.current?.snapshot(); if (text) onCreateRandom(emptyScene.id, text, true); } : onAdd} /></ServiceTutorialTarget>
     </View>
+    {onAddPhoto && !hideEntryActions ? <View style={{ position: 'absolute', left: 16, top: 8, zIndex: 4 }}><HeroEntryActions ink={ink} onPhoto={onAddPhoto} onScenes={onAdd} /></View> : null}
     {tools}
   </View>;
   return <View style={{ flex: 1, backgroundColor: canvas }} onLayout={({ nativeEvent: { layout } }) => { if (focused && layout.width > 0) setStageWidth(previous => previous === layout.width ? previous : layout.width); }}>
     {cardsFirst ? <Animated.View testID="comic-card-deck-layer" pointerEvents={showCards ? 'auto' : 'none'} accessibilityElementsHidden={!showCards} importantForAccessibility={showCards ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, deckVisibility]}>
       <View style={[s.deckHeading, hideCharacterHeading && { height: DAY_PLAN_DECK_TOP }]}>{hideCharacterHeading ? null : heading}</View>
       <View style={s.deckStage}>
-        <ComicSceneDeck detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onEditCard={onEditCard} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
+        <ComicSceneDeck detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onRemove={onRemove} onEditCard={onEditCard} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
       </View>
       <ServiceTutorialTarget steps={showCards ? ['comicStart'] : []} style={s.deckAdd}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget>
     </Animated.View> : null}
@@ -242,7 +253,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
   {deleteMode && onRemoveMany ? <View style={[s.selectionBar, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: muted }]}>
     <View style={s.selectionActions}>
       <ThemedText style={{ color: ink, fontSize: 13 }}>{t('comicDay.selectedSceneCount', { count: selectedKeys.length })}</ThemedText>
-      <Pressable accessibilityRole="button" accessibilityLabel={t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')} onPress={() => setSelectedForDeletion(selectedKeys.length === items.length ? [] : items.map(item => item.key))} style={s.selectionTouch}><ThemedText style={{ color: ink, fontSize: 13 }}>{t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')} onPress={() => { tapHaptic('select'); setSelectedForDeletion(selectedKeys.length === items.length ? [] : items.map(item => item.key)); }} style={s.selectionTouch}><ThemedText style={{ color: ink, fontSize: 13 }}>{t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')}</ThemedText></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={toggleDeleteMode} style={s.selectionTouch}><ThemedText style={{ color: ink, fontSize: 13 }}>{t('common.cancel')}</ThemedText></Pressable>
     </View>
     <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.deleteSelected', { count: selectedKeys.length })} accessibilityState={{ disabled: !selectedKeys.length }} disabled={!selectedKeys.length} onPress={() => { tapHaptic('warn'); onRemoveMany(selectedKeys); }} style={[s.bulkDelete, { opacity: selectedKeys.length ? 1 : 0.35 }]}>
@@ -266,7 +277,7 @@ export function ComicDayBoard({ onOpenBag, sceneLibrary = COMIC_SCENES, hideChar
   </View>;
 }
 
-export function ComicSceneDetail({ item, choices, ink, muted, onChoose, onEditTime, sceneLibrary = COMIC_SCENES.filter(scene => !scene.id.startsWith('puppy-')) }: Omit<Common, 'isDark'> & {
+export function ComicSceneDetail({ item, choices, ink, onEditTime }: Omit<Common, 'isDark'> & {
   sceneLibrary?: SceneLibrary;
   item: CircularRoutineItem; onChoose: (id: ComicSceneId) => void; onEditTime?: (key: string, label: string) => void;
 }) {
@@ -277,14 +288,6 @@ export function ComicSceneDetail({ item, choices, ink, muted, onChoose, onEditTi
       <ThemedText style={{ color: ink }}>◷ {item.timeLabel ?? t('dayPlan.timeUnsetHint')}</ThemedText>
     </Pressable> : null}
     <ComicSceneImage priority="high" contentFit="contain" backgroundColor="#F5E8CF" imageKey={`${current.id}:detail-hero`} source={current.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
-    <ThemedText style={{ color: ink, fontSize: 13 }}>{t('comicDay.change')}</ThemedText>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-      {sceneLibrary.map(scene => <Pressable key={scene.id} accessibilityRole="button" accessibilityLabel={t(scene.label)} accessibilityState={{ selected: current.id === scene.id }} onPress={() => { tapHaptic('select'); onChoose(scene.id); }} style={[s.thumbnail, { borderColor: 'transparent' }]}>
-        {current.id === scene.id ? <PenFrame color={ink} /> : null}
-        <ComicSceneImage contentFit="contain" backgroundColor="#F5E8CF" imageKey={`${scene.id}:detail-thumb`} source={scene.source} style={{ width: 64, height: 44 }} />
-        <ThemedText style={{ color: muted, fontSize: 11, textAlign: 'center' }}>{t(scene.label)}</ThemedText>
-      </Pressable>)}
-    </ScrollView>
   </View>;
 }
 const s = StyleSheet.create({

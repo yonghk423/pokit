@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -333,6 +334,7 @@ export function MoveCustomFlowGroupSheet({
                       accessibilityRole="button"
                       accessibilityLabel={t('common.cancel')}
                       onPress={() => {
+                        tapHaptic();
                         setIsAddingGroup(false);
                         setNewGroupLabel('');
                       }}

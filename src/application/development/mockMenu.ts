@@ -1,3 +1,4 @@
+import { addDevelopmentCalendarMockData } from './mockCalendarData';
 import { DevSettings } from 'react-native';
 import { getAppLocale } from '@shared/lib/i18n';
 import { getDevelopmentStorageProfile, setDevelopmentStorageProfile, flushLocalStorageClientWrites, clearPokitLocalStorage, localStorageClient, type DevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
@@ -13,7 +14,7 @@ async function switchProfile(profile: DevelopmentStorageProfile | null, reset = 
   try {
     await flushLocalStorageClientWrites();
     setDevelopmentStorageProfile(profile);
-    if (profile) { if (reset) await clearPokitLocalStorage(); ensureDevelopmentMockData(reset); }
+    if (profile) { if (reset) await clearPokitLocalStorage(); ensureDevelopmentMockData(reset); addDevelopmentCalendarMockData(); }
     if (profile && colorSamples) addDevelopmentColorMockData();
     await flushLocalStorageClientWrites();
     DevSettings.reload();
@@ -45,6 +46,28 @@ async function addColorSamplesForAllLanguages() {
   }
 }
 
+async function addCalendarSamplesForAllLanguages() {
+  if (!__DEV__ || switching) return;
+  switching = true;
+  const restore = getDevelopmentStorageProfile() ?? getAppLocale();
+  try {
+    await flushLocalStorageClientWrites();
+    for (const profile of DEVELOPMENT_PROFILES) {
+      setDevelopmentStorageProfile(profile);
+      const library = localStorageClient.getJson<{ diaries?: unknown[] }>(COMIC_DIARY_STORAGE_KEY);
+      if (!Array.isArray(library?.diaries) || !library.diaries.length) ensureDevelopmentMockData();
+      addDevelopmentCalendarMockData();
+      await flushLocalStorageClientWrites();
+    }
+    setDevelopmentStorageProfile(restore);
+    await flushLocalStorageClientWrites();
+    DevSettings.reload();
+  } finally {
+    if (getDevelopmentStorageProfile() !== restore) { setDevelopmentStorageProfile(restore); await flushLocalStorageClientWrites(); }
+    switching = false;
+  }
+}
+
 export function registerDevelopmentMockMenu() {
   if (!__DEV__ || registered) return;
   registered = true;
@@ -53,6 +76,7 @@ export function registerDevelopmentMockMenu() {
     { name: 'Mock data · English', callback: () => { void switchProfile('en'); }, shouldCollapse: true },
     { name: 'モックデータ · 日本語', callback: () => { void switchProfile('ja'); }, shouldCollapse: true },
     { name: '模擬資料 · 繁體中文', callback: () => { void switchProfile('zh-TW'); }, shouldCollapse: true },
+    { name: '달력 목업 추가 · 같은 날 여러 일기 · 모든 언어', callback: () => { void addCalendarSamplesForAllLanguages(); }, shouldCollapse: true },
     { name: '컬러 목업 추가 · 모든 언어 · Add all languages', callback: () => { void addColorSamplesForAllLanguages(); }, shouldCollapse: true },
     { name: '목업 수정 내용 초기화 · Reset mock edits', callback: () => { const profile = getDevelopmentStorageProfile(); if (profile) void switchProfile(profile, true); }, shouldCollapse: true },
     { name: '목업 종료 · 내 데이터로 돌아가기', callback: () => { void switchProfile(null); }, shouldCollapse: true },

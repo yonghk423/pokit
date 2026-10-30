@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { AppModal as Modal } from '@shared/ui/app-modal';
@@ -274,7 +275,7 @@ export function ScheduledRoutineCalendarSheet({
             <View style={styles.monthHeader}>
               <Pressable
                 style={[styles.monthNavBtn, { borderColor: line }]}
-                onPress={() => setMonthCursor((prev) => addMonths(prev, -1))}
+                onPress={() => { tapHaptic('select'); setMonthCursor((prev) => addMonths(prev, -1)); }}
                 accessibilityRole="button"
                 accessibilityLabel={t('dayPlan.scheduledRoutine.prevMonthA11y')}>
                 <PaperGrain opacity={0.25} />
@@ -286,7 +287,7 @@ export function ScheduledRoutineCalendarSheet({
               </ThemedText>
               <Pressable
                 style={[styles.monthNavBtn, { borderColor: line }]}
-                onPress={() => setMonthCursor((prev) => addMonths(prev, 1))}
+                onPress={() => { tapHaptic('select'); setMonthCursor((prev) => addMonths(prev, 1)); }}
                 accessibilityRole="button"
                 accessibilityLabel={t('dayPlan.scheduledRoutine.nextMonthA11y')}>
                 <PaperGrain opacity={0.25} />

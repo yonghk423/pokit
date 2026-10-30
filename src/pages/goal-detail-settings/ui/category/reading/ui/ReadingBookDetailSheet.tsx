@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { AppModal as Modal } from '@shared/ui/app-modal';
@@ -416,6 +417,7 @@ export function ReadingBookDetailSheet({
   };
 
   const shareBook = async () => {
+    tapHaptic();
     const shareEntry = ensureReadingBookPages({
       ...entry,
       startPage,
@@ -542,6 +544,7 @@ export function ReadingBookDetailSheet({
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
+                      tapHaptic();
                       if (catalogSource === 'aladin') {
                         void openAladinProductPage(externalLink);
                         return;
@@ -594,7 +597,7 @@ export function ReadingBookDetailSheet({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{ selected: on }}
-                        onPress={() => setStatus(opt.key)}
+                        onPress={() => { tapHaptic('select'); setStatus(opt.key); }}
                         style={({ pressed }) => [
                           styles.statusChip,
                           {
@@ -903,6 +906,7 @@ export function ReadingBookDetailSheet({
                 accessibilityRole="button"
                 accessibilityLabel={t('goalDetail.reading.removeA11y', { title: entry.title })}
                 onPress={() => {
+                  tapHaptic('warn');
                   Alert.alert(
                     t('goalDetail.reading.removeFromLibrary'),
                     t('goalDetail.reading.removeConfirm', { title: entry.title }),

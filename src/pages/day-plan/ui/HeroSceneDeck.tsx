@@ -1,3 +1,6 @@
+import { ThemedText } from '@shared/ui/themed-text';
+import { HeroImageActions } from './HeroImageActions';
+import { useTranslation } from '@shared/lib/i18n';
 import { HeroCardCaption, type HeroCardText } from './HeroCardCaption';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { useSettledDeckLayout, type DeckSize } from '../lib/useSettledDeckLayout';
@@ -6,7 +9,7 @@ import type { HeroCardOpen } from './HeroCardFlip';
 import type { HeroDeckFrame } from './HeroOverviewCardMotion';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -34,7 +37,7 @@ let lastActive = 0;
 const ARTWORK_WINDOW = 2;
 
 /** The same layered paper stack as the mate deck, with intact artwork cards. */
-export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onEditCard, onShowOverview, onFrameChange, detailOpen = false, interactive = true }: {
+export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onRemove, onEditCard, onShowOverview, onFrameChange, detailOpen = false, interactive = true }: {
   items: ComicDeckItem[]; ink: string; muted: string; isDark: boolean;
   choices: Record<string, ComicSceneId>; onOpen: (key: string, card?: HeroCardOpen) => void;
   onRemove?: (key: string) => void;
@@ -44,8 +47,14 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
   interactive?: boolean;
   detailOpen?: boolean;
 }) {
+  const { t } = useTranslation();
   const { size, updateSize, focused } = useSettledDeckLayout(lastDeckSize, rememberDeckSize);
   const rootRef = useRef<View>(null);
+  const lastHold = useRef(0);
+  const requestRemoval = (key: string) => {
+    if (!onRemove || editingKey || Date.now() - lastHold.current < 800) return;
+    lastHold.current = Date.now(); tapHaptic('warn'); onRemove(key);
+  };
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const measureStage = useCallback((width: number, height: number) => {
     // Detached native screens can briefly report only their footer or a one-pixel stage.
@@ -63,6 +72,21 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [focused, detailOpen, measureStage]);
   const [active, setActive] = useState(() => Math.min(lastActive, Math.max(0, items.length - 1)));
+  const previousCount = useRef(items.length);
+  const [arrivalKey, setArrivalKey] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    if (items.length > previousCount.current) {
+      // A newly appended card becomes the visible card in the existing stack.
+      setArrivalKey(items[items.length - 1].key);
+      setActive(items.length - 1);
+    }
+    previousCount.current = items.length;
+  }, [items]);
+  useEffect(() => {
+    if (!arrivalKey) return;
+    const timeout = setTimeout(() => setArrivalKey(null), 350);
+    return () => clearTimeout(timeout);
+  }, [arrivalKey]);
   const cardRefs = useRef(new Map<string, View>());
   const readCurrentCard = useRef<(key: string, complete: (card: HeroCardOpen | null) => void) => void>(() => {});
   const turnRef = useRef<HeroCardStackHandle>(null);
@@ -79,12 +103,10 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
   }, [focused, interactive, currentArtwork]);
   // Hold one generous frame across all scenes. This keeps the original large-card
   // feel while preventing portrait, landscape and memo cards from moving the deck.
-  const captionBudget = 124;
   const frameTop = Math.min(60, Math.max(8, availableHeight * 0.1));
   const cardTop = Math.max(8, frameTop - 28);
   // Lift the stack without changing the card or artwork dimensions.
   const cardHeight = Math.min(cardWidth / 0.75 + 174, Math.max(1, availableHeight - frameTop + 12));
-  const imageFrameHeight = Math.max(1, cardHeight - captionBudget);
   useEffect(() => {
     if (size.width > 0) onFrameChange?.({ active: safeActive, width: cardWidth, height: cardHeight, top: cardTop });
   }, [safeActive, cardWidth, cardHeight, cardTop, onFrameChange, size.width]);
@@ -115,9 +137,17 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
     if (!item) return null;
         const scene = resolveComicScene(item.key, item.label, choices);
         const face = scenePaper(item.faceColor, isDark);
+        const captionBudget = (item.memo?.trim() ? 105 : item.label.trim() ? 77 : 64) + 28;
+        const imageFrameHeight = Math.max(1, cardHeight - captionBudget);
         const cardInk = item.inkColor ?? ink;
-        return <View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: cardWidth, height: cardHeight, backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
-          <ServiceTutorialTarget steps={pageInteractive && index === active ? ['comicOpen'] : []} style={[s.body, { paddingBottom: 12 }]}><Pressable disabled={!pageInteractive || !!editingKey} accessibilityRole="button" accessibilityLabel={item.label} onPress={() => {
+        return <CardArrival animate={item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: cardWidth, height: cardHeight, backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
+          {pageInteractive ? <ThemedText testID="hero-card-order" pointerEvents="none" style={{ position: 'absolute', left: 8, top: -19, color: muted, fontSize: 10, lineHeight: 14 }}>{String(index + 1).padStart(2, '0')}</ThemedText> : null}
+          <ServiceTutorialTarget steps={pageInteractive && index === active ? ['comicOpen'] : []} style={[s.body, { paddingBottom: 12 }]}><Pressable disabled={!pageInteractive || !!editingKey} accessibilityRole="button" accessibilityLabel={item.label} delayLongPress={500}
+            onLongPress={pageInteractive && onRemove ? () => requestRemoval(item.key) : undefined}
+            accessibilityActions={onRemove ? [{ name: 'longpress', label: t('comicDay.deleteScene') }] : undefined}
+            onAccessibilityAction={event => { if (pageInteractive && !editingKey && event.nativeEvent.actionName === 'longpress') onRemove?.(item.key); }}
+            onPress={() => {
+            if (Date.now() - lastHold.current < 800) return;
             tapHaptic();
             const node = cardRefs.current.get(item.key);
             if (!node) { onOpen(item.key); return; }
@@ -126,17 +156,17 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage contentFit="cover" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage fillPortrait contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
           </Pressable>
             <HeroCardCaption key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
+              topActions={pageInteractive ? <HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} compact /> : undefined}
               showEdit={!!onEditCard}
-              onOpen={pageInteractive ? () => { tapHaptic(); onOpen(item.key); } : undefined}
               onSave={pageInteractive && onEditCard ? text => onEditCard(item.key, text) : undefined}
               onEditingChange={pageInteractive ? editing => setEditingKey(editing ? item.key : null) : undefined} />
           </ServiceTutorialTarget>
-        </View>;
+        </View></CardArrival>;
   };
   // Refresh this reader after each commit, so closing uses the edited card rather than its opening copy.
   useLayoutEffect(() => {
@@ -156,6 +186,10 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onE
   }}>
     {size.width > 0 && size.height > 0 ?
       <HeroCardStack ref={turnRef} active={safeActive} count={items.length} width={size.width} height={size.height}
+        onCardHold={onRemove && !editingKey ? (x, y) => {
+          const left = (size.width - cardWidth) / 2;
+          if (x >= left && x <= left + cardWidth && y >= cardTop && y <= cardTop + cardHeight) requestRemoval(items[safeActive].key);
+        } : undefined}
         overviewGesture={verticalSwipe}
         cardWidth={cardWidth} cardHeight={cardHeight} top={cardTop} swipeEnabled={!editingKey} enabled={focused && interactive && !detailOpen}
         renderPage={(index, pageInteractive, focusedCard) => renderPage(index, pageInteractive, focusedCard)} onChange={setActive} />
@@ -202,3 +236,31 @@ const s = StyleSheet.create({
   thumbRow: { flexGrow: 1, alignItems: 'center', gap: THUMB_GAP, paddingHorizontal: 12 },
   thumb: { width: THUMB, height: THUMB, flexShrink: 0, overflow: 'hidden' },
 });
+
+/** Native opacity/position motion adds the new card without moving the stack's layout. */
+function CardArrival({ animate, children }: { animate: boolean; children: ReactNode }) {
+  const [progress] = useState(() => new Animated.Value(1));
+  const reduced = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    const update = (value: boolean) => {
+      if (!alive) return;
+      reduced.current = value;
+      if (value) { progress.stopAnimation(); progress.setValue(1); }
+    };
+    AccessibilityInfo.isReduceMotionEnabled().then(update).catch(() => undefined);
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', update);
+    return () => { alive = false; subscription.remove(); };
+  }, [progress]);
+  useLayoutEffect(() => {
+    if (!animate || reduced.current) return;
+    progress.setValue(0);
+    const animation = Animated.timing(progress, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => { animation.stop(); progress.setValue(1); };
+  }, [animate, progress]);
+  return <Animated.View testID="comic-card-arrival" style={{ flex: 1, opacity: progress, transform: [
+    { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+    { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) },
+  ] }}>{children}</Animated.View>;
+}

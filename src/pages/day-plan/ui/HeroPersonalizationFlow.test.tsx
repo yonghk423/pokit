@@ -1,3 +1,7 @@
+import { HeroSavedPhotos } from './HeroSavedPhotos';
+import { AppAlert } from '@shared/lib/app-alert';
+import { HeroPhotoPreview } from './HeroPhotoPreview';
+import { StyleSheet } from 'react-native';
 import { getHeroAiRemaining, resumeHeroAiJob, generateHeroImages } from '../lib/heroAiClient';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
@@ -37,6 +41,13 @@ it('keeps the initial whole photo and caps added photos at three', () => {
   act(() => tree.root.findByType(HeroPhotoSource).props.onChange('file:///one.jpg'));
   act(() => tree.root.findAllByProps({ testID: 'hero-personal-next' })[0].props.onPress());
   expect(tree.root.findByType(HeroPhotoSource).props.selectionLimit).toBe(2);
+  expect(tree.root.findAllByType(HeroPhotoPreview)[0].props.uri).toBe('file:///one.jpg');
+  const cardSize = () => StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-selected-photo-card' })[0].props.style);
+  expect(cardSize().height).toBeGreaterThan(0);
+  act(() => tree.root.findAllByProps({ testID: 'hero-selected-photo-grid' })[0].props.onLayout({ nativeEvent: { layout: { width: 350 } } }));
+  expect(cardSize().width).toBe(170);
+  expect(cardSize().height).toBeCloseTo(170);
+
   act(() => tree.root.findByType(HeroPhotoSource).props.onSelect(['file:///two.jpg', 'file:///three.jpg', 'file:///four.jpg']));
   expect(tree.root.findAllByType(HeroPhotoSource)).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'hero-daily-limit-warning' }).length).toBeGreaterThan(0);
@@ -45,6 +56,7 @@ it('keeps the initial whole photo and caps added photos at three', () => {
 
 
 it('generates once on repeated taps, previews saved files and applies only returned results', async () => {
+  const alert = jest.spyOn(AppAlert, 'alert').mockImplementation(() => undefined);
   const images = [{ uri: 'file:///hero-ai/generated.png', sceneId: '05-work' as const }];
   jest.mocked(generateHeroImages).mockResolvedValue({ images, remaining: 2 });
   const apply = jest.fn();
@@ -54,12 +66,17 @@ it('generates once on repeated taps, previews saved files and applies only retur
   const next = () => tree.root.findAllByProps({ testID: 'hero-personal-next' })[0];
   act(() => next().props.onPress());
   await act(async () => { next().props.onPress(); next().props.onPress(); });
+  expect(generateHeroImages).not.toHaveBeenCalled();
+  expect(alert).toHaveBeenCalledTimes(1);
+  const confirm = alert.mock.calls[0][2]![1].onPress!;
+  await act(async () => { confirm(); confirm(); });
   expect(generateHeroImages).toHaveBeenCalledTimes(1);
   expect(apply).not.toHaveBeenCalled();
   const button = tree.root.findAllByProps({ testID: 'hero-result-apply' })[0];
   act(() => button.props.onPress());
   expect(apply).toHaveBeenCalledWith(images);
   act(() => tree.unmount());
+  alert.mockRestore();
 });
 
 
@@ -109,6 +126,8 @@ it('limits added photos to the remaining quota and blocks generation when exhaus
   await act(async () => { tree = create(<HeroPersonalizationFlow initialMode="photo" onClose={jest.fn()} />); });
   act(() => tree.root.findByType(HeroPhotoSource).props.onChange('file:///source.jpg'));
   expect(tree.root.findAllByProps({ testID: 'hero-personal-next' })[0].props.disabled).toBe(true);
+  expect(tree.root.findByType(HeroPhotoSource).props.selectionLimit).toBe(0);
+  expect(JSON.stringify(tree.toJSON())).toContain('comicDay.ai.exhausted');
   act(() => tree.unmount());
 });
 
@@ -142,5 +161,85 @@ it('filters AI face scenes by category and search without losing selected scenes
   act(() => search.props.onChangeText(''));
   act(() => tab(COMIC_SCENE_CATEGORIES[0].label).props.onPress());
   expect(cards().find(card => card.props.id === id)!.props.order).toBe(1);
+  act(() => tree.unmount());
+});
+
+it.each([true, false])('reserves the quota row during loading and after completion (success: %s)', async success => {
+  let resolve!: (value: number) => void;
+  let reject!: (error: Error) => void;
+  jest.mocked(getHeroAiRemaining).mockReturnValueOnce(new Promise<number>((yes, no) => { resolve = yes; reject = no; }));
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPersonalizationFlow onClose={jest.fn()} />); });
+  expect(tree.root.findAllByProps({ testID: 'hero-quota-skeleton' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-quota-slot' })[0].props.accessibilityState.busy).toBe(true);
+  await act(async () => { if (success) resolve(2); else reject(new Error('offline')); });
+  expect(tree.root.findAllByProps({ testID: 'hero-quota-skeleton' })).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-quota-slot' })[0].props.accessibilityState.busy).toBe(false);
+  act(() => tree.unmount());
+});
+
+
+it('allows up to three photos from the first picker and carries all of them into generation', async () => {
+  jest.mocked(getHeroAiRemaining).mockResolvedValueOnce(3);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPersonalizationFlow onClose={jest.fn()} />); });
+  expect(tree.root.findByType(HeroPhotoSource).props.selectionLimit).toBe(3);
+  act(() => {
+    tree.root.findByType(HeroPhotoSource).props.onChange('file:///one.jpg');
+    tree.root.findByType(HeroPhotoSource).props.onSelect(['file:///one.jpg', 'file:///two.jpg', 'file:///three.jpg', 'file:///four.jpg']);
+  });
+  act(() => tree.root.findAllByProps({ testID: 'hero-personal-next' })[0].props.onPress());
+  expect(tree.root.findAllByType(HeroPhotoPreview).map(node => node.props.uri)).toEqual(['file:///one.jpg', 'file:///two.jpg', 'file:///three.jpg']);
+  act(() => tree.unmount());
+});
+
+
+it('keeps selected photos when cancelling the generation confirmation and can ask again', async () => {
+  const alert = jest.spyOn(AppAlert, 'alert').mockImplementation(() => undefined);
+  jest.mocked(generateHeroImages).mockClear();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroPersonalizationFlow initialMode="photo" onClose={jest.fn()} />); });
+  act(() => tree.root.findByType(HeroPhotoSource).props.onChange('file:///keep.jpg'));
+  const next = () => tree.root.findAllByProps({ testID: 'hero-personal-next' })[0];
+  act(() => next().props.onPress());
+  act(() => next().props.onPress());
+  act(() => alert.mock.calls[0][2]![0].onPress!());
+  expect(generateHeroImages).not.toHaveBeenCalled();
+  expect(tree.root.findAllByType(HeroPhotoPreview)[0].props.uri).toBe('file:///keep.jpg');
+  act(() => next().props.onPress());
+  expect(alert).toHaveBeenCalledTimes(2);
+  act(() => alert.mock.calls[1][3]!.onDismiss!());
+  act(() => next().props.onPress());
+  expect(alert).toHaveBeenCalledTimes(3);
+  act(() => tree.unmount());
+  alert.mockRestore();
+});
+
+it('shows a visible recovery error with retry rather than leaving an empty recovery screen', async () => {
+  const { HeroAiError } = jest.requireActual('../lib/heroAiClient');
+  jest.mocked(resumeHeroAiJob).mockRejectedValueOnce(new HeroAiError('connection'));
+  const recoveryJob = { id: 'hero-failed-123', mode: 'photo' as const, scenes: [], count: 1, inputsPath: 'file:///inputs.json', createdAt: 1 };
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPersonalizationFlow recoveryJob={recoveryJob} onClose={jest.fn()} />); });
+  expect(tree.root.findAllByProps({ testID: 'hero-recovery-error' }).length).toBeGreaterThan(0);
+  expect(JSON.stringify(tree.toJSON())).toContain('comicDay.ai.connection');
+  jest.mocked(resumeHeroAiJob).mockResolvedValueOnce({ images: [{ uri: 'file:///recovered.png' }], remaining: 2 });
+  await act(async () => tree.root.findAllByProps({ testID: 'hero-recovery-retry' })[0].props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'hero-result-apply' }).length).toBeGreaterThan(0);
+  act(() => tree.unmount());
+});
+
+
+it('allows saved photos to be reused even with zero remaining generations', async () => {
+  jest.mocked(getHeroAiRemaining).mockResolvedValueOnce(0);
+  const reuse = jest.fn();
+  const calls = jest.mocked(generateHeroImages).mock.calls.length;
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPersonalizationFlow onClose={jest.fn()} onReuse={reuse} />); });
+  act(() => tree.root.findAllByProps({ testID: 'hero-saved-open' })[0].props.onPress());
+  const photos = [{ uri: 'file:///saved.png' }];
+  act(() => tree.root.findByType(HeroSavedPhotos).props.onApply(photos));
+  expect(reuse).toHaveBeenCalledWith(photos);
+  expect(jest.mocked(generateHeroImages).mock.calls.length).toBe(calls);
   act(() => tree.unmount());
 });

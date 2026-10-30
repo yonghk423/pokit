@@ -1,7 +1,9 @@
+import { useTodayDate } from '@shared/lib/time/useTodayDate';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { DAY_PLAN_TOOLBAR_TOP_PADDING } from '../lib/dayPlanDeckMetrics';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useTranslation } from '@shared/lib/i18n';
@@ -19,7 +21,12 @@ import { PlanModeSwitch } from './PlanModeSwitch';
 import { InitialDeckSurface } from './InitialDeckSurface';
 import { SettingsTopBarButton } from './SettingsTopBarButton';
 import { WeatherSummary } from './WeatherSummary';
-import { DayPlanHeaderActionsContext, DayPlanShellBackgroundContext } from '../model/dayPlanHeaderActions';
+import { DayPlanHeaderCenterActionsContext, DayPlanHeaderActionsContext, DayPlanShellBackgroundContext, DayPlanWeatherActionsContext } from '../model/dayPlanHeaderActions';
+
+function HeaderTodayDate({ color }: { color: string }) {
+  const now = useTodayDate();
+  return <ThemedText testID="comic-header-today" accessibilityLabel={now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })} style={[styles.todayDate, { color }]}>{now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'short' })}</ThemedText>;
+}
 
 const WIDGET_PLAN_MODES: readonly PlanMode[] = [
   'priority',
@@ -62,6 +69,19 @@ type Props = {
  */
 export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const { t } = useTranslation();
+  const headerRef = useRef<View>(null);
+  const dateRef = useRef<View>(null);
+  const [dateCenterY, setDateCenterY] = useState(DAY_PLAN_TOOLBAR_TOP_PADDING + 62);
+  const alignTodayWithDate = useCallback(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    dateRef.current?.measureLayout(header, (_x, y, _width, height) => {
+      const center = y + height / 2;
+      setDateCenterY(previous => Math.abs(previous - center) > 0.5 ? center : previous);
+    }, () => undefined);
+  }, []);
+  const [centerActions, setCenterActions] = useState<ReactNode>(null);
+  const [weatherActions, setWeatherActions] = useState<ReactNode>(null);
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
   const [shellOverride, setShellOverride] = useState<string | null>(null);
   const router = useRouter();
@@ -70,9 +90,9 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const appFontScale = useAppFontSizeScale();
   const { fontScale } = useWindowDimensions();
-  // Weather has a 28px button and 22px text line. Reserve its final height before
-  // either the location request or the asynchronously registered title is ready.
-  const weatherHeight = Math.max(28, Math.ceil(scaleTypeSize(22, appFontScale) * fontScale));
+  // Reserve the date and weather together, including while weather is loading.
+  const weatherHeight = Math.max(28, Math.ceil(scaleTypeSize(22, appFontScale) * fontScale))
+    + Math.ceil(scaleTypeSize(20, appFontScale) * fontScale) + 2;
   const characterHeight = Math.max(26, Math.ceil(scaleTypeSize(23, appFontScale) * fontScale));
   const comicHeaderHeight = Math.max(44 + characterHeight, 46 + weatherHeight);
   const inTabs = segments.some((segment) => segment === '(tabs)');
@@ -143,8 +163,10 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   return (
     <DayPlanShellBackgroundContext.Provider value={setShellOverride}>
     <DayPlanHeaderActionsContext.Provider value={setHeaderActions}>
+    <DayPlanWeatherActionsContext.Provider value={setWeatherActions}>
+    <DayPlanHeaderCenterActionsContext.Provider value={setCenterActions}>
       <View style={[styles.root, { backgroundColor: shellBg, paddingTop: insets.top }]}>
-        <View style={styles.stickyTopBar}>
+        <View ref={headerRef} collapsable={false} style={styles.stickyTopBar}>
           <PlanModeSwitch
             planMode={planMode}
             onSelectMode={handleSelectMode}
@@ -158,12 +180,13 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
               <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: comicHeaderHeight }] : styles.trailingRow}>
                 <View style={styles.trailingRow}>
                   <SettingsTopBarButton c={c} />
-                  {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
+                  {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View>
-                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View> : null}
+                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View ref={dateRef} collapsable={false} onLayout={alignTodayWithDate}><HeaderTodayDate color={c.onVariant} /></View><View style={styles.weatherControls}>{weatherActions}<View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
               </View>
             }
           />
+          {isComicTab ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: dateCenterY - 22, height: 44, alignItems: 'center', justifyContent: 'center' }}>{centerActions}</View> : null}
         </View>
         <View style={styles.body}>
           {tabName === 'comic-day' || tabName === 'day-plan' ? (
@@ -173,6 +196,8 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
           ) : children}
         </View>
       </View>
+    </DayPlanHeaderCenterActionsContext.Provider>
+    </DayPlanWeatherActionsContext.Provider>
     </DayPlanHeaderActionsContext.Provider>
     </DayPlanShellBackgroundContext.Provider>
   );
@@ -198,9 +223,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   comicWeather: {
-    maxWidth: 168,
+    maxWidth: 212,
+    alignItems: 'flex-end',
+    gap: 2,
     marginTop: 2,
   },
+  todayDate: { fontSize: 13, lineHeight: 20, textAlign: 'right', flexShrink: 1 },
+  weatherControls: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%' },
   closeButton: {
     width: 44,
     height: 44,

@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -385,7 +386,7 @@ export function PuzzleHistoryDetailPage() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.back')}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/puzzle-history'))}
+            onPress={() => { tapHaptic(); if (router.canGoBack()) router.back(); else router.replace('/puzzle-history'); }}
             style={styles.backBtn}>
             <IconSymbol name="chevron.left" size={18} color={c.text} />
           </Pressable>

@@ -9,6 +9,7 @@ export type HeroCardStackHandle = { turnTo: (index: number) => void };
 type Props = {
   active: number; count: number; width: number; height: number; cardWidth: number; cardHeight: number; top: number; enabled: boolean;
   overviewGesture?: PanGesture;
+  onCardHold?: (x: number, y: number) => void;
   swipeEnabled?: boolean;
   renderPage: (index: number, interactive: boolean, focused: boolean) => ReactNode; onChange: (index: number) => void;
 };
@@ -28,7 +29,7 @@ function StackCard({ index, position, direction, width, cardWidth, cardHeight, t
 }
 
 /** Intact live cards use the mate deck's pose; no snapshots, image slicing or decode gate. */
-export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, renderPage, onChange }, ref) {
+export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, onCardHold, renderPage, onChange }, ref) {
   const [cursor, setCursor] = useState(() => active + count);
   const base = count > 1 ? cursor : 0;
   const reported = useSharedValue(active);
@@ -118,7 +119,17 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
   const indices = count > 1 ? Array.from({ length: 6 }, (_, offset) => base - 1 + offset) : count === 1 ? [0] : [];
   // Both gestures share one native surface. A held thumb sweep must get a chance
   // to turn before the long-press overview gesture can claim the same touch.
-  const deckGesture = overviewGesture ? Gesture.Exclusive(gesture, overviewGesture) : gesture;
+  const movement = overviewGesture ? Gesture.Exclusive(gesture, overviewGesture) : gesture;
+  // The overview pan activates after 350ms, before a deletion hold's 500ms.
+  // Give a stationary hold priority instead of racing those timers. Moving more
+  // than 12pt fails the hold and releases the same touch to the swipe gestures.
+  const deckGesture = onCardHold
+    ? Gesture.Exclusive(
+      Gesture.LongPress().enabled(enabled && swipeEnabled && count > 0).minDuration(500).maxDistance(12)
+        .onStart(event => { runOnJS(onCardHold)(event.x, event.y); }),
+      movement,
+    )
+    : movement;
   return <GestureDetector gesture={deckGesture}><View testID="comic-card-stack" collapsable={false} style={[s.root, { width, height }]}>
     {indices.map(index => <StackCard key={index} index={index} position={position} direction={direction} width={width} cardWidth={cardWidth} cardHeight={cardHeight} top={top}
       interactive={enabled && index === base}>{renderPage(loopDeckIndex(index, count), enabled && index === base, index === base)}</StackCard>)}

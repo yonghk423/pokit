@@ -43,3 +43,27 @@ it('stores the newly entered protagonist name on the new diary without reusing o
   const restored = loadComicDiaryLibrary('2026-10-24', title);
   expect(restored.diaries.find(item => item.id === tutorialId)?.characterName).toBe('내가 쓴 이름');
 });
+
+
+it('removes discontinued puppy diaries, imported backups and preferences while preserving human entries', () => {
+  const humanScene = newComicScene('Keep human note');
+  const human = { id: 'human', title: 'Keep my diary', characterId: 'protagonist-1', characterName: '서연', scenes: [humanScene], createdAt: 1, updatedAt: 1 };
+  const puppyScene = { ...newComicScene('Retired scene'), image: 'puppy-nap' };
+  const puppy = { id: 'retired', title: 'Old puppy', characterId: 'puppy-companion', scenes: [puppyScene], createdAt: 2, updatedAt: 2 };
+  const backup = 'pokit:comic-day:puppy-companion:2026-10-20';
+  const mixedBackup = 'pokit:comic-day:2026-10-21';
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [human, puppy], activeId: puppy.id, migratedLegacyKeys: [backup, mixedBackup] });
+  localStorageClient.setJson(backup, [puppyScene]);
+  localStorageClient.setJson(mixedBackup, [humanScene, puppyScene]);
+  localStorageClient.setItemRaw('pokit:comic-character-name:puppy-companion', 'Old name');
+  localStorageClient.setJson('pokit:comic-navigation', { characterId: 'puppy-companion', diaryId: puppy.id, screen: 'board' });
+  const loaded = loadComicDiaryLibrary('2026-10-29', title);
+  expect(loaded.diaries).toEqual([human]);
+  expect(loaded.activeId).toBe(human.id);
+  expect(loaded.migratedLegacyKeys).not.toContain(backup);
+  expect(localStorageClient.getItemRaw(backup)).toBeNull();
+  expect(localStorageClient.getJson(mixedBackup)).toEqual([humanScene]);
+  expect(localStorageClient.getItemRaw('pokit:comic-character-name:puppy-companion')).toBeNull();
+  expect(localStorageClient.getJson('pokit:comic-navigation')).toBeNull();
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual(loaded);
+});

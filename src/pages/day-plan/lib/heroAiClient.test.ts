@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as fs from 'expo-file-system/legacy';
-import { dismissHeroAiJob, getPendingHeroAiJob, resumeHeroAiJob, type PendingHeroAiJob } from './heroAiClient';
+import { cancelHeroAiJob, dismissHeroAiJob, getPendingHeroAiJob, resumeHeroAiJob, type PendingHeroAiJob } from './heroAiClient';
 
 jest.mock('@shared/config/supabase', () => ({ getSupabaseUrl: () => 'https://example.supabase.co', getSupabasePublishableKey: () => 'public' }));
 jest.mock('@shared/lib/supabase/heroAiAuth', () => ({ getHeroAiAccessToken: async () => 'session' }));
@@ -63,4 +63,61 @@ it('only uploads unclaimed slots after interruption, keeping the original reques
   expect(posts).toHaveLength(1);
   expect(posts[0][0]).toBe(`https://example.supabase.co/functions/v1/hero-ai/jobs/${job.id}/render/1`);
   expect(completed.images[0].sceneId).toBe('01-exercise');
+});
+
+it('sends the face reference before reservation and clears a rejected draft without rendering', async () => {
+  await AsyncStorage.setItem(key, JSON.stringify(job));
+  jest.mocked(fs.readAsStringAsync).mockResolvedValueOnce(JSON.stringify([{ base: 'art', reference: 'portrait' }]));
+  jest.mocked(global.fetch).mockResolvedValueOnce(reply({ error: 'not_found' }, 404)).mockResolvedValueOnce(reply({ error: 'face_missing' }, 400));
+  await expect(resumeHeroAiJob(job, jest.fn())).rejects.toThrow('face_missing');
+  expect(JSON.parse(jest.mocked(global.fetch).mock.calls[1][1]!.body as string).reference).toBe('portrait');
+  expect(global.fetch).toHaveBeenCalledTimes(2);
+  expect(await getPendingHeroAiJob()).toBeNull();
+});
+
+it('cancels on the server before clearing the pending job', async () => {
+  await AsyncStorage.setItem(key, JSON.stringify(job));
+  jest.mocked(global.fetch).mockImplementationOnce(async () => {
+    expect((await getPendingHeroAiJob())?.cancelRequested).toBe(true);
+    return reply({ cancelled: true, remaining: 3 });
+  });
+  await cancelHeroAiJob(job.id);
+  expect(jest.mocked(global.fetch).mock.calls[0][0]).toContain('/cancel');
+  expect(await getPendingHeroAiJob()).toBeNull();
+});
+
+it('retains the cancellation intent offline and never restarts it on recovery', async () => {
+  await AsyncStorage.setItem(key, JSON.stringify(job));
+  jest.mocked(global.fetch).mockRejectedValueOnce(new Error('offline'));
+  await expect(cancelHeroAiJob(job.id)).rejects.toThrow('connection');
+  const pending = await getPendingHeroAiJob();
+  expect(pending?.cancelRequested).toBe(true);
+  jest.mocked(global.fetch).mockResolvedValueOnce(reply({ cancelled: true, remaining: 3 }));
+  await expect(resumeHeroAiJob(pending!, jest.fn())).rejects.toThrow('cancelled');
+  expect(jest.mocked(global.fetch).mock.calls.every(([url]) => String(url).endsWith('/cancel'))).toBe(true);
+  expect(fs.downloadAsync).not.toHaveBeenCalled();
+});
+
+it('does not render if cancellation occurs while the reservation is being created', async () => {
+  const controller = new AbortController();
+  jest.mocked(fs.readAsStringAsync).mockResolvedValueOnce(JSON.stringify([{ reference: 'portrait' }]));
+  jest.mocked(global.fetch)
+    .mockResolvedValueOnce(reply({ error: 'not_found' }, 404))
+    .mockImplementationOnce(async () => {
+      controller.abort();
+      return reply({ status: 'processing', pending: [0], results: [], remaining: 2 }, 201);
+    });
+  await expect(resumeHeroAiJob(job, jest.fn(), controller.signal)).rejects.toThrow('cancelled');
+  expect(global.fetch).toHaveBeenCalledTimes(2);
+  expect(fs.downloadAsync).not.toHaveBeenCalled();
+});
+
+it('ignores a completed response that arrives after the user cancels', async () => {
+  const controller = new AbortController();
+  jest.mocked(global.fetch).mockImplementationOnce(async () => {
+    controller.abort();
+    return reply({ status: 'completed', results: [result], remaining: 2 });
+  });
+  await expect(resumeHeroAiJob(job, jest.fn(), controller.signal)).rejects.toThrow('cancelled');
+  expect(fs.downloadAsync).not.toHaveBeenCalled();
 });

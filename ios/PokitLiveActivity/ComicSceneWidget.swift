@@ -293,21 +293,6 @@ private enum ComicSceneWidgetCrop {
     "read": CGPoint(x: 0.60, y: 0.36),
     "wake": CGPoint(x: 0.48, y: 0.22),
     "walk": CGPoint(x: 0.47, y: 0.25),
-    "puppy-ball-play": CGPoint(x: 0.40, y: 0.46),
-    "puppy-bath": CGPoint(x: 0.46, y: 0.42),
-    "puppy-car-ride": CGPoint(x: 0.50, y: 0.37),
-    "puppy-fetch": CGPoint(x: 0.62, y: 0.43),
-    "puppy-grass-sniff": CGPoint(x: 0.35, y: 0.60),
-    "puppy-meal": CGPoint(x: 0.32, y: 0.61),
-    "puppy-nap": CGPoint(x: 0.30, y: 0.55),
-    "puppy-park-walk": CGPoint(x: 0.40, y: 0.43),
-    "puppy-seaside": CGPoint(x: 0.39, y: 0.48),
-    "puppy-stretch": CGPoint(x: 0.41, y: 0.61),
-    "puppy-towel": CGPoint(x: 0.42, y: 0.43),
-    "puppy-treat": CGPoint(x: 0.42, y: 0.58),
-    "puppy-wait-door": CGPoint(x: 0.39, y: 0.41),
-    "puppy-water": CGPoint(x: 0.30, y: 0.61),
-    "puppy-window-watch": CGPoint(x: 0.37, y: 0.37),
   ]
 
   static func protectedBounds(for imageId: String) -> CGRect {
@@ -319,7 +304,7 @@ private enum ComicSceneWidgetCrop {
       return CGRect(x: 0.30, y: 0.20, width: 0.59, height: 0.22)
     }
     let center = faceCenters[imageId] ?? CGPoint(x: 0.5, y: 0.28)
-    let radius: CGFloat = imageId.hasPrefix("puppy-") ? 0.14 : 0.09
+    let radius: CGFloat = 0.09
     return CGRect(x: max(0, center.x - radius), y: max(0, center.y - radius),
                   width: radius * 2, height: radius * 2)
   }

@@ -36,3 +36,11 @@ describe('t (i18next)', () => {
     expect(t('goalDetail.reading.emptyAddHint2')).toBe('');
   });
 });
+
+
+it('interpolates diary section counts in every supported language', () => {
+  expect(t('comicCalendar.diaryCount', 'ko', { count: 3 })).toBe('일기 3개');
+  expect(t('comicCalendar.diaryCount', 'en', { count: 3 })).toBe('3 diaries');
+  expect(t('comicCalendar.diaryCount', 'ja', { count: 3 })).toBe('日記 3件');
+  expect(t('comicCalendar.diaryCount', 'zh-TW', { count: 3 })).toBe('3篇日記');
+});

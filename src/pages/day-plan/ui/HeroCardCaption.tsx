@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, useWindowDimensions, type TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppModal } from '@shared/ui/app-modal';
@@ -13,16 +13,17 @@ import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
-export type HeroCardText = { title: string; memo: string };
+export type HeroCardText = { title: string; memo: string; paper?: string; pen?: string };
 
 /** A caption can be edited without opening or flipping the scene card. */
-export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = '#F5E8CF', onSave, showEdit = !!onSave, onOpen, onEditingChange }: {
-  title: string; memo?: string; number: number; ink: string; muted: string; paper?: string;
+export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = '#F5E8CF', onSave, showEdit = !!onSave, onOpen, onEditingChange, topActions }: {
+  title: string; memo?: string; number: number; ink: string; muted: string; paper?: string; topActions?: ReactNode;
   onOpen?: () => void;
   showEdit?: boolean;
   onSave?: (text: HeroCardText) => void; onEditingChange?: (editing: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const empty = !title.trim() && !memo.trim();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<HeroCardText>({ title, memo });
   const finish = () => { Keyboard.dismiss(); setEditing(false); onEditingChange?.(false); };
@@ -32,10 +33,11 @@ export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = 
     tapHaptic('confirm'); finish();
   };
   return <View style={[s.caption, { borderTopColor: muted }]}>
-    <ThemedText style={{ color: muted, fontSize: 12, lineHeight: 17 }}>{String(number).padStart(2, '0')}</ThemedText>
+    {topActions}
+    {topActions && !empty ? <Pressable disabled={!onOpen} onPress={onOpen} style={s.raisedTitle}><ThemedText numberOfLines={1} style={[s.title, { color: ink }]}>{title}</ThemedText></Pressable> : null}
     {editing ? <HeroCardEditor number={number} ink={ink} muted={muted} paper={paper} draft={draft} onChange={setDraft} onSave={save} onCancel={() => { tapHaptic(); finish(); }} /> : null}
       <View style={s.titleRow}>
-        <Pressable disabled={!onOpen} onPress={onOpen} style={{ flex: 1 }}><ThemedText numberOfLines={1} style={[s.title, { color: ink }]}>{title}</ThemedText></Pressable>
+        {empty || topActions ? <View style={{ flex: 1 }} /> : <Pressable disabled={!onOpen} onPress={onOpen} style={{ flex: 1 }}><ThemedText numberOfLines={1} style={[s.title, { color: ink }]}>{title}</ThemedText></Pressable>}
         {showEdit ? <Pressable testID="hero-card-edit" disabled={!onSave} accessibilityRole="button" accessibilityLabel={`${t('comicDay.sceneTitle')} · ${t('comicDay.memo')}`} onPress={() => {
           completeHeroCardEditHint(); tapHaptic(); setDraft({ title, memo }); setEditing(true); onEditingChange?.(true);
         }} style={s.edit}>
@@ -60,6 +62,8 @@ function HeroCardEditor({ number, ink, muted, paper, draft, onChange, onSave, on
   const { fontScale } = useWindowDimensions();
   const lineHeight = Math.ceil(scaleTypeSize(32, appScale) * fontScale);
   const fontSize = Math.round(scaleTypeSize(17, appScale) * fontScale);
+  const titleSize = Math.round(scaleTypeSize(26, appScale) * fontScale);
+  const titleLineHeight = Math.ceil(titleSize * 1.55);
   return <AppModal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}
     onShow={() => titleRef.current?.focus()} supportedOrientations={['portrait', 'landscape']}>
     <KeyboardAvoidingView testID="hero-card-editor" behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.editorRoot}>
@@ -73,10 +77,10 @@ function HeroCardEditor({ number, ink, muted, paper, draft, onChange, onSave, on
               <HanddrawnControl name="keyboard.chevron.compact.down" size={26} color={ink} />
             </Pressable>
           </View>
-          <ThemedTextInput ref={titleRef} accessibilityLabel={t('comicDay.sceneTitle')} placeholder={t('comicDay.sceneTitle')} placeholderTextColor={muted}
+          <ThemedTextInput ref={titleRef} allowFontScaling={false} typographyScale={1} accessibilityLabel={t('comicDay.sceneTitle')} placeholder={t('comicDay.sceneTitle')} placeholderTextColor={muted}
             value={draft.title} onChangeText={title => onChange({ ...draft, title })} maxLength={80}
             returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => memoRef.current?.focus()}
-            style={[s.titleInput, { color: ink, borderBottomColor: muted }]} />
+            style={[s.titleInput, { color: ink, borderBottomColor: muted, fontSize: titleSize, lineHeight: titleLineHeight, minHeight: titleLineHeight + 20 }]} />
           <View testID="hero-card-summary-editor" style={s.memoArea} onLayout={event => setMemoHeight(event.nativeEvent.layout.height)}>
             <View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateY: -(scrollY % lineHeight) }] }]}>
               {Array.from({ length: Math.ceil(memoHeight / lineHeight) + 1 }, (_, index) => <View key={index} style={{ height: lineHeight, borderBottomWidth: 0.5, borderBottomColor: muted, opacity: 0.4 }} />)}
@@ -103,6 +107,7 @@ function HeroCardEditor({ number, ink, muted, paper, draft, onChange, onSave, on
 }
 const s = StyleSheet.create({
   caption: { flex: 1, minHeight: 0, borderTopWidth: 0.5, marginHorizontal: 14, paddingTop: 8, gap: 2 },
+  raisedTitle: { position: 'absolute', top: 8, left: 0, right: 76, height: 28, justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 22, lineHeight: 29 },
   edit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
@@ -110,7 +115,7 @@ const s = StyleSheet.create({
   editorSafeArea: { flex: 1, minHeight: 0, alignItems: 'center' },
   editorPaper: { flex: 1, width: '100%', maxWidth: 580, minHeight: 0, borderRadius: 20, overflow: 'hidden', paddingHorizontal: 20, paddingBottom: 8 },
   editorHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, flexShrink: 0 },
-  titleInput: { fontSize: 26, minHeight: 48, paddingVertical: 4, paddingHorizontal: 0, borderBottomWidth: 0.6, flexShrink: 0 },
+  titleInput: { fontSize: 26, minHeight: 60, paddingVertical: 10, paddingHorizontal: 0, borderBottomWidth: 0.6, flexShrink: 0 },
   memoArea: { flex: 1, minHeight: 32, overflow: 'hidden', marginTop: 12, marginBottom: 12 },
   memoInput: { paddingHorizontal: 0, paddingVertical: 0, textAlignVertical: 'top', includeFontPadding: false },
   actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 0.5, paddingTop: 8, flexShrink: 0 },

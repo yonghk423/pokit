@@ -18,7 +18,14 @@ jest.mock('react-native-reanimated', () => {
 });
 jest.mock('react-native-gesture-handler', () => ({
   GestureDetector: ({ children }: { children: unknown }) => children,
-  Gesture: { Pan: () => {
+  Gesture: {
+    Exclusive: (...gestures: unknown[]) => ({ kind: 'exclusive', gestures }),
+    LongPress: () => {
+      const gesture: Record<string, unknown> = {};
+      for (const name of ['enabled', 'minDuration', 'maxDistance', 'onStart']) gesture[name] = (value: unknown) => { gesture[name + 'Value'] = value; return gesture; };
+      return gesture;
+    },
+    Pan: () => {
     const gesture: Record<string, unknown> = {};
     for (const name of ['enabled', 'activeOffsetX', 'failOffsetY', 'shouldCancelWhenOutside', 'onStart', 'onUpdate', 'onEnd', 'onFinalize']) gesture[name] = (value: unknown) => { gesture[name + 'Value'] = value; return gesture; };
     return gesture;
@@ -112,5 +119,32 @@ it('keeps every front live through repeated cycles, with only one focused card',
     expect(new Set(fronts.map(node => node.props.testID)).size).toBe(1);
     expect(tree.root.findAllByType(Text)).toHaveLength(6);
   }
+  act(() => tree.unmount());
+});
+
+it('recognizes deletion holds natively alongside card swipes, including a single card', () => {
+  const hold = jest.fn(), change = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardStack active={0} count={1} width={390} height={600} cardWidth={300} cardHeight={350} top={68} enabled onChange={change} onCardHold={hold} renderPage={() => <Text>Card</Text>} />); });
+  const composed = tree.root.findByType(GestureDetector).props.gesture;
+  expect(composed.kind).toBe('exclusive');
+  const gestures = composed.gestures;
+  expect(gestures[0].minDurationValue).toBe(500);
+  expect(gestures[0].maxDistanceValue).toBe(12);
+  expect(gestures[0].enabledValue).toBe(true);
+  act(() => gestures[0].onStartValue({ x: 100, y: 150 }));
+  expect(hold).toHaveBeenCalledWith(100, 150);
+  expect(change).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+});
+
+it('prioritizes the deletion hold over the earlier overview hold on a multi-card deck', () => {
+  const overview = { activatesAt: 350 };
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardStack active={1} count={3} width={390} height={600} cardWidth={300} cardHeight={350} top={68} enabled overviewGesture={overview as never} onChange={jest.fn()} onCardHold={jest.fn()} renderPage={() => <Text>Card</Text>} />); });
+  const composed = tree.root.findByType(GestureDetector).props.gesture;
+  expect(composed.kind).toBe('exclusive');
+  expect(composed.gestures[0].minDurationValue).toBe(500);
+  expect(composed.gestures[1].gestures[1]).toBe(overview);
   act(() => tree.unmount());
 });

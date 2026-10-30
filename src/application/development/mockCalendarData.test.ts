@@ -1,0 +1,45 @@
+import { addDevelopmentCalendarMockData, buildCalendarMockDiaries } from './mockCalendarData';
+import { ensureDevelopmentMockData } from './mockData';
+import { groupCalendarDiaries } from '@pages/day-plan/lib/heroCalendar';
+import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
+import { normalizeComicScenes } from '@pages/day-plan/lib/heroDayStorage';
+import { localStorageClient, setDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
+import type { AppLocale } from '@shared/lib/i18n';
+afterEach(() => setDevelopmentStorageProfile(null));
+it.each<AppLocale>(['ko', 'en', 'ja', 'zh-TW'])('builds dense editable %s calendar entries, with multiple diaries and many scenes per date', locale => {
+  const diaries = buildCalendarMockDiaries(locale, '2026-10-29');
+  const grouped = groupCalendarDiaries(diaries);
+  expect(grouped.get('2026-10-13')).toHaveLength(6);
+  expect(grouped.get('2026-10-29')).toHaveLength(4);
+  expect(grouped.has('2026-09-30')).toBe(true);
+  expect(grouped.size).toBeGreaterThan(10);
+  expect(diaries.some(diary => diary.scenes.length === 20)).toBe(true);
+  const scenes = diaries.flatMap(diary => diary.scenes);
+  expect(normalizeComicScenes(scenes)).toEqual(scenes);
+  expect(scenes.every(scene => scene.memo.length > 40 && scene.todos.length > 0)).toBe(true);
+  const ids = diaries.flatMap(diary => [diary.id, ...diary.scenes.flatMap(scene => [scene.id, ...scene.todos.map(todo => todo.id)])]);
+  expect(new Set(ids).size).toBe(ids.length);
+  expect(diaries).toEqual(buildCalendarMockDiaries(locale, '2026-10-29'));
+});
+it('adds to a selected mock profile once, preserving edits, active diary and real data', () => {
+  setDevelopmentStorageProfile(null);
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { personal: true });
+  expect(addDevelopmentCalendarMockData('2026-10-29')).toBe(false);
+  setDevelopmentStorageProfile('ko');
+  ensureDevelopmentMockData(true, '2026-10-29');
+  const original = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(addDevelopmentCalendarMockData('2026-10-29')).toBe(true);
+  const added = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(added.activeId).toBe(original.activeId);
+  expect(added.diaries.slice(0, original.diaries.length)).toEqual(original.diaries);
+  added.diaries.at(-1)!.scenes[0].memo = 'My own edited note';
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, added);
+  expect(addDevelopmentCalendarMockData('2026-10-29')).toBe(false);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual(added);
+  setDevelopmentStorageProfile(null);
+  expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ personal: true });
+});
+it('uses valid local dates at year and month boundaries without seeding future dates', () => {
+  const diaries = buildCalendarMockDiaries('ko', '2027-01-02');
+  expect([...groupCalendarDiaries(diaries).keys()].sort()).toEqual(['2026-12-31', '2027-01-01', '2027-01-02']);
+});

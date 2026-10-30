@@ -79,7 +79,7 @@ it.each<AppLocale>(['ko', 'en', 'ja'])('builds a complete, usable %s dataset wit
   const date = '2026-10-26';
   const library = buildMockDiaries(locale, date);
   expect(library.diaries).toHaveLength(3);
-  expect(new Set(library.diaries.map(diary => diary.characterId)).size).toBe(2);
+  expect(new Set(library.diaries.map(diary => diary.characterId)).size).toBe(1);
   const scenes = library.diaries.flatMap(diary => diary.scenes);
   expect(scenes).toHaveLength(16);
   expect(normalizeComicScenes(scenes)).toEqual(scenes);

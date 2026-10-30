@@ -97,7 +97,7 @@ it('does not rotate an enlarged fallback image over the board when a tutorial re
   act(() => tree.unmount()); timing.mockRestore();
 });
 
-it('never mounts a duplicate card front during the tutorial, even with a measured card', () => {
+it('fades details in and out without rotating or duplicating the measured card', () => {
   const callbacks: ((result: { finished: boolean }) => void)[] = [];
   const timing = jest.spyOn(Animated, 'timing').mockImplementation(() => ({
     start: callback => { if (callback) callbacks.push(callback); }, stop: jest.fn(), reset: jest.fn(),
@@ -110,7 +110,11 @@ it('never mounts a duplicate card front during the tutorial, even with a measure
     fallbackFront={<Text>Fallback artwork</Text>}><Text>Details</Text></HeroCardFlip>); });
   act(() => tree.root.findByType(Modal).props.onShow());
   expect(tree.root.findAllByType(Text).map(node => node.props.children)).toEqual(['Details']);
-  act(() => ref.current!.close());
+  expect(timing.mock.calls[0][1]).toMatchObject({ toValue: 1, duration: 220, useNativeDriver: true });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-card-flip-back' })[0].props.style).transform).toEqual([]);
+  act(() => { ref.current!.close(); ref.current!.close(); });
+  expect(timing).toHaveBeenCalledTimes(2);
+  expect(timing.mock.calls[1][1]).toMatchObject({ toValue: 0, duration: 180, useNativeDriver: true });
   expect(readCurrent).not.toHaveBeenCalled();
   expect(tree.root.findAllByProps({ testID: 'hero-card-flip-front' })).toHaveLength(0);
   const paper = tree.root.findAllByProps({ testID: 'hero-card-flip-paper' })[0];

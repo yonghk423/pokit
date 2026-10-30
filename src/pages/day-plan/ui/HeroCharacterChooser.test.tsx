@@ -1,5 +1,5 @@
 import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
-import { FlatList, Keyboard, StyleSheet } from 'react-native';
+import { Animated, FlatList, Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ComicCharacterChooser } from './HeroCharacterChooser';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -25,13 +25,13 @@ it('casts the chosen character, previews its scenes and starts it once after the
   const character = COMIC_CHARACTERS[0];
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
-  const select = tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` })[0];
+  const select = tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` })[0];
   act(() => { select.props.onPress(); });
-  expect(tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` })[0].props.accessibilityState.selected).toBe(true);
+  expect(tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` })[0].props.accessibilityState.selected).toBe(true);
   const list = tree.root.findAllByProps({ testID: `comic-character-thumbnail-list-${character.id}` })[0];
   expect(list.props.data.map((image: { id: string }) => image.id)).toEqual(['cover', ...character.scenes.map(scene => scene.id)]);
   const main = tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` })[0];
-  expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:cover:960`);
+  expect(main.findByType(ComicSceneImage).props.imageKey).toMatch(new RegExp(`^${character.id}:.*:960$`));
   act(() => { tree.root.findAllByProps({ testID: `comic-character-thumbnail-${character.id}-${character.scenes[0].id}` })[0].props.onPress(); });
   expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:${character.scenes[0].id}:960`);
   const start = tree.root.findAllByProps({ testID: 'comic-character-start' })[0];
@@ -44,28 +44,18 @@ it('casts the chosen character, previews its scenes and starts it once after the
   act(() => { tree.unmount(); });
 });
 
-it('starts each new diary with the default name and keeps edited names local to its draft', () => {
-  const character = COMIC_CHARACTERS[0];
-  const onStart = jest.fn();
-  saveComicCharacterName(character.id, '이전 일기의 이름');
+it('starts without a name input and preserves historical names in storage', () => {
+  const character = COMIC_CHARACTERS[0]; const onStart = jest.fn();
+  saveComicCharacterName(character.id, '이전 이름');
   let tree!: ReactTestRenderer;
-  const render = () => <ComicCharacterChooser onStart={onStart} ink="#222" muted="#888" isDark={false} />;
-  act(() => { tree = create(render()); });
-  const input = tree.root.findAllByType(ThemedTextInput)[0];
-  expect(input.props.value).toBe(character.name);
-  act(() => { input.props.onChangeText(''); });
-  expect(tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.disabled).toBe(true);
-  act(() => { input.props.onChangeText('이번 일기의 이름'); });
-  act(() => { tree.root.findAllByType(ThemedTextInput)[0].props.onSubmitEditing(); });
-  const start = () => tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.character.startWithName' && typeof node.props.onPress === 'function')[0];
-  act(() => { start().props.onPress(); jest.advanceTimersByTime(600); });
-  expect(onStart).toHaveBeenLastCalledWith(character, '이번 일기의 이름');
-  expect(loadComicCharacterName(character.id)).toBe('이전 일기의 이름');
-  act(() => { tree.unmount(); });
-  act(() => { tree = create(render()); });
-  act(() => { start().props.onPress(); jest.advanceTimersByTime(600); });
-  expect(onStart).toHaveBeenLastCalledWith(character, character.name);
-  act(() => { tree.unmount(); });
+  act(() => { tree = create(<ComicCharacterChooser onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
+  expect(tree.root.findAllByType(ThemedTextInput)).toHaveLength(0);
+  const start = tree.root.findAllByProps({ testID: 'comic-character-start' })[0];
+  expect(start.props.disabled).toBe(false);
+  act(() => { start.props.onPress(); jest.advanceTimersByTime(600); });
+  expect(onStart).toHaveBeenCalledWith(character, character.name);
+  expect(loadComicCharacterName(character.id)).toBe('이전 이름');
+  act(() => tree.unmount());
   localStorageClient.removeItem(`pokit:comic-character-name:${character.id}`);
 });
 
@@ -93,10 +83,10 @@ it('manual start follows the Later path into comicPick and starts only once', ()
   let tree!: ReactTestRenderer;
   const render = () => <ComicCharacterChooser requireExplicitChoice onStart={onStart} ink="#222" muted="#888" isDark={false} />;
   act(() => { tree = create(render()); });
-  act(() => { tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[0].id}` })[0].props.onPress(); });
-  act(() => { tree.root.findAllByType(ThemedTextInput)[0].props.onChangeText('123'); });
+  act(() => { tree.root.findAllByProps({ testID: `comic-character-cover-${COMIC_CHARACTERS[0].id}` })[0].props.onPress(); });
+  act(() => { jest.advanceTimersByTime(32); });
   expect(useServiceTutorial.getState().step).toBe('comicReady');
-  act(() => { tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.character.startWithName' && typeof node.props.onPress === 'function')[0].props.onPress(); });
+  act(() => { tree.root.findAll(node => node.props.testID === 'comic-character-start' && typeof node.props.onPress === 'function')[0].props.onPress(); });
   expect(useServiceTutorial.getState().step).toBe('comicPick');
   expect(onStart).toHaveBeenCalledTimes(0);
   act(() => { jest.advanceTimersByTime(700); });
@@ -116,20 +106,6 @@ it('cancels an unfinished start when the chooser unmounts', () => {
   act(() => { tree.unmount(); });
   act(() => { jest.advanceTimersByTime(1000); });
   expect(onStart).not.toHaveBeenCalled();
-});
-
-it('dismisses the keyboard on Done without starting or losing the typed name', () => {
-  const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
-  const onStart = jest.fn();
-  let tree!: ReactTestRenderer;
-  act(() => { tree = create(<ComicCharacterChooser requireExplicitChoice onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
-  act(() => { tree.root.findAllByProps({ testID: 'comic-character-name' })[0].props.onChangeText('새 이름'); });
-  act(() => { tree.root.findAllByProps({ testID: 'comic-character-name' })[0].props.onSubmitEditing(); });
-  expect(dismiss).toHaveBeenCalled();
-  expect(tree.root.findAllByProps({ testID: 'comic-character-name' })[0].props.value).toBe('새 이름');
-  expect(onStart).not.toHaveBeenCalled();
-  act(() => { tree.unmount(); });
-  dismiss.mockRestore();
 });
 
 it('reserves inline tutorial space below the cards instead of covering them', () => {
@@ -157,7 +133,7 @@ it('keeps artwork, character choices and guidance mounted when the keyboard open
   expect(tree.root.findAllByProps({ testID: 'comic-character-content' })[0].props.scrollEnabled).toBe(true);
   for (const character of COMIC_CHARACTERS) {
     expect(tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` }).length).toBeGreaterThan(0);
-    expect(tree.root.findAllByProps({ testID: `comic-character-select-${character.id}` }).length).toBeGreaterThan(0);
+    expect(tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` }).length).toBeGreaterThan(0);
   }
   expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' }).length).toBeGreaterThan(0);
   act(() => { (callbacks.get('keyboardWillHide') ?? callbacks.get('keyboardDidHide'))!(); });
@@ -166,7 +142,7 @@ it('keeps artwork, character choices and guidance mounted when the keyboard open
   listen.mockRestore(); visible.mockRestore();
 });
 
-it('renders virtualized thumbnail rails outside the keyboard scroll container', () => {
+it('loads a horizontal thumbnail strip beneath its corresponding character card after selection', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
   const content = tree.root.findAllByProps({ testID: 'comic-character-content' })[0];
@@ -174,8 +150,19 @@ it('renders virtualized thumbnail rails outside the keyboard scroll container', 
   const viewport = tree.root.findAllByProps({ testID: 'comic-character-scroll-viewport' })[0];
   expect(StyleSheet.flatten(viewport.props.style).overflow).toBe('hidden');
   expect(viewport.findAllByProps({ testID: 'comic-character-content' }).length).toBeGreaterThan(0);
-  const overlay = viewport.findAllByProps({ testID: 'comic-character-thumbnail-overlay' })[0];
-  expect(overlay.findAllByType(FlatList)).toHaveLength(COMIC_CHARACTERS.length);
+  const column = tree.root.findAllByProps({ testID: 'comic-character-column-protagonist-1' })[0];
+  expect(column.findAllByType(FlatList)).toHaveLength(0);
+  act(() => tree.root.findAllByProps({ testID: `comic-character-cover-${COMIC_CHARACTERS[0].id}` })[0].props.onPress());
+  expect(column.findAllByType(FlatList)).toHaveLength(0);
+  const mainCards = tree.root.findAllByProps({ testID: 'comic-character-horizontal-list' })[0];
+  expect(mainCards.findAllByType(FlatList)).toHaveLength(0);
+  const lane = tree.root.findAllByProps({ testID: 'comic-character-thumbnail-lane' })[0];
+  expect(lane.findByType(FlatList).props.horizontal).toBe(true);
+  const strip = lane.findAllByProps({ testID: 'comic-character-thumbnails-protagonist-1' })[0];
+  expect(StyleSheet.flatten(strip.props.style).position).toBeUndefined();
+  expect(StyleSheet.flatten(strip.props.style).width).toBe('100%');
+  const thumbnail = lane.findByType(FlatList).props.renderItem({ item: lane.findByType(FlatList).props.data[0], index: 0 });
+  expect(StyleSheet.flatten(thumbnail.props.style).padding).toBe(0);
   act(() => { tree.unmount(); });
 });
 
@@ -183,32 +170,31 @@ it('renders virtualized thumbnail rails outside the keyboard scroll container', 
 it('offers only protagonist 1 and hides all puppy artwork from new diary selection', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
-  expect(tree.root.findAllByProps({ testID: 'comic-character-select-puppy-companion' })).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'comic-character-cover-puppy-companion' })).toHaveLength(0);
-  expect(tree.root.findAllByProps({ testID: 'comic-character-select-protagonist-1' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'comic-character-cover-puppy-companion' })).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' }).length).toBeGreaterThan(0);
   act(() => tree.unmount());
 });
 
 
-it('requires a name and start before opening personalization and preserves it on return', () => {
-  const onStart = jest.fn();
+it('opens personalization without requesting a protagonist name', () => {
+  const onStart = jest.fn(), onPersonalize = jest.fn();
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<ComicCharacterChooser onStart={onStart} ink="#222" muted="#888" isDark={false} />); });
+  act(() => { tree = create(<ComicCharacterChooser onStart={onStart} onPersonalize={onPersonalize} ink="#222" muted="#888" isDark={false} />); });
   act(() => tree.root.findAllByProps({ testID: 'hero-personal-card' })[0].props.onPress());
   expect(tree.root.findAllByType(HeroPersonalizationFlow)).toHaveLength(0);
-  expect(tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.disabled).toBe(true);
-  act(() => tree.root.findAllByProps({ testID: 'hero-personal-name' })[0].props.onChangeText('서연'));
+  expect(tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.disabled).toBe(false);
+  expect(tree.root.findAllByType(ThemedTextInput)).toHaveLength(0);
   act(() => tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.onPress());
-  expect(tree.root.findByType(HeroPersonalizationFlow).props.characterName).toBe('서연');
-  expect(tree.root.findAllByType(HeroPersonalizationFlow)).toHaveLength(1);
-  act(() => tree.root.findByType(HeroPersonalizationFlow).props.onClose());
+  expect(onPersonalize).toHaveBeenCalledTimes(1);
+  expect(tree.root.findAllByType(HeroPersonalizationFlow)).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'hero-personal-card' }).length).toBeGreaterThan(0);
   expect(onStart).not.toHaveBeenCalled();
   act(() => tree.unmount());
 });
 
 
-it('brings the personal card forward and switches the selected portrait to a photo invitation', () => {
+it('brings the personal card forward without an extra portrait selector', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
   const personal = () => tree.root.findAllByProps({ testID: 'hero-personal-card' })[0];
@@ -216,9 +202,77 @@ it('brings the personal card forward and switches the selected portrait to a pho
   act(() => personal().props.onPress());
   expect(StyleSheet.flatten(personal().props.style).zIndex).toBe(3);
   expect(personal().props.accessibilityState.selected).toBe(true);
-  expect(tree.root.findAllByProps({ testID: 'hero-personal-selected-icon' }).length).toBeGreaterThan(0);
-  act(() => tree.root.findAllByProps({ testID: `comic-character-select-${COMIC_CHARACTERS[0].id}` })[0].props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'hero-personal-selected-icon' })).toHaveLength(0);
+  act(() => tree.root.findAllByProps({ testID: `comic-character-cover-${COMIC_CHARACTERS[0].id}` })[0].props.onPress());
   expect(StyleSheet.flatten(personal().props.style).zIndex).toBe(1);
   expect(tree.root.findAllByProps({ testID: 'hero-personal-selected-icon' })).toHaveLength(0);
+  act(() => tree.unmount());
+});
+
+
+it('reveals the chooser only after its measured layout settles', () => {
+  const timing = jest.spyOn(Animated, 'timing');
+  const entrances = () => timing.mock.calls.filter(([, config]) => config.duration === 180);
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
+  const layout = () => tree.root.findAllByProps({ testID: 'comic-character-layout' })[0];
+  const opacity = () => StyleSheet.flatten(layout().props.style).opacity.__getValue();
+  expect(opacity()).toBe(0);
+  act(() => { layout().props.onLayout({ nativeEvent: { layout: { width: 390, height: 600 } } }); });
+  act(() => { jest.advanceTimersByTime(100); });
+  expect(opacity()).toBe(0);
+  act(() => { tree.root.findAllByProps({ testID: 'comic-character-casting' })[0].props.onLayout({ nativeEvent: { layout: { width: 342, height: 300 } } }); });
+  act(() => { jest.advanceTimersByTime(300); });
+  expect(entrances()).toHaveLength(1);
+  // Keyboard/rotation measurements must not restart the entrance.
+  act(() => { layout().props.onLayout({ nativeEvent: { layout: { width: 390, height: 450 } } }); });
+  expect(entrances()).toHaveLength(1);
+  act(() => tree.unmount());
+  timing.mockRestore();
+});
+
+it('places the upcoming protagonist in a non-overlapping horizontal list and gives feedback without selecting it', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
+  const stage = tree.root.findAllByProps({ testID: 'comic-character-casting' })[0];
+  const upcoming = stage.findAllByProps({ testID: 'comic-character-coming-soon' })[0];
+  expect(tree.root.findAllByProps({ testID: 'comic-character-coming-soon' }).filter(node => node.type === upcoming.type)).toHaveLength(1);
+  expect(upcoming.props.accessibilityState.disabled).toBe(true);
+  const selectedBefore = tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' })[0].props.accessibilityState.selected;
+  act(() => upcoming.props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' })[0].props.accessibilityState.selected).toBe(selectedBefore);
+  expect(upcoming.findByType(ComicSceneImage).props.imageKey).toBe('upcoming:coffee-walk');
+  expect(StyleSheet.flatten(upcoming.props.style).position).not.toBe('absolute');
+  expect(StyleSheet.flatten(upcoming.props.style).transform).toBeUndefined();
+  expect(tree.root.findAllByProps({ testID: 'comic-character-horizontal-list' })[0].props.horizontal).toBe(true);
+  act(() => tree.unmount());
+});
+
+
+it('changes the opening artwork between visits without changing it during selection', () => {
+  let tree!: ReactTestRenderer;
+  const render = () => create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />);
+  const artwork = () => tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' })[0].findByType(ComicSceneImage).props.imageKey;
+  act(() => { tree = render(); });
+  const first = artwork();
+  act(() => tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' })[0].props.onPress());
+  expect(artwork()).toBe(first);
+  act(() => tree.unmount());
+  act(() => { tree = render(); });
+  expect(artwork()).not.toBe(first);
+  act(() => tree.unmount());
+});
+
+it('keeps existing diary metadata without displaying a name field', () => {
+  const onPersonalize = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicCharacterChooser onPersonalize={onPersonalize} lockedCharacterName="서연" targetDiaryId="existing" onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
+  const field = (id: string) => tree.root.findAllByProps({ testID: id })[0];
+  expect(tree.root.findAllByType(ThemedTextInput)).toHaveLength(0);
+  act(() => field('hero-personal-card').props.onPress());
+  expect(tree.root.findAllByType(ThemedTextInput)).toHaveLength(0);
+  act(() => field('comic-character-start').props.onPress());
+  expect(onPersonalize).toHaveBeenCalledTimes(1);
+  expect(tree.root.findAllByType(HeroPersonalizationFlow)).toHaveLength(0);
   act(() => tree.unmount());
 });

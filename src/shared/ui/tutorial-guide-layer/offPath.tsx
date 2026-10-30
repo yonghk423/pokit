@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useEffect, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, View, type LayoutRectangle } from 'react-native';
 
@@ -91,7 +92,7 @@ export function TutorialOffPathShield({ enabled }: { enabled: boolean }) {
   }, [armed, host, allowed]);
   if (!armed) return null;
   return <View ref={setHost} collapsable={false} pointerEvents="box-none" style={s.shield}>
-    {regions.map(rect => <Pressable key={`${Math.round(rect.x)}:${Math.round(rect.y)}:${Math.round(rect.width)}:${Math.round(rect.height)}`} accessible={false} onPress={tutorialOffPathAsk} style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.width, height: rect.height }} />)}
+    {regions.map(rect => <Pressable key={`${Math.round(rect.x)}:${Math.round(rect.y)}:${Math.round(rect.width)}:${Math.round(rect.height)}`} accessible={false} onPress={() => { tapHaptic('warn'); tutorialOffPathAsk(); }} style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.width, height: rect.height }} />)}
   </View>;
 }
 

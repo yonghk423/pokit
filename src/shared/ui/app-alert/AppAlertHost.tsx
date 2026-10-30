@@ -35,6 +35,8 @@ function PaperAlert({ request, onPress, onDismiss }: {
   const titleRef = useRef<View>(null);
   const [opacity] = useState(() => new Animated.Value(0));
   const buttons = request.buttons.length ? request.buttons : [{ text: t('common.confirm') }];
+  const horizontal = request.options?.buttonLayout === 'horizontal';
+  const stacked = request.options?.buttonLayout === 'vertical' || (!horizontal && buttons.length > 2);
   const destructive = buttons.some((button) => button.style === 'destructive');
   const primaryIndex = buttons.reduce((index, button, i) => button.style !== 'cancel' ? i : index, -1);
   const paper = isDark ? '#292B34' : '#FBFAF6';
@@ -89,7 +91,7 @@ function PaperAlert({ request, onPress, onDismiss }: {
             <ThemedText lineBreakStrategyIOS="hangul-word" style={[styles.title, { color: ink }]}>{request.title}</ThemedText>
           </View>
           {request.message ? <ThemedText lineBreakStrategyIOS="hangul-word" style={[styles.message, { color: muted }]}>{request.message}</ThemedText> : null}
-          <View style={[styles.actions, buttons.length > 2 && styles.actionsStack]}>
+          <View style={[styles.actions, stacked && styles.actionsStack, horizontal && styles.actionsHorizontal]}>
             {buttons.map((button, index) => {
               const isDanger = button.style === 'destructive';
               const primary = index === primaryIndex && button.style !== 'cancel';
@@ -105,7 +107,8 @@ function PaperAlert({ request, onPress, onDismiss }: {
                   onPress={() => { tapHaptic(isDanger ? 'warn' : button.style === 'cancel' ? 'press' : 'confirm'); onPress(index); }}
                   style={({ pressed }) => [
                     styles.button,
-                    buttons.length > 2 && styles.buttonStack,
+                    stacked && styles.buttonStack,
+                    horizontal && styles.buttonHorizontal,
                     { backgroundColor: fill, opacity: pressed ? 0.68 : 1 },
                   ]}>
                   <PaperGrain opacity={0.25} />
@@ -183,6 +186,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, lineHeight: 27, fontWeight: '600' },
   message: { fontSize: 15, lineHeight: 24 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, flexWrap: 'wrap' },
+  actionsHorizontal: { flexWrap: 'nowrap' },
+  buttonHorizontal: { flex: 1, minWidth: 0, paddingHorizontal: 5 },
   actionsStack: { flexDirection: 'column', alignItems: 'stretch' },
   button: { minWidth: 84, minHeight: 46, maxWidth: '100%', paddingHorizontal: 16, paddingVertical: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 1 },
   buttonStack: { alignSelf: 'stretch' },

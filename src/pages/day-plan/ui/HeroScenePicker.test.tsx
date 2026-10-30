@@ -71,10 +71,48 @@ it('shows the gallery directly without source tabs and preserves existing select
   act(() => tree.unmount());
 });
 
-it('does not offer human face replacement for the puppy scene library', () => {
-  const { COMIC_CHARACTERS } = jest.requireActual('../lib/heroCharacters');
+it.each(['01-exercise', '05-work'] as const)('keeps generated artwork separate from its fallback/source scene %s', image => {
+  const generated = { ...newComicScene('My generated scene'), image, artworkUri: 'file:///hero-ai/generated.png', memo: 'Keep my memo' };
+  const onClose = jest.fn();
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<ComicScenePicker library={COMIC_CHARACTERS[1].scenes} scenes={[]} onChange={jest.fn()} onClose={jest.fn()} />); });
-  expect(tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.photo.tab.face')).toHaveLength(0);
+  function Harness() {
+    const [scenes, setScenes] = useState<ComicDayScene[]>([generated]);
+    return <ComicScenePicker scenes={scenes} onChange={setScenes} onClose={onClose} />;
+  }
+  act(() => { tree = create(<Harness />); });
+  const card = () => {
+    const list = tree.root.findAllByType(FlatList).find(node => node.props.numColumns != null)!;
+    const item = list.props.data.find((entry: { id: string }) => entry.id === image);
+    return list.props.renderItem({ item, index: 0 }).props.children;
+  };
+  const sequence = () => tree.root.findByType(ComicSceneSequence);
+  expect(card().props.order).toBe(0);
+  act(() => card().props.onToggle(image));
+  expect(card().props.order).toBe(2);
+  expect(sequence().props.scenes).toHaveLength(2);
+  expect(sequence().props.scenes[0]).toEqual(generated);
+  expect(sequence().props.scenes[1].artworkUri).toBeUndefined();
+  act(() => sequence().props.onStart());
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(sequence().props.scenes).toHaveLength(2);
+  act(() => card().props.onToggle(image));
+  expect(sequence().props.scenes).toEqual([generated]);
+  expect(card().props.order).toBe(0);
   act(() => tree.unmount());
+});
+
+it('uses the same gallery for single-card replacement without sequence controls or changing other cards', () => {
+  const choose = jest.fn(), change = jest.fn();
+  const scene = { ...newComicScene('Keep'), image: '05-work' as const };
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicScenePicker embedded scenes={[scene]} selectedImage="05-work" onChange={change} onSelectScene={choose} onClose={jest.fn()} />); });
+  expect(tree.root.findAllByType(ComicSceneSequence)).toHaveLength(0);
+  const grid = tree.root.findByType(FlatList);
+  const entry = grid.props.renderItem({ item: grid.props.data[0], index: 0 });
+  let card!: ReactTestRenderer;
+  act(() => { card = create(entry); });
+  act(() => card.root.findAll(node => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0].props.onPress());
+  expect(choose).toHaveBeenCalledWith(grid.props.data[0].id);
+  expect(change).not.toHaveBeenCalled();
+  act(() => { card.unmount(); tree.unmount(); });
 });

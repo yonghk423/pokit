@@ -50,8 +50,8 @@ export function HeroEditPencil({ ink, enabled }: { ink: string; enabled: boolean
       { rotate: motion.interpolate({ inputRange: phases, outputRange: ['0deg', '-12deg', '-12deg', '-12deg', '0deg', '0deg'] }) },
     ] }}>
     <Svg width={22} height={22} viewBox="0 0 32 32" accessible={false} pointerEvents="none">
-      <Path d="M6.1 21.8L22.5 4.6Q23.4 3.5 24.6 4.6L28 8Q29 9 27.9 10.2L11.5 26.8L4.6 28.1Z" fill={ink} fillOpacity={0.08} stroke={ink} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M20 7.4L25.1 12.3M6.4 21.7L11.5 26.6M9.3 21.2L22.2 8.1" fill="none" stroke={ink} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M6.1 21.8L22.5 4.6Q23.4 3.5 24.6 4.6L28 8Q29 9 27.9 10.2L11.5 26.8L4.6 28.1Z" fill={ink} fillOpacity={0.025} stroke={ink} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M20 7.4L25.1 12.3M6.4 21.7L11.5 26.6M9.3 21.2L22.2 8.1" fill="none" stroke={ink} strokeWidth={1.25} strokeLinecap="round" />
       <Path d="M5.1 25L4.6 28.1L8 27.5Z" fill={ink} />
     </Svg>
     </Animated.View>

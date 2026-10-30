@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { cloneElement, forwardRef, isValidElement, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Keyboard, Platform, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +10,7 @@ export type HeroCardOpen = {
 };
 export type HeroCardFlipHandle = { close: () => void };
 
-/** Keep the tapped front in its measured place, then reveal editable paper on its reverse. */
+/** Show scene details with either the legacy flip or a short native opacity transition. */
 export const HeroCardFlip = forwardRef<HeroCardFlipHandle, {
   transition?: 'flip' | 'fade'; cornerRadius?: number; card?: HeroCardOpen | null; isDark?: boolean; imageAspectRatio?: number; paper: string; closeLabel: string; fallbackFront: ReactNode;
   loadingContent?: ReactNode; onClosed: () => void; onFrontReady?: () => void; onRestoreFront?: () => void; children: ReactNode;
@@ -18,11 +19,11 @@ export const HeroCardFlip = forwardRef<HeroCardFlipHandle, {
   const insets = useSafeAreaInsets();
   const [flipsCard] = useState(() => transition === 'flip' && !!card);
   const [progress] = useState(() => new Animated.Value(flipsCard ? 0 : 1));
-  const [sheetOpacity] = useState(() => new Animated.Value(1));
+  const [sheetOpacity] = useState(() => new Animated.Value(transition === 'fade' ? 0 : 1));
   const [interactive, setInteractive] = useState(false);
   const [shown, setShown] = useState(false);
   const [frontReady, setFrontReady] = useState(false);
-  const [contentReady, setContentReady] = useState(false);
+  const [contentReady, setContentReady] = useState(transition === 'fade');
   const closing = useRef(false);
   const [visible, setVisible] = useState(true);
   const dismissed = useRef(false);
@@ -54,11 +55,13 @@ export const HeroCardFlip = forwardRef<HeroCardFlipHandle, {
     if (readTimeout.current) clearTimeout(readTimeout.current);
   }, [progress, sheetOpacity]);
   useEffect(() => {
-    if (!shown) return;
+    if (!shown || closing.current) return;
     // A restored tutorial opens without a measured board card. There is no matching
     // front to rotate to or from, so keep the live card visible beneath a plain sheet.
     if (!flipsCard) {
-      setInteractive(true); setContentReady(true);
+      if (transition === 'fade') {
+        Animated.timing(sheetOpacity, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+      }
       return;
     }
     let second = 0, third = 0;
@@ -73,11 +76,12 @@ export const HeroCardFlip = forwardRef<HeroCardFlipHandle, {
       });
     });
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); cancelAnimationFrame(third); };
-  }, [shown, progress, onFrontReady, flipsCard]);
+  }, [shown, progress, onFrontReady, flipsCard, transition, sheetOpacity]);
   const close = () => {
     if (closing.current) return;
     closing.current = true; Keyboard.dismiss();
     if (!flipsCard) {
+      sheetOpacity.stopAnimation();
       setInteractive(false);
       Animated.timing(sheetOpacity, { toValue: 0, duration: 180, useNativeDriver: true })
         .start(() => { onRestoreFront?.(); dismissModal(); });
@@ -121,10 +125,10 @@ export const HeroCardFlip = forwardRef<HeroCardFlipHandle, {
   const grow = (from: number, to: number) => progress.interpolate({ inputRange: [0, 0.46, 1], outputRange: [from, from, to], extrapolate: 'clamp' });
   const frontFace = handingBack && isValidElement<{ style?: StyleProp<ViewStyle> }>(front)
     ? cloneElement(front, { style: [front.props.style, { shadowOpacity: 0, elevation: 0 }] }) : front;
-  return <AppModal visible={visible} transparent animationType="none" onShow={() => setShown(true)} onDismiss={notifyClosed} onRequestClose={close}>
+  return <AppModal visible={visible} transparent animationType="none" onShow={() => { if (closing.current) return; if (!flipsCard) { setInteractive(true); setContentReady(true); } setShown(true); }} onDismiss={notifyClosed} onRequestClose={close}>
     <Animated.View testID="hero-card-flip" style={[s.root, { opacity: sheetOpacity }]}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.17] }) }]} />
-      <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={closeLabel} onPress={close} />
+      <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={closeLabel} onPress={() => { tapHaptic(); close(); }} />
       <Animated.View testID="hero-card-flip-paper" style={[s.paper, { left: targetLeft, top: targetTop, width: targetWidth, height: targetHeight,
         transform: !flipsCard || interactive ? [] : [
           { translateX: grow(source.left + source.width / 2 - (targetLeft + targetWidth / 2), 0) },

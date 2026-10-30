@@ -1,5 +1,6 @@
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
+import { PenFrame } from '@shared/ui/pen-frame';
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -362,6 +363,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   }, [weatherTutorialActive, loading, report]);
 
   const closeDetails = useCallback(() => {
+    tapHaptic();
     setDetailsVisible(false);
     if (weatherTutorialActive) useServiceTutorial.getState().advance('comicWeather', 'comicTools');
   }, [weatherTutorialActive]);
@@ -448,13 +450,16 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
               accessibilityLabel={labels.refresh}
               disabled={loading}
               onPress={() => {
+                if (!permissionBlocked && requestInFlight.current) return;
+                tapHaptic();
                 if (permissionBlocked) void Linking.openSettings();
                 else if (!requestInFlight.current) {
                   startRefreshAnimation();
                   void loadWeather(true).finally(finishRefreshAnimation);
                 }
               }}
-              style={[styles.refreshButton, { borderColor: muted, opacity: loading ? 0.55 : 1 }]}>
+              style={[styles.refreshButton, { opacity: loading ? 0.55 : 1 }]}>
+              <PenFrame color={muted} />
               <Animated.View style={{ transform: [{ rotate: refreshRotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
                 <RefreshMark color={ink} />
               </Animated.View>
@@ -544,5 +549,5 @@ const styles = StyleSheet.create({
   detailRow: { minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   detailName: { fontSize: 13, lineHeight: 19 },
   detailValue: { fontSize: 14, lineHeight: 20, textAlign: 'right' },
-  refreshButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  refreshButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

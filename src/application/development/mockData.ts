@@ -68,7 +68,7 @@ export function buildMockDiaries(locale: AppLocale, date: string): ComicDiaryLib
       todos: tasks.map((text, k) => ({ id: `mock-task:${start + j}:${k}`, text, completed: k === 0 || (j < 2 && k < 2) })),
     }));
     if (index === 0) scenes.splice(5, 0, bookstoreScene(locale));
-    return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: index === 2 ? 'puppy-companion' : 'protagonist-1', characterName: index === 2 ? copy.puppy : copy.name, scenes, createdAt: timestamp, updatedAt: timestamp };
+    return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: 'protagonist-1', characterName: copy.name, scenes, createdAt: timestamp, updatedAt: timestamp };
   });
   return { version: 1, diaries, activeId: diaries[0].id, migratedLegacyKeys: [] };
 }

@@ -32,7 +32,7 @@ function GridIcon({ columns, ink }: { columns: number; ink: string }) {
     })}
   </Svg>;
 }
-export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTABLE_COMIC_CHARACTERS[0].scenes, embedded = false }: { targetDiaryId?: string; embedded?: boolean; library?: readonly typeof COMIC_SCENES[number][]; scenes: ComicDayScene[]; onChange: (scenes: ComicDayScene[]) => void; onClose: () => void }) {
+export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTABLE_COMIC_CHARACTERS[0].scenes, embedded = false, onSelectScene, selectedImage }: { onSelectScene?: (image: ComicSceneId) => void; selectedImage?: ComicSceneId; targetDiaryId?: string; embedded?: boolean; library?: readonly typeof COMIC_SCENES[number][]; scenes: ComicDayScene[]; onChange: (scenes: ComicDayScene[]) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   useEffect(() => {
@@ -51,7 +51,7 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
   useLayoutEffect(() => { latest.current = { scenes, onChange, t }; }, [scenes, onChange, t]);
   const toggle = useCallback((id: ComicSceneId) => {
     const { scenes: current, onChange: save, t: translate } = latest.current;
-    const existing = current.find(scene => scene.image === id);
+    const existing = current.find(scene => !scene.artworkUri && scene.image === id);
     const image = COMIC_SCENES.find(scene => scene.id === id)!;
     const added = { ...newComicScene(translate(image.label)), image: id };
     save(existing ? current.filter(scene => scene.id !== existing.id) : [...current, added]);
@@ -60,17 +60,17 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
   const tutorialStep = useServiceTutorial(state => state.active && state.mode === 'comic' ? state.step : null);
   useEffect(() => {
     const tut = useServiceTutorial.getState();
-    if (tutorialStep !== 'comicReturn' || tut.sceneKey) return;
+    if (onSelectScene || tutorialStep !== 'comicReturn' || tut.sceneKey) return;
     const existing = scenes[0];
     const image = library[0];
     if (!image) return;
     const scene = existing ?? { ...newComicScene(t(image.label)), image: image.id };
     if (!existing) onChange([scene]);
     tut.advance('comicReturn', 'comicReturn', { sceneKey: scene.id });
-  }, [tutorialStep, scenes, library, onChange, t]);
+  }, [tutorialStep, scenes, library, onChange, t, onSelectScene]);
   const orders = useMemo(() => {
     const map = new Map<ComicSceneId, number>();
-    scenes.forEach((scene, index) => { if (!map.has(scene.image)) map.set(scene.image, index + 1); });
+    scenes.forEach((scene, index) => { if (!scene.artworkUri && !map.has(scene.image)) map.set(scene.image, index + 1); });
     return map;
   }, [scenes]);
   const categoryCounts = useMemo(() => Object.fromEntries(COMIC_SCENE_CATEGORIES.map(item => [item.id, library.filter(scene => comicSceneMatchesCategory(scene.id, item.id)).length])), [library]);
@@ -81,10 +81,10 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
       <PaperGrain opacity={0.2} />
       <View style={s.header}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.back}>‹</ThemedText></Pressable>
-        <ThemedText style={s.title}>{t('comicDay.sequencePickerTitle')}</ThemedText>
+        <ThemedText style={s.title}>{t(onSelectScene ? 'comicDay.change' : 'comicDay.sequencePickerTitle')}</ThemedText>
         <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.ink}>{t('comicDay.pickerClose')}</ThemedText></Pressable>
       </View>
-      <ServiceTutorialCoach scenePicker steps={['comicPick', 'comicReturn']} onEnd={onClose} onSkipStep={() => { if (useServiceTutorial.getState().step === 'comicOpen') onClose(); }} />
+      {!onSelectScene ? <ServiceTutorialCoach scenePicker steps={['comicPick', 'comicReturn']} onEnd={onClose} onSkipStep={() => { if (useServiceTutorial.getState().step === 'comicOpen') onClose(); }} /> : null}
       <ServiceTutorialTarget steps={['comicPick']} spotlight={false} style={{ flex: 1 }}>
       <View style={s.controls}>
         <ThemedTextInput accessibilityLabel={t('comicDay.search')} placeholder={t('comicDay.search')} placeholderTextColor="#777" value={query} onChangeText={setQuery} style={s.search} clearButtonMode="while-editing" />
@@ -97,10 +97,10 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
         <FlatList key={columns} data={filtered} extraData={orders} numColumns={columns} initialNumToRender={Math.min(9, columns * 3)} maxToRenderPerBatch={columns * 2} windowSize={5} updateCellsBatchingPeriod={40} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
           columnWrapperStyle={columns > 1 ? { gap: 8 } : undefined} contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
           ListEmptyComponent={<ThemedText style={s.empty}>{t('comicDay.noImages')}</ThemedText>}
-          renderItem={({ item, index }) => <ServiceTutorialTarget steps={index === 0 ? ['comicPick'] : []}><ComicGalleryCard id={item.id} label={t(item.label)} width={cardWidth} columns={columns} order={orders.get(item.id) ?? 0} onToggle={toggle} /></ServiceTutorialTarget>} />
+          renderItem={({ item, index }) => <ServiceTutorialTarget steps={index === 0 ? ['comicPick'] : []}><ComicGalleryCard id={item.id} label={t(item.label)} width={cardWidth} columns={columns} order={onSelectScene ? (selectedImage === item.id ? 1 : 0) : orders.get(item.id) ?? 0} onToggle={onSelectScene ?? toggle} /></ServiceTutorialTarget>} />
       </View>
       </ServiceTutorialTarget>
-      <ServiceTutorialTarget steps={['comicReturn']}><ComicSceneSequence scenes={scenes} onChange={onChange} onStart={onClose} /></ServiceTutorialTarget>
+      {!onSelectScene ? <ServiceTutorialTarget steps={['comicReturn']}><ComicSceneSequence scenes={scenes} onChange={onChange} onStart={onClose} /></ServiceTutorialTarget> : null}
     </View>
   );
   // Keep the chooser-to-scene transition in the mounted screen. Native modal

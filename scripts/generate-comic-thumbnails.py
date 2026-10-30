@@ -41,10 +41,6 @@ rows = ''.join(
     f"  '{key}': require('../../../../assets/activity-illustrations/protagonist-1/{key}-960.webp'),\n"
     for key in keys
 )
-rows += ''.join(
-    f"  '{path.stem.removesuffix('-960')}': require('../../../../assets/activity-illustrations/puppy/{path.name}'),\n"
-    for path in sorted((ASSETS / 'puppy').glob('*-960.webp'))
-)
 (ROOT / 'src/pages/day-plan/lib/heroSceneThumbnails.ts').write_text(
     "/** One 960px source for cards, galleries, and thumbnails. */\n"
     'export const COMIC_SCENE_THUMBNAILS = {\n' + rows + '} as const;\n'

@@ -1,13 +1,13 @@
 import type { HeroAiResult } from '../lib/heroAiClient';
-import { HeroPersonalizationFlow, HeroPhotoInvitation } from './HeroPersonalizationFlow';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, BackHandler, Easing, FlatList, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TouchableWithoutFeedback, useAnimatedValue, useWindowDimensions, View } from 'react-native';
+import { HeroPhotoInvitation } from './HeroPersonalizationFlow';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, BackHandler, Easing, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TouchableWithoutFeedback, useAnimatedValue, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
-import { ThemedTextInput } from '@shared/ui/themed-text-input';
+import { penContour } from '@shared/ui/pen-frame';
 import { SettingsPenFrame } from '../../settings/lib/settingsPen';
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
@@ -15,6 +15,22 @@ import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTar
 import { SELECTABLE_COMIC_CHARACTERS as COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { ComicSceneImage } from './HeroSceneImage';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pick once per new chooser, avoiding the previous opening's scene.
+const previousOpeningArt = new Map<string, number>();
+function openingArtwork() {
+  return Object.fromEntries(COMIC_CHARACTERS.map(character => {
+    const count = character.scenes.length;
+    const previous = previousOpeningArt.get(character.id);
+    let index = 1 + Math.floor(Math.random() * count);
+    if (count > 1 && index === previous) index = index % count + 1;
+    previousOpeningArt.set(character.id, index);
+    return [character.id, index];
+  }));
+}
 
 function useReducedMotion() {
   const [reduced, setReduced] = useState(false);
@@ -27,57 +43,43 @@ function useReducedMotion() {
   return reduced;
 }
 
-function CastingCard({ character, active, side, width, height, ink, paper, reduced, artIndex, onSelect }: {
-  character: ComicCharacter; active: boolean; side: number; width: number; height: number; ink: string; paper: string;
+function CastingCard({ character, chosen, width, height, ink, paper, reduced, artIndex, onSelect }: {
+  character: ComicCharacter; chosen: boolean; width: number; height: number; ink: string; paper: string;
   reduced: boolean; artIndex: number; onSelect: () => void;
 }) {
   const { t } = useTranslation();
-  const focus = useAnimatedValue(active ? 1 : 0);
   const press = useAnimatedValue(1);
-  const artwork = [
-    { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: t(character.name) },
-    ...character.scenes.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
-  ];
-  const current = artwork[artIndex] ?? artwork[0];
-  useEffect(() => {
-    focus.stopAnimation();
-    const animation = Animated.timing(focus, { toValue: active ? 1 : 0, duration: reduced ? 0 : 460, easing: Easing.out(Easing.cubic), useNativeDriver: true });
-    animation.start();
-    return () => animation.stop();
-  }, [active, focus, reduced]);
+  const scene = character.scenes[artIndex - 1];
+  const current = scene
+    ? { id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source }
+    : { id: 'cover', source: character.cover, fallback: character.preview[0].source };
   const pressTo = (value: number) => {
     press.stopAnimation();
     Animated.timing(press, { toValue: value, duration: reduced ? 0 : 130, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
   };
   return <Animated.View pointerEvents="auto" style={[s.castingCard, {
-    width, height, marginLeft: -width / 2, zIndex: active ? 2 : 1, backgroundColor: paper,
-    opacity: focus.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }),
-    transform: [
-      { translateX: focus.interpolate({ inputRange: [0, 1], outputRange: [side * width * 0.49, side * width * 0.49] }) },
-      { translateY: focus.interpolate({ inputRange: [0, 1], outputRange: [18, 8] }) },
-      { rotate: focus.interpolate({ inputRange: [0, 1], outputRange: [`${side * 9}deg`, `${side * 7}deg`] }) },
-      { scale: Animated.multiply(press, focus.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] })) },
-    ],
+    width, height, backgroundColor: paper, transform: [{ scale: press }],
   }]}>
     <PaperGrain opacity={0.18} />
-    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} onPress={onSelect} onPressIn={() => pressTo(0.985)} onPressOut={() => pressTo(1)} style={s.mainArtwork}>
-      <ComicSceneImage showSkeletonOnMount imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
+    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityState={{ selected: chosen }} accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} onPress={onSelect} onPressIn={() => pressTo(0.985)} onPressOut={() => pressTo(1)} style={s.mainArtwork}>
+      <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
     </Pressable>
+    <ThemedText style={[s.personalLabel, { color: ink, paddingTop: 6 }]}>{t(character.name)}</ThemedText>
     <SettingsPenFrame color={ink} />
   </Animated.View>;
 }
 
 
-function CharacterThumbnailRail({ character, artIndex, onChange, height, showPreviews, reduced, paper, ink }: {
-  character: ComicCharacter; artIndex: number; onChange: (index: number) => void; height: number;
-  showPreviews: boolean; reduced: boolean; paper: string; ink: string;
+function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, reduced, ink }: {
+  character: ComicCharacter; artIndex: number; onChange: (index: number) => void;
+  showPreviews: boolean; reduced: boolean; ink: string;
 }) {
   const { t } = useTranslation();
   const previews = useAnimatedValue(0);
-  const artwork = [
+  const artwork = useMemo(() => [
     { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: t(character.name) },
     ...character.scenes.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
-  ];
+  ], [character, t]);
   useEffect(() => {
     previews.stopAnimation();
     const animation = Animated.timing(previews, {
@@ -88,43 +90,36 @@ function CharacterThumbnailRail({ character, artIndex, onChange, height, showPre
     return () => animation.stop();
   }, [showPreviews, reduced, previews]);
   return (
-    <Animated.View testID={`comic-character-thumbnails-${character.id}`} pointerEvents={showPreviews ? 'auto' : 'none'} accessibilityElementsHidden={!showPreviews} importantForAccessibility={showPreviews ? 'auto' : 'no-hide-descendants'} style={[s.thumbnailRail, { opacity: previews, transform: [{ translateX: previews.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }, { scale: previews.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] }]}>
-      <FlatList testID={`comic-character-thumbnail-list-${character.id}`} data={artwork} keyExtractor={image => image.id} style={{ height: Math.max(88, height) }} contentContainerStyle={s.thumbnailContent} showsVerticalScrollIndicator nestedScrollEnabled initialNumToRender={4} maxToRenderPerBatch={4} windowSize={3} renderItem={({ item: image, index }) => <Pressable testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: artIndex === index }} onPress={() => { tapHaptic('select'); onChange(index); }} style={[s.thumbnail, { backgroundColor: paper }]}>
-        <ComicSceneImage showSkeletonOnMount imageKey={`${character.id}:${image.id}:thumb`} source={image.source} fallbackSource={image.fallback} contentFit="contain" style={s.cover} />
+    <Animated.View testID={`comic-character-thumbnails-${character.id}`} pointerEvents={showPreviews ? 'auto' : 'none'} accessibilityElementsHidden={!showPreviews} importantForAccessibility={showPreviews ? 'auto' : 'no-hide-descendants'} style={[s.thumbnailRail, { opacity: previews, transform: [{ translateY: previews.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }, { scale: previews.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] }]}>
+      <FlatList testID={`comic-character-thumbnail-list-${character.id}`} horizontal data={artwork} keyExtractor={image => image.id} style={{ height: 62 }} contentContainerStyle={s.thumbnailContent} showsHorizontalScrollIndicator={false} nestedScrollEnabled initialNumToRender={4} maxToRenderPerBatch={4} windowSize={3} renderItem={({ item: image, index }) => <Pressable testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: artIndex === index }} onPress={() => { tapHaptic('select'); onChange(index); }} style={s.thumbnail}>
+        <ComicSceneImage showSkeletonOnMount transitionDuration={180} backgroundColor="transparent" imageKey={`${character.id}:${image.id}:thumb`} source={image.source} fallbackSource={image.fallback} contentFit="contain" style={s.cover} />
         {artIndex === index ? <SettingsPenFrame color={ink} /> : null}
       </Pressable>} />
     </Animated.View>
   );
 }
 
-export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false, onGenerated }: { onGenerated?: (images: HeroAiResult[], name: string) => void; requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
+export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false, lockedCharacterName, onPersonalize }: { onPersonalize?: () => void; lockedCharacterName?: string; targetDiaryId?: string; onGenerated?: (images: HeroAiResult[], name: string, reuse?: boolean) => void; requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
   const { t } = useTranslation();
   const viewport = useWindowDimensions();
   const reduced = useReducedMotion();
   const layoutRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
-  const stageRef = useRef<View>(null);
-  const scrollOffset = useRef(0);
-  const [stageTop, setStageTop] = useState(0);
-  const scrollY = useAnimatedValue(0);
-  // eslint-disable-next-line react-hooks/refs -- This listener runs on native scroll events, never during render.
-  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => { scrollOffset.current = event.nativeEvent.contentOffset.y; } });
-  const [artIndices, setArtIndices] = useState<Record<string, number>>({});
+  const [artIndices, setArtIndices] = useState<Record<string, number>>(openingArtwork);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
   const [layoutHeight, setLayoutHeight] = useState<number | null>(null);
   const [stageSize, setStageSize] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<ComicCharacter | null>(requireExplicitChoice ? null : COMIC_CHARACTERS[0]);
-  // Names belong to this new diary draft, never to the shared character artwork.
-  const [names, setNames] = useState<Record<string, string | null>>(() => Object.fromEntries(COMIC_CHARACTERS.map(character => [character.id, null])));
+  const names = useMemo(() => Object.fromEntries(COMIC_CHARACTERS.map(character => [character.id, lockedCharacterName ?? t(character.name)])), [lockedCharacterName, t]);
   const [previewCharacter, setPreviewCharacter] = useState<string | null>(null);
   const [personalChosen, setPersonalChosen] = useState(false);
-  const [personalName, setPersonalName] = useState('');
-  const [personalizing, setPersonalizing] = useState(false);
   const [starting, setStarting] = useState(false);
   const startingRef = useRef(false);
   const alive = useRef(true);
   const startedTutorialRun = useRef<string | null | undefined>(undefined);
+  const entrance = useAnimatedValue(0);
+  const revealed = useRef(false);
   const exit = useAnimatedValue(0);
   const caption = useAnimatedValue(1);
   const focused = selected ?? COMIC_CHARACTERS[0];
@@ -133,9 +128,30 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   // The shell already uses space for its header and tabs. Size the artwork from
   // the remaining flex slot, rather than from the full device window.
   const compact = (layoutHeight ?? viewport.height) < 640;
-  const artworkHeight = Math.max(100, Math.min(380, (stageSize?.height ?? 200) - 62, ((stageSize?.width ?? viewport.width - 48) - 24) / 2.15 / 0.75));
+  const artworkHeight = Math.max(140, Math.min(360, (stageSize?.height ?? 320) - 124, (stageSize?.width ?? viewport.width - 48) * 0.58 / 0.75));
   const artworkWidth = artworkHeight * 0.75;
-  const canStart = personalChosen ? Boolean(personalName.trim()) : Boolean(selected && (names[selected.id] ?? (requireExplicitChoice ? '' : t(selected.name))).trim());
+  const canStart = Boolean(selected);
+  const checkTint = useAnimatedValue(0);
+  useEffect(() => {
+    const animation = Animated.timing(checkTint, { toValue: canStart ? 1 : 0, duration: reduced ? 0 : 260, easing: Easing.out(Easing.cubic), useNativeDriver: false });
+    animation.start();
+    return () => animation.stop();
+  }, [canStart, checkTint, reduced]);
+  const checkInk = checkTint.interpolate({ inputRange: [0, 1], outputRange: [ink, '#69BFAE'] });
+
+  // Wait for the flex slot and its compact layout to settle before revealing it.
+  // Only opacity is animated; card dimensions never animate from the placeholder size.
+  useEffect(() => {
+    if (revealed.current || !layoutHeight || !stageSize?.width || !stageSize.height) return;
+    let secondFrame: number | undefined;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        revealed.current = true;
+        Animated.timing(entrance, { toValue: 1, duration: reduced ? 0 : 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+      });
+    });
+    return () => { cancelAnimationFrame(firstFrame); if (secondFrame !== undefined) cancelAnimationFrame(secondFrame); };
+  }, [entrance, layoutHeight, stageSize, reduced]);
 
   useEffect(() => {
     const shown = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardVisible(true));
@@ -144,8 +160,8 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   }, []);
   useEffect(() => {
     alive.current = true;
-    return () => { alive.current = false; exit.stopAnimation(); };
-  }, [exit]);
+    return () => { alive.current = false; exit.stopAnimation(); entrance.stopAnimation(); };
+  }, [exit, entrance]);
   useEffect(() => {
     if (!onClose) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -166,11 +182,7 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
     if (!requireExplicitChoice) return;
     const frame = requestAnimationFrame(() => {
       const chosen = selected ?? COMIC_CHARACTERS[0];
-      if (tutorialStep === 'comicName' && !selected) setSelected(chosen);
-      if (tutorialStep === 'comicReady' && !names[chosen.id]?.trim()) {
-        setSelected(chosen);
-        setNames(current => ({ ...current, [chosen.id]: t(chosen.name) }));
-      }
+      if (tutorialStep === 'comicName' && useServiceTutorial.getState().step === 'comicName') { setSelected(chosen); useServiceTutorial.getState().advance('comicName', 'comicReady'); }
       const tutorial = useServiceTutorial.getState();
       if (tutorialStep === 'comicPick' && tutorial.active && tutorial.mode === 'comic' && startedTutorialRun.current !== tutorial.runId) {
         // Claim the run before the transition; both Start and Later enter here.
@@ -193,20 +205,14 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
     setPersonalChosen(false);
     setSelected(character);
     setPreviewCharacter(character.id);
-    useServiceTutorial.getState().advance('comicCharacter', 'comicName');
-  };
-  const updateTutorialName = (value: string) => {
-    setSelected(focused);
-    setNames(current => ({ ...current, [focused.id]: value }));
     const tutorial = useServiceTutorial.getState();
     tutorial.advance('comicCharacter', 'comicName');
-    if (value.trim()) tutorial.advance('comicName', 'comicReady');
-    else tutorial.advance('comicReady', 'comicName');
+    tutorial.advance('comicName', 'comicReady');
   };
   const start = () => {
     if (!selected || !canStart || startingRef.current) return;
     tapHaptic('confirm');
-    if (personalChosen) { Keyboard.dismiss(); setPersonalizing(true); return; }
+    if (personalChosen) { Keyboard.dismiss(); onPersonalize?.(); return; }
     const tutorial = useServiceTutorial.getState();
     // Preserve the tutorial hand-off: publish comicPick, then its effect starts once.
     if (requireExplicitChoice && tutorial.active && tutorial.mode === 'comic') {
@@ -216,13 +222,13 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
     begin(selected, names[selected.id]?.trim() || t(selected.name));
   };
 
-  if (personalizing) return <HeroPersonalizationFlow characterName={personalName.trim()} onClose={() => setPersonalizing(false)} onApply={onGenerated ? images => onGenerated(images, personalName.trim()) : undefined} />;
+
   return <ServiceTutorialTarget steps={requireExplicitChoice ? ['comicCharacter', 'comicName', 'comicReady'] : []} spotlight={false} style={s.root}>
     <TouchableWithoutFeedback accessible={false} onPress={Keyboard.dismiss}>
     <KeyboardAvoidingView style={s.root} keyboardVerticalOffset={keyboardOffset} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View ref={layoutRef} testID="comic-character-layout" style={s.layout} onLayout={({ nativeEvent: { layout } }) => { layoutRef.current?.measureInWindow((_x, y) => setKeyboardOffset(previous => previous === y ? previous : y)); if (layout.height > 0) setLayoutHeight(previous => previous === layout.height ? previous : layout.height); }}>
+      <Animated.View ref={layoutRef} testID="comic-character-layout" style={[s.layout, { opacity: entrance }]} onLayout={({ nativeEvent: { layout } }) => { layoutRef.current?.measureInWindow((_x, y) => setKeyboardOffset(previous => previous === y ? previous : y)); if (layout.height > 0) setLayoutHeight(previous => previous === layout.height ? previous : layout.height); }}>
       <View testID="comic-character-scroll-viewport" style={s.scrollViewport}>
-      <Animated.ScrollView ref={scrollRef} testID="comic-character-content" scrollEventThrottle={16} onScroll={onScroll} scrollEnabled={keyboardVisible} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false} style={[s.content, compact && s.contentCompact]} contentContainerStyle={[s.scrollContent, keyboardVisible && s.keyboardContent]} onContentSizeChange={() => { if (keyboardVisible) scrollRef.current?.scrollToEnd({ animated: true }); }}>
+      <Animated.ScrollView ref={scrollRef} testID="comic-character-content" scrollEnabled={keyboardVisible} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false} style={[s.content, compact && s.contentCompact]} contentContainerStyle={[s.scrollContent, keyboardVisible && s.keyboardContent]} onContentSizeChange={() => { if (keyboardVisible) scrollRef.current?.scrollToEnd({ animated: true }); }}>
         <Animated.View pointerEvents={starting ? 'none' : 'auto'} style={[s.body, { opacity: exit.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1, 0] }) }]}>
           {onClose ? <View style={[s.heading, compact && s.headingCompact]}>
             <View style={s.titleRow}>
@@ -232,79 +238,80 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
             </View>
           </View> : null}
           <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
-            <Animated.View ref={stageRef} testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { stageRef.current?.measureLayout(layoutRef.current!, (_x, y) => setStageTop(y + scrollOffset.current), () => undefined); setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
-              {artworkHeight >= 100 ? COMIC_CHARACTERS.map((character, index) => <CastingCard key={character.id} side={index === 0 ? -1 : 1} character={character} active={!personalChosen && focused.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
-                artIndex={artIndices[character.id] ?? 0} onSelect={() => choose(character)} />) : null}
-              <Pressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} accessibilityState={{ selected: personalChosen }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, marginLeft: -artworkWidth / 2, backgroundColor: cardPaper, zIndex: personalChosen ? 3 : 1, elevation: personalChosen ? 4 : 2, transform: [{ translateX: artworkWidth * (personalChosen ? 0.40 : 0.49) }, { translateY: personalChosen ? 8 : 18 }, { rotate: personalChosen ? '7deg' : '9deg' }, { scale: personalChosen ? 1 : 0.94 }] }]}>
+            <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
+              <ScrollView horizontal testID="comic-character-horizontal-list" showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalCards} style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+              <View style={{ width: artworkWidth, height: artworkHeight }}>
+              <Pressable testID="comic-character-coming-soon" onPress={() => tapHaptic('select')} accessible accessibilityRole="button" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: 0 }]}>
+                <PaperGrain opacity={0.18} />
+                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} contentFit="contain" style={s.upcomingImage} />
+                <View style={s.upcomingCaption}>
+                  <ThemedText style={[s.personalLabel, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
+                  <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
+                </View>
+                <SettingsPenFrame color={muted} />
+              </Pressable>
+              </View>
+              {COMIC_CHARACTERS.map(character => <View key={character.id} testID={`comic-character-column-${character.id}`} style={{ width: artworkWidth, height: artworkHeight }}>
+                <CastingCard character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
+                  artIndex={artIndices[character.id] ?? 0} onSelect={() => choose(character)} />
+              </View>)}
+              <View style={{ width: artworkWidth, height: artworkHeight }}>
+              <AnimatedPressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} accessibilityState={{ selected: personalChosen }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: personalChosen ? 3 : 1, elevation: personalChosen ? 4 : 2 }]}>
                 <PaperGrain opacity={0.18} /><HeroPhotoInvitation ink={ink} size={Math.min(155, artworkWidth * 0.88)} />
                 <ThemedText style={[s.personalLabel, { color: ink }]}>{t('comicDay.personal.title')}</ThemedText>
                 <SettingsPenFrame color={ink} />
-              </Pressable>
+              </AnimatedPressable>
+              </View>
+              </ScrollView>
+              <View testID="comic-character-thumbnail-lane" style={s.thumbnailLane}>
+                {COMIC_CHARACTERS.filter(character => previewCharacter === character.id && !personalChosen).map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} showPreviews reduced={reduced} ink={ink} />)}
+              </View>
             </Animated.View>
           </ServiceTutorialTarget>
           {requireExplicitChoice ? <ServiceTutorialCoach inline characterChoosing steps={['comicStart', 'comicCharacter', 'comicName', 'comicReady']} /> : null}
-          <Animated.View style={[s.caption, { opacity: caption, transform: [{ translateY: caption.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }] }]}>
-            {personalChosen ? <View style={s.nameBox}><ThemedTextInput testID="hero-personal-name" accessibilityLabel={t('comicDay.character.nameHint')} placeholder={t('comicDay.character.nameHint')} placeholderTextColor={muted} value={personalName} onChangeText={setPersonalName} maxLength={24} returnKeyType="done" onSubmitEditing={Keyboard.dismiss} style={[s.nameInput, { color: ink, borderColor: muted }]} /></View> : <ServiceTutorialTarget steps={requireExplicitChoice && selected ? ['comicName'] : []} style={s.nameBox}>
-              <ThemedTextInput testID="comic-character-name" accessibilityLabel={t('comicDay.character.nameHint')} placeholder={t('comicDay.character.nameHint')} placeholderTextColor={muted} value={names[focused.id] ?? (requireExplicitChoice ? '' : t(focused.name))} maxLength={24} autoCorrect={false} returnKeyType="done" onFocus={() => choose(focused)} onChangeText={updateTutorialName} submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} editable={!starting} style={[s.nameInput, { color: ink, borderColor: muted }]} />
-            </ServiceTutorialTarget>}
 
-          </Animated.View>
-          <View style={[s.characters, compact && s.charactersCompact]}>
-            {COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`comic-character-select-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: names[character.id] ?? t(character.name) })} accessibilityState={{ selected: !personalChosen && selected?.id === character.id, disabled: starting }} disabled={starting} onPress={() => choose(character)} style={s.characterOption}>
-              <View style={[s.portrait, { backgroundColor: cardPaper }]}>
-                {personalChosen ? <View testID="hero-personal-selected-icon"><HeroPhotoInvitation ink={ink} size={33} /></View> : <ComicSceneImage showSkeletonOnMount imageKey={`${character.id}:cover:960`} source={character.cover} fallbackSource={character.preview[0].source} contentFit="cover" contentPosition="top" style={s.portraitImage} />}
-                {selected?.id === character.id ? <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={48} height={48} viewBox="0 0 58 58" accessible={false}><Path d="M29 2C44 1.5 56 13 55.5 29C56 44 44 56 29 55.5C13.5 56 2 44 2.5 29C2 13.5 14 2 29 2Z" fill="none" stroke={ink} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" /></Svg> : null}
-              </View>
-              <ThemedText numberOfLines={2} style={[s.optionName, { color: ink, textDecorationLine: selected?.id === character.id ? 'underline' : 'none' }]}>{personalChosen ? (personalName.trim() || t('comicDay.personal.title')) : names[character.id] ?? t(character.name)}</ThemedText>
-            </Pressable>)}
-            <View testID="comic-character-coming-soon" accessible accessibilityRole="image" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={s.characterOption}>
-              <View style={s.upcomingPortrait}>
-                <Image source={require('../../../../assets/control-illustrations/coming-soon-woman.png')} resizeMode="contain" style={s.upcomingImage} accessible={false} />
-                <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={48} height={48} viewBox="0 0 58 58" accessible={false}><Path d="M29 2C44 1.5 56 13 55.5 29C56 44 44 56 29 55.5C13.5 56 2 44 2.5 29C2 13.5 14 2 29 2Z" fill="none" stroke={muted} strokeWidth={1.2} strokeDasharray="3.5 3" strokeLinecap="round" /></Svg>
-              </View>
-              <ThemedText numberOfLines={2} style={[s.optionName, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
-              <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
-            </View>
-          </View>
         </Animated.View>
       </Animated.ScrollView>
-      <Animated.View pointerEvents={starting ? 'none' : 'box-none'} testID="comic-character-thumbnail-overlay" style={{ position: 'absolute', left: 24, right: 24, top: stageTop, transform: [{ translateY: Animated.multiply(scrollY, -1) }], height: stageSize?.height ?? 200, overflow: 'hidden', zIndex: 5 }}>
-        {COMIC_CHARACTERS.map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} height={artworkHeight} showPreviews={!personalChosen && previewCharacter === character.id} reduced={reduced} paper={cardPaper} ink={ink} />)}
-      </Animated.View>
+
       </View>
       <View style={s.footer}>
         <ServiceTutorialTarget steps={requireExplicitChoice && canStart ? ['comicReady'] : []}>
-          <Pressable testID="comic-character-start" accessibilityRole="button" disabled={!canStart || starting} accessibilityState={{ disabled: !canStart || starting, busy: starting }} accessibilityLabel={canStart && selected ? t('comicDay.character.startWithName', { name: personalChosen ? personalName.trim() : names[selected.id] ?? t(selected.name) }) : t('comicDay.character.nameHint')} onPress={start} style={({ pressed }) => [s.start, (!canStart || starting) && { opacity: 0.45 }, pressed && { transform: [{ scale: 0.985 }] }]}>
-            <SettingsPenFrame color={ink} />
-            <ThemedText style={[s.startLabel, { color: ink }]}>{canStart && selected ? t('comicDay.character.startWithName', { name: personalChosen ? personalName.trim() : names[selected.id] ?? t(selected.name) }) : t('comicDay.character.start')}</ThemedText>
-            <Svg width={21} height={18} viewBox="0 0 30 24" accessible={false}><Path d="M3 12.4L25.4 11.8 M18.5 5.3L26 11.9L18.7 18.5 M4.1 13.1L24.1 12.8" fill="none" stroke={ink} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+          <Pressable testID="comic-character-start" accessibilityRole="button" disabled={!canStart || starting} accessibilityState={{ disabled: !canStart || starting, busy: starting }} accessibilityLabel={t('comicDay.character.start')} onPress={start} style={({ pressed }) => [s.start, (!canStart || starting) && { opacity: 0.45 }, pressed && { transform: [{ scale: 0.985 }] }]}>
+            <Svg pointerEvents="none" width="100%" height="100%" viewBox="0 0 180 44" preserveAspectRatio="none" style={StyleSheet.absoluteFill} accessible={false}>
+              <Path d="M23 2.2q67-.8 134 0c28-.2 28 39.5 0 39.6q-67 .8-134-.1C-4 41.7-4 2.2 23 2.2Z" fill="none" stroke={ink} strokeWidth={1.05} strokeLinecap="round" />
+              <Path d="M8 35q6 7 17 7l132-.1q10-.2 15-6" fill="none" stroke={ink} strokeWidth={0.7} strokeLinecap="round" />
+            </Svg>
+            <Svg width={34} height={34} viewBox="0 0 36 36" accessible={false}>
+              <AnimatedPath testID="comic-character-confirm-check" d={penContour([[6, 18], [14, 26], [30, 8]], 2.25, 0.8)} fill={checkInk} />
+              <AnimatedPath d="M6.5 19 14 26.5 29.2 9" fill="none" stroke={checkInk} strokeWidth={0.45} strokeLinecap="round" opacity={0.5} />
+            </Svg>
           </Pressable>
         </ServiceTutorialTarget>
       </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   </ServiceTutorialTarget>;
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, minHeight: 0 }, layout: { flex: 1, minHeight: 0 }, content: { flex: 1, minHeight: 0, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 }, contentCompact: { paddingTop: 6, paddingBottom: 4 }, body: { flex: 1, minHeight: 0, width: '100%', maxWidth: 520, alignSelf: 'center' },
+  root: { flex: 1, minHeight: 0 }, layout: { flex: 1, minHeight: 0 }, content: { flex: 1, minHeight: 0, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 }, contentCompact: { paddingTop: 6, paddingBottom: 4 }, body: { flex: 1, minHeight: 0, width: '100%', alignSelf: 'center' },
   heading: { marginBottom: 12, flexShrink: 0 }, headingCompact: { marginBottom: 6 }, titleRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }, closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   scrollViewport: { flex: 1, minHeight: 0, overflow: 'hidden' },
   scrollContent: { flexGrow: 1 }, keyboardContent: { minHeight: 640 }, keyboardStage: { minHeight: 180 },
-  spotlight: { flex: 1, minHeight: 0, alignSelf: 'stretch' }, stage: { flex: 1, minHeight: 0, width: '100%', alignSelf: 'center', overflow: 'hidden' },
-  personalCard: { position: 'absolute', left: '50%', top: 8, padding: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 1, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.12, elevation: 2 }, personalLabel: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  castingCard: { position: 'absolute', left: '50%', top: 8, padding: 7, borderRadius: 6, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.16, elevation: 3 },
+  spotlight: { flex: 1, minHeight: 0, alignSelf: 'stretch' }, stage: { flex: 1, minHeight: 0, marginHorizontal: -24, alignSelf: 'stretch', overflow: 'hidden' },
+  horizontalCards: { gap: 14, alignItems: 'center', paddingHorizontal: 16, paddingVertical: 22 },
+  personalCard: { padding: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 1, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.12, elevation: 2 }, personalLabel: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  castingCard: { padding: 7, borderRadius: 6, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.16, elevation: 3 },
   mainArtwork: { flex: 1, borderRadius: 3, overflow: 'hidden' }, cover: { width: '100%', height: '100%' },
-  thumbnailRail: { position: 'absolute', width: 44, right: 8, top: 16, zIndex: 4, shadowColor: '#242820', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 }, thumbnailContent: { gap: 6, paddingBottom: 4 }, thumbnail: { width: 40, height: 44, padding: 3, borderRadius: 3, overflow: 'hidden' },
+  thumbnailLane: { height: 72, width: '100%' }, thumbnailRail: { width: '100%', height: 62, marginTop: 10 }, thumbnailContent: { gap: 6, paddingBottom: 4, paddingHorizontal: 8 }, thumbnail: { width: 43, height: 56, padding: 0, overflow: 'hidden' },
   caption: { alignItems: 'center', gap: 3, flexShrink: 0 }, name: { fontSize: 24, lineHeight: 30, textAlign: 'center' },
   nameBox: { width: '100%', maxWidth: 320 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 46, borderBottomWidth: 0.6 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 16 }, editButton: { minWidth: 56, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
-  characters: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 18, marginTop: 12, flexShrink: 0 }, charactersCompact: { marginTop: 6 }, characterOption: { alignItems: 'center', paddingHorizontal: 6, paddingVertical: 4, gap: 4, maxWidth: 130, minWidth: 88, minHeight: 76 },
-  portrait: { padding: 5, width: 48, height: 48, borderRadius: 24 }, portraitImage: { flex: 1, borderRadius: 19 }, optionName: { fontSize: 15, lineHeight: 20, textAlign: 'center' },
   renameButton: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, marginTop: 0, flexShrink: 0 }, renameLabel: { fontSize: 14 },
-  upcomingPortrait: { width: 48, height: 48, padding: 6, borderRadius: 24, overflow: 'hidden' },
-  upcomingImage: { width: '100%', height: '100%', opacity: 0.7 },
+  upcomingCaption: { alignItems: 'center', gap: 2 },
+  upcomingImage: { width: '100%', flex: 1, minHeight: 0, opacity: 0.7 },
   upcomingLabel: { fontSize: 12, opacity: 0.7 },
   footer: { flexShrink: 0, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10, gap: 6 },
-  start: { alignSelf: 'center', width: '100%', maxWidth: 340, minHeight: 56, paddingHorizontal: 16, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, startLabel: { fontSize: 19, lineHeight: 28, flexShrink: 1 },
+  start: { alignSelf: 'center', width: 180, height: 44, alignItems: 'center', justifyContent: 'center' },
+
 });

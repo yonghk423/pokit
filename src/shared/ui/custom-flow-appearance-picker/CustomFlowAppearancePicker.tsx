@@ -188,7 +188,7 @@ export function CustomFlowAppearancePicker({
             onFocus={onPreviewLabelFocus}
             onBlur={onPreviewLabelBlur}
             accessibilityLabel={t('appearance.renameA11y')}
-            placeholder=""
+            placeholder={t('appearance.namePlaceholder')}
             placeholderTextColor={controlMuted}
             maxLength={40}
             returnKeyType="done"

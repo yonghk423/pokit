@@ -6,9 +6,8 @@ export const POKIT_STORY_URL = 'https://www.pokitstory.com';
 /** WebView 내에서 그대로 열 허용 도메인 */
 export const POKIT_STORY_ALLOWED_HOST_SUFFIXES = ['pokitstory.com'] as const;
 
-/** 앱 언어와 같은 경로로 연다. `/`만 열면 사이트가 영어 HTML을 먼저 준다. */
+/** Open only the dedicated Your Day diary and notes section in the app story tab. */
 export function resolvePokitStoryUrl(locale: AppLocale): string {
-  if (locale === 'ko') return `${POKIT_STORY_URL}/ko`;
-  if (locale === 'ja') return `${POKIT_STORY_URL}/ja`;
-  return `${POKIT_STORY_URL}/en`;
+  const webLocale = locale === 'ko' ? 'ko' : locale === 'ja' ? 'ja' : 'en';
+  return `${POKIT_STORY_URL}/${webLocale}/app/yourday-story?pokit_app=1`;
 }

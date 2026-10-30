@@ -1,3 +1,4 @@
+import { useHeroAiNotifications } from '@app/useHeroAiNotifications';
 import '@app/silenceKnownLogs';
 import { TutorialGuideLayer } from '@shared/ui/tutorial-guide-layer';
 import { useAppAlertStore } from '@shared/lib/app-alert';
@@ -81,6 +82,7 @@ export default function RootLayout() {
   }, []);
   const contentReady = appReady && fontsReady && iconsReady;
   const showSplash = !contentReady || !splashMinimumElapsed;
+  useHeroAiNotifications(contentReady && !showSplash);
 
   useEffect(() => {
     const timer = setTimeout(() => setSplashMinimumElapsed(true), MIN_SPLASH_MS);

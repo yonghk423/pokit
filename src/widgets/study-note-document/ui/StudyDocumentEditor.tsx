@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { SketchNewPageIcon } from './SketchNewPageIcon';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
@@ -752,7 +753,7 @@ function StudyDocumentBlockView({
                 accessibilityRole="button"
                 accessibilityLabel={t('studyNote.shrinkPhotoA11y')}
                 disabled={atMinHeight}
-                onPress={() => setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, -1))}
+                onPress={() => { tapHaptic('select'); setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, -1)); }}
                 style={({ pressed }) => [
                   styles.imageSizeStepBtn,
                   {
@@ -767,7 +768,7 @@ function StudyDocumentBlockView({
                 accessibilityRole="button"
                 accessibilityLabel={t('studyNote.enlargePhotoA11y')}
                 disabled={atMaxHeight}
-                onPress={() => setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, 1))}
+                onPress={() => { tapHaptic('select'); setImageDisplayHeight(stepWorkStudyImageDisplayHeight(displayHeight, 1)); }}
                 style={({ pressed }) => [
                   styles.imageSizeStepBtn,
                   {
@@ -787,7 +788,7 @@ function StudyDocumentBlockView({
                     accessibilityRole="button"
                     accessibilityLabel={t('studyNote.photoSizeA11y', { label: preset.label })}
                     accessibilityState={{ selected }}
-                    onPress={() => setImageDisplayHeight(preset.value)}
+                    onPress={() => { tapHaptic('select'); setImageDisplayHeight(preset.value); }}
                     style={({ pressed }) => [
                       styles.imageSizePresetBtn,
                       {
@@ -848,7 +849,7 @@ function StudyDocumentBlockView({
             ? t('studyNote.checklistUncheckA11y', { label: block.text || t('studyNote.checklistFallback') })
             : t('studyNote.checklistCheckA11y', { label: block.text || t('studyNote.checklistFallback') })
         }
-        onPress={() => onChangeBlock(block.id, { checked: !block.checked })}
+        onPress={() => { tapHaptic('select'); onChangeBlock(block.id, { checked: !block.checked }); }}
         hitSlop={{ top: 8, right: 10, bottom: 8, left: 10 }}
         style={styles.checkBoxHitArea}>
         <View
@@ -927,7 +928,7 @@ function StudyDocumentBlockView({
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={t('studyNote.openLinkA11y', { url: block.marks.link })}
-      onPress={() => onOpenLink?.(block.marks!.link!)}
+      onPress={() => { tapHaptic(); onOpenLink?.(block.marks!.link!); }}
       style={({ pressed }) => [styles.linkMetaHit, pressed && { opacity: 0.65 }]}>
       <ThemedText style={[styles.linkMeta, { color: palette.onSurface }]} numberOfLines={1}>
         🔗 {block.marks.link}

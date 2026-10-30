@@ -1,3 +1,4 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useServiceTutorial, tutorialRoutineVisible, completeTutorialMateCreation } from '../../welcome-intro/model/serviceTutorial';
 import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -2466,6 +2467,7 @@ export function PriorityBasedPlanSection({
 
   const resetBagRowTime = useCallback(async () => {
     if (!bagRowTimeEdit || !bagRowTimeCanReset) return;
+    tapHaptic('select');
     Keyboard.dismiss();
     const categoryKey = bagRowTimeEdit.categoryKey;
 
@@ -2519,7 +2521,7 @@ export function PriorityBasedPlanSection({
         <View style={styles.dateModalRoot} accessibilityViewIsModal>
           <Pressable
             style={styles.dateModalDimTouch}
-            onPress={() => setIosDateModalOpen(false)}
+            onPress={() => { tapHaptic(); setIosDateModalOpen(false); }}
             accessibilityRole="button"
             accessibilityLabel={t('dayPlan.close')}
           />
@@ -2562,6 +2564,7 @@ export function PriorityBasedPlanSection({
                 <Pressable
                   style={[styles.dateMonthNavBtn, { borderColor: c.catBorderIdle }]}
                   onPress={() => {
+                    tapHaptic('select');
                     setMonthCursor((prev) =>
                       addMonths(toMonthStart(normalizeToDate(prev, safeMonthCursor)), -1),
                     );
@@ -2578,6 +2581,7 @@ export function PriorityBasedPlanSection({
                 <Pressable
                   style={[styles.dateMonthNavBtn, { borderColor: c.catBorderIdle }]}
                   onPress={() => {
+                    tapHaptic('select');
                     setMonthCursor((prev) =>
                       addMonths(toMonthStart(normalizeToDate(prev, safeMonthCursor)), 1),
                     );
@@ -2668,7 +2672,7 @@ export function PriorityBasedPlanSection({
             <View style={styles.dateActionRow}>
               <Pressable
                 style={[styles.dateActionBtn, styles.dateActionGhost, { borderColor: c.catBorderIdle }]}
-                onPress={() => setIosDateModalOpen(false)}
+                onPress={() => { tapHaptic(); setIosDateModalOpen(false); }}
                 accessibilityRole="button"
                 accessibilityLabel={t('dayPlan.cancelClose')}>
                 <ThemedText style={[styles.dateActionText, { color: c.onSurface }]}>
