@@ -21,7 +21,7 @@ import { SELECTABLE_COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { COMIC_PAPER_COLORS, COMIC_PEN_COLORS } from '../lib/heroScenePalette';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { COMIC_SCENES, type ComicSceneId } from '../lib/heroSceneImages';
+import { type ComicSceneId } from '../lib/heroSceneImages';
 import { getHeroAiRemaining, generateHeroImages, resumeHeroAiJob, cancelHeroAiJob, getPendingHeroAiJob, dismissHeroAiJob, HeroAiError, type PendingHeroAiJob } from '../lib/heroAiClient';
 import { loadHeroSavedFaces, saveHeroFace, deleteHeroFace, type HeroSavedFace } from '../lib/heroSavedFaces';
 import type { HeroCardText } from './HeroCardCaption';
@@ -87,8 +87,8 @@ function DrawingProgress({ elapsed, complete, ink, submitted }: { elapsed: numbe
   </View>;
 }
 
-export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper = '#F5E8CF', ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, developmentPreview = false, onApply, onClose }: {
-  visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob; developmentPreview?: boolean;
+export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper = '#F5E8CF', ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, onApply, onClose }: {
+  visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob;
   onApply: (text: HeroCardText, uri: string, jobId: string) => Promise<void>; onClose: () => void;
 }) {
   const { t, locale } = useTranslation();
@@ -118,10 +118,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   const [styleId, setStyleId] = useState(() => {
     const saved = localStorageClient.getItemRaw(HERO_SELECTED_STYLE_KEY);
     const recoveryStyle = recoveryJob?.story?.styleId ?? (recoveryJob?.scenes[0] ? SELECTABLE_COMIC_CHARACTERS.find(character => character.scenes.some(scene => scene.id === recoveryJob.scenes[0]))?.id : undefined);
-    return (developmentPreview
-      ? SELECTABLE_COMIC_CHARACTERS.find(character => character.scenes.some(scene => scene.id === sceneId))?.id
-      : undefined)
-      ?? SELECTABLE_COMIC_CHARACTERS.find(character => character.id === (recoveryStyle ?? saved))?.id
+    return SELECTABLE_COMIC_CHARACTERS.find(character => character.id === (recoveryStyle ?? saved))?.id
       ?? SELECTABLE_COMIC_CHARACTERS.find(character => character.scenes.some(scene => scene.id === sceneId))?.id
       ?? SELECTABLE_COMIC_CHARACTERS[0].id;
   });
@@ -131,7 +128,6 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     : selectedStyle.id === 'protagonist-5' ? 'p5-01-platform'
     : selectedStyle.id === 'protagonist-6' ? 'p6-01-rush-hour-commute'
     : selectedStyle.scenes.some(scene => scene.id === sceneId) ? sceneId : selectedStyle.preview[0].id;
-  const previewScene = COMIC_SCENES.find(scene => scene.id === styleSceneId);
   useEffect(() => { if (!visible) { setHelpOpen(false); setStylesOpen(false); setPalette(null); } }, [visible]);
   const styleReveal = useAnimatedValue(0);
   useEffect(() => {
@@ -284,14 +280,11 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
 
               <View style={s.references}>
                 <View style={s.referenceMain}>
-                  {developmentPreview && previewScene ? <View testID="hero-inline-ai-preview" style={s.aiPreview}>
-                    <ComicSceneImage imageKey={`inline-ai-preview:${styleSceneId}`} source={previewScene.source} contentFit="cover" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={StyleSheet.absoluteFill} />
-                    <View style={s.aiPreviewLabel}><ThemedText style={s.aiPreviewLabelText}>{locale === 'ko' ? 'AI 일러스트' : locale === 'ja' ? 'AIイラスト' : locale === 'zh-TW' ? 'AI 插畫' : 'AI illustration'}</ThemedText></View>
-                  </View> : mode === 'character' ? null : <HeroPhotoSource variant="strip" mode="photo" uri={photo} onChange={setPhoto} compactPreview previewHeight={130} selectionLimit={1} />}
+                  {mode === 'character' ? null : <HeroPhotoSource variant="strip" mode="photo" uri={photo} onChange={setPhoto} compactPreview previewHeight={130} selectionLimit={1} />}
                 </View>
               </View>
               {showComingSoon ? <ThemedText testID="hero-inline-coming-soon" accessibilityLiveRegion="polite" style={s.hint}>{t('comicDay.inline.preparingStyles')}</ThemedText> : null}
-              <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={visible && !recoveryJob && !developmentPreview} onTitleChange={setDraftTitle} onTextChange={setText}
+              <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={visible && !recoveryJob} onTitleChange={setDraftTitle} onTextChange={setText}
                 onFocus={() => { setStylesOpen(false); setPalette(null); editing.current = true; revealStory(); }} onBlur={() => { editing.current = false; }} />
             </View>
             {error ? <View testID="hero-inline-error" style={s.errorRow}>
@@ -385,9 +378,6 @@ const s = StyleSheet.create({
   progressFill: { width: '100%', height: '100%', opacity: 0.68, transformOrigin: 'left' },
   references: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', zIndex: 20 },
   referenceMain: { flex: 1, minWidth: 0, gap: 10 },
-  aiPreview: { height: 130, borderRadius: 8, overflow: 'hidden', backgroundColor: '#F1EEE6', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(37,40,34,0.3)' },
-  aiPreviewLabel: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: 'rgba(250,248,240,0.9)' },
-  aiPreviewLabelText: { color: '#252822', fontSize: 10, lineHeight: 14 },
   sectionLabel: { fontSize: 13, lineHeight: 20 },
   emptyPortrait: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 8 },
   referenceHint: { fontSize: 12, lineHeight: 18, color: '#666D60', marginTop: 4 },

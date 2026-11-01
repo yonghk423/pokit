@@ -62,7 +62,6 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
   const [month, setMonth] = useState(() => firstDate.slice(0, 7));
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => ({ [renameDate ?? firstDate]: true, undated: true }));
   const [query, setQuery] = useState('');
-  const [characterFilter, setCharacterFilter] = useState<string | null>(null);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const selected = diaries.filter(diary => selectedIds.has(diary.id));
@@ -84,8 +83,7 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
   const save = () => { if (renamingId && draft.trim()) { tapHaptic('confirm'); onRename(renamingId, draft); setRenamingId(null); } };
   const characterNameFor = (diary: ComicDiary) => diary.characterName?.trim() || loadComicCharacterName(diary.characterId) || t((COMIC_CHARACTERS.find(character => character.id === diary.characterId) ?? COMIC_CHARACTERS[0]).name);
   const searchQuery = query.trim().toLocaleLowerCase();
-  const filtered = diaries.filter(diary => (characterFilter === null || diary.characterId === characterFilter)
-    && [diary.title, characterNameFor(diary), ...diary.scenes.map(scene => scene.title)].some(value => value.toLocaleLowerCase().includes(searchQuery)));
+  const filtered = diaries.filter(diary => [diary.title, characterNameFor(diary), ...diary.scenes.map(scene => scene.title)].some(value => value.toLocaleLowerCase().includes(searchQuery)));
   const sections = groupDiaryLibrary(filtered).filter(group => searchQuery || group.date === 'undated' || group.date.startsWith(month));
   const moveMonth = (delta: number) => {
     tapHaptic('select');
@@ -151,17 +149,6 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
           <ThemedTextInput accessibilityLabel={t('comicDiary.search')} value={query} onChangeText={setQuery} style={s.search} />
           <SearchPenLine />
         </View>
-        <View style={s.characterFilters}>
-          <Pressable testID="comic-diary-character-filter-all" accessibilityRole="button" accessibilityState={{ selected: characterFilter === null }} onPress={() => { tapHaptic('select'); setCharacterFilter(null); }} style={[s.characterChip, characterFilter === null && s.characterChipSelected]}>
-            <ThemedText style={[s.characterChipText, characterFilter === null && s.characterChipTextSelected]}>{t('comicDay.all')}</ThemedText>
-          </Pressable>
-          {COMIC_CHARACTERS.map(character => {
-            const selected = characterFilter === character.id;
-            return <Pressable key={character.id} testID={`comic-diary-character-filter-${character.id}`} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); setCharacterFilter(character.id); }} style={[s.characterChip, selected && s.characterChipSelected]}>
-              <ThemedText style={[s.characterChipText, selected && s.characterChipTextSelected]}>{t(character.name)}</ThemedText>
-            </Pressable>;
-          })}
-        </View>
         {month && !searchQuery ? <View style={s.monthRow}>
           <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.previous')} onPress={() => moveMonth(-1)} style={s.touch}><ThemedText style={s.monthArrow}>‹</ThemedText></Pressable>
           <ThemedText style={s.monthLabel}>{month.replace('-', '.')}</ThemedText>
@@ -190,7 +177,6 @@ const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }, paper: { width: '87%', maxWidth: 420, flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 17 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }, heading: { color: '#252525', fontSize: 24, flex: 1 }, touch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, close: { color: '#343434', fontSize: 30 },
   create: { alignSelf: 'flex-start', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }, action: { color: '#272727', fontSize: 19 }, searchRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 14 }, searchLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 5 }, search: { flex: 1, minWidth: 0, color: '#303030', minHeight: 44, fontSize: 15 }, list: { gap: 10, paddingBottom: 12 }, listEmpty: { flexGrow: 1, justifyContent: 'center' }, emptyIconButton: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 },
-  characterFilters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }, characterChip: { borderWidth: 1, borderColor: '#B9BCB4', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#FFFFFF' }, characterChipSelected: { borderColor: '#686D62', backgroundColor: '#EAECE5' }, characterChipText: { color: '#595D55', fontSize: 13 }, characterChipTextSelected: { color: '#30352B' },
   accordionContent: { gap: 10, paddingTop: 10 },
   rowPaper: { paddingVertical: 7, borderBottomWidth: 0.4, borderColor: '#D3D5CC' }, row: { flexDirection: 'row', alignItems: 'center' }, open: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 2, minWidth: 0 }, cover: { width: 51, height: 54 }, title: { color: '#303030', fontSize: 17, lineHeight: 24 }, count: { color: '#727272', fontSize: 13, lineHeight: 20 },
   monthRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 4 }, monthLabel: { fontSize: 20, lineHeight: 28, color: '#30342B', minWidth: 110, textAlign: 'center' }, monthArrow: { fontSize: 30, color: '#555A4F' },

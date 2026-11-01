@@ -123,13 +123,12 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   const openPhotoEntry = useCallback(() => {
     const scene = diary?.scenes.find(value => value.id === activeSceneRef.current) ?? diary?.scenes[0];
     if (!inlineTarget) {
-      const developmentPreview = !!getDevelopmentStorageProfile();
-      setInlineTarget(scene ? {
-        diaryId: diary!.id,
-        sceneId: scene.id,
-        image: scene.image,
-        text: { title: developmentPreview ? scene.title : '', memo: developmentPreview ? scene.memo : '', paper: scene.paper, pen: scene.pen },
-      } : { image: draftRef.current?.image ?? COMIC_CHARACTERS[0].scenes[0].id, text: { title: '', memo: '' } });
+      const koreanMockText = getDevelopmentStorageProfile() === 'ko'
+        ? { title: '잠깐 숨을 고른 오후', memo: '해야 할 일을 잠시 멈추고 창가에 앉았다. 바쁘게 지나가던 마음이 조금 가라앉고, 내가 어떤 기분인지 돌아볼 수 있었다. 오늘의 작은 쉼도 오래 기억하고 싶다.' }
+        : { title: '', memo: '' };
+      setInlineTarget(scene
+        ? { diaryId: diary!.id, sceneId: scene.id, image: scene.image, text: { ...koreanMockText, paper: scene.paper, pen: scene.pen } }
+        : { image: draftRef.current?.image ?? COMIC_CHARACTERS[0].scenes[0].id, text: koreanMockText });
     }
     setCharacterListOpen(false); setPhotoEntryOpen(true); setLibraryOpen(false); setCalendarOpen(false);
     void getPendingHeroAiJob().then(job => { if (job?.story) setRecoveryJob(job); }).catch(() => undefined);
@@ -328,7 +327,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     </Animated.View>
     </View>
     {inline ? <View testID="hero-inline-workspace" pointerEvents={photoEntryOpen || inlineRecovery ? 'auto' : 'none'} accessibilityElementsHidden={!photoEntryOpen && !inlineRecovery} style={[StyleSheet.absoluteFill, { display: photoEntryOpen || inlineRecovery ? 'flex' : 'none', backgroundColor: props.isDark ? '#262B28' : '#F7F6F4', paddingHorizontal: 8, paddingTop: 4, paddingBottom: 6 }]}>
-      <HeroInlineComposer visible={!!(photoEntryOpen || inlineRecovery)} key={inlineRecovery?.id ?? inline.sceneId ?? 'new'} sceneId={inline.image} developmentPreview={!!getDevelopmentStorageProfile()} {...inline.text} ink={inline.text.pen ?? props.ink} targetDiaryId={inline.diaryId} targetSceneId={inline.sceneId} recoveryJob={inlineRecovery} onApply={applyInline} onClose={() => { setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); }} />
+      <HeroInlineComposer visible={!!(photoEntryOpen || inlineRecovery)} key={inlineRecovery?.id ?? inline.sceneId ?? 'new'} sceneId={inline.image} {...inline.text} ink={inline.text.pen ?? props.ink} targetDiaryId={inline.diaryId} targetSceneId={inline.sceneId} recoveryJob={inlineRecovery} onApply={applyInline} onClose={() => { setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); }} />
     </View> : null}
     {recoveryJob && !recoveryJob.story ? <Modal visible onRequestClose={() => setRecoveryJob(null)}><View style={{ flex: 1, paddingTop: 40, paddingBottom: 24 }}><HeroPersonalizationFlow recoveryJob={recoveryJob} onClose={() => setRecoveryJob(null)} onApply={images => { const target = library.diaries.find(item => item.id === recoveryJob.targetDiaryId);
       if (target) {

@@ -10,7 +10,7 @@ it.each<AppLocale>(['ko', 'en', 'ja', 'zh-TW'])('builds dense editable %s calend
   const diaries = buildCalendarMockDiaries(locale, '2026-10-29');
   const grouped = groupCalendarDiaries(diaries);
   expect(grouped.get('2026-10-13')).toHaveLength(6);
-  expect(grouped.get('2026-10-29')).toHaveLength(4);
+  expect(grouped.get('2026-10-29')).toHaveLength(locale === 'ko' ? 6 : 4);
   expect(grouped.has('2026-09-30')).toBe(true);
   expect(grouped.size).toBeGreaterThan(10);
   expect(diaries.some(diary => diary.scenes.length === 20)).toBe(true);
@@ -42,5 +42,47 @@ it('adds to a selected mock profile once, preserving edits, active diary and rea
 });
 it('uses valid local dates at year and month boundaries without seeding future dates', () => {
   const diaries = buildCalendarMockDiaries('ko', '2027-01-02');
-  expect([...groupCalendarDiaries(diaries).keys()].sort()).toEqual(['2026-12-31', '2027-01-01', '2027-01-02']);
+  expect([...groupCalendarDiaries(diaries).keys()].sort()).toEqual([
+    ...Array.from({ length: 31 }, (_, index) => `2026-12-${String(index + 1).padStart(2, '0')}`), '2027-01-01', '2027-01-02',
+  ]);
+});
+it.each([
+  ['2026-11-01', '2026-10', 31],
+  ['2027-03-01', '2027-02', 28],
+  ['2028-03-01', '2028-02', 29],
+] as const)('fills the entire previous Korean month for %s, including leap years', (date, previousMonth, days) => {
+  const groups = groupCalendarDiaries(buildCalendarMockDiaries('ko', date));
+  const previousDates = [...groups.keys()].filter(day => day.startsWith(previousMonth)).sort();
+  expect(previousDates).toEqual(Array.from({ length: days }, (_, index) => `${previousMonth}-${String(index + 1).padStart(2, '0')}`));
+  expect(new Set(previousDates.map(day => groups.get(day)![0].characterId)).size).toBe(6);
+  expect([...groups.keys()].every(day => day <= date)).toBe(true);
+});
+it.each(['2026-11-01', '2027-01-01'])('includes all six Korean protagonists on %s, even before other dates exist in the month', date => {
+  const today = groupCalendarDiaries(buildCalendarMockDiaries('ko', date)).get(date)!;
+  expect(today.map(diary => diary.characterId)).toEqual(Array.from({ length: 6 }, (_, index) => `protagonist-${index + 1}`));
+  for (const diary of today.slice(4)) {
+    expect(diary.scenes.length).toBeGreaterThan(1);
+    expect(diary.scenes.every(scene => scene.image.startsWith(diary.characterId === 'protagonist-5' ? 'p5-' : 'p6-') && scene.title.trim() && scene.memo.length > 40)).toBe(true);
+  }
+});
+it('upgrades the saved four-entry Korean mock without losing custom diaries or written edits', () => {
+  const date = '2026-11-01';
+  setDevelopmentStorageProfile('ko');
+  const samples = buildCalendarMockDiaries('ko', date);
+  const retained = samples.filter(diary => !diary.id.endsWith(':4') && !diary.id.endsWith(':5')
+    && (!diary.id.startsWith('mock-calendar:ko:2026-10-') || diary.id.startsWith('mock-calendar:ko:2026-10-31:')));
+  retained[0].scenes[0].memo = '내가 직접 수정한 내용';
+  const personalDiary = { ...retained[0], id: 'my-existing-diary', title: '그대로 남길 일기' };
+  const library: ComicDiaryLibrary = { version: 1, diaries: [...retained, personalDiary], activeId: personalDiary.id, migratedLegacyKeys: [] };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, library);
+  localStorageClient.setItemRaw('pokit:calendar-mock-character-version', '2');
+  expect(addDevelopmentCalendarMockData(date)).toBe(true);
+  const upgraded = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(upgraded.activeId).toBe(personalDiary.id);
+  expect(upgraded.diaries.find(diary => diary.id === personalDiary.id)).toEqual(personalDiary);
+  expect(upgraded.diaries.find(diary => diary.id === retained[0].id)!.scenes[0].memo).toBe('내가 직접 수정한 내용');
+  expect(upgraded.diaries.find(diary => diary.id === `mock-calendar:ko:${date}:4`)!.characterId).toBe('protagonist-5');
+  expect(upgraded.diaries.find(diary => diary.id === `mock-calendar:ko:${date}:5`)!.characterId).toBe('protagonist-6');
+  expect([...groupCalendarDiaries(upgraded.diaries).keys()].filter(day => day.startsWith('2026-10-'))).toHaveLength(31);
+  expect(addDevelopmentCalendarMockData(date)).toBe(false);
 });

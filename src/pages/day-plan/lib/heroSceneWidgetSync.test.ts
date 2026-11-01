@@ -59,3 +59,15 @@ it('includes generated artwork so native sync can copy it into the widget shared
   library.diaries[0].scenes = [ordinary];
   expect(buildComicSceneWidgetBundle(library).scenes[0]).not.toHaveProperty('artworkUri');
 });
+
+it('bundles widget artwork for every selectable scene, including newly added protagonists', () => {
+  const fs = require('node:fs') as typeof import('node:fs');
+  const path = require('node:path') as typeof import('node:path');
+  const { COMIC_SCENES } = require('./heroSceneImages') as typeof import('./heroSceneImages');
+  const catalog = path.resolve(__dirname, '../../../../ios/PokitLiveActivity/ComicScenes.xcassets');
+  for (const scene of COMIC_SCENES) {
+    const folder = path.join(catalog, `comic_${scene.id}.imageset`);
+    const contents = JSON.parse(fs.readFileSync(path.join(folder, 'Contents.json'), 'utf8'));
+    expect(fs.statSync(path.join(folder, contents.images[0].filename)).size).toBeGreaterThan(0);
+  }
+});

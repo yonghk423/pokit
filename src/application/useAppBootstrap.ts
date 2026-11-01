@@ -116,6 +116,10 @@ export function useAppBootstrap() {
         const { registerDevelopmentMockMenu } = await import('./development/mockMenu');
         const profile = getDevelopmentStorageProfile();
         if (profile) { useAppLocaleStore.getState().setLocale(profile); ensureDevelopmentMockData(); }
+        if (profile === 'ko') {
+          const { addDevelopmentCalendarMockData } = await import('./development/mockCalendarData');
+          addDevelopmentCalendarMockData();
+        }
         registerDevelopmentMockMenu();
       }
       const mockLocale = getDevelopmentStorageProfile();
