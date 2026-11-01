@@ -4,7 +4,7 @@
   "version": "2.0.1",
   "scripts": {
     "start": "expo start",
-    "postinstall": "node ./scripts/patch-debugger-locale.js && node ./scripts/patch-webview-statusbar.js && node ./scripts/patch-tab-bar-cream.js",
+    "postinstall": "node ./scripts/patch-debugger-locale.js && node ./scripts/patch-webview-statusbar.js && node ./scripts/patch-tab-bar-cream.js && node ./scripts/patch-expo-image-webp-encode.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -60,6 +60,7 @@
     "expo-store-review": "~57.0.3",
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
+    "expo-video": "~57.0.5",
     "expo-web-browser": "~57.0.3",
     "i18next": "^26.4.2",
     "react": "19.2.3",

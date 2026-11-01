@@ -116,18 +116,36 @@ it('reserves the full comic header before weather and title arrive and retains i
   mockWeatherAvailable = true;
 });
 
-it('shows today without weather and advances the date at local midnight', async () => {
+it('does not show the old right-hand date, even across midnight', async () => {
   jest.useFakeTimers();
   jest.setSystemTime(new Date(2026, 9, 29, 23, 59, 59));
   mockWeatherAvailable = false;
   let tree!: ReactTestRenderer;
   try {
     await act(async () => { tree = create(<DayPlanTabScreenShell tabName="comic-day"><View /></DayPlanTabScreenShell>); });
-    const date = () => tree.root.findAllByProps({ testID: 'comic-header-today' })[0];
-    expect(date().props.children).toBe(new Date(2026, 9, 29).toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'short' }));
+    expect(tree.root.findAllByProps({ testID: 'comic-header-today' })).toHaveLength(0);
     expect(tree.root.findAllByProps({ testID: 'weather-guide-owner' })).toHaveLength(0);
     act(() => jest.advanceTimersByTime(1500));
-    expect(date().props.children).toBe(new Date(2026, 9, 30).toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'short' }));
+    expect(tree.root.findAllByProps({ testID: 'comic-header-today' })).toHaveLength(0);
     act(() => tree.unmount());
   } finally { mockWeatherAvailable = true; jest.useRealTimers(); }
+});
+
+it('reclaims header space only while the comic composer keyboard is open', async () => {
+ const { DayPlanComposerKeyboardContext }=require('../model/dayPlanHeaderActions');
+ function ComposerKeyboard({open}:{open:boolean}) {
+  const setOpen=require('react').useContext(DayPlanComposerKeyboardContext);
+  useLayoutEffect(()=>{setOpen?.(open);return()=>setOpen?.(false);},[open,setOpen]);
+  return <View testID="composer-content"/>;
+ }
+ let tree!:ReactTestRenderer;
+ await act(async()=>{tree=create(<DayPlanTabScreenShell tabName="comic-day"><ComposerKeyboard open/></DayPlanTabScreenShell>);});
+ const header=()=>tree.root.findAllByProps({testID:'day-plan-shell-header'})[0];
+ expect(StyleSheet.flatten(header().props.style).display).toBe('none');
+ expect(tree.root.findAllByProps({testID:'composer-content'}).length).toBeGreaterThan(0);
+ await act(async()=>tree.update(<DayPlanTabScreenShell tabName="comic-day"><ComposerKeyboard open={false}/></DayPlanTabScreenShell>));
+ expect(StyleSheet.flatten(header().props.style).display).not.toBe('none');
+ await act(async()=>tree.update(<DayPlanTabScreenShell tabName="day-plan"><ComposerKeyboard open/></DayPlanTabScreenShell>));
+ expect(StyleSheet.flatten(header().props.style).display).not.toBe('none');
+ act(()=>tree.unmount());
 });

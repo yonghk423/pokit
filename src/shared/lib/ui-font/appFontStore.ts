@@ -1,3 +1,4 @@
+import { NativeModules, Platform } from 'react-native';
 import { create } from 'zustand';
 
 import {
@@ -13,6 +14,11 @@ import { DEFAULT_APP_FONT_ID } from './appFontIds';
 import { resolveAppFontOpticalScale } from './appFontOpticalScale';
 import { DEFAULT_APP_FONT_SIZE_ID, resolveAppFontSizeScale } from './appFontSize';
 
+function syncWidgetFont(fontId: AppFontId) {
+  if (Platform.OS !== 'ios') return;
+  try { NativeModules.PokitWidgetSync?.syncAppFontId?.(fontId); } catch { /* Widget refresh is best-effort. */ }
+}
+
 type AppFontState = {
   fontId: AppFontId;
   sizeId: AppFontSizeId;
@@ -27,14 +33,17 @@ export const useAppFontStore = create<AppFontState>((set) => ({
   setFontId: (fontId) => {
     saveAppFontId(fontId);
     set({ fontId });
+    syncWidgetFont(fontId);
   },
   setSizeId: (sizeId) => {
     saveAppFontSizeId(sizeId);
     set({ sizeId });
   },
   hydrate: () => {
+    const fontId = loadAppFontId();
+    syncWidgetFont(fontId);
     set({
-      fontId: loadAppFontId(),
+      fontId,
       sizeId: loadAppFontSizeId(),
     });
   },

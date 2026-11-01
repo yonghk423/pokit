@@ -1,11 +1,16 @@
 import { clearDailyRhythmOnboardingCompleted } from './dailyMateOnboardingStorage';
 import { clearReadingBookstoreTapGuide } from './readingBookstoreTapGuideStorage';
-import { clearPokitLocalStorage, flushLocalStorageClientWrites } from './localStorageClient';
+import { clearPokitLocalStorage, flushLocalStorageClientWrites, localStorageClient } from './localStorageClient';
+import { HERO_THUMBNAIL_STRIP_KEY } from './heroThumbnailStripStorage';
 import { initializeHeroCardEditHint } from './heroCardEditHintStorage';
+import { notifyHeroInfoHintReset } from './heroInfoHintStorage';
 
 /** 앱 로컬 데이터를 전부 초기화합니다. */
 export async function resetAppLocalData(): Promise<void> {
+  const thumbnailPreference = localStorageClient.getItemRaw(HERO_THUMBNAIL_STRIP_KEY);
   await clearPokitLocalStorage();
+  if (thumbnailPreference !== null) localStorageClient.setItemRaw(HERO_THUMBNAIL_STRIP_KEY, thumbnailPreference);
+  notifyHeroInfoHintReset();
   // clearPokitLocalStorage 이후에도 세션 래치가 남으면 온보딩이 다시 안 뜬다
   clearDailyRhythmOnboardingCompleted();
   clearReadingBookstoreTapGuide();

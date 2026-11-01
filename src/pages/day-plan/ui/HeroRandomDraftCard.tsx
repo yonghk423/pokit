@@ -1,5 +1,8 @@
+import { HeroEmptyCardTimestamp } from './HeroEmptyCardTimestamp';
 import { HeroImageActions } from './HeroImageActions';
 import { HeroEditPencil } from './HeroEditPencil';
+import Svg, { Path } from 'react-native-svg';
+import { completeHeroCardEditHint } from '@shared/lib/storage/heroCardEditHintStorage';
 import { forwardRef, useImperativeHandle, useEffect, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type TextInput } from 'react-native';
 import { useTranslation } from '@shared/lib/i18n';
@@ -29,6 +32,7 @@ export const HeroRandomDraftCard = forwardRef<HeroRandomDraftHandle, { scene: Sc
   const [editing, setEditing] = useState(false);
   const beforeEdit = useRef({ title: '', memo: '', paper, pen });
   const beginEditing = () => {
+    completeHeroCardEditHint();
     if (!editing) beforeEdit.current = { title, memo, paper, pen };
     setEditing(true);
   };
@@ -46,19 +50,24 @@ export const HeroRandomDraftCard = forwardRef<HeroRandomDraftHandle, { scene: Sc
     <KeyboardAvoidingView testID="hero-random-draft" keyboardVerticalOffset={keyboardOffset} behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.root}>
     <View style={[s.card, { backgroundColor: paper }]}>
       <PaperGrain opacity={0.15} />
-      {!keyboard ? <View style={s.image}><ComicSceneImage fillPortrait imageKey={`${scene.id}:draft`} source={scene.source} contentFit="contain" style={StyleSheet.absoluteFill} /></View> : null}
+      {!keyboard ? <View style={s.image}><ComicSceneImage imageKey={`${scene.id}:draft`} source={scene.source} fitToCard style={StyleSheet.absoluteFill} /></View> : null}
       <View style={[s.writing, keyboard && { flex: 1 }]}>
-        {!keyboard ? <HeroImageActions key={scene.id} source={scene.source} compact /> : null}
+        {!keyboard ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{!title.trim() && !memo.trim() ? <HeroEmptyCardTimestamp color={muted} /> : <View style={{ flex: 1 }} />}<HeroImageActions key={scene.id} source={scene.source} compact /></View> : null}
         <ThemedTextInput testID="hero-random-title" accessibilityLabel={t('comicDay.sceneTitle')} placeholder={t('comicDay.sceneTitle')} placeholderTextColor={muted} onFocus={beginEditing} value={title} onChangeText={setTitle} maxLength={80} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => memoRef.current?.focus()} style={[s.title, { color: pen, borderBottomColor: muted }]} />
         <View style={keyboard ? { flex: 1, minHeight: 66 } : undefined}>
-          <ThemedTextInput ref={memoRef} testID="hero-random-memo" accessibilityLabel={t('comicDay.memo')} value={memo} onChangeText={setMemo} onFocus={() => { beginEditing(); setMemoFocused(true); }} onBlur={() => setMemoFocused(false)} multiline scrollEnabled style={[s.memo, keyboard && { flex: 1 }, { color: pen }]} />
-          {!memo && !memoFocused ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.memo')} onPress={() => memoRef.current?.focus()} style={{ position: 'absolute', right: 0, top: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroEditPencil ink={ink} enabled={false} /></Pressable> : null}
+          <ThemedTextInput ref={memoRef} testID="hero-random-memo" accessibilityLabel={t('comicDay.memo')} placeholder={!title.trim() && !memo.trim() ? t('comicDay.emptyDayPrompt') : undefined} placeholderTextColor={muted} value={memo} onChangeText={setMemo} onFocus={() => { beginEditing(); setMemoFocused(true); }} onBlur={() => setMemoFocused(false)} multiline scrollEnabled style={[s.memo, keyboard && { flex: 1 }, { color: pen }]} />
+          {!memo && !memoFocused ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.memo')} onPress={() => { completeHeroCardEditHint(); memoRef.current?.focus(); }} style={{ position: 'absolute', right: 0, top: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroEditPencil ink={ink} enabled={!editing && !keyboard} /></Pressable> : null}
         </View>
         {editing && palette ? <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
           {(palette === 'paper' ? COMIC_PAPER_COLORS : COMIC_PEN_COLORS).map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={`${t(palette === 'paper' ? 'comicDay.paper' : 'comicDay.pen')} ${color}`} accessibilityState={{ selected: (palette === 'paper' ? paper : pen) === color }} onPress={() => { tapHaptic('select'); if (palette === 'paper') setPaper(color); else setPen(color); }} style={{ width: 36, height: 40, alignItems: 'center', justifyContent: 'center' }}><View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: color, borderWidth: (palette === 'paper' ? paper : pen) === color ? 2 : 0.5, borderColor: ink }} /></Pressable>)}
         </ScrollView> : null}
         {editing ? <View style={s.actions}>
-          <Pressable testID="hero-random-paper-color" accessibilityRole="button" accessibilityLabel={t('comicDay.paper')} accessibilityState={{ expanded: palette === 'paper' }} onPress={() => setPalette(palette === 'paper' ? null : 'paper')} style={s.button}><View style={{ width: 23, height: 26, borderWidth: 1, borderColor: ink, borderRadius: 2, backgroundColor: paper }} /></Pressable>
+          <Pressable testID="hero-random-paper-color" accessibilityRole="button" accessibilityLabel={t('comicDay.paper')} accessibilityState={{ expanded: palette === 'paper' }} onPress={() => setPalette(palette === 'paper' ? null : 'paper')} style={s.button}>
+            <Svg width={27} height={30} viewBox="0 0 28 32" accessible={false}>
+              <Path d="M4 2.8Q12 2.3 18.2 2.7L24 8.7Q24.5 19 23.8 29L4.2 29.3Q3.4 16 4 2.8Z" fill={paper} stroke={ink} strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d="M18.2 2.7 18 9Q21 8.6 24 8.7M7.5 15.4Q14 15 20.2 15.3M7.8 20Q13 19.7 18 20M8 24.5l6-.2" fill="none" stroke={ink} strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </Pressable>
           <Pressable testID="hero-random-pen-color" accessibilityRole="button" accessibilityLabel={t('comicDay.pen')} accessibilityState={{ expanded: palette === 'pen' }} onPress={() => setPalette(palette === 'pen' ? null : 'pen')} style={[s.button, { marginRight: 'auto' }]}><ThemedText style={{ color: pen, fontSize: 20 }}>Aa</ThemedText></Pressable>
           {keyboard ? <Pressable testID="hero-random-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={t('studyNote.toolbarDismissKeyboard')} onPress={Keyboard.dismiss} style={s.button}><HanddrawnControl name="keyboard.chevron.compact.down" size={25} color={ink} /></Pressable> : null}
           <Pressable testID="hero-random-cancel" accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={() => {

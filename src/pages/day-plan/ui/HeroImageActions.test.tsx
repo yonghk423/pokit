@@ -10,7 +10,7 @@ jest.mock('expo-asset', () => ({ Asset: { fromModule: jest.fn(() => ({ localUri:
 jest.mock('expo-image-manipulator', () => ({ SaveFormat: { PNG: 'png' }, manipulateAsync: jest.fn(async () => ({ uri: 'file:///export.png' })) }));
 jest.mock('expo-file-system/legacy', () => ({ deleteAsync: jest.fn(async () => undefined) }));
 let tree: ReactTestRenderer;
-beforeEach(() => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplementation(() => undefined); jest.mocked(media.requestPermissionsAsync).mockResolvedValue({ granted: true } as never); jest.mocked(media.saveToLibraryAsync).mockResolvedValue(undefined); jest.mocked(sharing.isAvailableAsync).mockResolvedValue(true); jest.mocked(sharing.shareAsync).mockResolvedValue(undefined); act(() => { tree = create(<HeroImageActions uri="file:///completed.png" />); }); });
+beforeEach(async () => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplementation(() => undefined); jest.mocked(media.requestPermissionsAsync).mockResolvedValue({ granted: true } as never); jest.mocked(media.saveToLibraryAsync).mockResolvedValue(undefined); jest.mocked(sharing.isAvailableAsync).mockResolvedValue(true); jest.mocked(sharing.shareAsync).mockResolvedValue(undefined); await act(async () => { tree = create(<HeroImageActions uri="file:///completed.png" />); }); });
 afterEach(() => act(() => tree.unmount()));
 const button = (kind: string) => tree.root.findAllByProps({ testID: `hero-image-${kind}` })[0];
 it('saves only the selected local PNG and prevents repeated saves', async () => {
@@ -47,4 +47,10 @@ it('saves and shares a bundled illustration without any written title or AI resu
   expect(media.saveToLibraryAsync).toHaveBeenCalledWith('file:///export.png');
   const fs = require('expo-file-system/legacy');
   expect(fs.deleteAsync).toHaveBeenCalledWith('file:///export.png', { idempotent: true });
+});
+
+it('shows only save and share actions on illustration cards', () => {
+ expect(tree.root.findAllByProps({ testID: 'hero-image-info' })).toHaveLength(0);
+ expect(button('save')).toBeDefined();
+ expect(button('share')).toBeDefined();
 });

@@ -1,10 +1,24 @@
 import Foundation
 import React
 import WidgetKit
+import UIKit
+import ImageIO
+import CryptoKit
 
 @objc(PokitWidgetSync)
 class PokitWidgetSync: NSObject {
+  private let comicImageQueue = DispatchQueue(label: "app.pokit.widget-images")
+
   @objc static func requiresMainQueueSetup() -> Bool { false }
+
+  @objc func syncAppFontId(_ fontId: String) {
+    guard ["corncorn", "kimJungWon", "hiMelody"].contains(fontId),
+          let ud = UserDefaults(suiteName: PokitAppGroup.identifier) else { return }
+    guard ud.string(forKey: PokitAppGroup.appFontIdKey) != fontId else { return }
+    ud.set(fontId, forKey: PokitAppGroup.appFontIdKey)
+    ud.synchronize()
+    WidgetCenter.shared.reloadTimelines(ofKind: "PokitComicSceneWidget")
+  }
 
   @objc func syncDayPlanJson(_ json: String) {
     guard let ud = UserDefaults(suiteName: PokitAppGroup.identifier) else { return }
@@ -36,10 +50,54 @@ class PokitWidgetSync: NSObject {
   }
 
   @objc func syncComicSceneWidgetJson(_ json: String) {
-    guard let ud = UserDefaults(suiteName: PokitAppGroup.identifier) else { return }
-    ud.set(json, forKey: PokitAppGroup.comicSceneWidgetJsonKey)
-    ud.synchronize()
-    WidgetCenter.shared.reloadTimelines(ofKind: "PokitComicSceneWidget")
+    comicImageQueue.async {
+      guard let ud = UserDefaults(suiteName: PokitAppGroup.identifier),
+            let data = json.data(using: .utf8),
+            var bundle = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+      else { return }
+      if let rows = bundle["scenes"] as? [[String: Any]] {
+        bundle["scenes"] = rows.map { row in
+          var next = row
+          if let uri = row["artworkUri"] as? String,
+             let file = self.sharedComicArtwork(uri) {
+            next["artworkFile"] = file
+          }
+          next.removeValue(forKey: "artworkUri")
+          return next
+        }
+      }
+      guard let output = try? JSONSerialization.data(withJSONObject: bundle),
+            let stored = String(data: output, encoding: .utf8) else { return }
+      ud.set(stored, forKey: PokitAppGroup.comicSceneWidgetJsonKey)
+      ud.synchronize()
+      WidgetCenter.shared.reloadTimelines(ofKind: "PokitComicSceneWidget")
+    }
+  }
+
+  /// Widgets cannot read the app's private Documents directory. Keep a small JPEG in the shared container.
+  private func sharedComicArtwork(_ uri: String) -> String? {
+    guard let source = URL(string: uri), source.isFileURL,
+          let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier)
+    else { return nil }
+    let directory = container.appendingPathComponent("ComicArtwork", isDirectory: true)
+    let hash = SHA256.hash(data: Data(uri.utf8)).map { String(format: "%02x", $0) }.joined()
+    let name = "\(hash).jpg"
+    let target = directory.appendingPathComponent(name)
+    if FileManager.default.fileExists(atPath: target.path) { return name }
+    guard let imageSource = CGImageSourceCreateWithURL(source as CFURL, nil),
+          let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 1000,
+            kCGImageSourceShouldCacheImmediately: true
+          ] as CFDictionary),
+          let jpeg = UIImage(cgImage: image).jpegData(compressionQuality: 0.88)
+    else { return nil }
+    do {
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try jpeg.write(to: target, options: .atomic)
+      return name
+    } catch { return nil }
   }
 
   @objc func syncWeatherWidgetJson(_ json: String) {

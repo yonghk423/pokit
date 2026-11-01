@@ -1,6 +1,12 @@
-import { comicCardLayout, comicPageLayout, diagonalComicPage, diagonalPanelPath, loadComicBoardMode, saveComicBoardMode } from './heroBoardLayout';
+import { COMIC_BOARD_MODES, comicCardLayout, comicPageLayout, diagonalComicPage, diagonalPanelPath, loadComicBoardMode, saveComicBoardMode } from './heroBoardLayout';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 afterEach(() => localStorageClient.removeItem('pokit:comic-board-view'));
+it('retires only the diagonal option and restores its saved preference to the comic layout', () => {
+  expect(COMIC_BOARD_MODES).toEqual(['small', 'two', 'one', 'comic', 'hero', 'page']);
+  localStorageClient.setItemRaw('pokit:comic-board-view', 'diagonal');
+  expect(loadComicBoardMode()).toBe('comic');
+  expect(localStorageClient.getItemRaw('pokit:comic-board-view')).toBe('comic');
+});
 it('remembers board layout independently of gallery layout and falls back safely', () => {
   expect(loadComicBoardMode()).toBe('comic');
   saveComicBoardMode('two');

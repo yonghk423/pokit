@@ -9,9 +9,10 @@ import { localStorageClient, getDevelopmentStorageProfile } from '@shared/lib/st
 import { saveGoalDetailCategoryConfig, appendGoalDetailCommittedCategoryKeys } from '@shared/lib/storage/goalDetailSettingsStorage';
 import { saveDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
 import { StorageKeys } from '@shared/lib/storage/storageKeys';
-import { bookstoreSceneCopy, mockCopy, sceneImages } from './mockCopy';
+import { bookstoreSceneCopy, mockCopy } from './mockCopy';
+import { getMockProtagonist, getMockProtagonistName, getMockSceneImages } from './mockProtagonists';
 
-export const MOCK_DATA_VERSION = 1;
+export const MOCK_DATA_VERSION = 4;
 const SEED_KEY = 'pokit:mock-data-version';
 const COLOR_STYLE_KEY = 'pokit:mock-color-style-version';
 const COLOR_STYLE_VERSION = JSON.stringify([2, COMIC_PAPER_COLORS, COMIC_PEN_COLORS]);
@@ -60,15 +61,17 @@ export function buildMockDiaries(locale: AppLocale, date: string): ComicDiaryLib
   const copy = mockCopy[locale];
   const groups = [[0, 6, 0], [6, 10, -2], [10, 15, -1]];
   const diaries = groups.map(([start, end, offset], index) => {
+    const character = getMockProtagonist(index);
+    const characterScenes = getMockSceneImages(character.id);
     const day = addDaysToLocalDateKey(date, offset);
     const timestamp = new Date(`${day}T12:00:00`).getTime();
     const scenes: ComicDayScene[] = copy.scenes.slice(start, end).map(([title, memo, tasks], j) => ({
-      id: `mock-scene:${locale}:${start + j}`, title, memo, image: sceneImages[start + j], time: sceneTimes[start + j],
+      id: `mock-scene:${locale}:${start + j}`, title, memo, image: characterScenes[start + j], time: sceneTimes[start + j],
       paper: '#FFFFFF', pen: '#252822',
       todos: tasks.map((text, k) => ({ id: `mock-task:${start + j}:${k}`, text, completed: k === 0 || (j < 2 && k < 2) })),
     }));
-    if (index === 0) scenes.splice(5, 0, bookstoreScene(locale));
-    return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: 'protagonist-1', characterName: copy.name, scenes, createdAt: timestamp, updatedAt: timestamp };
+    if (index === 0) scenes.splice(6, 0, bookstoreScene(locale));
+    return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: character.id, characterName: getMockProtagonistName(index, locale), scenes, createdAt: timestamp, updatedAt: timestamp };
   });
   return { version: 1, diaries, activeId: diaries[0].id, migratedLegacyKeys: [] };
 }
@@ -162,12 +165,12 @@ export function ensureDevelopmentMockData(force = false, date = getLocalDateKey(
     // missing diary preview, preserving edits to mates and other mock records.
     const diaries = buildMockDiaries(locale, date);
     localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, diaries);
-    localStorageClient.setJson('pokit:comic-navigation', { characterId: 'protagonist-1', screen: 'board', diaryId: diaries.activeId });
+    localStorageClient.setJson('pokit:comic-navigation', { characterId: diaries.diaries[0].characterId, screen: 'board', diaryId: diaries.activeId });
     return true;
   }
   const diaries = buildMockDiaries(locale, date);
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, diaries);
-  localStorageClient.setJson('pokit:comic-navigation', { characterId: 'protagonist-1', screen: 'board', diaryId: diaries.activeId });
+  localStorageClient.setJson('pokit:comic-navigation', { characterId: diaries.diaries[0].characterId, screen: 'board', diaryId: diaries.activeId });
   const mates = buildMockMates(locale, date);
   mates.forEach(mate => saveGoalDetailCategoryConfig(mate.id, mate.config));
   appendGoalDetailCommittedCategoryKeys(mates.map(mate => mate.id));

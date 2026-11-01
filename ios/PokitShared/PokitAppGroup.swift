@@ -3,6 +3,7 @@ import Foundation
 /// App Group은 Xcode Capabilities 및 Apple Developer의 동일 식별자 등록이 필요합니다.
 public enum PokitAppGroup {
   public static let identifier = "group.com.yonghee.pokit"
+  public static let appFontIdKey = "pokit_widget_app_font_id"
   public static let dayPlanJsonKey = "pokit_day_plan_widget_json"
   /// 홈 위젯 루틴 번들(후보 목록 + 기본키). 인스턴스별 선택은 App Intent 가 담당
   public static let pinnedRoutineJsonKey = "pokit_pinned_routine_widget_json"

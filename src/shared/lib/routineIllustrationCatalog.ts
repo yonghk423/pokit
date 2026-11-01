@@ -73,7 +73,7 @@ export const ROUTINE_ILLUSTRATIONS = [
   { id: 'routine:candle', category: 'rest', labels: {"ko": "향초", "en": "Candle", "ja": "キャンドル"}, keywords: "향초 Candle キャンドル candle" },
   { id: 'routine:offline', category: 'rest', labels: {"ko": "디지털 휴식", "en": "Digital break", "ja": "デジタル休憩"}, keywords: "디지털 휴식 Digital break デジタル休憩 offline" },
   { id: 'routine:camera', category: 'creative', labels: {"ko": "사진 촬영", "en": "Photography", "ja": "写真撮影"}, keywords: "사진 촬영 Photography 写真撮影 camera" },
-  { id: 'routine:drawing', category: 'creative', labels: {"ko": "그림 그리기", "en": "Drawing", "ja": "お絵描き"}, keywords: "그림 그리기 Drawing お絵描き drawing" },
+  { id: 'routine:drawing', category: 'creative', labels: {"ko": "일러스트 그리기", "en": "Drawing", "ja": "お絵描き"}, keywords: "그림 그리기 Drawing お絵描き drawing" },
   { id: 'routine:watercolor', category: 'creative', labels: {"ko": "수채화", "en": "Watercolor", "ja": "水彩画"}, keywords: "수채화 Watercolor 水彩画 watercolor" },
   { id: 'routine:guitar', category: 'creative', labels: {"ko": "기타", "en": "Guitar", "ja": "ギター"}, keywords: "기타 Guitar ギター guitar" },
   { id: 'routine:piano', category: 'creative', labels: {"ko": "피아노", "en": "Piano", "ja": "ピアノ"}, keywords: "피아노 Piano ピアノ piano" },

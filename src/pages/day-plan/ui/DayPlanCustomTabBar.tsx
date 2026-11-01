@@ -1,3 +1,4 @@
+import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import {
@@ -5,8 +6,11 @@ import {
   type BottomTabBarProps,
 } from 'expo-router/js-tabs';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useContext, useEffect, useMemo } from 'react';
-import { Image, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Fragment, useCallback, useContext, useEffect, useMemo } from 'react';
+import { HeroPhotoEntryIcon } from './HeroPhotoEntryIcon';
+import { HeroThumbnailStripToggle } from './HeroThumbnailStripToggle';
+import { HeroCardToolsContentContext } from '../model/heroCardToolsPortal';
+import { Image, LayoutChangeEvent, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,6 +42,9 @@ const TABS: TabDef[] = [
 ];
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const { width } = useWindowDimensions();
+  const cardTools = useContext(HeroCardToolsContentContext);
+  const characterPicker = useContext(HeroCharacterPickerActionContext);
   const heroArtwork = useHeroTabArtwork(state => state.source);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -85,45 +92,68 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     [isDark],
   );
 
+  const visibleTabs = TABS.filter(tab =>
+    (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
+    && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines'));
+  const slotCount = visibleTabs.length + 2;
+  const itemWidth = Math.min(64, (width - 100 - (slotCount - 1) * 2) / slotCount);
+  const pillWidth = slotCount * itemWidth + 12 + (slotCount - 1) * 2;
+  const photoSelected = focusedRoute === 'comic-day' && !!characterPicker?.photoActive;
+
   return (
     <View
       onLayout={handleBarLayout}
       style={[styles.outerWrap, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]}>
-      <View style={styles.shell}>
+      <View style={[styles.shell, { transform: [{ translateX: -24 }] }]}>
         <View
           style={[
             styles.container,
             { backgroundColor: colors.containerBg },
           ]}>
-          {TABS.filter((tab) =>
-            (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
-            && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines'),
-          ).map((tab) => {
+          {visibleTabs.map((tab) => {
             const isFocused =
               focusedRoute === tab.route ||
               (tab.route === 'day-plan' && focusedRoute === 'index');
 
             return (
-              <Pressable
+              <Fragment key={tab.route}><Pressable
                 key={tab.route}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: isFocused }}
+                accessibilityState={{ selected: isFocused && !photoSelected }}
                 accessibilityLabel={t(tab.labelKey)}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  navigation.navigate(tab.route);
+                  if (tab.route === 'comic-day' && isFocused && characterPicker) characterPicker.open();
+                  else navigation.navigate(tab.route);
                 }}
                 style={({ pressed }) => [
                   styles.tabItem,
-                  isFocused && { backgroundColor: colors.activeBg },
+                  { width: itemWidth },
+                  isFocused && !photoSelected && { backgroundColor: colors.activeBg },
                   pressed && { opacity: 0.8 },
                 ]}>
                 <Image source={tab.route === 'comic-day' ? heroArtwork : tab.icon} style={styles.icon} resizeMode="contain" />
-              </Pressable>
+              </Pressable>{tab.route === 'comic-day' ? <>
+                <Pressable
+                  testID="hero-ai-mode-tab"
+                  accessibilityRole="tab"
+                  accessibilityLabel={t('comicDay.photo.choose')}
+                  accessibilityState={{ selected: photoSelected }}
+                  onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (focusedRoute !== 'comic-day') navigation.navigate('comic-day');
+                    characterPicker?.openPhoto();
+                  }}
+                  style={({ pressed }) => [styles.tabItem, { width: itemWidth }, photoSelected && { backgroundColor: colors.activeBg }, pressed && { opacity: 0.8 }]}>
+                  <HeroPhotoEntryIcon ink={isDark ? '#EEECE6' : '#252A26'} size={34} />
+                </Pressable>
+                <HeroThumbnailStripToggle width={itemWidth} isDark={isDark} enabled={focusedRoute === 'comic-day'} />
+              </> : null}</Fragment>
             );
           })}
         </View>
       </View>
+      <View pointerEvents={focusedRoute === 'comic-day' ? 'auto' : 'none'} accessibilityElementsHidden={focusedRoute !== 'comic-day'} importantForAccessibility={focusedRoute !== 'comic-day' ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', left: Math.min(width - 48, width / 2 - 24 + pillWidth / 2 + 8), top: 14, width: 40, height: 44, opacity: focusedRoute === 'comic-day' ? 1 : 0 }}>{cardTools}</View>
     </View>
   );
 }
@@ -153,11 +183,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tabItem: {
-    minWidth: 64,
+    minWidth: 44,
     alignItems: 'center',
     justifyContent: 'center',
     height: 44,
-    paddingHorizontal: 14,
     borderRadius: 22,
   },
   icon: {

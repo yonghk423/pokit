@@ -22,6 +22,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>MinimumOSVersion</key>
 	<string>16.1</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Ownglyph_corncorn-Rg.ttf</string>
+		<string>Griun_Kimjungwon-Rg.ttf</string>
+		<string>HiMelody_400Regular.ttf</string>
+	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSExtension</key>

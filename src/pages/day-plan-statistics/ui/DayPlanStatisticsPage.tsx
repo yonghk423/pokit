@@ -1,7 +1,8 @@
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { InteractionManager, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -99,7 +100,7 @@ export function DayPlanStatisticsPage({ embedded = false }: DayPlanStatisticsPag
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      const task = InteractionManager.runAfterInteractions(() => {
+      const task = scheduleIdleTask(() => {
         if (cancelled) return;
         syncRoutineWindowCompletionsToHistory(todayDateKey);
         reloadFromStorage();

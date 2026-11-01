@@ -646,6 +646,7 @@ export function DayCycleDial({
               source={DIAL_BACKDROP}
               style={[styles.dialInnerArt, { opacity: isDark ? 0.45 : 0.88 }]}
               contentFit="cover"
+              useAppleWebpCodec={false}
               cachePolicy="memory-disk"
               recyclingKey="day-cycle-dial-clean-paper"
               transition={0}

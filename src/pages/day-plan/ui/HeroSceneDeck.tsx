@@ -1,4 +1,5 @@
-import { ThemedText } from '@shared/ui/themed-text';
+import { createCardTapGuard } from '../lib/cardTapGuard';
+import { useHeroThumbnailStrip } from '../model/useHeroThumbnailStrip';
 import { HeroImageActions } from './HeroImageActions';
 import { useTranslation } from '@shared/lib/i18n';
 import { HeroCardCaption, type HeroCardText } from './HeroCardCaption';
@@ -48,9 +49,11 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
   detailOpen?: boolean;
 }) {
   const { t } = useTranslation();
+  const thumbnailStrip = useHeroThumbnailStrip();
   const { size, updateSize, focused } = useSettledDeckLayout(lastDeckSize, rememberDeckSize);
   const rootRef = useRef<View>(null);
   const lastHold = useRef(0);
+  const tapGuard = useRef(createCardTapGuard()).current;
   const requestRemoval = (key: string) => {
     if (!onRemove || editingKey || Date.now() - lastHold.current < 800) return;
     lastHold.current = Date.now(); tapHaptic('warn'); onRemove(key);
@@ -72,16 +75,17 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [focused, detailOpen, measureStage]);
   const [active, setActive] = useState(() => Math.min(lastActive, Math.max(0, items.length - 1)));
-  const previousCount = useRef(items.length);
+  const [previousCount, setPreviousCount] = useState(items.length);
   const [arrivalKey, setArrivalKey] = useState<string | null>(null);
-  useLayoutEffect(() => {
-    if (items.length > previousCount.current) {
-      // A newly appended card becomes the visible card in the existing stack.
+  // Reconcile before committing native views: never paint the new card count
+  // with the previous selection, then jump to the appended card in an effect.
+  if (items.length !== previousCount) {
+    setPreviousCount(items.length);
+    if (items.length > previousCount) {
       setArrivalKey(items[items.length - 1].key);
       setActive(items.length - 1);
-    }
-    previousCount.current = items.length;
-  }, [items]);
+    } else setActive(value => Math.min(value, Math.max(0, items.length - 1)));
+  }
   useEffect(() => {
     if (!arrivalKey) return;
     const timeout = setTimeout(() => setArrivalKey(null), 350);
@@ -104,9 +108,11 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
   // Hold one generous frame across all scenes. This keeps the original large-card
   // feel while preventing portrait, landscape and memo cards from moving the deck.
   const frameTop = Math.min(60, Math.max(8, availableHeight * 0.1));
-  const cardTop = Math.max(8, frameTop - 28);
-  // Lift the stack without changing the card or artwork dimensions.
-  const cardHeight = Math.min(cardWidth / 0.75 + 174, Math.max(1, availableHeight - frameTop + 12));
+  const originalCardTop = Math.max(8, frameTop - 28);
+  const cardTop = Math.max(8, originalCardTop - 8);
+  // Give the artwork 24px more height, using the space below the lifted stack
+  // while keeping an 8px gap above the thumbnail strip.
+  const cardHeight = Math.min(cardWidth / 0.75 + 198, Math.max(1, availableHeight - originalCardTop + 8));
   useEffect(() => {
     if (size.width > 0) onFrameChange?.({ active: safeActive, width: cardWidth, height: cardHeight, top: cardTop });
   }, [safeActive, cardWidth, cardHeight, cardTop, onFrameChange, size.width]);
@@ -140,14 +146,17 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
         const captionBudget = (item.memo?.trim() ? 105 : item.label.trim() ? 77 : 64) + 28;
         const imageFrameHeight = Math.max(1, cardHeight - captionBudget);
         const cardInk = item.inkColor ?? ink;
-        return <CardArrival animate={item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: cardWidth, height: cardHeight, backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
-          {pageInteractive ? <ThemedText testID="hero-card-order" pointerEvents="none" style={{ position: 'absolute', left: 8, top: -19, color: muted, fontSize: 10, lineHeight: 14 }}>{String(index + 1).padStart(2, '0')}</ThemedText> : null}
+        return <CardArrival animate={trackNative && item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: cardWidth, height: cardHeight, backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
           <ServiceTutorialTarget steps={pageInteractive && index === active ? ['comicOpen'] : []} style={[s.body, { paddingBottom: 12 }]}><Pressable disabled={!pageInteractive || !!editingKey} accessibilityRole="button" accessibilityLabel={item.label} delayLongPress={500}
+            onTouchStart={event => { const touch = event.nativeEvent; tapGuard.start(touch.pageX, touch.pageY, touch.touches.length); }}
+            onTouchMove={event => { const touch = event.nativeEvent; tapGuard.move(touch.pageX, touch.pageY, touch.touches.length); }}
+            onTouchEnd={event => { const touch = event.nativeEvent; tapGuard.move(touch.pageX, touch.pageY); }}
+            onTouchCancel={() => tapGuard.cancel()}
             onLongPress={pageInteractive && onRemove ? () => requestRemoval(item.key) : undefined}
             accessibilityActions={onRemove ? [{ name: 'longpress', label: t('comicDay.deleteScene') }] : undefined}
             onAccessibilityAction={event => { if (pageInteractive && !editingKey && event.nativeEvent.actionName === 'longpress') onRemove?.(item.key); }}
             onPress={() => {
-            if (Date.now() - lastHold.current < 800) return;
+            if (!tapGuard.canOpen() || Date.now() - lastHold.current < 800) return;
             tapHaptic();
             const node = cardRefs.current.get(item.key);
             if (!node) { onOpen(item.key); return; }
@@ -156,12 +165,12 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage fillPortrait contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={180} fitToCard backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
           </Pressable>
             <HeroCardCaption key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
-              topActions={pageInteractive ? <HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} compact /> : undefined}
+              topActions={<HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} compact />}
               showEdit={!!onEditCard}
               onSave={pageInteractive && onEditCard ? text => onEditCard(item.key, text) : undefined}
               onEditingChange={pageInteractive ? editing => setEditingKey(editing ? item.key : null) : undefined} />
@@ -192,9 +201,9 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
         } : undefined}
         overviewGesture={verticalSwipe}
         cardWidth={cardWidth} cardHeight={cardHeight} top={cardTop} swipeEnabled={!editingKey} enabled={focused && interactive && !detailOpen}
-        renderPage={(index, pageInteractive, focusedCard) => renderPage(index, pageInteractive, focusedCard)} onChange={setActive} />
+        pageKey={index => items[index].key} renderPage={(index, pageInteractive, focusedCard) => renderPage(index, pageInteractive, focusedCard)} onChange={setActive} />
     : null}
-    {size.width > 0 && items.length > 0 ? <View testID="comic-scene-thumbs" style={s.thumbs} onLayout={event => {
+    {size.width > 0 && items.length > 0 ? <Animated.View testID="comic-scene-thumbs" pointerEvents={thumbnailStrip.collapsed ? 'none' : 'auto'} accessibilityElementsHidden={thumbnailStrip.collapsed} importantForAccessibility={thumbnailStrip.collapsed ? 'no-hide-descendants' : 'auto'} style={[s.thumbs, thumbnailStrip.motionStyle]} onLayout={event => {
       const width = event.nativeEvent.layout.width;
       if (focused && width > 0) setThumbViewport(previous => previous === width ? previous : width);
     }}>
@@ -217,14 +226,13 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
           </Pressable>;
         })}
       </GestureScrollView>
-    </View> : null}
+    </Animated.View> : null}
   </View>;
 }
 
 function scenePaper(color: string | undefined, isDark: boolean) {
   if (isDark && !color) return '#3A3C52';
-  if (!color || color.toUpperCase() === '#FFFFFF') return ILLUSTRATION_PAPER;
-  return color;
+  return color ?? ILLUSTRATION_PAPER;
 }
 
 const s = StyleSheet.create({
@@ -234,10 +242,10 @@ const s = StyleSheet.create({
   thumbs: { position: 'absolute', left: 0, right: ADD_RESERVE, bottom: FOOTER_BOTTOM, height: THUMB, justifyContent: 'center' },
   thumbScroll: { flex: 1 },
   thumbRow: { flexGrow: 1, alignItems: 'center', gap: THUMB_GAP, paddingHorizontal: 12 },
-  thumb: { width: THUMB, height: THUMB, flexShrink: 0, overflow: 'hidden' },
+  thumb: { width: THUMB, height: THUMB, flexShrink: 0, overflow: 'hidden', transform: [{ scale: 40 / 44 }] },
 });
 
-/** Native opacity/position motion adds the new card without moving the stack's layout. */
+/** Native position motion adds the new card without moving the stack's layout. */
 function CardArrival({ animate, children }: { animate: boolean; children: ReactNode }) {
   const [progress] = useState(() => new Animated.Value(1));
   const reduced = useRef(false);
@@ -259,7 +267,7 @@ function CardArrival({ animate, children }: { animate: boolean; children: ReactN
     animation.start();
     return () => { animation.stop(); progress.setValue(1); };
   }, [animate, progress]);
-  return <Animated.View testID="comic-card-arrival" style={{ flex: 1, opacity: progress, transform: [
+  return <Animated.View testID="comic-card-arrival" style={{ flex: 1, transform: [
     { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
     { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) },
   ] }}>{children}</Animated.View>;

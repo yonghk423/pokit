@@ -1,6 +1,6 @@
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { InteractionManager } from 'react-native';
 
 /** 첫 프레임은 스켈레톤만. 전환이 끝난 뒤 실제 행을 붙인다. */
 export const CHUNKED_LIST_FIRST_PAINT = 0;
@@ -44,7 +44,7 @@ export function useChunkedPaintLimit(total: number, active = true): number {
       stop();
       if (!enabledRef.current || !activeRef.current) return;
       if (limitRef.current >= totalRef.current) return;
-      interactTask = InteractionManager.runAfterInteractions(() => {
+      interactTask = scheduleIdleTask(() => {
         if (cancelled || !enabledRef.current || !activeRef.current) return;
         commit();
       });

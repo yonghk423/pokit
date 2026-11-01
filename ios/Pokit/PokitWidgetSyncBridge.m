@@ -2,6 +2,7 @@
 
 @interface RCT_EXTERN_MODULE(PokitWidgetSync, NSObject)
 
+RCT_EXTERN_METHOD(syncAppFontId:(NSString *)fontId)
 RCT_EXTERN_METHOD(syncDayPlanJson:(NSString *)json)
 RCT_EXTERN_METHOD(syncPinnedRoutineJson:(NSString *)json)
 RCT_EXTERN_METHOD(syncBookstoreWidgetJson:(NSString *)json)

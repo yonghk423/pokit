@@ -1,5 +1,5 @@
 export const COMIC_PAPER_COLORS = [
-  '#FFFFFF', '#C8EBDD', '#F8DEDF', '#F8E7B4', '#D5E3F6',
+  '#FFFFFF', '#F5E8CF', '#C8EBDD', '#F8DEDF', '#F8E7B4', '#D5E3F6',
   '#E6DDF3', '#F6D4BF', '#DEE8CB', '#D8EFF0', '#E7E5DF',
 ] as const;
 export const COMIC_PEN_COLORS = [

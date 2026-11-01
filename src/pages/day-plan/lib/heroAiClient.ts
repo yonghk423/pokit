@@ -4,13 +4,13 @@ import { getSupabasePublishableKey, getSupabaseUrl } from '@shared/config/supaba
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
 import type { ComicSceneId } from './heroSceneImages';
 
-export type HeroStory = { text: string; source: 'character' | 'photo' };
+export type HeroStory = { title?: string; text: string; source: 'character' | 'photo'; styleId?: 'protagonist-1' | 'protagonist-2' | 'protagonist-3' | 'protagonist-4' | 'protagonist-5' | 'protagonist-6' };
 export type HeroAiResult = { uri: string; sceneId?: ComicSceneId };
 export class HeroAiError extends Error { constructor(public code: string) { super(code); } }
 function config() {
   const url = getSupabaseUrl(), key = getSupabasePublishableKey();
   if (!url || !key) throw new HeroAiError('unavailable');
-  return { url: `${url}/functions/v1/hero-ai`, key };
+  return { url: `${url}/functions/v1/yourday-ai`, key };
 }
 async function request(path: string, body?: unknown, retry = true) {
   const { url, key } = config();
@@ -55,8 +55,8 @@ async function artwork(id: ComicSceneId): Promise<string> {
   return jpeg(asset.localUri ?? asset.uri);
 }
 const PENDING_KEY = 'pokit:hero-ai-pending-v1';
-export type PendingHeroAiJob = { cancelRequested?: boolean; story?: HeroStory; targetSceneId?: string; id: string; mode: 'face' | 'photo'; scenes: ComicSceneId[]; count: number; inputsPath: string; previewUris?: string[]; notification?: import('./heroAiNotifications').HeroAiNotification; createdAt: number; targetDiaryId?: string; characterName?: string; result?: { images: HeroAiResult[]; remaining: number; error?: string } };
-type JobSnapshot = { status: string; results: { index: number; url: string }[]; remaining: number; error?: string; pending?: number[] };
+export type PendingHeroAiJob = { cardAppearance?: { paper: string; pen: string }; cancelRequested?: boolean; story?: HeroStory; targetSceneId?: string; id: string; mode: 'face' | 'photo'; scenes: ComicSceneId[]; count: number; inputsPath: string; previewUris?: string[]; notification?: import('./heroAiNotifications').HeroAiNotification; createdAt: number; targetDiaryId?: string; characterName?: string; result?: { images: HeroAiResult[]; remaining: number; error?: string; indices?: number[] } };
+type JobSnapshot = { status: string; results: { index: number; url?: string }[]; remaining: number; error?: string; pending?: number[] };
 export async function getPendingHeroAiJob(): Promise<PendingHeroAiJob | null> {
   const raw = await AsyncStorage.getItem(PENDING_KEY);
   if (!raw) return null;
@@ -71,14 +71,25 @@ export async function dismissHeroAiJob(id: string) {
   await AsyncStorage.removeItem(PENDING_KEY);
   await fs.deleteAsync(job.inputsPath, { idempotent: true }).catch(() => undefined);
 }
-export async function resumeHeroAiJob(job: PendingHeroAiJob, onProgress: (completed: number) => void, signal?: AbortSignal) {
+export async function resumeHeroAiJob(job: PendingHeroAiJob, onProgress: (completed: number) => void, signal?: AbortSignal, onSubmitted?: () => void) {
+  // Connection loss or app suspension must leave the server task recoverable.
+  return resumeDeviceJob(job, onProgress, signal, onSubmitted);
+}
+async function resumeDeviceJob(job: PendingHeroAiJob, onProgress: (completed: number) => void, signal?: AbortSignal, onSubmitted?: () => void) {
   if (job.cancelRequested) { await cancelHeroAiJob(job.id); throw new HeroAiError('cancelled'); }
   checkCancellation(signal);
   // Reuse the same reservation and claim each slot at most once on the server.
   if (job.result) {
       const saved = await Promise.all(job.result.images.map(image => fs.getInfoAsync(image.uri)));
     checkCancellation(signal);
-    if (saved.every(file => file.exists)) return job.result;
+    if (saved.every(file => file.exists)) {
+      onSubmitted?.();
+      if (job.result.indices) {
+        const confirmation = await request(`/jobs/${job.id}/saved`, { indices: job.result.indices });
+        return { ...job.result, remaining: confirmation.remaining };
+      }
+      return job.result;
+    }
   }
   let snapshot: JobSnapshot;
   try { snapshot = await request(`/jobs/${job.id}`); }
@@ -94,11 +105,18 @@ export async function resumeHeroAiJob(job: PendingHeroAiJob, onProgress: (comple
     }
   }
   checkCancellation(signal);
-  if (job.notification) await request(`/jobs/${job.id}/notification`, job.notification).catch(() => undefined);
+  if (snapshot.status === 'processing' && !snapshot.pending?.length || snapshot.status === 'completed') onSubmitted?.();
   if (snapshot.pending?.length) {
       const inputs = JSON.parse(await fs.readAsStringAsync(job.inputsPath));
     checkCancellation(signal);
-    try { await Promise.all(snapshot.pending.map((index: number) => request(`/jobs/${job.id}/render/${index}`, inputs[index]))); }
+    try { await Promise.all(snapshot.pending.map(async (index: number) => {
+      const result = await request(`/jobs/${job.id}/render/${index}`, inputs[index]);
+      checkCancellation(signal);
+      if (result.b64_json) await saveDirectResult(job.id, index, result);
+    }));
+      checkCancellation(signal);
+      onSubmitted?.();
+      snapshot = await request(`/jobs/${job.id}`); }
     catch (error) {
       if (error instanceof HeroAiError && error.code === 'content_blocked') await dismissHeroAiJob(job.id);
       throw error;
@@ -107,15 +125,14 @@ export async function resumeHeroAiJob(job: PendingHeroAiJob, onProgress: (comple
   checkCancellation(signal);
   return finishHeroAiJob(job, snapshot, onProgress, signal);
 }
-export async function generateHeroImages({ id, mode, photo, photos, scenes, onProgress, targetDiaryId, characterName, story, targetSceneId, signal }: {
-  signal?: AbortSignal; story?: HeroStory; targetSceneId?: string; targetDiaryId?: string; characterName?: string; id: string; mode: 'face' | 'photo'; photo: string; photos: string[]; scenes: ComicSceneId[]; onProgress: (completed: number) => void;
+export async function generateHeroImages({ id, mode, photo, photos, scenes, onProgress, targetDiaryId, characterName, story, targetSceneId, signal, cardAppearance, onSubmitted }: {
+  onSubmitted?: () => void; cardAppearance?: { paper: string; pen: string }; signal?: AbortSignal; story?: HeroStory; targetSceneId?: string; targetDiaryId?: string; characterName?: string; id: string; mode: 'face' | 'photo'; photo: string; photos: string[]; scenes: ComicSceneId[]; onProgress: (completed: number) => void;
 }): Promise<{ images: HeroAiResult[]; remaining: number; error?: string }> {
   checkCancellation(signal);
   const count = story ? 1 : mode === 'face' ? scenes.length : photos.length;
-  if (story && (!story.text.trim() || story.text.length > 4000 || !['character', 'photo'].includes(story.source))) throw new HeroAiError('invalid_request');
+  if (story && (!(story.text.trim() || story.title?.trim()) || story.text.length > 4000 || !['character', 'photo'].includes(story.source))) throw new HeroAiError('invalid_request');
+  if (story?.source === 'character' && (mode !== 'face' || !photo.trim())) throw new HeroAiError('face_missing');
   if (count < 1 || count > 3) throw new HeroAiError('invalid_request');
-  const { prepareHeroAiNotification } = await import('./heroAiNotifications');
-  const notification = await prepareHeroAiNotification();
   // Check the authenticated service before preparing local files. Only Generate sends photos externally.
   await request('/health');
   checkCancellation(signal);
@@ -126,14 +143,14 @@ export async function generateHeroImages({ id, mode, photo, photos, scenes, onPr
   if (!fs.documentDirectory) throw new HeroAiError('save_failed');
   const folder = `${fs.documentDirectory}hero-ai/`;
   await fs.makeDirectoryAsync(folder, { intermediates: true });
-  const pending: PendingHeroAiJob = { story, targetSceneId, id, mode, scenes, count, notification, previewUris: mode === 'photo' ? photos : undefined, targetDiaryId, characterName, inputsPath: `${folder}${id}-inputs.json`, createdAt: Date.now() };
+  const pending: PendingHeroAiJob = { ...(cardAppearance ? { cardAppearance } : {}), story, targetSceneId, id, mode, scenes, count, previewUris: mode === 'photo' ? photos : undefined, targetDiaryId, characterName, inputsPath: `${folder}${id}-inputs.json`, createdAt: Date.now() };
   // Await disk persistence BEFORE any billable server request. Cache photo URIs can disappear on restart.
   const previous = await getPendingHeroAiJob();
   if (previous && previous.id !== id) throw new HeroAiError('pending_job');
   await fs.writeAsStringAsync(pending.inputsPath, JSON.stringify(inputs));
   await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(pending));
   checkCancellation(signal);
-  return resumeHeroAiJob(pending, onProgress, signal);
+  return resumeHeroAiJob(pending, onProgress, signal, onSubmitted);
 }
 async function finishHeroAiJob(pending: PendingHeroAiJob, job: JobSnapshot, onProgress: (completed: number) => void, signal?: AbortSignal): Promise<{ images: HeroAiResult[]; remaining: number; error?: string }> {
   const { id, mode, scenes } = pending;
@@ -152,26 +169,58 @@ async function finishHeroAiJob(pending: PendingHeroAiJob, job: JobSnapshot, onPr
   const folder = `${fs.documentDirectory}hero-ai/`;
   await fs.makeDirectoryAsync(folder, { intermediates: true });
   const images: HeroAiResult[] = [];
-  for (const result of job.results as { index: number; url: string }[]) {
+  for (const result of job.results) {
     const index = result.index;
     const target = `${folder}${id}-${index}.png`;
-    // The server returns short-lived signed URLs for the authenticated user's private results only.
-    const signed = new URL(result.url);
-    const project = new URL(getSupabaseUrl()!);
-    if (signed.protocol !== 'https:' || signed.hostname !== project.hostname || !signed.pathname.startsWith('/storage/v1/object/sign/hero-ai-results/')) throw new HeroAiError('invalid_result');
     const existing = await fs.getInfoAsync(target);
     if (!existing.exists || !existing.size) {
-      const temporary = `${target}.download`;
-      const download = await fs.downloadAsync(result.url, temporary);
-      if (download.status !== 200) { await fs.deleteAsync(temporary, { idempotent: true }); throw new HeroAiError('save_failed'); }
-      await fs.moveAsync({ from: temporary, to: target });
+      if (!result.url) throw new HeroAiError('result_unavailable');
+      await downloadResult(result.url, target);
     }
     checkCancellation(signal);
     images.push({ uri: target, ...(mode === 'face' ? { sceneId: scenes[index] } : {}) });
   }
-  const result = { images, remaining: job.remaining, error: job.error };
+  const result = { images, remaining: job.remaining, error: job.error, indices: job.results.map(value => value.index) };
   checkCancellation(signal);
+  await AsyncStorage.setItem(PENDING_KEY, JSON.stringify({ ...pending, result }));
+  const confirmation = await request(`/jobs/${id}/saved`, { indices: result.indices });
+  result.remaining = confirmation.remaining;
   await AsyncStorage.setItem(PENDING_KEY, JSON.stringify({ ...pending, result }));
   await fs.deleteAsync(pending.inputsPath, { idempotent: true }).catch(() => undefined);
   return result;
+}
+
+/** Atomic device-only save, before any result is shown or acknowledged. */
+async function saveDirectResult(id: string, index: number, result: { index?: number; b64_json?: string }) {
+  if (result.index !== index || typeof result.b64_json !== 'string' || result.b64_json.length > 28000000 || !result.b64_json.startsWith('iVBORw0KGgo') || !/^[A-Za-z0-9+/=]+$/.test(result.b64_json)) throw new HeroAiError('invalid_result');
+  if (!fs.documentDirectory) throw new HeroAiError('save_failed');
+  const folder = `${fs.documentDirectory}hero-ai/`;
+  await fs.makeDirectoryAsync(folder, { intermediates: true });
+  const target = `${folder}${id}-${index}.png`, temporary = `${target}.download`;
+  try {
+    await fs.writeAsStringAsync(temporary, result.b64_json, { encoding: fs.EncodingType.Base64 });
+    await fs.moveAsync({ from: temporary, to: target });
+  } catch {
+    await fs.deleteAsync(temporary, { idempotent: true }).catch(() => undefined);
+    throw new HeroAiError('save_failed');
+  }
+}
+
+/** Download privately signed results atomically before acknowledging device save. */
+async function downloadResult(url: string, target: string) {
+  const origin = getSupabaseUrl();
+  if (!origin || !url.startsWith(`${origin}/storage/v1/object/sign/yourday-ai-results/`)) throw new HeroAiError('invalid_result');
+  const temporary = `${target}.download`;
+  try {
+    const response = await fs.downloadAsync(url, temporary);
+    if (response.status !== 200) throw new Error('download_failed');
+    const info = await fs.getInfoAsync(temporary);
+    if (!info.exists || !info.size || info.size > 20971520) throw new Error('invalid_result');
+    const signature = await fs.readAsStringAsync(temporary, { encoding: fs.EncodingType.Base64, position: 0, length: 8 });
+    if (!signature.startsWith('iVBORw0KGgo')) throw new Error('invalid_result');
+    await fs.moveAsync({ from: temporary, to: target });
+  } catch {
+    await fs.deleteAsync(temporary, { idempotent: true }).catch(() => undefined);
+    throw new HeroAiError('save_failed');
+  }
 }

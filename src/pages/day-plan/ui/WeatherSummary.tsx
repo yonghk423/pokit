@@ -1,3 +1,4 @@
+import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { PenFrame } from '@shared/ui/pen-frame';
@@ -183,6 +184,8 @@ async function resolveCoords(): Promise<{ lat: number; lon: number } | null> {
 
 export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   const { locale } = useTranslation();
+  const today = useTodayDate();
+  const dateLabel = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
   const weatherTutorialActive = useServiceTutorial(state => state.active && state.mode === 'comic' && state.step === 'comicWeather');
   const [report, setReport] = useState<WeatherReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -424,7 +427,10 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
           <Pressable accessibilityRole="button" accessibilityLabel={labels.close} onPress={closeDetails} style={styles.modalScrim} />
           <View style={[styles.modalCard, { borderColor: ink }]}>
             <View style={styles.modalHeader}>
-              <ThemedText style={[styles.modalTitle, { color: ink }]}>{labels.title}</ThemedText>
+              <View style={{ flex: 1, gap: 2 }}>
+                <ThemedText style={[styles.modalTitle, { color: ink }]}>{labels.title}</ThemedText>
+                <ThemedText testID="weather-detail-date" style={{ color: muted, fontSize: 13, lineHeight: 20 }}>{dateLabel}</ThemedText>
+              </View>
               <Pressable accessibilityRole="button" accessibilityLabel={labels.close} hitSlop={10} onPress={closeDetails} style={styles.closeButton}>
                 <ThemedText style={[styles.closeText, { color: ink }]}>×</ThemedText>
               </Pressable>
@@ -499,6 +505,7 @@ function WeatherOutfit({ index, size }: { index: number; size: number }) {
     <Image
       accessible={false}
       contentFit="contain"
+      useAppleWebpCodec={false}
       source={WEATHER_OUTFITS[index]}
       style={{ width: size, height: size * 287 / 274, flexShrink: 0 }}
     />

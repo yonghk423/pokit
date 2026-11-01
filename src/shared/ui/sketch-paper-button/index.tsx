@@ -10,19 +10,20 @@ const FRAME = '#929B8B';
 const SHADOW = 'rgba(65, 78, 58, 0.07)';
 
 /** Paper button with the same pencil frame and grain as the layout tiles. */
-export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, strongFrame = false, style }: {
-  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; strongFrame?: boolean; style?: StyleProp<ViewStyle>;
+export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, strongFrame = false, style, hitSlop }: {
+  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; strongFrame?: boolean; style?: StyleProp<ViewStyle>; hitSlop?: number;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      hitSlop={hitSlop}
       onPress={() => { tapHaptic(); onPress(); }}
       style={({ pressed }) => [s.shell, style, pressed && s.pressed]}>
       <View pointerEvents="none" style={s.shadow} />
       <View style={[s.face, iconOnly && s.iconFace]}>
         <PaperGrain opacity={0.25} />
-        {strongFrame ? <PenFrame color={ink} /> : <HanddrawnFrame color={FRAME} />}
+        {strongFrame ? <PenFrame color={ink} straight={iconOnly} /> : <HanddrawnFrame color={FRAME} />}
         <Svg width={iconOnly ? 22 : 17} height={iconOnly ? 22 : 18} viewBox="0 0 20 20" accessible={false}>
           {strongFrame ? <>
             <Path d={penContour([[3.2, 10.2], [7, 9.9], [12, 10.1], [16.8, 9.8]], 1.9, 0.4)} fill={ink} />

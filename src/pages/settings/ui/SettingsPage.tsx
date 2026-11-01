@@ -1,4 +1,3 @@
-import { tutorialCopy } from '../../welcome-intro/lib/tutorialCopy';
 import { resetServiceTutorialSession } from '../../welcome-intro/model/serviceTutorial';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { PRIVACY_POLICY_URL } from '@shared/config/privacyPolicy';
@@ -296,9 +295,9 @@ export function SettingsPage() {
       clearPuzzleRevealSeen();
       usePuzzleHistoryStore.getState().reloadFromStorage();
       resetServiceTutorialSession();
-      // Navigate first: the remount keeps the navigator state, so the intro is what reopens fresh.
+      // Return to the normal home after resetting local data.
       if (router.canDismiss()) router.dismissAll();
-      router.replace('/welcome-intro');
+      router.replace('/(tabs)/comic-day');
       restartAppSession();
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -316,7 +315,6 @@ export function SettingsPage() {
     setConfirmingReset(true);
   };
 
-  const tutorial = tutorialCopy(locale);
   const tap = (action: () => void) => () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     action();
@@ -440,26 +438,7 @@ export function SettingsPage() {
             </SettingsSection>
           ) : null}
 
-          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-            <Pressable
-              style={[chrome.item, { borderTopColor: p.border }]}
-              onPress={tap(() => router.push('/welcome-intro'))}
-              accessibilityRole="button"
-              accessibilityLabel={tutorial.replay}>
-              <View style={chrome.itemLeft}>
-                <SettingsRowIcon name="book.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
-                <View style={chrome.itemTextWrap}>
-                  <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                    {tutorial.replay}
-                  </ThemedText>
-                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                    {tutorial.replayDesc}
-                  </ThemedText>
-                </View>
-              </View>
-              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-            </Pressable>
-            {FEATURE_FLAGS.puzzle ? (
+          {FEATURE_FLAGS.puzzle ? <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
               <Pressable
                 style={[chrome.item, { borderTopColor: p.border }]}
                 onPress={tap(() => router.push('/puzzle-guide'))}
@@ -478,8 +457,7 @@ export function SettingsPage() {
                 </View>
                 <IconSymbol name="chevron.right" size={14} color={p.chevron} />
               </Pressable>
-            ) : null}
-          </SettingsSection>
+          </SettingsSection> : null}
 
           {SHOW_APPEARANCE_SETTINGS ? (
             <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>

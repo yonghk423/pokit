@@ -1,6 +1,6 @@
 project_id = "pokit"
 
-[functions.hero-ai]
+[functions.yourday-ai]
 # User JWTs are validated by auth.getUser inside the function, supporting current signing keys.
 verify_jwt = false
 

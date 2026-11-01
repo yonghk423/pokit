@@ -1,8 +1,9 @@
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import type { ServiceStep } from '../../welcome-intro/model/serviceTutorial';
 import { MateBagIcon } from './MateBagIcon';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppModal } from '@shared/ui/app-modal';
 import Svg, { G, Path } from 'react-native-svg';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
@@ -39,24 +40,47 @@ function FilmReelIcon({ progress, isDark }: { progress: Animated.Value; isDark: 
 }
 
 /** Shared floating tools, with a paper tray for mates and a film reel for scenes. */
-export function CardToolsFab({ isDark, overview, actions, belowAction, testID = 'rhythm-card-tools-fab', bottom = 72, concept = 'bag' }: {
-  isDark: boolean; overview: boolean; actions: CardToolAction[]; belowAction?: CardToolAction; testID?: string; bottom?: number; concept?: 'bag' | 'film';
+export function CardToolsFab({ isDark, overview, actions, belowAction, testID = 'rhythm-card-tools-fab', bottom = 72, concept = 'bag', docked = false }: {
+  isDark: boolean; overview: boolean; actions: CardToolAction[]; belowAction?: CardToolAction; testID?: string; bottom?: number; concept?: 'bag' | 'film'; docked?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const triggerRef = useRef<View>(null);
+  const window = useWindowDimensions();
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [progress] = useState(() => new Animated.Value(0));
   useEffect(() => {
     const motion = Animated.timing(progress, { toValue: open ? 1 : 0, duration: open ? 280 : 220, easing: Easing.bezier(0.22, 0.61, 0.36, 1), useNativeDriver: true });
-    motion.start();
+    motion.start(({ finished }) => { if (finished && !open) setMenuVisible(false); });
     return () => motion.stop();
   }, [open, progress]);
   const [previousOverview, setPreviousOverview] = useState(overview);
   if (previousOverview !== overview) { setPreviousOverview(overview); setOpen(false); }
   const toggle = () => { tapHaptic(); setOpen(value => !value); };
+  if (docked) {
+    const menuActions = belowAction ? [...actions, belowAction] : actions;
+    const left = Math.min(window.width - 52, Math.max(8, anchor?.x ?? window.width - 60));
+    const top = Math.max(12, (anchor?.y ?? window.height - 90) - menuActions.length * 48 - 10);
+    return <View style={{ width: 40, height: 44, justifyContent: 'center' }}>
+      <Pressable ref={triggerRef} testID={testID} accessibilityRole="button" accessibilityLabel={open ? t('dayPlan.cardToolsFabClose') : t('dayPlan.cardToolsFab')} accessibilityState={{ expanded: open }} onPress={() => {
+        tapHaptic();
+        triggerRef.current?.measureInWindow((x, y) => { setAnchor({ x, y }); setMenuVisible(true); setOpen(true); });
+      }} style={s.face}><FilmReelIcon progress={progress} isDark={isDark} /></Pressable>
+      {menuVisible ? <AppModal transparent animationType="none" statusBarTranslucent onRequestClose={() => setOpen(false)}>
+        <View style={{ flex: 1 }}>
+          <Pressable testID="comic-tools-backdrop" accessibilityRole="button" accessibilityLabel={t('dayPlan.cardToolsFabClose')} onPress={() => { tapHaptic(); setOpen(false); }} style={StyleSheet.absoluteFill} />
+          <Animated.View testID="comic-tools-vertical-menu" pointerEvents={open ? 'auto' : 'none'} accessibilityViewIsModal style={{ position: 'absolute', left, top, padding: 2, borderRadius: 8, backgroundColor: isDark ? 'rgba(38,43,40,0.65)' : 'rgba(247,246,244,0.65)', opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            {menuActions.map(action => <ServiceTutorialTarget key={action.key} steps={action.tutorialSteps ?? []}><Pressable testID={action.testID} accessibilityRole="button" accessibilityLabel={action.label} accessibilityState={action.selected == null ? undefined : { selected: action.selected }} onPress={() => { tapHaptic(); setOpen(false); action.onPress(); }} style={({ pressed }) => ({ width: 44, height: 48, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>{action.icon}</Pressable></ServiceTutorialTarget>)}
+          </Animated.View>
+        </View>
+      </AppModal> : null}
+    </View>;
+  }
   return <View pointerEvents="box-none" style={s.layer}>
     {open ? <Pressable accessibilityRole="button" accessibilityLabel={t('dayPlan.cardToolsFabClose')} onPress={toggle} style={StyleSheet.absoluteFill} /> : null}
     <View pointerEvents="box-none" style={[s.root, { bottom, height: SIZE + (belowAction ? STEP : 0) }]}>
-      {actions.map((action, index) => <Animated.View key={action.key} pointerEvents={open ? 'auto' : 'none'} accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'} style={[s.action, { bottom: belowAction ? STEP : 0, opacity: progress, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, -(index + 1) * STEP] }) }, { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }) }] }]}>
+      {actions.map((action, index) => <Animated.View key={action.key} pointerEvents={open ? 'auto' : 'none'} accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'} style={[s.action, { bottom: belowAction ? STEP : 0, opacity: progress, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, concept === 'film' ? 0 : -(index + 1) * STEP] }) }, { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, concept === 'film' ? -(index + 1) * STEP : 0] }) }, { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }) }] }]}>
         <Pressable testID={action.testID} accessibilityRole="button" accessibilityLabel={action.label} accessibilityState={action.selected != null ? { selected: action.selected, expanded: action.selected } : undefined} onPress={() => { tapHaptic(); setOpen(false); action.onPress(); }} style={({ pressed }) => [s.face, { opacity: pressed ? 0.6 : 1 }]}>{action.icon}</Pressable>
       </Animated.View>)}
       <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={open ? t('dayPlan.cardToolsFabClose') : t('dayPlan.cardToolsFab')} accessibilityState={{ expanded: open }} onPress={toggle} style={[s.face, s.trigger]}>

@@ -172,17 +172,6 @@ export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, r
       }));
     } } : null });
   };
-  const tutorialStep = useServiceTutorial(state => state.active && state.mode === 'rhythm' ? state.step : null);
-  const tutorialRoutineKey = useServiceTutorial(state => state.routineKey);
-  useEffect(() => {
-    if (tutorialStep !== 'rhythmRecord' || !tutorialRoutineKey || expanded || opening.current) return;
-    const index = items.findIndex(item => item.key.split('::instance:')[0] === tutorialRoutineKey);
-    // Creation can finish after the guide advances; wait for its item to arrive.
-    if (index < 0) return;
-    opening.current = true;
-    setOpeningSize({ width, height });
-    setExpanded({ key: items[index].key, index, card: null });
-  }, [tutorialStep, tutorialRoutineKey, items, expanded, width, height]);
   const pickedKeys = selectedKeys.filter(key => items.some(item => item.key === key));
   const background = isDark ? '#262B28' : '#F7F6F4';
   return <TutorialGuideLayer><View style={[s.root, { backgroundColor: background }]}>

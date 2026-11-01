@@ -44,7 +44,7 @@ export const ACTIVITY_ILLUSTRATIONS = [
   { id: "40-video-call", label: "친구와 영상통화", source: require('../../../assets/activity-illustrations/protagonist-1/40-video-call-960.webp') as ImageSourcePropType },
   { id: "41-pet-walk", label: "반려동물 산책", source: require('../../../assets/activity-illustrations/protagonist-1/41-pet-walk-960.webp') as ImageSourcePropType },
   { id: "42-meditation", label: "명상하기", source: require('../../../assets/activity-illustrations/protagonist-1/42-meditation-960.webp') as ImageSourcePropType },
-  { id: "43-sketching", label: "그림 그리기", source: require('../../../assets/activity-illustrations/protagonist-1/43-sketching-960.webp') as ImageSourcePropType },
+  { id: "43-sketching", label: "일러스트 그리기", source: require('../../../assets/activity-illustrations/protagonist-1/43-sketching-960.webp') as ImageSourcePropType },
   { id: "44-baking", label: "쿠키 굽기", source: require('../../../assets/activity-illustrations/protagonist-1/44-baking-960.webp') as ImageSourcePropType },
   { id: "45-board-game", label: "친구와 보드게임", source: require('../../../assets/activity-illustrations/protagonist-1/45-board-game-960.webp') as ImageSourcePropType },
   { id: "46-camping", label: "캠핑하기", source: require('../../../assets/activity-illustrations/protagonist-1/46-camping-960.webp') as ImageSourcePropType },

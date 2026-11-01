@@ -719,7 +719,7 @@ struct PokitLiveActivityBundle: WidgetBundle {
   private func allWidgets() -> some Widget {
     if #available(iOS 17.0, *) {
       return WidgetBundleBuilder.buildBlock(
-        PinnedRoutineWidget(),
+        // Today’s Mate is on hold; keep its implementation and saved data for later.
         ComicSceneWidget(),
         PokitLiveActivityWidget()
       )

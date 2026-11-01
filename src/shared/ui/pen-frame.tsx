@@ -37,10 +37,24 @@ export function penContour(points: Line, weight = 1.3, phase = 0) {
   return left.concat(right.reverse()).map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join('') + 'Z';
 }
 
-export function PenFrame({ color }: { color: string }) {
+export function PenFrame({ color, straight = false, radius = 0 }: { color: string; straight?: boolean; radius?: number }) {
   const [size, setSize] = useState({ width: 320, height: 74 });
   const w = size.width; const h = size.height;
-  const edges: Line[] = [
+  const r = Math.max(0, Math.min(radius, (w - 6) / 2, (h - 6) / 2));
+  const rounded: Point[] = [];
+  if (r > 0) {
+    const corners = [[w - 3 - r, 3 + r, -Math.PI / 2], [w - 3 - r, h - 3 - r, 0], [3 + r, h - 3 - r, Math.PI / 2], [3 + r, 3 + r, Math.PI]];
+    corners.forEach(([x, y, angle]) => {
+      for (let i = 0; i <= 8; i++) rounded.push([x + r * Math.cos(angle + i * Math.PI / 16), y + r * Math.sin(angle + i * Math.PI / 16)]);
+    });
+    rounded.push(rounded[0]);
+  }
+  const edges: Line[] = r > 0 ? [rounded] : straight ? [
+    [[3, 3], [w - 3, 3]],
+    [[w - 3, 3], [w - 3, h - 3]],
+    [[w - 3, h - 3], [3, h - 3]],
+    [[3, h - 3], [3, 3]],
+  ] : [
     [[3, 3.2], [w * 0.18, 2.8], [w * 0.43, 3.5], [w * 0.73, 2.9], [w - 3, 3.2]],
     [[w - 3, 3], [w - 2.5, h * 0.28], [w - 3.4, h * 0.69], [w - 3, h - 3]],
     [[w - 3, h - 3], [w * 0.77, h - 3.5], [w * 0.46, h - 2.8], [w * 0.2, h - 3.3], [3, h - 3]],

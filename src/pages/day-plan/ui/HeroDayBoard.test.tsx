@@ -6,8 +6,28 @@ import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 import { Animated, View } from 'react-native';
 import { ComicDayBoard } from './HeroDayBoard';
+import { COMIC_BOARD_MODES, loadComicBoardMode, saveComicBoardMode } from '../lib/heroBoardLayout';
+import { ComicSceneImage } from './HeroSceneImage';
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+it.each(COMIC_BOARD_MODES)('keeps whole figures visible in every panel of the %s overview layout', mode => {
+  const previousMode = loadComicBoardMode();
+  saveComicBoardMode(mode);
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicDayBoard items={Array.from({ length: 4 }, (_, index) => ({ key: `panel-${index}`, label: `Scene ${index}`, icon: '', faceColor: '#F8DEDF' }))} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} />); });
+  const grid = tree.root.findAllByProps({ testID: 'comic-card-grid-layout' })[0];
+  act(() => grid.props.onLayout({ nativeEvent: { layout: { width: 640, y: 0 } } }));
+  const images = grid.findAllByType(ComicSceneImage);
+  expect(images).toHaveLength(4);
+  for (const image of images) {
+    expect(image.props.contentFit).toBe('contain');
+    expect(image.props.contentPosition).toBe('center');
+    expect(image.props.fitToCard).toBeUndefined();
+    expect(image.props.backgroundColor).toBe('#F8DEDF');
+  }
+  act(() => tree.unmount());
+  saveComicBoardMode(previousMode);
+});
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/handdrawn-frame', () => ({ HanddrawnFrame: () => null }));
@@ -171,6 +191,20 @@ jest.mock('./HeroCardStack', () => {
   }) };
 });
 
+it('gives the picture more vertical room without overlapping the thumbnail strip', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneDeck items={[{ key: 'one', label: 'First' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} />, { createNodeMock: () => ({ scrollTo: jest.fn(), measure: jest.fn() }) }); });
+  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 650 } } }));
+  act(() => jest.advanceTimersByTime(50));
+  const stack = tree.root.findByType(HeroCardStack);
+  expect(stack.props.cardHeight).toBeGreaterThan(550);
+  expect(stack.props.top + stack.props.cardHeight).toBeLessThanOrEqual(650 - 8 - 44 - 8);
+  const { ComicSceneImage } = require('./HeroSceneImage');
+  const picture = tree.root.findAllByType(ComicSceneImage).find(node => typeof node.props.style.height === 'number')!;
+  expect(picture.props.style.height).toBeGreaterThan(450);
+  act(() => tree.unmount());
+});
+
 it('scales the main scene card up on iPad-sized stages', () => {
   const { ComicSceneDeck } = require('./HeroSceneDeck');
   let tree!: ReactTestRenderer;
@@ -210,16 +244,14 @@ it('uses a live stack without the capture module and preserves measured detail f
   act(() => tree.unmount());
 });
 
-it.each([false, true])('opens the mate bag with scenes present: %s', withScenes => {
+it.each([false, true])('hides the paused mate entrance with scenes present: %s', withScenes => {
   const onOpenBag = jest.fn();
   let tree!: ReactTestRenderer;
   act(() => {
     tree = create(<ComicDayBoard diaryTitle="Diary" items={withScenes ? [{ key: 'one', label: 'First', icon: '' }] : []} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} onOpenBag={onOpenBag} />);
   });
-  const bag = tree.root.findAll(node => node.props.testID === 'comic-open-mate-bag' && typeof node.props.onPress === 'function')[0];
-  expect(bag.props.accessibilityRole).toBe('button');
-  act(() => bag.props.onPress());
-  expect(onOpenBag).toHaveBeenCalledTimes(1);
+  expect(tree.root.findAllByProps({ testID: 'comic-open-mate-bag' })).toHaveLength(0);
+  expect(onOpenBag).not.toHaveBeenCalled();
   act(() => tree.unmount());
 });
 
@@ -343,4 +375,23 @@ it('animates an appended card into the stack without replaying on memo edits', (
   expect(arrivals()).toHaveLength(count);
   act(() => tree.unmount());
   timing.mockRestore();
+});
+
+it('keeps caption actions and edit-button geometry when settings takes focus', () => {
+  let tree!: ReactTestRenderer;
+  const render = (focused: boolean) => <DayPlanTabFocusContext.Provider value={focused}><ComicSceneDeck items={[{ key: 'stable-caption', label: 'Title', memo: 'Memo' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onEditCard={jest.fn()} /></DayPlanTabFocusContext.Provider>;
+  act(() => { tree = create(render(true), { createNodeMock: () => ({ scrollTo: jest.fn(), measure: (done: (...args: number[]) => void) => done(0, 0, 390, 650) }) }); });
+  act(() => jest.advanceTimersByTime(90));
+  const caption = () => tree.root.findAllByType(HeroCardCaption)[0];
+  const editSize = () => StyleSheet.flatten(caption().findAllByProps({ testID: 'hero-card-edit' })[0].props.style);
+  expect(caption().props.topActions).toBeTruthy();
+  const initialSize = editSize();
+  act(() => tree.update(render(false)));
+  expect(caption().props.topActions).toBeTruthy();
+  expect(editSize()).toEqual(initialSize);
+  expect(caption().props.onSave).toBeUndefined();
+  act(() => tree.update(render(true)));
+  expect(caption().props.topActions).toBeTruthy();
+  expect(editSize()).toEqual(initialSize);
+  act(() => tree.unmount());
 });

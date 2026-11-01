@@ -1,14 +1,17 @@
+import { readHeroCharacterOrder } from '../lib/heroCharacterOrder';
 import { HeroInlineComposer } from './HeroInlineComposer';
 import { HeroRandomDraftCard } from './HeroRandomDraftCard';
 import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
 import { COMIC_DIARY_HOME_DATE_KEY, COMIC_DIARY_HOME_SELECTION_KEY } from '../lib/heroDiaryHome';
-import { Animated, Modal } from 'react-native';
+import { Animated, Modal, PanResponder, type PanResponderCallbacks } from 'react-native';
 import { ComicDiaryLibrary } from './HeroDiaryLibrary';
 import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary as DiaryState } from '../lib/heroDiaryStorage';
 import { clearComicNavigation, saveComicNavigation } from '../lib/heroNavigation';
 import { HeroCharacterList } from './HeroCharacterList';
+import { HeroCharacterPickerOverlay } from './HeroCharacterPickerOverlay';
 import { ComicCharacterChooser } from './HeroCharacterChooser';
 import { COMIC_CHARACTERS } from '../lib/heroCharacters';
+import { COMIC_SCENES } from '../lib/heroSceneImages';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { ComicScenePicker } from './HeroScenePicker';
 import { createRef } from 'react';
@@ -31,7 +34,10 @@ jest.mock('react-native-gesture-handler', () => {
   };
   return { ScrollView: jest.requireActual('react-native').ScrollView, GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Pan: chain, LongPress: chain, Native: chain, Simultaneous: (...gestures: unknown[]) => ({ gestures }) } };
 });
-jest.mock('react-native-reanimated', () => ({ runOnJS: (fn: (...args: unknown[]) => unknown) => fn }));
+jest.mock('react-native-reanimated', () => {
+  const fade = { duration: () => fade, delay: () => fade, reduceMotion: () => fade };
+  return { __esModule: true, default: { View: jest.requireActual('react-native').View }, FadeIn: fade, FadeOut: fade, ReduceMotion: { System: 'system' }, runOnJS: (fn: (...args: unknown[]) => unknown) => fn };
+});
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
 jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.requireActual('react-native').TextInput }));
@@ -80,6 +86,13 @@ it('adds an independent scene, edits its memo and restores it after remounting',
   act(() => tree.root.findAllByType(Modal).find(node => node.props.visible)?.props.onShow());
   frames.mockRestore(); timing.mockRestore();
 
+  const originalPen = loadComicDay('2026-10-21')[0].pen;
+  act(() => tree.root.findAllByProps({ accessibilityLabel: 'comicDay.paper #F5E8CF' })[0].props.onPress());
+  expect(loadComicDay('2026-10-21')[0].paper).toBe('#F5E8CF');
+  expect(loadComicDay('2026-10-21')[0].pen).toBe(originalPen);
+  act(() => tree.root.findAllByProps({ accessibilityLabel: 'comicDay.pen #275D5C' })[0].props.onPress());
+  expect(loadComicDay('2026-10-21')[0].paper).toBe('#F5E8CF');
+  expect(loadComicDay('2026-10-21')[0].pen).toBe('#275D5C');
   const memo = tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDay.memo')!;
   act(() => { memo.props.onChangeText('My independent note'); });
   expect(loadComicDay('2026-10-21')[0].memo).toBe('My independent note');
@@ -262,15 +275,17 @@ jest.mock('./HeroCardStack', () => {
   }) };
 });
 
-it('starts the named protagonist directly with a random card and keeps tutorial guidance', () => {
-  useServiceTutorial.setState({ ...initialServiceProgress, active: true, mode: 'comic', step: 'comicCharacter', runId: 'manual-start' });
+it('starts the named protagonist directly without activating a tutorial', () => {
+  const ref = createRef<ComicDiaryHandle>();
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => ref.current!.openLibrary());
+  act(() => tree.root.findByType(ComicDiaryLibrary).props.onCreate());
   act(() => tree.root.findByType(ComicCharacterChooser).props.onStart(COMIC_CHARACTERS[0], 'Name'));
   expect(tree.root.findAllByType(ComicScenePicker)).toHaveLength(0);
   expect(loadComicDay('2026-10-21')).toHaveLength(1);
   expect(loadComicDay('2026-10-21')[0]).toMatchObject({ title: '', memo: '' });
-  expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicOpen', sceneKey: loadComicDay('2026-10-21')[0].id });
+  expect(useServiceTutorial.getState()).toMatchObject({ active: false, step: 'finish' });
   act(() => tree.unmount());
 });
 
@@ -318,7 +333,7 @@ it('opens character selection from the empty home add button and closes back to 
   act(() => { tree.unmount(); });
 });
 
-it('restores the committed resume behavior after a paused tutorial screen remounts', () => {
+it('does not resume the retired tutorial after a screen remount', () => {
   useServiceTutorial.getState().start('comic');
   useServiceTutorial.getState().advance('comicStart', 'comicCharacter');
   let tree!: ReactTestRenderer;
@@ -326,54 +341,9 @@ it('restores the committed resume behavior after a paused tutorial screen remoun
   act(() => { tree = create(render()); });
   act(() => { useServiceTutorial.getState().pause(); tree.unmount(); });
   act(() => { tree = create(render()); });
-  expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicCharacter' });
-  expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(1);
+  expect(useServiceTutorial.getState()).toMatchObject({ active: false, step: 'finish' });
+  expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(0);
   act(() => tree.unmount());
-});
-
-it.each(['start', 'later'])('continues from the main + at comicStart through %s into scene guidance', action => {
-  jest.useFakeTimers();
-  useServiceTutorial.setState({ ...initialServiceProgress, active: true, mode: 'comic', step: 'comicStart', runId: `home-${action}` });
-  let tree!: ReactTestRenderer;
-  act(() => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
-  act(() => tree.root.findByType(ComicDayBoard).props.onAdd());
-  act(() => tree.root.findAllByProps({ testID: `comic-character-cover-${COMIC_CHARACTERS[0].id}` })[0].props.onPress());
-  if (action === 'start') {
-    act(() => tree.root.findAllByProps({ testID: 'comic-character-start' })[0].props.onPress());
-  } else {
-    act(() => useServiceTutorial.getState().skipStep());
-  }
-  act(() => { jest.advanceTimersByTime(700); });
-  expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicOpen' });
-  expect(tree.root.findAllByType(ComicScenePicker)).toHaveLength(0);
-  expect(loadComicDay('2026-10-21')).toHaveLength(1);
-  const saved = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!;
-  expect(saved.diaries.find(diary => diary.id === useServiceTutorial.getState().diaryKey)?.characterName).toBe(COMIC_CHARACTERS[0].name);
-  act(() => tree.unmount());
-  jest.useRealTimers();
-});
-
-it('keeps already mounted diary surfaces in sync when a replay creates its tutorial diary', () => {
-  jest.useFakeTimers();
-  const original = { id: 'personal-before-replay', title: 'My diary', characterId: COMIC_CHARACTERS[0].id, characterName: 'Original', scenes: [{ ...newComicScene('Personal'), image: COMIC_CHARACTERS[0].scenes[0].id }], createdAt: 1, updatedAt: 1 };
-  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [original], activeId: original.id, migratedLegacyKeys: [] });
-  let first!: ReactTestRenderer;
-  let second!: ReactTestRenderer;
-  const render = () => <IndependentComicPlanner date="2026-10-27" ink="#222" muted="#888" isDark={false} />;
-  act(() => { first = create(render()); second = create(render()); });
-  act(() => useServiceTutorial.getState().start('comic'));
-  act(() => first.root.findByType(ComicDayBoard).props.onAdd());
-  act(() => first.root.findByType(ComicCharacterChooser).props.onStart(COMIC_CHARACTERS[0], 'Replay'));
-  expect(first.root.findAllByType(ComicScenePicker)).toHaveLength(0);
-  expect(second.root.findAllByType(ComicScenePicker)).toHaveLength(0);
-  const diaryKey = useServiceTutorial.getState().diaryKey;
-  act(() => { jest.advanceTimersByTime(1500); });
-  expect(useServiceTutorial.getState().diaryKey).toBe(diaryKey);
-  expect(localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)?.diaries).toHaveLength(2);
-  expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicOpen' });
-  expect(localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)?.diaries.find(diary => diary.id === original.id)).toEqual(original);
-  act(() => { first.unmount(); second.unmount(); });
-  jest.useRealTimers();
 });
 
 it('persists inline card edits without changing the image, tasks or other scenes', () => {
@@ -440,7 +410,7 @@ it('preserves the initial draft and stacks a second random card on plus', async 
 it.each(['scenes', 'cancel'])('opens a header list over the existing board and keeps additions in the same diary: %s', mode => {
   const ref = createRef<ComicDiaryHandle>();
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#69BFAE" muted="#888" isDark={false} />); });
   act(() => tree.root.findByType(ComicDayBoard).props.onAdd());
   act(() => tree.root.findByType(ComicCharacterChooser).props.onStart(COMIC_CHARACTERS[0], '서연'));
   const initial = loadComicDay('2026-10-21')[0];
@@ -451,6 +421,10 @@ it.each(['scenes', 'cancel'])('opens a header list over the existing board and k
   const chooser = tree.root.findByType(HeroCharacterList);
   expect(chooser.props.open).toBe(true);
   expect(tree.root.findAllByProps({ testID: 'hero-header-character-list' })[0].props.style[0].position).toBe('absolute');
+  expect(tree.root.findAllByProps({ testID: 'hero-header-character-list' })[0].props.style[0].left).toBe(24);
+  expect(tree.root.findByProps({ testID: 'hero-header-character-scroll' }).props.contentContainerStyle.gap).toBe(2);
+  expect(tree.root.findByProps({ testID: 'hero-header-character-protagonist-1' }).props.style.width).toBe(44);
+  expect(tree.root.findAllByProps({ testID: 'hero-header-character-ring-protagonist-1' })[0].props.stroke).toBe('#171510');
   expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(0);
   expect(tree.root.findByType(ComicDayBoard).props.items).toHaveLength(1);
   expect(tree.root.findAllByProps({ testID: 'hero-header-character-upcoming' }).length).toBeGreaterThan(0);
@@ -469,6 +443,87 @@ it.each(['scenes', 'cancel'])('opens a header list over the existing board and k
   expect(after.diaries[0].characterName).toBe('서연');
   expect(after.diaries[0].scenes[0]).toEqual(existing);
   expect(after.diaries[0].scenes).toHaveLength(1);
+  act(() => tree.unmount());
+});
+
+it('registers the protagonist choices in the shared header row beside the entry icons', () => {
+  const onHeaderCharacterListChange = jest.fn();
+  const ref = createRef<ComicDiaryHandle>();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<IndependentComicPlanner ref={ref} onHeaderCharacterListChange={onHeaderCharacterListChange} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  onHeaderCharacterListChange.mockClear();
+  act(() => ref.current!.openSceneEntry());
+  const registeredList = onHeaderCharacterListChange.mock.calls.at(-1)?.[0];
+  expect(registeredList.type).toBe(HeroCharacterList);
+  expect(registeredList.props.inline).toBe(true);
+  expect(registeredList.props.open).toBe(true);
+  let listTree!: ReactTestRenderer;
+  act(() => { listTree = create(registeredList); });
+  expect(listTree.root.findByProps({ testID: 'hero-header-character-list' }).props.style[0].top).toBe(8);
+  act(() => listTree.unmount());
+  act(() => ref.current!.openSceneEntry());
+  expect(onHeaderCharacterListChange).toHaveBeenLastCalledWith(null);
+  act(() => tree.unmount());
+});
+
+it('opens a character overlay over the mounted board and changes character only after selection', () => {
+  const ref = createRef<ComicDiaryHandle>();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => tree.root.findByType(ComicDayBoard).props.onAdd());
+  act(() => tree.root.findByType(ComicCharacterChooser).props.onStart(COMIC_CHARACTERS[0], '서연'));
+  const activeId = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!.activeId;
+  const board = tree.root.findByType(ComicDayBoard);
+  act(() => ref.current!.openCharacterPicker());
+  expect(tree.root.findByType(ComicDayBoard)).toBe(board);
+  expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(0);
+  const picker = tree.root.findByType(HeroCharacterPickerOverlay);
+  const scroll = picker.findAllByProps({ testID: 'hero-character-picker-scroll' })[0];
+  expect(scroll.props.children.flat().at(-1).props.testID).toBe('hero-character-picker-upcoming');
+  const firstCard = picker.findAllByProps({ testID: 'hero-character-picker-protagonist-1' })[0];
+  const upcoming = picker.findAllByProps({ testID: 'hero-character-picker-upcoming' })[0];
+  expect(firstCard.props.style.width).toBeLessThanOrEqual(124);
+  expect(upcoming.props.style.height).toBe(firstCard.props.style.height);
+  expect(firstCard.props.style.shadowOpacity).toBeGreaterThan(0);
+  expect(picker.findAllByProps({ testID: 'hero-picker-skeleton-protagonist-1' }).length).toBeGreaterThan(0);
+  const preview = picker.findAllByProps({ testID: 'hero-picker-image-protagonist-1' })[0];
+  act(() => preview.props.onError());
+  expect(picker.findAllByProps({ testID: 'hero-picker-image-protagonist-1' })[0].props.source).toBe(COMIC_CHARACTERS[0].cover);
+  act(() => preview.props.onDisplay());
+  expect(picker.findAllByProps({ testID: 'hero-picker-skeleton-protagonist-1' })).toHaveLength(0);
+  expect(picker.findAllByProps({ testID: 'hero-picker-skeleton-protagonist-2' }).length).toBeGreaterThan(0);
+  expect(localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!.activeId).toBe(activeId);
+  act(() => tree.root.findByType(HeroCharacterPickerOverlay).props.onClose());
+  expect(tree.root.findAllByType(HeroCharacterPickerOverlay)).toHaveLength(0);
+  expect(tree.root.findByType(ComicDayBoard)).toBe(board);
+  act(() => ref.current!.openCharacterPicker());
+  act(() => tree.root.findByType(HeroCharacterPickerOverlay).props.onSelect(COMIC_CHARACTERS[1]));
+  expect(tree.root.findAllByType(HeroCharacterPickerOverlay)).toHaveLength(0);
+  expect(tree.root.findByType(ComicDayBoard).props.character.id).toBe(COMIC_CHARACTERS[1].id);
+  act(() => tree.unmount());
+});
+
+it('switches the active day to the selected protagonist from the header rail', () => {
+  const ref = createRef<ComicDiaryHandle>();
+  const nextCharacter = COMIC_CHARACTERS[1];
+  const onCharacterChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<IndependentComicPlanner ref={ref} onCharacterChange={onCharacterChange} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  expect(onCharacterChange).toHaveBeenLastCalledWith(COMIC_CHARACTERS[0]);
+  act(() => tree.root.findByType(ComicDayBoard).props.onAdd());
+  act(() => tree.root.findByType(ComicCharacterChooser).props.onStart(COMIC_CHARACTERS[0], '서연'));
+  const firstDiaryId = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!.activeId;
+  act(() => ref.current!.openSceneEntry());
+  act(() => tree.root.findByType(HeroCharacterList).props.onSelect(nextCharacter));
+
+  const updated = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!;
+  const active = updated.diaries.find(item => item.id === updated.activeId)!;
+  expect(updated.diaries).toHaveLength(2);
+  expect(updated.activeId).not.toBe(firstDiaryId);
+  expect(active.characterId).toBe(nextCharacter.id);
+  expect(active.scenes[0].image).toMatch(/^p2-/);
+  expect(tree.root.findByType(HeroCharacterList).props.selectedId).toBe(nextCharacter.id);
+  expect(onCharacterChange).toHaveBeenLastCalledWith(nextCharacter);
   act(() => tree.unmount());
 });
 
@@ -508,15 +563,18 @@ it('Today exits past history and returns to today without automatically opening 
     { id: 'evening', createdAt: new Date(2026, 9, 30, 18).getTime() },
   ].map(entry => ({ ...entry, title: entry.id, characterId: COMIC_CHARACTERS[0].id, scenes: [newComicScene(entry.id)], updatedAt: 0 }));
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: entries, activeId: 'yesterday', migratedLegacyKeys: [] });
+  const onDateChange = jest.fn();
   const ref = createRef<ComicDiaryHandle>();
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-30" ink="#222" muted="#888" isDark={false} />); });
+  act(() => { tree = create(<IndependentComicPlanner onDateChange={onDateChange} ref={ref} date="2026-10-30" ink="#222" muted="#888" isDark={false} />); });
   act(() => ref.current!.openLibrary());
   act(() => tree.root.findByType(ComicDiaryLibrary).props.onOpen('yesterday'));
   expect(tree.root.findByType(ComicDayBoard).props.diaryTitle).toBe('yesterday');
+  expect(onDateChange).toHaveBeenLastCalledWith('2026-10-29');
   act(() => ref.current!.openToday());
   expect(tree.root.findAllByType(ComicDiaryLibrary)).toHaveLength(0);
   expect(tree.root.findByType(ComicDayBoard).props.diaryTitle).toBe('evening');
+  expect(onDateChange).toHaveBeenLastCalledWith('2026-10-30');
   act(() => ref.current!.openLibrary());
   expect(tree.root.findByType(ComicDiaryLibrary).props.diaries).toHaveLength(3);
   act(() => tree.unmount());
@@ -615,6 +673,51 @@ it('replaces the active card with the inline result and keeps other cards intact
   act(() => tree.unmount());
 });
 
+it('keeps generated variations with identical writing as separate cards and applies retries only once', async () => {
+  useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
+  const original = { ...newComicScene('Same title'), memo: 'Same story', artworkUri: 'file:///hero-original-0.png', todos: [{ id: 'original-task', text: 'Keep task', completed: false }] };
+  const diary = { id: 'variations-diary', title: 'Diary', characterId: COMIC_CHARACTERS[0].id, scenes: [original], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
+  saveComicNavigation(COMIC_CHARACTERS[0].id, 'board', diary.id);
+  const ref = createRef<ComicDiaryHandle>();
+  const render = () => <IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />;
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(render()); });
+  for (const index of [1, 2]) {
+    await act(async () => ref.current!.openPhotoEntry());
+    const apply = tree.root.findByType(HeroInlineComposer).props.onApply;
+    const uri = `file:///hero-variation-${index}-0.png`;
+    await act(async () => apply({ title: 'Same title', memo: 'Same story' }, uri, `hero-variation-${index}`));
+    await act(async () => apply({ title: 'Same title', memo: 'Same story' }, uri, `hero-variation-${index}`));
+  }
+  const scenes = loadComicDay('2026-10-21');
+  expect(scenes).toHaveLength(3);
+  expect(scenes[0]).toEqual(original);
+  expect(new Set(scenes.map(scene => scene.id)).size).toBe(3);
+  expect(scenes.map(scene => scene.artworkUri)).toEqual(['file:///hero-original-0.png', 'file:///hero-variation-1-0.png', 'file:///hero-variation-2-0.png']);
+  expect(scenes[1].todos).toEqual([]);
+  act(() => tree.unmount());
+  await act(async () => { tree = create(render()); });
+  expect(tree.root.findByType(ComicDayBoard).props.items).toHaveLength(3);
+  act(() => tree.unmount());
+});
+
+it('still resolves a saved retired scene in detail without replacing it with another available scene', async () => {
+  useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
+  const image = 'p3-10-night-food-stall' as const;
+  const card = { ...newComicScene('Saved night market'), image };
+  const diary = { id: 'retired-scene-diary', title: 'Diary', characterId: 'protagonist-3', scenes: [card], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
+  saveComicNavigation('protagonist-3', 'board', diary.id);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => tree.root.findByType(ComicDayBoard).props.onOpen(card.id));
+  const artwork = tree.root.findAllByProps({ imageKey: `${image}:original` })[0];
+  expect(artwork.props.source).toBe(COMIC_SCENES.find(scene => scene.id === image)!.source);
+  expect(loadComicDay('2026-10-21')[0]).toEqual(card);
+  act(() => tree.unmount());
+});
+
 it('replaces only the selected card artwork from the detail gallery and preserves its writing and tasks', () => {
   const target = { ...newComicScene('Keep title'), image: '05-work' as const, artworkUri: 'file:///generated.png', memo: 'Keep memo', todos: [{ id: 'keep-task', text: 'Keep task', completed: true }] };
   const other = newComicScene('Other');
@@ -649,4 +752,91 @@ it('opens the new inline composer from the chooser personalization entry', async
   expect(tree.root.findAllByType(HeroPersonalizationFlow)).toHaveLength(0);
   expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(0);
   act(() => tree.unmount());
+});
+
+it('starts new AI entries empty instead of copying the viewed card or a previously closed entry', async () => {
+  useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
+  const card = { ...newComicScene('Previous Halloween title'), memo: 'Previous card story', artworkUri: 'file:///old-card.png' };
+  const diary = { id: 'empty-composer-diary', title: 'Diary', characterId: COMIC_CHARACTERS[0].id, scenes: [card], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
+  saveComicNavigation(COMIC_CHARACTERS[0].id, 'board', diary.id);
+  const ref = createRef<ComicDiaryHandle>();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  await act(async () => ref.current!.openPhotoEntry());
+  const title = () => tree.root.findAllByProps({ testID: 'hero-inline-title' })[0];
+  const story = () => tree.root.findAllByProps({ testID: 'hero-inline-story' })[0];
+  expect(title().props.value).toBe('');
+  expect(story().props.value).toBe('');
+  act(() => title().props.onChangeText('Closed draft title'));
+  act(() => story().props.onChangeText('Closed draft story'));
+  act(() => tree.root.findByType(HeroInlineComposer).props.onClose());
+  await act(async () => ref.current!.openPhotoEntry());
+  expect(title().props.value).toBe('');
+  expect(story().props.value).toBe('');
+  expect(loadComicDay('2026-10-21')).toEqual([card]);
+  act(() => tree.unmount());
+});
+
+it('starts AI generation empty instead of copying the board draft', async () => {
+  const ref = createRef<ComicDiaryHandle>();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => tree.root.findByType(ComicDayBoard).props.onDraftChange('05-work', { title: 'Board draft title', memo: 'Board draft story' }));
+  await act(async () => ref.current!.openPhotoEntry());
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.value).toBe('');
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.value).toBe('');
+  act(() => tree.unmount());
+});
+
+it('retains the AI mode, title and writing when switching header entries', async () => {
+  const ref = createRef<ComicDiaryHandle>();
+  const onPhotoEntryChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<IndependentComicPlanner ref={ref} onPhotoEntryChange={onPhotoEntryChange} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  await act(async () => ref.current!.openPhotoEntry());
+  expect(onPhotoEntryChange).toHaveBeenLastCalledWith(true);
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-mode-photo' })[0].props.onPress());
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.onChangeText('Keep title'));
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.onChangeText('Keep story'));
+  act(() => ref.current!.openSceneEntry());
+  expect(tree.root.findByType(HeroInlineComposer).props.visible).toBe(false);
+  expect(tree.root.findAllByProps({ testID: 'hero-header-character-list' })[0].props.pointerEvents).toBe('none');
+  act(() => ref.current!.openSceneEntry());
+  expect(tree.root.findAllByProps({ testID: 'hero-header-character-list' })[0].props.pointerEvents).toBe('auto');
+  expect(onPhotoEntryChange).toHaveBeenLastCalledWith(false);
+  await act(async () => ref.current!.openPhotoEntry());
+  expect(tree.root.findByType(HeroInlineComposer).props.visible).toBe(true);
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-mode-photo' })[0].props.accessibilityState.selected).toBe(true);
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.value).toBe('Keep title');
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.value).toBe('Keep story');
+  act(() => tree.root.findByType(HeroInlineComposer).props.onClose());
+  expect(onPhotoEntryChange).toHaveBeenLastCalledWith(false);
+  act(() => tree.unmount());
+});
+
+
+it('reorders a long-pressed character without selecting it and restores order after reopening', () => {
+  let handlers!: PanResponderCallbacks;
+  const original = PanResponder.create;
+  const spy = jest.spyOn(PanResponder, 'create').mockImplementation(config => { handlers = config; return original(config); });
+  const onSelect = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCharacterPickerOverlay isDark={false} onSelect={onSelect} onClose={jest.fn()} />); });
+  const first = tree.root.findAllByProps({ testID: 'hero-character-picker-protagonist-1' })[0];
+  act(() => first.props.onLongPress({ nativeEvent: { pageX: 100 } }));
+  act(() => { handlers.onPanResponderGrant?.({} as never, {} as never); });
+  act(() => { handlers.onPanResponderMove?.({} as never, { moveX: 100 + (first.props.style.width + 10) * 2 } as never); });
+  act(() => { handlers.onPanResponderRelease?.({} as never, {} as never); });
+  act(() => first.props.onPress());
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(readHeroCharacterOrder().slice(0, 3)).toEqual(['protagonist-2', 'protagonist-3', 'protagonist-1']);
+  act(() => tree.unmount());
+  act(() => { tree = create(<HeroCharacterPickerOverlay isDark={false} onSelect={onSelect} onClose={jest.fn()} />); });
+  const scroll = tree.root.findAllByProps({ testID: 'hero-character-picker-scroll' })[0];
+  const cards = scroll.props.children.flat();
+  expect(cards[0].key).toBe('protagonist-2');
+  expect(cards.at(-1).props.testID).toBe('hero-character-picker-upcoming');
+  act(() => tree.unmount());
+  spy.mockRestore();
 });

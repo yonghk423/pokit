@@ -4,35 +4,33 @@ import { cancelHeroAiJob, dismissHeroAiJob, getPendingHeroAiJob, resumeHeroAiJob
 
 jest.mock('@shared/config/supabase', () => ({ getSupabaseUrl: () => 'https://example.supabase.co', getSupabasePublishableKey: () => 'public' }));
 jest.mock('@shared/lib/supabase/heroAiAuth', () => ({ getHeroAiAccessToken: async () => 'session' }));
-jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///documents/', getInfoAsync: jest.fn(async () => ({ exists: false })), makeDirectoryAsync: jest.fn(), readAsStringAsync: jest.fn(), downloadAsync: jest.fn(async () => ({ status: 200 })), moveAsync: jest.fn(), deleteAsync: jest.fn(async () => undefined) }));
+jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///documents/', getInfoAsync: jest.fn(async () => ({ exists: false })), makeDirectoryAsync: jest.fn(), readAsStringAsync: jest.fn(), writeAsStringAsync: jest.fn(async () => undefined), EncodingType: { Base64: 'base64' }, downloadAsync: jest.fn(async () => ({ status: 200 })), moveAsync: jest.fn(), deleteAsync: jest.fn(async () => undefined) }));
 const key = 'pokit:hero-ai-pending-v1';
 const job: PendingHeroAiJob = { id: 'hero-restarted-123', mode: 'face', scenes: ['05-work'], count: 1, inputsPath: 'file:///documents/inputs.json', createdAt: Date.now() };
-const result = { index: 0, url: 'https://example.supabase.co/storage/v1/object/sign/hero-ai-results/one.png' };
+const result = { index: 0, url: 'https://example.supabase.co/storage/v1/object/sign/yourday-ai-results/one.png' };
 const originalFetch = global.fetch;
-beforeEach(async () => { jest.clearAllMocks(); await AsyncStorage.clear(); global.fetch = jest.fn(); });
+beforeEach(async () => { jest.clearAllMocks(); jest.mocked(fs.readAsStringAsync).mockResolvedValue('iVBORw0KGgo='); await AsyncStorage.clear(); global.fetch = jest.fn(); });
 afterAll(() => { global.fetch = originalFetch; });
 function reply(value: unknown, status = 200) { return { ok: status < 400, status, json: async () => value } as Response; }
 
-it('restores a completed server job by GET without submitting another paid generation', async () => {
+it('uses a completed device file without downloading or regenerating the image', async () => {
   await AsyncStorage.setItem(key, JSON.stringify(job));
-  jest.mocked(global.fetch).mockResolvedValue(reply({ status: 'completed', results: [result], remaining: 2 }));
-  const restored = await getPendingHeroAiJob();
-  const completed = await resumeHeroAiJob(restored!, jest.fn());
-  expect(global.fetch).toHaveBeenCalledTimes(1);
-  expect(jest.mocked(global.fetch).mock.calls[0][1]?.method).toBe('GET');
+  jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({ exists: true, size: 100 } as never);
+  jest.mocked(global.fetch).mockResolvedValue(reply({ status: 'completed', results: [{ index: 0 }], remaining: 2 }));
+  const completed = await resumeHeroAiJob(job, jest.fn());
+  expect(global.fetch).toHaveBeenCalledTimes(2);
+  expect(String(jest.mocked(global.fetch).mock.calls[1][0])).toContain('/saved');
   expect(completed.images[0].sceneId).toBe('05-work');
-  expect(fs.downloadAsync).toHaveBeenCalledWith(result.url, expect.stringContaining('.download'));
-  expect(fs.moveAsync).toHaveBeenCalled();
-  expect((await getPendingHeroAiJob())?.result?.images).toEqual(completed.images);
+  expect(fs.downloadAsync).not.toHaveBeenCalled();
 });
-
-it('keeps the request recoverable if downloading fails and never commits a partial file', async () => {
+it('does not regenerate a completed image that was lost before device save', async () => {
   await AsyncStorage.setItem(key, JSON.stringify(job));
-  jest.mocked(global.fetch).mockResolvedValue(reply({ status: 'completed', results: [result], remaining: 2 }));
-  jest.mocked(fs.downloadAsync).mockRejectedValueOnce(new Error('offline'));
-  await expect(resumeHeroAiJob(job, jest.fn())).rejects.toThrow('offline');
+  jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({ exists: false } as never);
+  jest.mocked(global.fetch).mockResolvedValue(reply({ status: 'completed', results: [{ index: 0 }], remaining: 2 }));
+  await expect(resumeHeroAiJob(job, jest.fn())).rejects.toThrow('result_unavailable');
+  expect(global.fetch).toHaveBeenCalledTimes(1);
   expect((await getPendingHeroAiJob())?.id).toBe(job.id);
-  expect(fs.moveAsync).not.toHaveBeenCalled();
+  expect(fs.downloadAsync).not.toHaveBeenCalled();
 });
 
 it('can show already downloaded results after server retention expires without any network call', async () => {
@@ -56,12 +54,17 @@ it('only uploads unclaimed slots after interruption, keeping the original reques
   jest.mocked(fs.readAsStringAsync).mockResolvedValueOnce(JSON.stringify([{ base: 'first' }, { base: 'second' }]));
   jest.mocked(global.fetch)
     .mockResolvedValueOnce(reply({ status: 'processing', pending: [1], results: [], remaining: 1 }))
-    .mockResolvedValueOnce(reply({ accepted: true }, 202))
-    .mockResolvedValueOnce(reply({ status: 'completed', results: [{ ...result, index: 1 }], remaining: 1 }));
+    .mockResolvedValueOnce(reply({ index: 1, b64_json: 'iVBORw0KGgoAAAAA', remaining: 1 }))
+    .mockResolvedValueOnce(reply({ status: 'completed', results: [{ ...result, index: 1 }], remaining: 1 }))
+    .mockResolvedValueOnce(reply({ remaining: 1 }));
+  jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({ exists: true, size: 100 } as never);
   const completed = await resumeHeroAiJob(pending, jest.fn());
-  const posts = jest.mocked(global.fetch).mock.calls.filter(([, options]) => options?.method === 'POST');
+  expect(fs.writeAsStringAsync).toHaveBeenCalledWith(expect.stringContaining('.download'), 'iVBORw0KGgoAAAAA', { encoding: 'base64' });
+  expect(fs.moveAsync).toHaveBeenCalled();
+  expect(fs.downloadAsync).not.toHaveBeenCalled();
+  const posts = jest.mocked(global.fetch).mock.calls.filter(([url, options]) => options?.method === 'POST' && String(url).includes('/render/'));
   expect(posts).toHaveLength(1);
-  expect(posts[0][0]).toBe(`https://example.supabase.co/functions/v1/hero-ai/jobs/${job.id}/render/1`);
+  expect(posts[0][0]).toBe(`https://example.supabase.co/functions/v1/yourday-ai/jobs/${job.id}/render/1`);
   expect(completed.images[0].sceneId).toBe('01-exercise');
 });
 
@@ -120,4 +123,82 @@ it('ignores a completed response that arrives after the user cancels', async () 
   });
   await expect(resumeHeroAiJob(job, jest.fn(), controller.signal)).rejects.toThrow('cancelled');
   expect(fs.downloadAsync).not.toHaveBeenCalled();
+});
+
+it('never publishes a partial local file when writing the direct result fails', async () => {
+  jest.mocked(fs.readAsStringAsync).mockResolvedValueOnce(JSON.stringify([{ base: 'image' }]));
+  jest.mocked(global.fetch)
+    .mockResolvedValueOnce(reply({ status: 'processing', pending: [0], results: [], remaining: 2 }))
+    .mockResolvedValueOnce(reply({ index: 0, b64_json: 'iVBORw0KGgoAAAAA', remaining: 2 }));
+  jest.mocked(fs.writeAsStringAsync).mockRejectedValueOnce(new Error('disk full'));
+  await expect(resumeHeroAiJob(job, jest.fn())).rejects.toThrow('save_failed');
+  expect(fs.moveAsync).not.toHaveBeenCalled();
+  expect(fs.deleteAsync).toHaveBeenCalledWith(expect.stringContaining('.download'), { idempotent: true });
+});
+
+it('keeps a locally saved result recoverable when its confirmation cannot reach the server', async () => {
+ const saved = { images: [{ uri: 'file:///documents/ready.png' }], indices: [0], remaining: 2 };
+ await AsyncStorage.setItem(key, JSON.stringify({ ...job, result: saved }));
+ jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({ exists: true, size: 100 } as never);
+ jest.mocked(global.fetch).mockRejectedValueOnce(new Error('offline'));
+ await expect(resumeHeroAiJob({ ...job, result: saved }, jest.fn())).rejects.toThrow('connection');
+ expect((await getPendingHeroAiJob())?.result?.images).toEqual(saved.images);
+ expect(jest.mocked(global.fetch).mock.calls).toHaveLength(1);
+ expect(String(jest.mocked(global.fetch).mock.calls[0][0])).toContain('/saved');
+});
+it('recovers a server task still running after app restart without cancelling or regenerating', async () => {
+ await AsyncStorage.setItem(key, JSON.stringify(job));
+ jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({exists:true,size:100} as never);
+ jest.mocked(global.fetch)
+  .mockResolvedValueOnce(reply({status:'processing',pending:[],results:[],remaining:2}))
+  .mockResolvedValueOnce(reply({status:'completed',results:[{index:0}],remaining:2}))
+  .mockResolvedValueOnce(reply({remaining:2}));
+ const completed=await resumeHeroAiJob(job,jest.fn());
+ expect(completed.images).toHaveLength(1);
+ expect(jest.mocked(global.fetch).mock.calls.some(([url])=>String(url).includes('/cancel')||String(url).includes('/render/'))).toBe(false);
+});
+it('downloads a finished server result atomically and acknowledges only after disk save', async () => {
+ await AsyncStorage.setItem(key,JSON.stringify(job));
+ jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({exists:false} as never).mockResolvedValueOnce({exists:true,size:100} as never);
+ jest.mocked(global.fetch).mockResolvedValueOnce(reply({status:'completed',results:[result],remaining:2})).mockImplementationOnce(async (_url,options)=>{
+  expect(String(_url)).toContain('/saved');expect(fs.moveAsync).toHaveBeenCalled();
+  expect((await getPendingHeroAiJob())?.result?.images).toHaveLength(1);
+  return reply({remaining:2});
+ });
+ await resumeHeroAiJob(job,jest.fn());
+ expect(fs.downloadAsync).toHaveBeenCalledWith(result.url,expect.stringContaining('.png.download'));
+});
+it('retains the server task on connection loss instead of setting cancellation intent', async () => {
+ await AsyncStorage.setItem(key,JSON.stringify(job));
+ jest.mocked(global.fetch).mockRejectedValueOnce(new Error('offline'));
+ await expect(resumeHeroAiJob(job,jest.fn())).rejects.toThrow('connection');
+ expect((await getPendingHeroAiJob())?.cancelRequested).toBeUndefined();
+ expect(global.fetch).toHaveBeenCalledTimes(1);
+});
+it('does not acknowledge or discard the job when device storage is full', async () => {
+ await AsyncStorage.setItem(key,JSON.stringify(job));
+ jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({exists:false} as never);
+ jest.mocked(fs.downloadAsync).mockRejectedValueOnce(new Error('disk full'));
+ jest.mocked(global.fetch).mockResolvedValueOnce(reply({status:'completed',results:[result],remaining:2}));
+ await expect(resumeHeroAiJob(job,jest.fn())).rejects.toThrow('save_failed');
+ expect(global.fetch).toHaveBeenCalledTimes(1);expect((await getPendingHeroAiJob())?.id).toBe(job.id);
+});
+
+it('announces background readiness only after the server accepts every uploaded input', async () => {
+ await AsyncStorage.setItem(key,JSON.stringify(job));
+ jest.mocked(fs.readAsStringAsync).mockResolvedValueOnce(JSON.stringify([{base:'image'}]));
+ jest.mocked(fs.getInfoAsync).mockResolvedValueOnce({exists:true,size:100} as never);
+ let accept!: (value: Response) => void;
+ const submitted=jest.fn();
+ jest.mocked(global.fetch)
+  .mockResolvedValueOnce(reply({status:'processing',pending:[0],results:[],remaining:2}))
+  .mockImplementationOnce(()=>new Promise(resolve=>{accept=resolve;}))
+  .mockResolvedValueOnce(reply({status:'completed',results:[{index:0}],remaining:2}))
+  .mockResolvedValueOnce(reply({remaining:2}));
+ const task=resumeHeroAiJob(job,jest.fn(),undefined,submitted);
+ await new Promise(resolve=>setTimeout(resolve,0));
+ expect(submitted).not.toHaveBeenCalled();
+ accept(reply({index:0,status:'processing'},202));
+ await task;
+ expect(submitted).toHaveBeenCalledTimes(1);
 });

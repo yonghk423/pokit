@@ -1,11 +1,10 @@
-import { loadServiceTutorial, useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
-import { claimTutorialAutoOpen } from '../../welcome-intro/lib/tutorialLifecycle';
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
+import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -107,22 +106,7 @@ export function DayPlanPage({
   ) => ReactNode;
 }) {
   const router = useRouter();
-  const tutorialOpened = useRef(false);
-  useFocusEffect(useCallback(() => {
-    const savedTutorial = loadServiceTutorial();
-    // A tutorial left active in storage after app exit is paused on return; it must not
-    // unexpectedly appear over ordinary day-plan use. The user can resume it explicitly.
-    if (savedTutorial.active && !useServiceTutorial.getState().active) useServiceTutorial.getState().pause();
-    const timer = !tutorialOpened.current && !savedTutorial.dismissed ? setTimeout(() => {
-      tutorialOpened.current = true;
-      if (claimTutorialAutoOpen()) router.push('/welcome-intro');
-    }, 400) : null;
-    return () => {
-      if (timer) clearTimeout(timer);
-      const tut = useServiceTutorial.getState();
-      if (tut.active && tut.mode === 'rhythm') tut.pause();
-    };
-  }, [router]));
+
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -258,7 +242,7 @@ export function DayPlanPage({
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      const task = InteractionManager.runAfterInteractions(() => {
+      const task = scheduleIdleTask(() => {
         if (cancelled) return;
         hydrateLayoutModeVisibility();
         setFixedRoutineApplyLayoutMode(effectiveLayoutMode);
@@ -276,7 +260,7 @@ export function DayPlanPage({
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      const task = InteractionManager.runAfterInteractions(() => {
+      const task = scheduleIdleTask(() => {
         if (cancelled) return;
         rollPriorityPlanForwardIfEnded();
         const latestOrder = useDayPlanDraftStore.getState().priorityCategoryOrder;

@@ -12,7 +12,7 @@ export const ComicGalleryCard = memo(function ComicGalleryCard({ id, label, widt
   const source = COMIC_SCENE_THUMBNAILS[id];
   return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: order > 0 }} onPress={() => { tapHaptic('select'); onToggle(id); }} style={{ width }}>
     <View style={[s.photo, order > 0 && s.selected]}>
-      <ComicSceneImage imageKey={`${id}:960`} source={source} fallbackSource={COMIC_SCENES.find(scene => scene.id === id)!.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
+      <ComicSceneImage fitToCard imageKey={`${id}:960`} source={source} fallbackSource={COMIC_SCENES.find(scene => scene.id === id)!.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
       {order > 0 ? <View style={s.check}><ThemedText style={{ color: '#171510', fontSize: 15 }}>{order}</ThemedText></View> : null}
     </View>
     {columns < 3 ? <ThemedText numberOfLines={1} style={s.caption}>{label}</ThemedText> : null}

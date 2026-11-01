@@ -34,6 +34,7 @@ it('casts the chosen character, previews its scenes and starts it once after the
   expect(main.findByType(ComicSceneImage).props.imageKey).toMatch(new RegExp(`^${character.id}:.*:960$`));
   act(() => { tree.root.findAllByProps({ testID: `comic-character-thumbnail-${character.id}-${character.scenes[0].id}` })[0].props.onPress(); });
   expect(main.findByType(ComicSceneImage).props.imageKey).toBe(`${character.id}:${character.scenes[0].id}:960`);
+  expect(tree.root.findAllByProps({ testID: 'comic-character-confirm-check' })[0].props.fill).toBe('#69BFA9');
   const start = tree.root.findAllByProps({ testID: 'comic-character-start' })[0];
   act(() => { start.props.onPress(); start.props.onPress(); });
   expect(onStart).not.toHaveBeenCalled();
@@ -59,45 +60,6 @@ it('starts without a name input and preserves historical names in storage', () =
   localStorageClient.removeItem(`pokit:comic-character-name:${character.id}`);
 });
 
-it.each([null, 'previous-diary'])('Later starts the next screen once with diary key %s', diaryKey => {
-  useServiceTutorial.setState({ active: true, mode: 'comic', step: 'comicReady', diaryKey, runId: null });
-  const onStart = jest.fn();
-  let tree!: ReactTestRenderer;
-  const render = () => <ComicCharacterChooser requireExplicitChoice onStart={onStart} ink="#222" muted="#888" isDark={false} />;
-  act(() => { tree = create(render()); });
-  act(() => { jest.advanceTimersByTime(32); });
-  act(() => { useServiceTutorial.getState().skipStep(); });
-  act(() => { jest.advanceTimersByTime(600); });
-  expect(onStart).toHaveBeenCalledTimes(1);
-  expect(onStart.mock.calls[0][1]).toBeTruthy();
-  expect(useServiceTutorial.getState()).toMatchObject({ active: true, step: 'comicPick', completed: [] });
-  act(() => { tree.update(render()); });
-  act(() => { jest.advanceTimersByTime(600); });
-  expect(onStart).toHaveBeenCalledTimes(1);
-  act(() => { tree.unmount(); });
-});
-
-it('manual start follows the Later path into comicPick and starts only once', () => {
-  useServiceTutorial.setState({ active: true, mode: 'comic', step: 'comicCharacter', runId: 'manual' });
-  const onStart = jest.fn();
-  let tree!: ReactTestRenderer;
-  const render = () => <ComicCharacterChooser requireExplicitChoice onStart={onStart} ink="#222" muted="#888" isDark={false} />;
-  act(() => { tree = create(render()); });
-  act(() => { tree.root.findAllByProps({ testID: `comic-character-cover-${COMIC_CHARACTERS[0].id}` })[0].props.onPress(); });
-  act(() => { jest.advanceTimersByTime(32); });
-  expect(useServiceTutorial.getState().step).toBe('comicReady');
-  act(() => { tree.root.findAll(node => node.props.testID === 'comic-character-start' && typeof node.props.onPress === 'function')[0].props.onPress(); });
-  expect(useServiceTutorial.getState().step).toBe('comicPick');
-  expect(onStart).toHaveBeenCalledTimes(0);
-  act(() => { jest.advanceTimersByTime(700); });
-  expect(onStart).toHaveBeenCalledTimes(1);
-  expect(onStart.mock.calls[0]).toHaveLength(2);
-  act(() => { tree.update(render()); });
-  act(() => { jest.advanceTimersByTime(700); });
-  expect(onStart).toHaveBeenCalledTimes(1);
-  act(() => { tree.unmount(); });
-});
-
 it('cancels an unfinished start when the chooser unmounts', () => {
   const onStart = jest.fn();
   let tree!: ReactTestRenderer;
@@ -108,17 +70,17 @@ it('cancels an unfinished start when the chooser unmounts', () => {
   expect(onStart).not.toHaveBeenCalled();
 });
 
-it('reserves inline tutorial space below the cards instead of covering them', () => {
+it('does not render the retired tutorial guide in character selection', () => {
   useServiceTutorial.setState({ active: true, mode: 'comic', step: 'comicCharacter', runId: 'inline-choice-guide' });
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser requireExplicitChoice onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
-  expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' })).toHaveLength(0);
   const stage = tree.root.findAllByProps({ testID: 'comic-character-casting' })[0];
   expect(stage.findAllByProps({ testID: 'comic-character-inline-guide' })).toHaveLength(0);
   act(() => { tree.unmount(); });
 });
 
-it('keeps artwork, character choices and guidance mounted when the keyboard opens', () => {
+it('keeps artwork and character choices mounted when the keyboard opens', () => {
   const callbacks = new Map<string, () => void>();
   const addListener = Keyboard.addListener.bind(Keyboard);
   const listen = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, callback) => {
@@ -135,7 +97,7 @@ it('keeps artwork, character choices and guidance mounted when the keyboard open
     expect(tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` }).length).toBeGreaterThan(0);
     expect(tree.root.findAllByProps({ testID: `comic-character-cover-${character.id}` }).length).toBeGreaterThan(0);
   }
-  expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'comic-character-inline-guide' })).toHaveLength(0);
   act(() => { (callbacks.get('keyboardWillHide') ?? callbacks.get('keyboardDidHide'))!(); });
   expect(tree.root.findAllByProps({ testID: 'comic-character-content' })[0].props.scrollEnabled).toBe(false);
   act(() => { tree.unmount(); });

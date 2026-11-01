@@ -167,24 +167,12 @@ it('opens an item from the restored overview and returns to that list', async ()
   act(() => tree.unmount());
 });
 
-it('opens the tutorial mate after skipping step 14, then closes it before completing step 15', async () => {
+it('does not open a mate automatically for a retired tutorial step', async () => {
   const { useServiceTutorial, initialServiceProgress } = require('../../welcome-intro/model/serviceTutorial');
-  const { ServiceTutorialCoach } = require('../../welcome-intro/ui/ServiceTutorialCoach');
-  useServiceTutorial.setState({ ...initialServiceProgress, active: true, mode: 'rhythm', step: 'rhythmOpen', routineKey: 'tutorial-mate' });
+  useServiceTutorial.setState({ ...initialServiceProgress, active: true, mode: 'rhythm', step: 'rhythmRecord', routineKey: 'tutorial-mate' });
   const item = { key: 'tutorial-mate::instance:today', label: 'My mate', icon: 'note', completed: false };
-  const render = (items: typeof item[]) => <OverlayRhythmCards items={items} width={390} height={700} ink="#222" muted="#888" isDark={false} renderDetail={() => null} onComplete={jest.fn()} onAdd={jest.fn()} />;
   let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(render([])); });
-  act(() => { useServiceTutorial.getState().skipStep(); });
-  expect(useServiceTutorial.getState().step).toBe('rhythmRecord');
+  await act(async () => { tree = create(<OverlayRhythmCards items={[item]} width={390} height={700} ink="#222" muted="#888" isDark={false} renderDetail={() => null} onComplete={jest.fn()} onAdd={jest.fn()} />); });
   expect(tree.root.findAllByProps({ testID: 'rhythm-card-detail-panel' })).toHaveLength(0);
-  // The new mate may appear after the step changes, when creation finishes.
-  await act(async () => { tree.update(render([item])); });
-  expect(tree.root.findAllByProps({ testID: 'rhythm-card-detail-panel' }).length).toBeGreaterThan(0);
-  const coach = tree.root.findAllByType(ServiceTutorialCoach).find(node => node.props.onSkip);
-  expect(coach).toBeDefined();
-  act(() => { coach!.props.onSkip(); });
-  expect(tree.root.findAllByProps({ testID: 'rhythm-card-detail-panel' })).toHaveLength(0);
-  expect(useServiceTutorial.getState().step).toBe('rhythmSuccess');
   act(() => { tree.unmount(); useServiceTutorial.setState({ ...initialServiceProgress }); });
 });

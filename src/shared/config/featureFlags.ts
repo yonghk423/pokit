@@ -2,6 +2,8 @@
  * 저장된 사진·진행 기록은 유지하며 메뉴, 가이드, 직접 접근과 자동 동기화만 중단한다.
  */
 export const FEATURE_FLAGS = {
+  /** 메이트 기능·데이터는 유지하고 주인공 화면의 가방 진입 버튼을 임시로 숨긴다. */
+  mateShortcut: false,
   /** 오늘 화면의 원형·기본 리스트 보기를 임시로 숨긴다. */
   circularRoutineLayout: false,
   basicRoutineListLayout: false,

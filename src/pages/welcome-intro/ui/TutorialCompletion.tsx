@@ -1,5 +1,6 @@
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, InteractionManager, Modal, Platform, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, Modal, Platform, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@shared/lib/i18n';
@@ -69,7 +70,7 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
   // iOS drops a Modal presented while the scene sheet is still dismissing, leaving a silent wait.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const task = InteractionManager.runAfterInteractions(() => { timer = setTimeout(() => setOpen(true), 120); });
+    const task = scheduleIdleTask(() => { timer = setTimeout(() => setOpen(true), 120); });
     return () => { task.cancel(); if (timer) clearTimeout(timer); };
   }, []);
   useEffect(() => {

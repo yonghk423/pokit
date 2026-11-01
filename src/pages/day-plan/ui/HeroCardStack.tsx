@@ -7,6 +7,7 @@ import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 export type HeroCardStackHandle = { turnTo: (index: number) => void };
 type Props = {
+  pageKey?: (index: number) => string;
   active: number; count: number; width: number; height: number; cardWidth: number; cardHeight: number; top: number; enabled: boolean;
   overviewGesture?: PanGesture;
   onCardHold?: (x: number, y: number) => void;
@@ -29,9 +30,11 @@ function StackCard({ index, position, direction, width, cardWidth, cardHeight, t
 }
 
 /** Intact live cards use the mate deck's pose; no snapshots, image slicing or decode gate. */
-export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, onCardHold, renderPage, onChange }, ref) {
-  const [cursor, setCursor] = useState(() => active + count);
-  const base = count > 1 ? cursor : 0;
+export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ pageKey, active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, onCardHold, renderPage, onChange }, ref) {
+  const [window, setWindow] = useState(() => ({ count, cursor: active + count }));
+  // A different modulus changes every virtual page. Derive the new window
+  // immediately, including when the selected index itself has not changed.
+  const base = count > 1 ? (window.count === count ? window.cursor : active + count) : 0;
   const reported = useSharedValue(active);
   const step = Math.max(150, width * 0.42);
   const position = useSharedValue(base);
@@ -56,12 +59,12 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
     settling.set(false); tracking.set(false);
     // External selection must move the mounted card window with the native position.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCursor(next);
+    setWindow({ count, cursor: next });
   }, [active, count, position, destination, settling, tracking, reported]);
   const commit = (next: number, token: number) => {
     if (generation.get() !== token) return;
     reported.set(loopDeckIndex(next, count));
-    setCursor(next); onChange(loopDeckIndex(next, count)); tapHaptic('select');
+    setWindow({ count, cursor: next }); onChange(loopDeckIndex(next, count)); tapHaptic('select');
   };
   const settle = (next: number) => {
     'worklet';
@@ -131,7 +134,7 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
     )
     : movement;
   return <GestureDetector gesture={deckGesture}><View testID="comic-card-stack" collapsable={false} style={[s.root, { width, height }]}>
-    {indices.map(index => <StackCard key={index} index={index} position={position} direction={direction} width={width} cardWidth={cardWidth} cardHeight={cardHeight} top={top}
+    {indices.map(index => <StackCard key={pageKey ? `${pageKey(loopDeckIndex(index, count))}:${count > 1 ? Math.floor(index / count) : 1}` : index} index={index} position={position} direction={direction} width={width} cardWidth={cardWidth} cardHeight={cardHeight} top={top}
       interactive={enabled && index === base}>{renderPage(loopDeckIndex(index, count), enabled && index === base, index === base)}</StackCard>)}
   </View></GestureDetector>;
 });

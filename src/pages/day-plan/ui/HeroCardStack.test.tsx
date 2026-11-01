@@ -148,3 +148,32 @@ it('prioritizes the deletion hold over the earlier overview hold on a multi-card
   expect(composed.gestures[1].gestures[1]).toBe(overview);
   act(() => tree.unmount());
 });
+
+it('rebases the visible page when the card count changes without changing selection', () => {
+  let tree!: ReactTestRenderer;
+  const render = (count: number, active: number) => <HeroCardStack active={active} count={count} width={390} height={600} cardWidth={300} cardHeight={350} top={68} enabled onChange={() => undefined} renderPage={(index, interactive) => <Text testID={interactive ? 'front-page' : undefined}>{index}</Text>} />;
+  act(() => { tree = create(render(1, 0)); });
+  for (const [count, active] of [[2, 1], [3, 1], [4, 3], [2, 1], [1, 0]]) {
+    act(() => tree.update(render(count, active)));
+    expect({ count, active, visible: tree.root.findByProps({ testID: 'front-page' }).props.children }).toEqual({ count, active, visible: active });
+  }
+  act(() => tree.unmount());
+});
+
+it('keeps the same artwork view mounted when appending changes virtual page indices', () => {
+  const React = require('react');
+  let serial = 0;
+  function Artwork({ id }: { id: string }) {
+    const [mount] = React.useState(() => ++serial);
+    return <Text testID="artwork-mount">{`${id}:${mount}`}</Text>;
+  }
+  const ids = ['a', 'b', 'c', 'd'];
+  const render = (count: number, active: number) => <HeroCardStack active={active} count={count} width={390} height={600} cardWidth={300} cardHeight={350} top={68} enabled onChange={jest.fn()} pageKey={index => ids[index]} renderPage={index => <Artwork id={ids[index]} />} />;
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(render(3, 1)); });
+  const original = tree.root.findAllByProps({ testID: 'comic-stack-card-5' })[0].findAllByType(Artwork)[0];
+  act(() => tree.update(render(4, 3)));
+  const retained = tree.root.findAllByProps({ testID: 'comic-stack-card-6' })[0].findAllByType(Artwork)[0];
+  expect(retained).toBe(original);
+  act(() => tree.unmount());
+});

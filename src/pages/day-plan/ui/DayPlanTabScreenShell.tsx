@@ -1,9 +1,8 @@
-import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { DAY_PLAN_TOOLBAR_TOP_PADDING } from '../lib/dayPlanDeckMetrics';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useTranslation } from '@shared/lib/i18n';
@@ -21,12 +20,8 @@ import { PlanModeSwitch } from './PlanModeSwitch';
 import { InitialDeckSurface } from './InitialDeckSurface';
 import { SettingsTopBarButton } from './SettingsTopBarButton';
 import { WeatherSummary } from './WeatherSummary';
-import { DayPlanHeaderCenterActionsContext, DayPlanHeaderActionsContext, DayPlanShellBackgroundContext, DayPlanWeatherActionsContext } from '../model/dayPlanHeaderActions';
+import { DayPlanComposerKeyboardContext, DayPlanHeaderCenterActionsContext, DayPlanHeaderActionsContext, DayPlanShellBackgroundContext, DayPlanWeatherActionsContext } from '../model/dayPlanHeaderActions';
 
-function HeaderTodayDate({ color }: { color: string }) {
-  const now = useTodayDate();
-  return <ThemedText testID="comic-header-today" accessibilityLabel={now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })} style={[styles.todayDate, { color }]}>{now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'short' })}</ThemedText>;
-}
 
 const WIDGET_PLAN_MODES: readonly PlanMode[] = [
   'priority',
@@ -69,17 +64,7 @@ type Props = {
  */
 export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const { t } = useTranslation();
-  const headerRef = useRef<View>(null);
-  const dateRef = useRef<View>(null);
-  const [dateCenterY, setDateCenterY] = useState(DAY_PLAN_TOOLBAR_TOP_PADDING + 62);
-  const alignTodayWithDate = useCallback(() => {
-    const header = headerRef.current;
-    if (!header) return;
-    dateRef.current?.measureLayout(header, (_x, y, _width, height) => {
-      const center = y + height / 2;
-      setDateCenterY(previous => Math.abs(previous - center) > 0.5 ? center : previous);
-    }, () => undefined);
-  }, []);
+  const [composerKeyboardOpen, setComposerKeyboardOpen] = useState(false);
   const [centerActions, setCenterActions] = useState<ReactNode>(null);
   const [weatherActions, setWeatherActions] = useState<ReactNode>(null);
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
@@ -161,12 +146,13 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   );
 
   return (
+    <DayPlanComposerKeyboardContext.Provider value={setComposerKeyboardOpen}>
     <DayPlanShellBackgroundContext.Provider value={setShellOverride}>
     <DayPlanHeaderActionsContext.Provider value={setHeaderActions}>
     <DayPlanWeatherActionsContext.Provider value={setWeatherActions}>
     <DayPlanHeaderCenterActionsContext.Provider value={setCenterActions}>
       <View style={[styles.root, { backgroundColor: shellBg, paddingTop: insets.top }]}>
-        <View ref={headerRef} collapsable={false} style={styles.stickyTopBar}>
+        <View testID="day-plan-shell-header" style={[styles.stickyTopBar, isComicTab && composerKeyboardOpen && { display: 'none' }]} accessibilityElementsHidden={isComicTab && composerKeyboardOpen} importantForAccessibility={isComicTab && composerKeyboardOpen ? 'no-hide-descendants' : 'auto'}>
           <PlanModeSwitch
             planMode={planMode}
             onSelectMode={handleSelectMode}
@@ -182,11 +168,11 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
                   <SettingsTopBarButton c={c} />
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View>
-                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View ref={dateRef} collapsable={false} onLayout={alignTodayWithDate}><HeaderTodayDate color={c.onVariant} /></View><View style={styles.weatherControls}>{weatherActions}<View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
+                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View accessible={false} style={{ height: 20 }} /><View style={styles.weatherControls}>{weatherActions}<View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
               </View>
             }
           />
-          {isComicTab ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: dateCenterY - 22, height: 44, alignItems: 'center', justifyContent: 'center' }}>{centerActions}</View> : null}
+          {isComicTab ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: DAY_PLAN_TOOLBAR_TOP_PADDING + 6, height: 44, alignItems: 'center', justifyContent: 'center' }}>{centerActions}</View> : null}
         </View>
         <View style={styles.body}>
           {tabName === 'comic-day' || tabName === 'day-plan' ? (
@@ -200,6 +186,7 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
     </DayPlanWeatherActionsContext.Provider>
     </DayPlanHeaderActionsContext.Provider>
     </DayPlanShellBackgroundContext.Provider>
+    </DayPlanComposerKeyboardContext.Provider>
   );
 }
 

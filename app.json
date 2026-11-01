@@ -154,7 +154,8 @@
           "configureAndroidBackup": true,
           "faceIDPermission": false
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

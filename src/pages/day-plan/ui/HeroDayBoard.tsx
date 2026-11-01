@@ -1,3 +1,5 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { useHeroThumbnailStrip } from '../model/useHeroThumbnailStrip';
 import { HeroRandomDraftCard, type HeroRandomDraftHandle } from './HeroRandomDraftCard';
 import { HeroEntryActions } from './HeroEntryActions';
 import type { HeroCardText } from './HeroCardCaption';
@@ -9,6 +11,7 @@ import { DECK_OVERVIEW_MOTION } from '../lib/deckOverviewMotion';
 import { HeroOverviewCardMotion, type HeroDeckFrame } from './HeroOverviewCardMotion';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { CardToolsFab, type CardToolAction } from './CardToolsFab';
+import { HeroCardToolsPortal, HeroCardToolsRegisterContext } from '../model/heroCardToolsPortal';
 import { DAY_PLAN_DECK_TOP } from '../lib/dayPlanDeckMetrics';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { ComicCheck } from './HeroCheck';
@@ -28,6 +31,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
 import { ThemedText } from '@shared/ui/themed-text';
 import { COMIC_SCENES, resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
+import { COMIC_CHARACTERS, SELECTABLE_COMIC_SCENES, type ComicCharacter } from '../lib/heroCharacters';
 import type { CircularRoutineItem } from './CircularRoutineTimetable';
 
 const modeLabels = { small: 'comicDay.boardSmall', two: 'comicDay.boardTwo', one: 'comicDay.boardOne', comic: 'comicDay.boardComic', hero: 'comicDay.boardHero', page: 'comicDay.boardPage', diagonal: 'comicDay.boardDiagonal' } as const;
@@ -42,7 +46,7 @@ let lastBoardWidth = 0;
 type BoardItem = Omit<CircularRoutineItem, 'completed'> & { completed?: boolean; memo?: string; artworkUri?: string };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
 type SceneLibrary = readonly typeof COMIC_SCENES[number][];
-export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftChange, onActiveSceneChange, hideEntryActions = false, sceneLibrary = COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, onSelectCharacter, onRenameCharacter }: Common & {
+export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftChange, onActiveSceneChange, hideEntryActions = false, sceneLibrary = SELECTABLE_COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, character = COMIC_CHARACTERS[0], onSelectCharacter, onRenameCharacter }: Common & {
   onOpenBag?: () => void;
   onAddPhoto?: () => void;
   hideEntryActions?: boolean;
@@ -57,14 +61,22 @@ export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftCh
   onRemove?: (key: string) => void;
   onEditCard?: (key: string, text: HeroCardText) => void;
   onRemoveMany?: (keys: string[]) => void;
-  characterName?: string; onSelectCharacter?: () => void; onRenameCharacter?: () => void;
+  characterName?: string; character?: ComicCharacter; onSelectCharacter?: () => void; onRenameCharacter?: () => void;
   onAdd: () => void; onEditTime?: (key: string, label: string) => void;
 }) {
   const { t } = useTranslation();
+  const toolsHost = useContext(HeroCardToolsRegisterContext);
+  const thumbnailStrip = useHeroThumbnailStrip();
   const focused = useContext(DayPlanTabFocusContext);
   const randomDraftRef = useRef<HeroRandomDraftHandle>(null);
   const [emptyScene] = useState(() => sceneLibrary[Math.floor(Math.random() * sceneLibrary.length)] ?? COMIC_SCENES[0]);
   const [viewMode, updateViewMode] = useState(loadComicBoardMode);
+  useEffect(() => {
+    if (viewMode === 'diagonal') {
+      updateViewMode('comic');
+      saveComicBoardMode('comic');
+    }
+  }, [viewMode]);
   const animateLayout = () => LayoutAnimation.configureNext({
     duration: 300,
     update: { type: LayoutAnimation.Types.easeInEaseOut },
@@ -161,7 +173,7 @@ export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftCh
         {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} /></Svg> : null}
         <View pointerEvents="box-none" style={diagonal ? { marginLeft: diagonal.side === 'right' ? diagonal.slant + 2 : 2, marginRight: diagonal.side === 'left' ? diagonal.slant + 2 : 2, paddingTop: 1 } : undefined}>
         <Pressable accessibilityRole="button" accessibilityLabel={item.label} delayLongPress={500} onLongPress={!deleteMode && onRemove ? () => { tapHaptic('warn'); onRemove(item.key); } : undefined} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
-          <ComicSceneImage contentFit="contain" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${item.artworkUri ?? resolveComicScene(item.key, item.label, choices).id}:960`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id]} fallbackSource={resolveComicScene(item.key, item.label, choices).source} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
+          <ComicSceneImage contentFit="contain" contentPosition="center" backgroundColor={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} imageKey={`${item.artworkUri ?? resolveComicScene(item.key, item.label, choices).id}:960`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[resolveComicScene(item.key, item.label, choices).id]} fallbackSource={resolveComicScene(item.key, item.label, choices).source} style={{ width: '100%', height: panel ? Math.max(30, panel.height - captionHeight - 2) : boardWidth * layout.imageRatio }} />
         </Pressable>
         <View style={[s.comicCaption, { borderTopColor: muted, height: captionHeight }]}>
           <View style={s.captionMeta}>
@@ -189,12 +201,12 @@ export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftCh
   const heading = <>{!hideCharacterHeading ? <View style={s.headingRow}>
 
   </View> : null}{!showCards ? <ThemedText style={[s.hint, { color: muted }]}>{t(diaryTitle ? 'comicDiary.sceneCount' : 'comicDay.hint', { count: items.length })}</ThemedText> : null}</>;
-  const bagAction: CardToolAction | undefined = onOpenBag ? { key: 'bag', testID: 'comic-open-mate-bag', label: t('tabs.dayPlan'), onPress: () => { useServiceTutorial.getState().advance('comicTools', 'rhythmAdd', { mode: 'rhythm' }); onOpenBag(); }, tutorialSteps: ['comicTools'], icon: <MateBagIcon isDark={isDark} /> } : undefined;
-  const tools = items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <CardToolsFab isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
+  const bagAction: CardToolAction | undefined = FEATURE_FLAGS.mateShortcut && onOpenBag ? { key: 'bag', testID: 'comic-open-mate-bag', label: t('tabs.dayPlan'), onPress: () => { useServiceTutorial.getState().advance('comicTools', 'rhythmAdd', { mode: 'rhythm' }); onOpenBag(); }, tutorialSteps: ['comicTools'], icon: <MateBagIcon isDark={isDark} /> } : undefined;
+  const tools = items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <HeroCardToolsPortal><CardToolsFab docked={!!toolsHost} isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
     ...(cardsFirst && gridOpen ? [{ key: 'cards', testID: 'comic-show-cards', label: t('comicDay.showCards'), onPress: () => { setMenuOpen(false); setDeleteMode(false); setDeleteFromCards(false); setSelectedForDeletion([]); setGridOpen(false); }, icon: <Svg width={26} height={26} viewBox="0 0 30 30"><Path d="M10 3L25 4L26 21L12 22ZM6 7L21 6L23 25L7 26Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1} strokeLinejoin="round" /><Path d="M3 11L18 10L20 28L4 28Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" /></Svg> } satisfies CardToolAction] : []),
     ...(!deleteMode ? [{ key: 'layout', testID: 'comic-board-view', label: t('comicDay.boardView'), selected: menuOpen, onPress: () => { if (showCards) setGridOpen(true); else setMenuOpen(value => !value); }, icon: <LayoutDiagram mode={viewMode} ink={ink} size={26} /> } satisfies CardToolAction] : []),
-    ...(onRemove || onRemoveMany ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <Image source={require('../../../../assets/control-illustrations/trash.webp')} style={{ width: 29, height: 29 }} contentFit="contain" accessible={false} /> } satisfies CardToolAction] : []),
-  ]} /> : !items.length && bagAction ? <ServiceTutorialTarget steps={['comicTools']} style={{ position: 'absolute', right: 14, bottom: 96, zIndex: 4 }}><Pressable testID={bagAction.testID} accessibilityRole="button" accessibilityLabel={bagAction.label} onPress={() => { tapHaptic(); bagAction.onPress(); }} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>{bagAction.icon}</Pressable></ServiceTutorialTarget> : null;
+    ...(onRemove || onRemoveMany ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <Image source={require('../../../../assets/control-illustrations/trash.webp')} style={{ width: 29, height: 29 }} contentFit="contain" useAppleWebpCodec={false} accessible={false} /> } satisfies CardToolAction] : []),
+  ]} /></HeroCardToolsPortal> : !items.length && bagAction ? <ServiceTutorialTarget steps={['comicTools']} style={{ position: 'absolute', right: 14, bottom: 96, zIndex: 4 }}><Pressable testID={bagAction.testID} accessibilityRole="button" accessibilityLabel={bagAction.label} onPress={() => { tapHaptic(); bagAction.onPress(); }} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>{bagAction.icon}</Pressable></ServiceTutorialTarget> : null;
   const canvas = isDark ? '#262B28' : '#F7F6F4';
   if (!items.length) return <View style={{ flex: 1, backgroundColor: canvas }}>
     <View style={[s.deckHeading, hideCharacterHeading && { height: DAY_PLAN_DECK_TOP }]}>{hideCharacterHeading ? null : heading}</View>
@@ -213,7 +225,7 @@ export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftCh
       </>}
       <ServiceTutorialTarget steps={['comicStart']}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onCreateRandom ? () => { const text = randomDraftRef.current?.snapshot(); if (text) onCreateRandom(emptyScene.id, text, true); } : onAdd} /></ServiceTutorialTarget>
     </View>
-    {onAddPhoto && !hideEntryActions ? <View style={{ position: 'absolute', left: 16, top: 8, zIndex: 4 }}><HeroEntryActions ink={ink} onPhoto={onAddPhoto} onScenes={onAdd} /></View> : null}
+    {onAddPhoto && !hideEntryActions ? <View style={{ position: 'absolute', left: 16, top: 8, zIndex: 4 }}><HeroEntryActions ink={ink} character={character} onPhoto={onAddPhoto} onScenes={onAdd} /></View> : null}
     {tools}
   </View>;
   return <View style={{ flex: 1, backgroundColor: canvas }} onLayout={({ nativeEvent: { layout } }) => { if (focused && layout.width > 0) setStageWidth(previous => previous === layout.width ? previous : layout.width); }}>
@@ -222,7 +234,7 @@ export function ComicDayBoard({ onOpenBag, onAddPhoto, onCreateRandom, onDraftCh
       <View style={s.deckStage}>
         <ComicSceneDeck detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onRemove={onRemove} onEditCard={onEditCard} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
       </View>
-      <ServiceTutorialTarget steps={showCards ? ['comicStart'] : []} style={s.deckAdd}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget>
+      <Animated.View pointerEvents={thumbnailStrip.collapsed ? 'none' : 'auto'} accessibilityElementsHidden={thumbnailStrip.collapsed} importantForAccessibility={thumbnailStrip.collapsed ? 'no-hide-descendants' : 'auto'} style={[s.deckAdd, thumbnailStrip.motionStyle]}><ServiceTutorialTarget steps={showCards && !thumbnailStrip.collapsed ? ['comicStart'] : []}><View style={{ transform: [{ scale: 40 / 44 }] }}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} hitSlop={3} /></View></ServiceTutorialTarget></Animated.View>
     </Animated.View> : null}
     <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1 }, gridVisibility]}>
   <GestureDetector gesture={gridGesture}><ScrollView ref={gridScrollRef} scrollEnabled={!showCards} testID="comic-card-overview" onScrollBeginDrag={() => setMenuOpen(false)} onScroll={event => { gridOffsetRef.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[s.board, { flexGrow: 1 }]}>

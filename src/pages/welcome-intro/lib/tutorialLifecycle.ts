@@ -9,13 +9,8 @@ export function markTutorialIntroSeen() {
   localStorageClient.setJson(KEY, { ...flags(), introSeen: true });
   void flushLocalStorageClientWrites();
 }
-let autoOpened = false;
-/** The first-run tutorial opens automatically at most once per app session, whichever entry point gets there first. */
-export function claimTutorialAutoOpen(): boolean {
-  if (autoOpened) return false;
-  autoOpened = true;
-  return true;
-}
+/** Legacy entry points must not reopen the retired tutorial. */
+export function claimTutorialAutoOpen(): boolean { return false; }
 let pendingReview: Promise<boolean> | null = null;
 /** Completion asks once; explicitly ending a tutorial can request again on its ending screen. */
 export function requestTutorialReviewOnce(completed: boolean, options: { explicitEnd?: boolean } = {}): Promise<boolean> {

@@ -1,5 +1,6 @@
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { useEffect, useState, type ReactNode } from 'react';
-import { InteractionManager, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { DAY_PLAN_DECK_TOP, DAY_PLAN_MATE_CARD_TOP } from '../lib/dayPlanDeckMetrics';
 
@@ -23,7 +24,7 @@ export function InitialDeckSurface({ children, kind, backgroundColor, isDark }: 
     // Insets can arrive after the first layout. Restart this quiet period whenever
     // dimensions change, then wait for navigation and two committed frames.
     const timer = setTimeout(() => {
-      task = InteractionManager.runAfterInteractions(() => {
+      task = scheduleIdleTask(() => {
         frame = requestAnimationFrame(() => {
           nextFrame = requestAnimationFrame(() => {
             if (!cancelled) setReady(true);
@@ -31,7 +32,7 @@ export function InitialDeckSurface({ children, kind, backgroundColor, isDark }: 
         });
       });
     }, 120);
-    let task: ReturnType<typeof InteractionManager.runAfterInteractions> | undefined;
+    let task: ReturnType<typeof scheduleIdleTask> | undefined;
     return () => {
       cancelled = true;
       clearTimeout(timer);

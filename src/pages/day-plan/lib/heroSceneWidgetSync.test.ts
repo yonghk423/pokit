@@ -44,3 +44,18 @@ it('preserves the selected diary, scene artwork and caption in the native widget
     NativeModules.PokitWidgetSync = previousModule;
   }
 });
+
+
+it('includes generated artwork so native sync can copy it into the widget shared container', () => {
+  const scene = { ...newComicScene('겨울에는 귤이지'), artworkUri: 'file:///Documents/yourday-ai/winter.jpg' };
+  const library: ComicDiaryLibrary = {
+    version: 1, activeId: 'generated', migratedLegacyKeys: [],
+    diaries: [{ id: 'generated', title: '겨울', characterId: 'protagonist-1', scenes: [scene], createdAt: 0, updatedAt: 0 }],
+  };
+  expect(buildComicSceneWidgetBundle(library).scenes[0]).toMatchObject({
+    title: '겨울에는 귤이지', artworkUri: scene.artworkUri, imageId: scene.image,
+  });
+  const ordinary = { ...scene, artworkUri: undefined };
+  library.diaries[0].scenes = [ordinary];
+  expect(buildComicSceneWidgetBundle(library).scenes[0]).not.toHaveProperty('artworkUri');
+});

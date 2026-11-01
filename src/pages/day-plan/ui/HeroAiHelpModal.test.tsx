@@ -1,0 +1,44 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { AppState, type AppStateStatus } from 'react-native';
+import { HeroAiHelpModal } from './HeroAiHelpModal';
+
+jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ locale: 'ko', t: (key: string) => key }) }));
+jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').Modal }));
+jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: jest.requireActual('react-native').View }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
+afterEach(() => jest.restoreAllMocks());
+it('opens a tap walkthrough for each mode without the removed text manual', async () => {
+  const close = jest.fn();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroAiHelpModal onClose={close} />); });
+  const byId = (id: string) => tree.root.findAllByProps({ testID: id })[0];
+  const player = byId('hero-help-video').props.player;
+  expect(player.play).not.toHaveBeenCalled();
+  expect(tree.root.findAllByProps({ testID: 'hero-help-details-toggle' })).toHaveLength(0);
+  act(() => byId('hero-help-video-play').props.onPress());
+  expect(player.play).toHaveBeenCalledTimes(1);
+  expect(byId('hero-help-video-play').props.accessibilityLabel).toBe('일시 정지');
+  act(() => byId('hero-help-mode-1').props.onPress());
+  expect(byId('hero-help-mode-1').props.accessibilityState.selected).toBe(true);
+  expect(player.release).toHaveBeenCalledTimes(1);
+  expect(byId('hero-help-video').props.player).not.toBe(player);
+  act(() => byId('hero-ai-help-close').props.onPress());
+  expect(close).toHaveBeenCalledTimes(1);
+  act(() => tree.unmount());
+});
+it('supports replay, pauses in the background and releases the player when help closes', async () => {
+  const subscriptions: ((state: AppStateStatus) => void)[] = [];
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, handler) => { subscriptions.push(handler); return { remove: jest.fn() }; });
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroAiHelpModal onClose={jest.fn()} />); });
+  const byId = (id: string) => tree.root.findAllByProps({ testID: id })[0];
+  const player = byId('hero-help-video').props.player;
+  player.currentTime = 9;
+  await act(async () => byId('hero-help-video-replay').props.onPress());
+  expect(player.currentTime).toBe(0);
+  expect(player.play).toHaveBeenCalled();
+  act(() => subscriptions.forEach(handler => handler('background')));
+  expect(player.pause).toHaveBeenCalled();
+  act(() => tree.unmount());
+  expect(player.release).toHaveBeenCalledTimes(1);
+});

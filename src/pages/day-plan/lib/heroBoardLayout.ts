@@ -1,9 +1,14 @@
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-export const COMIC_BOARD_MODES = ['small', 'two', 'one', 'comic', 'hero', 'page', 'diagonal'] as const;
-export type ComicBoardMode = typeof COMIC_BOARD_MODES[number];
+export const COMIC_BOARD_MODES = ['small', 'two', 'one', 'comic', 'hero', 'page'] as const;
+// Keep the legacy geometry type while retiring the option from selection.
+export type ComicBoardMode = typeof COMIC_BOARD_MODES[number] | 'diagonal';
 const KEY = 'pokit:comic-board-view';
 export function loadComicBoardMode(): ComicBoardMode {
   const mode = localStorageClient.getItemRaw(KEY);
+  if (mode === 'diagonal') {
+    localStorageClient.setItemRaw(KEY, 'comic');
+    return 'comic';
+  }
   return COMIC_BOARD_MODES.find(item => item === mode) ?? 'comic';
 }
 export function saveComicBoardMode(mode: ComicBoardMode) { localStorageClient.setItemRaw(KEY, mode); }

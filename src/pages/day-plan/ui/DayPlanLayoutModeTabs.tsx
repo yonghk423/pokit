@@ -247,6 +247,7 @@ export function DayPlanLayoutModeTabs({
               source={require('../../../../assets/tab-icons/comic-portrait-v2.webp')}
               style={{ width: 25, height: 25 }}
               contentFit="contain"
+              useAppleWebpCodec={false}
               transition={0}
               accessible={false}
             />

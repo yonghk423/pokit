@@ -1,9 +1,128 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Image as NativeImage } from 'react-native';
+import { Image as NativeImage, StyleSheet } from 'react-native';
 import { ComicSceneImage } from './HeroSceneImage';
+import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
 afterEach(() => { jest.useRealTimers(); });
+function layoutCard(tree: ReactTestRenderer, width = 300, height = 400) {
+  act(() => tree.root.findAll(node => typeof node.props.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { width, height } } }));
+}
+it('anchors portraits at the top so width filling preserves the head, while wide images remain contained', () => {
+  let tree!: ReactTestRenderer;
+  const render = (width: number, height: number) => <ComicSceneImage fitToCard source={{ uri: `top-framing-${width}-${height}`, width, height }} imageKey={`top-framing-${width}-${height}`} style={{ width: 300, height: 350 }} />;
+  act(() => { tree = create(render(768, 960)); });
+  layoutCard(tree, 300, 350);
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  expect(image().props.contentFit).toBe('fill');
+  const frame = StyleSheet.flatten(image().props.style);
+  expect(frame.top).toBe(0);
+  expect(frame.width / frame.height).toBeCloseTo(768 / 960);
+  expect(frame.height).toBeGreaterThanOrEqual(350);
+  expect(image().props.contentPosition).toBe('top');
+  act(() => tree.update(render(1200, 800)));
+  expect(image().props.contentFit).toBe('contain');
+  expect(image().props.contentPosition).toBeUndefined();
+  act(() => tree.unmount());
+});
+
+it.each([[600, 1000, 'fill'], [1000, 600, 'contain']])('keeps %s×%s artwork framing across new URI objects and remounted cards', (width, height, fit) => {
+  let tree!: ReactTestRenderer;
+  const uri = `file:///stable-framing-${width}-${height}.png`;
+  const render = (key: string) => <ComicSceneImage fitToCard source={{ uri }} imageKey={key} style={{ width: 300, height: 400 }} />;
+  act(() => { tree = create(render('first-card')); });
+  layoutCard(tree);
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  act(() => image().props.onLoad({ source: { width, height } }));
+  act(() => image().props.onDisplay());
+  expect(image().props.contentFit).toBe(fit);
+  act(() => tree.update(render('first-card')));
+  expect(image().props.contentFit).toBe(fit);
+  expect(StyleSheet.flatten(image().props.style).opacity).not.toBe(0);
+  act(() => tree.unmount());
+  act(() => { tree = create(render('remounted-card')); });
+  layoutCard(tree);
+  expect(image().props.contentFit).toBe(fit);
+  expect(StyleSheet.flatten(image().props.style).opacity).not.toBe(0);
+  act(() => tree.unmount());
+});
+
+it('never reveals an unknown-size card in the temporary contain layout', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage fitToCard source={{ uri: 'file:///first-ever-portrait.png' }} imageKey="first-ever-portrait" style={{ width: 300, height: 400 }} />); });
+  layoutCard(tree);
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  expect(StyleSheet.flatten(image().props.style).opacity).toBe(0);
+  act(() => image().props.onDisplay());
+  expect(tree.root.findAllByProps({ testID: 'comic-image-skeleton' }).length).toBeGreaterThan(0);
+  expect(StyleSheet.flatten(image().props.style).opacity).toBe(0);
+  act(() => image().props.onLoad({ source: { width: 600, height: 1000 } }));
+  expect(image().props.contentFit).toBe('fill');
+  expect(StyleSheet.flatten(image().props.style).opacity).not.toBe(0);
+  expect(tree.root.findAllByProps({ testID: 'comic-image-skeleton' })).toHaveLength(0);
+  act(() => tree.unmount());
+});
+
+it('uses thumbnail dimensions before a full card loads the same file', () => {
+  let tree!: ReactTestRenderer;
+  const source = { uri: 'file:///thumb-to-card-portrait.png' };
+  act(() => { tree = create(<ComicSceneImage source={source} imageKey="sizing-thumb" style={{ width: 44, height: 44 }} />); });
+  act(() => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0].props.onLoad({ source: { width: 600, height: 1000 } }));
+  act(() => tree.unmount());
+  act(() => { tree = create(<ComicSceneImage fitToCard source={{ ...source }} imageKey="sizing-full-card" style={{ width: 300, height: 400 }} />); });
+  layoutCard(tree);
+  const image = tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  expect(image.props.contentFit).toBe('fill');
+  expect(StyleSheet.flatten(image.props.style).opacity).not.toBe(0);
+  act(() => tree.unmount());
+});
+
+it('removes baked sidebars using an exact-ratio image pinned at the top with no scale transform', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage fitToCard source={COMIC_SCENE_THUMBNAILS['p3-38-mountain-hike']} imageKey="head-safe-padded-hike" style={{ width: 326, height: 455 }} />); });
+  layoutCard(tree, 326, 455);
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  act(() => image().props.onLoad({ source: { width: 768, height: 960 } }));
+  const frame = StyleSheet.flatten(image().props.style);
+  expect(image().props.contentFit).toBe('fill');
+  expect(frame.width / frame.height).toBeCloseTo(768 / 960);
+  expect(frame.top).toBe(0);
+  expect(frame.height).toBeGreaterThanOrEqual(455);
+  expect(frame.width * 718 / 768).toBeGreaterThanOrEqual(326);
+  expect(frame.left).toBeCloseTo((326 - frame.width) / 2);
+  expect(frame.transform).toBeUndefined();
+  act(() => tree.unmount());
+});
+
+it.each([
+  [1200, 800, 'contain'],
+  [800, 1200, 'cover'],
+  [900, 900, 'contain'],
+])('fits %s×%s card artwork with %s before and after native load', (width, height, fit) => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage fitToCard source={{ uri: `card-${width}-${height}`, width, height }} imageKey={`card-${width}-${height}`} style={{ width: 300, height: 400 }} />); });
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  expect(image().props.contentFit).toBe(fit);
+  act(() => image().props.onLoad({ source: { width, height } }));
+  expect(image().props.contentFit).toBe(fit);
+  act(() => tree.unmount());
+});
+
+it('learns remote card orientation and recalculates it for a different fallback image', () => {
+  jest.useFakeTimers();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage fitToCard source={{ uri: 'remote-card' }} fallbackSource={{ uri: 'wide-fallback', width: 1200, height: 800 }} imageKey="card-fallback-orientation" style={{ width: 300, height: 400 }} />); });
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  act(() => image().props.onLoad({ source: { width: 800, height: 1200 } }));
+  expect(image().props.contentFit).toBe('cover');
+  act(() => image().props.onError());
+  act(() => jest.advanceTimersByTime(300));
+  act(() => image().props.onError());
+  act(() => jest.advanceTimersByTime(600));
+  expect(image().props.source.uri).toBe('wide-fallback');
+  expect(image().props.contentFit).toBe('contain');
+  act(() => tree.unmount());
+});
 it('keeps a skeleton until display and starts a fresh session when a recycled cell changes source', () => {
   let tree!: ReactTestRenderer;
   const render = (id: string) => <ComicSceneImage source={{ uri: id }} imageKey={id} style={{ width: 100, height: 80 }} />;
@@ -106,12 +225,13 @@ it('keeps chooser artwork covered until native display even when a previous moun
   act(() => { tree.unmount(); });
 });
 
-it('fills portrait photos while preserving landscape and square photos in full', () => {
+it('keeps portraits in full and fills their side space with a blurred backdrop', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicSceneImage fillPortrait source={{ uri: 'mixed-photo' }} imageKey="portrait-fill" contentFit="contain" style={{ width: 100, height: 120 }} />); });
   const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
   act(() => image().props.onLoad({ source: { width: 600, height: 1000 } }));
-  expect(image().props.contentFit).toBe('cover');
+  expect(image().props.contentFit).toBe('contain');
+  expect(tree.root.findAllByProps({ testID: 'comic-image-portrait-backdrop' }).length).toBeGreaterThan(0);
   act(() => image().props.onLoad({ source: { width: 1000, height: 600 } }));
   expect(image().props.contentFit).toBe('contain');
   act(() => image().props.onLoad({ source: { width: 600, height: 600 } }));

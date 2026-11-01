@@ -339,7 +339,7 @@ function OnboardingTimeRow({
           styles.onboardTimeRow,
           pressed && { transform: [{ translateY: 1 }] },
         ]}>
-        <Image source={thumb} style={styles.thumbFace} contentFit="contain" cachePolicy="memory-disk" transition={0} />
+        <Image source={thumb} style={styles.thumbFace} contentFit="contain" useAppleWebpCodec={false} cachePolicy="memory-disk" transition={0} />
 
         <View style={styles.onboardTimeCopy}>
           <ThemedText

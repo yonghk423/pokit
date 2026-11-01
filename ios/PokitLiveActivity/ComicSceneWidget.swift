@@ -14,6 +14,7 @@ private struct ComicSceneWidgetSnapshot: Decodable {
   let diaryTitle: String?
   let dateKey: String?
   let title: String?
+  let artworkFile: String?
   let imageId: String?
   let index: Int?
   let total: Int?
@@ -47,6 +48,7 @@ private struct ComicSceneWidgetModel {
   let id: String
   let diaryTitle: String
   let title: String
+  let artworkFile: String?
   let imageId: String
   let index: Int
   let total: Int
@@ -60,6 +62,7 @@ private struct ComicSceneWidgetModel {
     id: "",
     diaryTitle: "",
     title: "",
+    artworkFile: nil,
     imageId: "",
     index: 0,
     total: 0,
@@ -192,6 +195,7 @@ private func loadComicSceneWidgetModel(sceneId: String?, dateKey: String? = nil)
     id: row.id ?? "",
     diaryTitle: row.diaryTitle ?? "",
     title: row.title ?? "",
+    artworkFile: row.artworkFile,
     imageId: imageId,
     index: max(1, row.index ?? 1),
     total: max(1, row.total ?? 1),
@@ -334,6 +338,17 @@ private enum ComicSceneWidgetCrop {
 
 @available(iOS 17.0, *)
 private struct ComicSceneWidgetEntryView: View {
+  private func diaryFont(_ size: CGFloat) -> Font {
+    let fontId = UserDefaults(suiteName: PokitAppGroup.identifier)?.string(forKey: PokitAppGroup.appFontIdKey) ?? "corncorn"
+    let name: String
+    switch fontId {
+    case "kimJungWon": name = "Griun_Kimjungwon-Rg"
+    case "hiMelody": name = "HiMelody-Regular"
+    default: name = "Ownglyph_corncorn-Rg"
+    }
+    return .custom(name, size: size, relativeTo: .body)
+  }
+
   @Environment(\.widgetFamily) private var family
   let entry: ComicSceneWidgetEntry
 
@@ -345,10 +360,17 @@ private struct ComicSceneWidgetEntryView: View {
   private func artwork(width: CGFloat, height: CGFloat) -> some View {
     let name = "comic_\(model.imageId)"
     let viewport = CGSize(width: max(1, width), height: max(1, height))
-    let sourceSize = UIImage(named: name)?.size ?? CGSize(width: 720, height: 960)
+    let sharedImage: UIImage? = {
+      guard let file = model.artworkFile, file == (file as NSString).lastPathComponent,
+            let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier)
+      else { return nil }
+      return UIImage(contentsOfFile: container.appendingPathComponent("ComicArtwork").appendingPathComponent(file).path)
+    }()
+    let artwork = sharedImage ?? UIImage(named: name)
+    let sourceSize = artwork?.size ?? CGSize(width: 720, height: 960)
     let scale = max(viewport.width / sourceSize.width, viewport.height / sourceSize.height)
     let origin = ComicSceneWidgetCrop.origin(imageSize: sourceSize, viewport: viewport, imageId: model.imageId)
-    return Image(name)
+    return Image(uiImage: artwork ?? UIImage())
       .resizable()
       .frame(width: sourceSize.width * scale, height: sourceSize.height * scale)
       .offset(x: -origin.x, y: -origin.y)
@@ -367,7 +389,7 @@ private struct ComicSceneWidgetEntryView: View {
       HStack(spacing: 6) {
         ComicWeatherMark(color: ink.opacity(0.72), size: iconSize)
         Text(label)
-          .font(.system(size: textSize, weight: .regular))
+          .font(diaryFont(textSize))
           .foregroundStyle(ink)
           .lineLimit(1)
       }
@@ -380,14 +402,14 @@ private struct ComicSceneWidgetEntryView: View {
   private var caption: some View {
     HStack(alignment: .firstTextBaseline, spacing: 5) {
       Text(model.title.isEmpty ? String(localized: "widget.comic.name") : model.title)
-        .font(.system(size: 15, weight: .semibold, design: .rounded))
+        .font(diaryFont(17))
         .lineLimit(1).minimumScaleFactor(0.75)
     }
   }
 
   private func memo(lines: Int) -> some View {
     Text(model.memo)
-      .font(.system(size: 12, weight: .medium))
+      .font(diaryFont(12))
       .lineLimit(lines).truncationMode(.tail)
       .frame(maxWidth: .infinity, alignment: .topLeading)
   }
@@ -399,8 +421,8 @@ private struct ComicSceneWidgetEntryView: View {
           Image("comic_10-park-walk").resizable().scaledToFit()
             .frame(width: 44, height: 44).clipShape(ContainerRelativeShape())
             .accessibilityHidden(true)
-          Text("widget.comic.name").font(.system(size: 17, weight: .bold, design: .rounded))
-          Text("widget.comic.emptyMessage").font(.system(size: 12, weight: .medium)).lineLimit(3)
+          Text("widget.comic.name").font(diaryFont(17))
+          Text("widget.comic.emptyMessage").font(diaryFont(12)).lineLimit(3)
           Spacer(minLength: 0)
         }
         .padding(12)
@@ -418,7 +440,7 @@ private struct ComicSceneWidgetEntryView: View {
               if !model.memo.isEmpty { memo(lines: model.todos.isEmpty ? 5 : 2) }
               if !model.todos.isEmpty {
                 Text(PokitWidgetL10n.text(ko: "오늘 할 일", en: "Today's to-dos", ja: "今日のタスク"))
-                  .font(.system(size: 11, weight: .semibold)).opacity(0.65)
+                  .font(diaryFont(11)).opacity(0.65)
                 let rowLimit = max(1, min(4, Int((proxy.size.height * (1 - imageRatio) - (model.memo.isEmpty ? 67 : 104)) / 25)))
                 ForEach(model.todos.prefix(rowLimit)) { todo in
                   HStack(spacing: 6) {
@@ -426,7 +448,7 @@ private struct ComicSceneWidgetEntryView: View {
                     Image(todo.completed ? "comic_check_checked" : "comic_check_unchecked")
                       .resizable().scaledToFit().frame(width: 20, height: 20)
                       .accessibilityHidden(true)
-                    Text(todo.text).font(.system(size: 12))
+                    Text(todo.text).font(diaryFont(12))
                       .strikethrough(todo.completed).lineLimit(1).truncationMode(.tail)
                       .opacity(todo.completed ? 0.55 : 1)
                     Spacer(minLength: 0)
@@ -434,7 +456,7 @@ private struct ComicSceneWidgetEntryView: View {
                 }
                 if model.todos.count > rowLimit {
                   Text("… +\(model.todos.count - rowLimit)")
-                    .font(.system(size: 10)).opacity(0.6)
+                    .font(diaryFont(10)).opacity(0.6)
                 }
               }
             }

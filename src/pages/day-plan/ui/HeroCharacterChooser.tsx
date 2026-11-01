@@ -9,8 +9,6 @@ import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { penContour } from '@shared/ui/pen-frame';
 import { SettingsPenFrame } from '../../settings/lib/settingsPen';
-import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
-import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoach';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { SELECTABLE_COMIC_CHARACTERS as COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
@@ -117,13 +115,11 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   const [starting, setStarting] = useState(false);
   const startingRef = useRef(false);
   const alive = useRef(true);
-  const startedTutorialRun = useRef<string | null | undefined>(undefined);
   const entrance = useAnimatedValue(0);
   const revealed = useRef(false);
   const exit = useAnimatedValue(0);
   const caption = useAnimatedValue(1);
   const focused = selected ?? COMIC_CHARACTERS[0];
-  const tutorialStep = useServiceTutorial(state => state.active && state.mode === 'comic' ? state.step : null);
   const cardPaper = isDark ? '#262B28' : '#FFFFFF';
   // The shell already uses space for its header and tabs. Size the artwork from
   // the remaining flex slot, rather than from the full device window.
@@ -131,13 +127,7 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   const artworkHeight = Math.max(140, Math.min(360, (stageSize?.height ?? 320) - 124, (stageSize?.width ?? viewport.width - 48) * 0.58 / 0.75));
   const artworkWidth = artworkHeight * 0.75;
   const canStart = Boolean(selected);
-  const checkTint = useAnimatedValue(0);
-  useEffect(() => {
-    const animation = Animated.timing(checkTint, { toValue: canStart ? 1 : 0, duration: reduced ? 0 : 260, easing: Easing.out(Easing.cubic), useNativeDriver: false });
-    animation.start();
-    return () => animation.stop();
-  }, [canStart, checkTint, reduced]);
-  const checkInk = checkTint.interpolate({ inputRange: [0, 1], outputRange: [ink, '#69BFAE'] });
+  const checkInk = canStart && (previewCharacter !== null || personalChosen) ? '#69BFA9' : ink;
 
   // Wait for the flex slot and its compact layout to settle before revealing it.
   // Only opacity is animated; card dimensions never animate from the placeholder size.
@@ -179,20 +169,6 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
     Animated.timing(exit, { toValue: 1, duration: 420, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(({ finished }) => { if (finished) finish(); });
   }, [exit, onStart, reduced]);
   useEffect(() => {
-    if (!requireExplicitChoice) return;
-    const frame = requestAnimationFrame(() => {
-      const chosen = selected ?? COMIC_CHARACTERS[0];
-      if (tutorialStep === 'comicName' && useServiceTutorial.getState().step === 'comicName') { setSelected(chosen); useServiceTutorial.getState().advance('comicName', 'comicReady'); }
-      const tutorial = useServiceTutorial.getState();
-      if (tutorialStep === 'comicPick' && tutorial.active && tutorial.mode === 'comic' && startedTutorialRun.current !== tutorial.runId) {
-        // Claim the run before the transition; both Start and Later enter here.
-        startedTutorialRun.current = tutorial.runId;
-        begin(chosen, names[chosen.id]?.trim() || t(chosen.name));
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [tutorialStep, requireExplicitChoice, selected, names, begin, t]);
-  useEffect(() => {
     caption.stopAnimation();
     caption.setValue(reduced ? 1 : 0);
     const animation = Animated.timing(caption, { toValue: 1, duration: reduced ? 0 : 340, easing: Easing.out(Easing.cubic), useNativeDriver: true });
@@ -205,20 +181,11 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
     setPersonalChosen(false);
     setSelected(character);
     setPreviewCharacter(character.id);
-    const tutorial = useServiceTutorial.getState();
-    tutorial.advance('comicCharacter', 'comicName');
-    tutorial.advance('comicName', 'comicReady');
   };
   const start = () => {
     if (!selected || !canStart || startingRef.current) return;
     tapHaptic('confirm');
     if (personalChosen) { Keyboard.dismiss(); onPersonalize?.(); return; }
-    const tutorial = useServiceTutorial.getState();
-    // Preserve the tutorial hand-off: publish comicPick, then its effect starts once.
-    if (requireExplicitChoice && tutorial.active && tutorial.mode === 'comic') {
-      if (['comicCharacter', 'comicName', 'comicReady'].includes(tutorial.step)) { tutorial.skipStep(); return; }
-      if (tutorial.step === 'comicPick' && startedTutorialRun.current === tutorial.runId) return;
-    }
     begin(selected, names[selected.id]?.trim() || t(selected.name));
   };
 
@@ -240,17 +207,6 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
           <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
             <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
               <ScrollView horizontal testID="comic-character-horizontal-list" showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalCards} style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
-              <View style={{ width: artworkWidth, height: artworkHeight }}>
-              <Pressable testID="comic-character-coming-soon" onPress={() => tapHaptic('select')} accessible accessibilityRole="button" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: 0 }]}>
-                <PaperGrain opacity={0.18} />
-                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} contentFit="contain" style={s.upcomingImage} />
-                <View style={s.upcomingCaption}>
-                  <ThemedText style={[s.personalLabel, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
-                  <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
-                </View>
-                <SettingsPenFrame color={muted} />
-              </Pressable>
-              </View>
               {COMIC_CHARACTERS.map(character => <View key={character.id} testID={`comic-character-column-${character.id}`} style={{ width: artworkWidth, height: artworkHeight }}>
                 <CastingCard character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
                   artIndex={artIndices[character.id] ?? 0} onSelect={() => choose(character)} />
@@ -262,13 +218,23 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
                 <SettingsPenFrame color={ink} />
               </AnimatedPressable>
               </View>
+              <View style={{ width: artworkWidth, height: artworkHeight }}>
+              <Pressable testID="comic-character-coming-soon" onPress={() => tapHaptic('select')} accessible accessibilityRole="button" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: 0 }]}>
+                <PaperGrain opacity={0.18} />
+                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} contentFit="contain" style={s.upcomingImage} />
+                <View style={s.upcomingCaption}>
+                  <ThemedText style={[s.personalLabel, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
+                  <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
+                </View>
+                <SettingsPenFrame color={muted} />
+              </Pressable>
+              </View>
               </ScrollView>
               <View testID="comic-character-thumbnail-lane" style={s.thumbnailLane}>
                 {COMIC_CHARACTERS.filter(character => previewCharacter === character.id && !personalChosen).map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} showPreviews reduced={reduced} ink={ink} />)}
               </View>
             </Animated.View>
           </ServiceTutorialTarget>
-          {requireExplicitChoice ? <ServiceTutorialCoach inline characterChoosing steps={['comicStart', 'comicCharacter', 'comicName', 'comicReady']} /> : null}
 
         </Animated.View>
       </Animated.ScrollView>

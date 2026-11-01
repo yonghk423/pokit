@@ -38,6 +38,9 @@
 		E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */; };
+		FA12BEEFE001000000000002 /* Ownglyph_corncorn-Rg.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */; };
+		FA12BEEFE002000000000002 /* Griun_Kimjungwon-Rg.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA12BEEFE002000000000001 /* Griun_Kimjungwon-Rg.ttf */; };
+		FA12BEEFE003000000000002 /* HiMelody_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,6 +108,9 @@
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Pokit/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Pokit-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Pokit-Bridging-Header.h"; path = "Pokit/Pokit-Bridging-Header.h"; sourceTree = "<group>"; };
 		F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMemoModeLiveActivityView.swift; sourceTree = "<group>"; };
+		FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Ownglyph_corncorn-Rg.ttf"; path = "../assets/fonts/ownglyph-corncorn/Ownglyph_corncorn-Rg.ttf"; sourceTree = SOURCE_ROOT; };
+		FA12BEEFE002000000000001 /* Griun_Kimjungwon-Rg.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Griun_Kimjungwon-Rg.ttf"; path = "../assets/fonts/griun-kimjungwon/Griun_Kimjungwon-Rg.ttf"; sourceTree = SOURCE_ROOT; };
+		FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = HiMelody_400Regular.ttf; path = "../node_modules/@expo-google-fonts/hi-melody/400Regular/HiMelody_400Regular.ttf"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,6 +212,9 @@
 				B2C3D4B3D4E5F60011223344 /* DayPlanHomeWidget.swift */,
 				B2C3D4B5D4E5F60011223344 /* PinnedRoutineWidget.swift */,
 				D4E5F602D4E5F60011223344 /* ComicSceneWidget.swift */,
+				FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */,
+				FA12BEEFE002000000000001 /* Griun_Kimjungwon-Rg.ttf */,
+				FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */,
 				B2C3D4B1D4E5F60011223344 /* DayPlanWidgetSupport.swift */,
 				D4E5F604D4E5F60011223344 /* ComicScenes.xcassets */,
 				A1B2C313D4E5F60011223344 /* Info.plist */,
@@ -362,6 +371,9 @@
 			files = (
 				B2C3D4E2D4E5F60011223344 /* Localizable.strings in Resources */,
 				D4E5F603D4E5F60011223344 /* ComicScenes.xcassets in Resources */,
+				FA12BEEFE003000000000002 /* HiMelody_400Regular.ttf in Resources */,
+				FA12BEEFE002000000000002 /* Griun_Kimjungwon-Rg.ttf in Resources */,
+				FA12BEEFE001000000000002 /* Ownglyph_corncorn-Rg.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

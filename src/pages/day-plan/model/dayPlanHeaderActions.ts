@@ -13,3 +13,6 @@ export const DayPlanWeatherActionsContext = createContext<Dispatch<SetStateActio
 
 /** Centered controls independent of the title and weather widths. */
 export const DayPlanHeaderCenterActionsContext = createContext<Dispatch<SetStateAction<ReactNode>> | null>(null);
+
+/** Gives the diary composer the header space while its keyboard is open. */
+export const DayPlanComposerKeyboardContext = createContext<((open: boolean) => void) | null>(null);

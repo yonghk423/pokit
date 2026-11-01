@@ -1,14 +1,15 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { InteractionManager, Text } from 'react-native';
+import { Text } from 'react-native';
+import * as idleTasks from '@shared/lib/scheduleIdleTask';
 import { InitialDeckSurface } from './InitialDeckSurface';
 
 describe('InitialDeckSurface', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation((callback: any) => {
+    jest.spyOn(idleTasks, 'scheduleIdleTask').mockImplementation(callback => {
       callback();
-      return { cancel: jest.fn(), then: jest.fn(), done: jest.fn() } as any;
+      return { cancel: jest.fn() };
     });
   });
   afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); jest.restoreAllMocks(); });

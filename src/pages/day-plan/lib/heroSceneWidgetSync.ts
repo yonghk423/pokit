@@ -14,6 +14,7 @@ export type ComicSceneWidgetOption = {
   dateKey: string | null;
   title: string;
   imageId: string;
+  artworkUri?: string;
   index: number;
   total: number;
   memo: string;
@@ -48,6 +49,7 @@ export function buildComicSceneWidgetBundle(library: ComicDiaryLibrary): ComicSc
         dateKey: comicDiaryWidgetDate(diary),
         title: scene.title.trim() || (catalog ? t(catalog.label) : ''),
         imageId: scene.image,
+        ...(scene.artworkUri ? { artworkUri: scene.artworkUri } : {}),
         index: index + 1,
         total: diary.scenes.length,
         memo: scene.memo.trim(),

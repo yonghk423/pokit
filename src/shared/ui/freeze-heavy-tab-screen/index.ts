@@ -1,6 +1,6 @@
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { useIsFocused } from 'expo-router';
 import { createElement, memo, useEffect, useRef, useState, type ComponentType } from 'react';
-import { InteractionManager } from 'react-native';
 
 /**
  * 탭이 안 보이는 동안 화면 트리를 다시 그리지 않는다.
@@ -32,7 +32,7 @@ export function freezeHeavyTabScreen<P extends object>(Component: ComponentType<
         setCommitted(false);
         return;
       }
-      const task = InteractionManager.runAfterInteractions(() => {
+      const task = scheduleIdleTask(() => {
         setCommitted(true);
       });
       return () => task.cancel();

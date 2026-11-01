@@ -82,3 +82,52 @@ it('keeps the draft when dismissing the keyboard and focuses the summary from th
   act(() => tree.unmount());
   dismiss.mockRestore();
 });
+
+it('shows a live date and time only while both title and memo are empty', () => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date(2026, 9, 31, 13, 40, 59));
+  let tree!: ReactTestRenderer;
+  const render = (title = '', memo = '') => <HeroCardCaption title={title} memo={memo} number={1} ink="#222" muted="#777" />;
+  act(() => { tree = create(render()); });
+  const timestamp = () => tree.root.findAllByProps({ testID: 'hero-empty-card-timestamp' });
+  expect(timestamp()[0].props.children.join('')).toBe('Oct 31 · 13:40');
+  act(() => jest.advanceTimersByTime(1000));
+  expect(timestamp()[0].props.children.join('')).toBe('Oct 31 · 13:41');
+  act(() => tree.update(render('Title')));
+  expect(timestamp()).toHaveLength(0);
+  act(() => tree.update(render('', 'Memo only')));
+  expect(timestamp()).toHaveLength(0);
+  act(() => tree.update(render('  ', '  ')));
+  expect(timestamp().length).toBeGreaterThan(0);
+  act(() => tree.unmount());
+  jest.useRealTimers();
+});
+
+it('fills the remaining caption height with as many memo lines as fit', () => {
+ let tree!: ReactTestRenderer;
+ act(()=>{tree=create(<HeroCardCaption title="My day" memo="A long diary entry that should fill all available space." number={1} ink="#222" muted="#777"/>);});
+ const memo=()=>tree.root.findAllByProps({testID:'hero-card-memo'})[0];
+ const space=()=>tree.root.findAllByProps({testID:'hero-card-memo-space'})[0];
+ act(()=>space().props.onLayout({nativeEvent:{layout:{height:90}}}));
+ expect(memo().props.numberOfLines).toBe(5);
+ act(()=>memo().props.onTextLayout({nativeEvent:{lines:[{height:24}]}}));
+ expect(memo().props.numberOfLines).toBe(3);
+ act(()=>space().props.onLayout({nativeEvent:{layout:{height:144}}}));
+ expect(memo().props.numberOfLines).toBe(6);
+ act(()=>tree.unmount());
+});
+
+it('opens the same editor from the empty-day prompt as from the pencil', () => {
+  const onSave = jest.fn();
+  const onOpen = jest.fn();
+  const onEditingChange = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardCaption title="" number={1} ink="#222" muted="#777" onSave={onSave} onOpen={onOpen} onEditingChange={onEditingChange} />); });
+  act(() => tree.root.findAllByProps({ testID: 'hero-card-empty-write' })[0].props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'hero-card-editor' }).length).toBeGreaterThan(0);
+  expect(onEditingChange).toHaveBeenLastCalledWith(true);
+  expect(onOpen).not.toHaveBeenCalled();
+  expect(onSave).not.toHaveBeenCalled();
+  expect(tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDay.sceneTitle')!.props.value).toBe('');
+  act(() => tree.unmount());
+});

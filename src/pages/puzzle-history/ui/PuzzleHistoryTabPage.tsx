@@ -1,10 +1,10 @@
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
-  InteractionManager,
   Pressable,
   StyleSheet,
   TextInput,
@@ -370,7 +370,7 @@ export function PuzzleHistoryTabPage() {
       }
 
       let cancelled = false;
-      const task = InteractionManager.runAfterInteractions(() => {
+      const task = scheduleIdleTask(() => {
         requestAnimationFrame(() => {
           if (cancelled) return;
           syncRoutineWindowCompletionsToHistory(todayDateKey);
