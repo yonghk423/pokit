@@ -18,8 +18,8 @@ import { SELECTABLE_COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { COMIC_SCENE_CATEGORIES, comicSceneMatchesCategory, type ComicSceneCategory, type ComicSceneId } from '../lib/heroSceneImages';
 import { ComicGalleryCard } from './HeroGalleryCard';
 import { HeroPhotoSource } from './HeroPhotoSource';
+import { YOURDAY_AI_DAILY_LIMIT, YOURDAY_AI_MAX_REQUEST_IMAGES, YOURDAY_AI_UNLIMITED } from '@shared/config/yourdayAi';
 
-export const HERO_DAILY_IMAGE_LIMIT = 3;
 /** Camera and hands artwork based on the supplied monochrome reference. */
 export function HeroPhotoInvitation({ size = 140 }: { ink: string; size?: number }) {
   return <Image source={require('../../../../assets/control-illustrations/personal-camera-hands.png')} style={{ width: size, height: size }} resizeMode="contain" accessible={false} />;
@@ -49,7 +49,8 @@ export function HeroPersonalizationFlow({ onClose, onReuse, initialMode = 'face'
   const [category, setCategory] = useState<ComicSceneCategory>('all');
   const [visibleCount, setVisibleCount] = useState(12);
   const [columns, setColumns] = useState(2);
-  const selectionLimit = Math.max(0, Math.min(HERO_DAILY_IMAGE_LIMIT, remaining ?? HERO_DAILY_IMAGE_LIMIT));
+  const selectionLimit = Math.max(0, Math.min(YOURDAY_AI_MAX_REQUEST_IMAGES, remaining ?? YOURDAY_AI_DAILY_LIMIT));
+  const unlimited = remaining != null && remaining >= YOURDAY_AI_UNLIMITED;
   const [width, setWidth] = useState(320);
   const photoWidth = Math.max(1, (width - (columns - 1) * 10) / columns);
   const back = () => { if (busyRef.current) return; tapHaptic(); if (savedOpen) setSavedOpen(false); else if (step === 'selection') setStep('source'); else onClose(); };
@@ -115,7 +116,7 @@ export function HeroPersonalizationFlow({ onClose, onReuse, initialMode = 'face'
       <ThemedText style={s.resultTitle}>{t('comicDay.ai.done')}</ThemedText>
     </View>
     <HeroResultGallery images={results} />
-    <View style={s.footer}><ThemedText style={s.limit}>{remaining === 0 ? t('comicDay.ai.exhausted') : t('comicDay.ai.remaining', { count: remaining ?? 0 })}</ThemedText>
+    <View style={s.footer}><ThemedText style={s.limit}>{unlimited ? t('comicDay.inline.unlimited') : remaining === 0 ? t('comicDay.ai.exhausted') : t('comicDay.ai.remaining', { count: remaining ?? 0 })}</ThemedText>
       <Pressable testID="hero-result-apply" accessibilityRole="button" style={s.next} onPress={() => { if (busyRef.current) return; tapHaptic('confirm'); busyRef.current = true; const id = requestId.current; if (onApply) onApply(results); else onClose(); void flushLocalStorageClientWrites().then(() => id ? dismissHeroAiJob(id) : undefined).finally(() => { busyRef.current = false; }); }}><HanddrawnFrame color="#252822" /><ThemedText style={s.label}>{t(onApply ? 'comicDay.ai.apply' : 'common.close')} →</ThemedText></Pressable>
     </View>
   </View>;
@@ -185,10 +186,10 @@ export function HeroPersonalizationFlow({ onClose, onReuse, initialMode = 'face'
     </ScrollView>
     <View style={s.footer}>
           {!recoveryJob && step === 'selection' && mode === 'photo' && !full ? <HeroPhotoSource mode="photo" uri={null} actionsOnly compactPreview selectionLimit={selectionLimit - photos.length} onChange={() => undefined} onSelect={values => { requestId.current = null; setRecovering(false); setPhotos(current => [...new Set([...current, ...values])].slice(0, selectionLimit)); }} /> : null}
-      <ThemedText style={s.limit}>{t('comicDay.personal.limit')}</ThemedText>
-      {step === 'selection' && full && selectionLimit === HERO_DAILY_IMAGE_LIMIT ? <ThemedText testID="hero-daily-limit-warning" style={s.warning}>{t('comicDay.personal.lastThree')}</ThemedText> : null}
+      {!unlimited ? <ThemedText style={s.limit}>{t('comicDay.personal.limit')}</ThemedText> : null}
+      {step === 'selection' && full && count === remaining ? <ThemedText testID="hero-daily-limit-warning" style={s.warning}>{t('comicDay.personal.lastThree')}</ThemedText> : null}
       <View testID="hero-quota-slot" accessibilityState={{ busy: quotaLoading }}>
-        <ThemedText accessibilityLiveRegion="polite" accessibilityElementsHidden={remaining == null} importantForAccessibility={remaining == null ? 'no-hide-descendants' : 'auto'} style={[s.hint, remaining == null && { opacity: 0 }]}>{remaining === 0 ? t('comicDay.ai.exhausted') : t('comicDay.ai.remaining', { count: remaining ?? HERO_DAILY_IMAGE_LIMIT })}</ThemedText>
+        <ThemedText accessibilityLiveRegion="polite" accessibilityElementsHidden={remaining == null} importantForAccessibility={remaining == null ? 'no-hide-descendants' : 'auto'} style={[s.hint, remaining == null && { opacity: 0 }]}>{unlimited ? t('comicDay.inline.unlimited') : remaining === 0 ? t('comicDay.ai.exhausted') : t('comicDay.ai.remaining', { count: remaining ?? YOURDAY_AI_DAILY_LIMIT })}</ThemedText>
         {quotaLoading ? <View testID="hero-quota-skeleton" pointerEvents="none" accessible={false} style={s.quotaSkeleton} /> : null}
       </View>
       {busy ? <ThemedText accessibilityLiveRegion="polite" style={s.hint}>{t('comicDay.ai.processing', { count: progress, total: count })}</ThemedText> : null}

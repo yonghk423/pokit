@@ -2802,8 +2802,8 @@
   "comicDay.personal.hint.photo": "Turn the whole photo into a cartoon scene.",
   "comicDay.personal.count": "Selected {count} / {limit}",
   "comicDay.personal.remove": "Remove photo {count}",
-  "comicDay.personal.limit": "AI image generation is limited to 3 images per day.",
-  "comicDay.personal.lastThree": "Generating these 3 images will use your daily allowance.",
+  "comicDay.personal.limit": "You can generate one illustration per day.",
+  "comicDay.personal.lastThree": "Completing this generation will use today’s allowance.",
   "comicDay.personal.servicePending": "Photo and scene selection are available. AI generation is not connected yet.",
   "comicDay.personal.next": "Next",
   "comicDay.personal.generate": "Generate {count} images",
@@ -2833,7 +2833,7 @@
   "comicDay.ai.processing": "Drawing · {count} / {total}",
   "comicDay.ai.apply": "Use these scenes",
   "comicDay.ai.sceneTitle": "My scene {count}",
-  "comicDay.ai.exhausted": "All 3 AI images for today have been used. You can create more tomorrow.",
+  "comicDay.ai.exhausted": "You have used today’s illustration generation. Please try again tomorrow.",
   "comicDay.ai.auth": "Could not authenticate. Please try again shortly.",
   "comicDay.ai.serviceLimit": "The service has reached today’s generation limit. Please return tomorrow.",
   "comicCalendar.open": "Open calendar",
@@ -2987,5 +2987,5 @@
   "comicDay.inline.uploading": "Please keep the app open for a moment.",
   "comicDay.inline.backgroundReady": "You can close the app now. Drawing will continue. Reopen it to save the finished image on your device.",
   "comicDay.inline.remaining": "{count} left",
-  "comicDay.inline.unlimited": "Unlimited today"
+  "comicDay.inline.unlimited": "Development · Unlimited"
 }

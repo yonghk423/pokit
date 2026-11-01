@@ -1,6 +1,7 @@
 import * as fs from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabasePublishableKey, getSupabaseUrl } from '@shared/config/supabase';
+import { getYourdayAiDevelopmentHeaders } from '@shared/config/yourdayAi';
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
 import type { ComicSceneId } from './heroSceneImages';
 
@@ -17,7 +18,7 @@ async function request(path: string, body?: unknown, retry = true) {
   let token: string;
   try { token = await getHeroAiAccessToken(); } catch { throw new HeroAiError('auth_unavailable'); }
   let response: Response;
-  try { response = await fetch(url + path, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token}`, apikey: key, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); }
+  try { response = await fetch(url + path, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token}`, apikey: key, ...getYourdayAiDevelopmentHeaders(), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); }
   catch { throw new HeroAiError('connection'); }
   if (response.status === 401 && retry) {
     const refreshed = await getHeroAiAuthClient().auth.refreshSession();

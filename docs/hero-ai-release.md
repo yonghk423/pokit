@@ -1,14 +1,24 @@
 # Hero AI release connection
 
-Project: `yourday` (`wvvtyaxsedpqiscogrwk`, Seoul). The app uses the existing public Supabase URL and publishable key. It does not use a Mac relay, a developer token, or an OpenAI key in its bundle.
+Project: `yourday` (`wvvtyaxsedpqiscogrwk`, Seoul). The app uses the existing public Supabase URL and publishable key. Release builds use no Mac relay, developer credential, or OpenAI key. Local development builds can send a narrowly scoped developer credential as described below.
 
 ## Authentication and limits
 
 A dedicated Supabase Auth client creates and persists an anonymous account without adding a login screen. The announcement client remains read-only and unchanged. Each request validates the user's access token with Supabase Auth inside the Edge Function. Gateway legacy JWT verification is disabled only because authentication is explicitly handled in the function, including current signing keys.
 
-An atomic database reservation enforces three outputs per anonymous account per Asia/Seoul calendar day. Database locks serialize simultaneous reservations. Claims prevent duplicate calls to OpenAI for the same output. Direct table and quota-RPC access are revoked from app roles. Expired unclaimed reservations are released; uncertain upstream calls retain quota to prevent accidental repeat billing.
+An atomic database reservation enforces one output per anonymous account per Asia/Seoul calendar day. Active work reserves that slot; saving the result on the device confirms it. Failed work releases its slot. Database locks serialize simultaneous reservations. Claims prevent duplicate calls to OpenAI for the same output. Direct table and quota-RPC access are revoked from app roles. Expired unclaimed reservations and interrupted work are released under the existing recovery/expiry policy.
 
-An initial service-wide safeguard is 100 outputs per day. Authorized operators can update `public.hero_ai_limits.global_daily` through the dashboard or SQL. This protects the shared API budget. Upstream attempts are additionally limited to six per account and twice the global output allowance per day, including explicit upstream rejections. Anonymous accounts are installation identities: reinstalling or clearing identity data can create a new account. Stronger person-level limits require account linking and/or app attestation. Supabase anonymous sign-up rate limits and the global generation cap remain active; consider CAPTCHA/App Attest before scaling free public acquisition.
+An initial service-wide safeguard is 100 outputs per day. Authorized operators can update `public.yourday_ai_limits.global_daily` through the dashboard or SQL. This protects the shared API budget. Upstream attempts are additionally limited to six per account and twice the global output allowance per day, including explicit upstream rejections. Anonymous accounts are installation identities: reinstalling or clearing identity data can create a new account. Stronger person-level limits require account linking and/or app attestation. Supabase anonymous sign-up rate limits and the global generation cap remain active; consider CAPTCHA/App Attest before scaling free public acquisition.
+
+## Developer quota (2026-11-01)
+
+`20261101080000_yourday_development_quota.sql` replaces all date-based global quota exceptions. The existing RPC signatures now wrap the production-only path, so older installed clients also receive the one-image daily limit. New overloads accept a service-role-only `p_development` flag; app roles cannot execute them directly.
+
+The Edge Function grants that flag only after normal user authentication and verification of `x-yourday-dev-token` against its private `YOURDAY_AI_DEV_TOKEN` secret. Missing or incorrect credentials use the production limit. Developer jobs are marked `is_development` and do not consume the production allowance of the same anonymous identity. Developer requests bypass personal output/attempt limits, but retain the shared service budget. Saving, refunds, ownership, and result recovery are unchanged.
+
+The matching local credential is kept in ignored `.env.local` as `EXPO_PUBLIC_YOURDAY_AI_DEV_TOKEN`. `getYourdayAiDevelopmentHeaders` reads/sends it only inside a `__DEV__` branch; release requests never include it. Do not add this value to EAS production environments, tracked files, screenshots or logs. Local server-secret provisioning uses ignored `.hero-ai-dev/edge.env`; deploy that file with `supabase secrets set --env-file .hero-ai-dev/edge.env --project-ref wvvtyaxsedpqiscogrwk`. Rotate both values together if needed. Restart/reload the development server after changing local environment values.
+
+The app labels a server-confirmed developer allowance as “개발 모드 · 제한 없음”. The old `temporary-yourday-ai-quota.sql`, `restore-yourday-ai-quota.sql`, and dated dev-window scripts are historical and must not be reapplied: they would overwrite this policy.
 
 ## Generation and retention
 
@@ -18,22 +28,22 @@ Completed PNGs are kept in the private `hero-ai-results` bucket. Only owner-auth
 
 ## Deployment
 
-- `supabase/functions/hero-ai/index.ts`: generation, authenticated job polling, signed results, maintenance endpoint.
+- `supabase/functions/yourday-ai/index.ts`: generation, authenticated job polling, signed results, maintenance endpoint.
 - `supabase/migrations/20261028050000_hero_ai.sql`: isolated AI tables, atomic quota helpers and private bucket.
 - `supabase/migrations/20261028051000_hero_ai_cleanup.sql`: scheduled private cleanup invocation.
 - `OPENAI_API_KEY` and `HERO_AI_CLEANUP_TOKEN`: Edge Function Secrets only. The cleanup token is also encrypted in Supabase Vault for the cron invocation.
 
-Apply only the relevant AI migrations to the existing project; do not reset the database. The announcements and operator notices tables are independent. Deploy only `hero-ai` without pruning other functions:
+Apply only the relevant AI migrations to the existing project; do not reset the database. The announcements and operator notices tables are independent. Deploy only `yourday-ai` without pruning other functions:
 
 ```sh
-npx supabase functions deploy hero-ai --project-ref wvvtyaxsedpqiscogrwk --use-api --no-verify-jwt
+npx supabase functions deploy yourday-ai --project-ref wvvtyaxsedpqiscogrwk --use-api --no-verify-jwt
 ```
 
 The maintenance endpoint validates its own random token and does not accept user tokens as maintenance authorization. Never put the service-role key or OpenAI key into EXPO_PUBLIC variables.
 
 ## Verification
 
-The database quota checks in `supabase/tests/hero_ai_quota.sql` run inside a rolled-back transaction with `hero_ai.test_user` set to a test Auth user's UUID. They cover duplicate reservations, duplicate claims, cross-user claims, expired unclaimed reservations, and revoked app-role permissions.
+The database quota checks in `supabase/tests/yourday_ai_quota.sql` run inside a rolled-back transaction with `yourday_ai.test_user` set to a test Auth user's UUID. They cover duplicate reservations, duplicate claims, cross-user claims, expired unclaimed reservations, and revoked app-role permissions.
 
 A live production smoke test generated one existing app illustration and downloaded its private output. It used no real user's facial photograph. Authenticated health returned 200; unauthenticated job access returned 401.
 

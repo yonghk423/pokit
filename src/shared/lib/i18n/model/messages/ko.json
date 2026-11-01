@@ -2802,8 +2802,8 @@
   "comicDay.personal.hint.photo": "사진 속 장면을 카툰으로 바꿔요.",
   "comicDay.personal.count": "선택 {count} / {limit}",
   "comicDay.personal.remove": "{count}번 사진 삭제",
-  "comicDay.personal.limit": "AI 이미지 생성은 하루 최대 3장까지 가능해요.",
-  "comicDay.personal.lastThree": "선택한 3장을 생성하면 오늘은 추가로 만들 수 없어요.",
+  "comicDay.personal.limit": "일러스트 생성은 하루 1회 가능해요.",
+  "comicDay.personal.lastThree": "생성을 완료하면 오늘의 이용 횟수가 사용돼요.",
   "comicDay.personal.servicePending": "지금은 사진과 장면을 고르는 단계까지 사용할 수 있어요. AI 생성은 아직 연결 전이에요.",
   "comicDay.personal.next": "다음",
   "comicDay.personal.generate": "{count}장 생성하기",
@@ -2833,7 +2833,7 @@
   "comicDay.ai.processing": "일러스트를 그리고 있어요 · {count} / {total}",
   "comicDay.ai.apply": "이 장면 사용하기",
   "comicDay.ai.sceneTitle": "나의 장면 {count}",
-  "comicDay.ai.exhausted": "오늘 만들 수 있는 사진을 모두 만들었어요. 내일 다시 만나요.",
+  "comicDay.ai.exhausted": "오늘의 일러스트 생성 횟수를 모두 사용했어요. 내일 다시 이용해주세요.",
   "comicDay.ai.auth": "사용자 인증을 완료하지 못했어요. 잠시 후 다시 시도해주세요.",
   "comicDay.ai.serviceLimit": "오늘의 전체 생성 한도에 도달했어요. 내일 다시 이용해주세요.",
   "comicCalendar.open": "달력 열기",
@@ -2987,5 +2987,5 @@
   "comicDay.inline.uploading": "잠시만 앱을 켜두세요.",
   "comicDay.inline.backgroundReady": "이제 앱을 닫아도 괜찮아요. 계속 그리고 있어요. 다시 열면 완성된 일러스트를 기기에 저장해요.",
   "comicDay.inline.remaining": "남은 {count}회",
-  "comicDay.inline.unlimited": "오늘 제한 없음"
+  "comicDay.inline.unlimited": "개발 모드 · 제한 없음"
 }

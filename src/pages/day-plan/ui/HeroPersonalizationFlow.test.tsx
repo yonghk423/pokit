@@ -15,9 +15,10 @@ jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.require
 jest.mock('./HeroGalleryCard', () => ({ ComicGalleryCard: () => null }));
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: () => null }));
 
-it('requires a photo, caps face scenes at three, and restores capacity on deselection', () => {
+it('requires a photo, respects the one-image production quota, and restores capacity on deselection', async () => {
+  jest.mocked(getHeroAiRemaining).mockResolvedValueOnce(1);
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<HeroPersonalizationFlow onClose={jest.fn()} />); });
+  await act(async () => { tree = create(<HeroPersonalizationFlow onClose={jest.fn()} />); });
   const next = () => tree.root.findAllByProps({ testID: 'hero-personal-next' })[0];
   expect(next().props.disabled).toBe(true);
   act(() => tree.root.findByType(HeroPhotoSource).props.onChange('file:///face.jpg'));
@@ -26,18 +27,19 @@ it('requires a photo, caps face scenes at three, and restores capacity on desele
   const ids = tree.root.findAllByType(ComicGalleryCard).slice(0, 4).map(card => card.props.id);
   const tap = (id: string) => tree.root.findAllByType(ComicGalleryCard).find(card => card.props.id === id)!.props.onToggle(id);
   for (const id of ids) act(() => tap(id));
-  expect(tree.root.findAllByType(ComicGalleryCard).filter(card => card.props.order > 0)).toHaveLength(3);
+  expect(tree.root.findAllByType(ComicGalleryCard).filter(card => card.props.order > 0)).toHaveLength(1);
   expect(tree.root.findAllByProps({ testID: 'hero-daily-limit-warning' }).length).toBeGreaterThan(0);
   act(() => tap(ids[0]));
   expect(tree.root.findAllByProps({ testID: 'hero-daily-limit-warning' })).toHaveLength(0);
   act(() => tap(ids[3]));
-  expect(tree.root.findAllByType(ComicGalleryCard).filter(card => card.props.order > 0)).toHaveLength(3);
+  expect(tree.root.findAllByType(ComicGalleryCard).filter(card => card.props.order > 0)).toHaveLength(1);
   act(() => tree.unmount());
 });
 
-it('keeps the initial whole photo and caps added photos at three', () => {
+it('allows three photos per developer request without a daily-limit warning', async () => {
+  jest.mocked(getHeroAiRemaining).mockResolvedValueOnce(100000);
   let tree!: ReactTestRenderer;
-  act(() => { tree = create(<HeroPersonalizationFlow initialMode="photo" onClose={jest.fn()} />); });
+  await act(async () => { tree = create(<HeroPersonalizationFlow initialMode="photo" onClose={jest.fn()} />); });
   act(() => tree.root.findByType(HeroPhotoSource).props.onChange('file:///one.jpg'));
   act(() => tree.root.findAllByProps({ testID: 'hero-personal-next' })[0].props.onPress());
   expect(tree.root.findByType(HeroPhotoSource).props.selectionLimit).toBe(2);
@@ -50,7 +52,7 @@ it('keeps the initial whole photo and caps added photos at three', () => {
 
   act(() => tree.root.findByType(HeroPhotoSource).props.onSelect(['file:///two.jpg', 'file:///three.jpg', 'file:///four.jpg']));
   expect(tree.root.findAllByType(HeroPhotoSource)).toHaveLength(0);
-  expect(tree.root.findAllByProps({ testID: 'hero-daily-limit-warning' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-daily-limit-warning' })).toHaveLength(0);
   act(() => tree.unmount());
 });
 

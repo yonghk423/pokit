@@ -26,7 +26,7 @@ const previousDeno = (globalThis as any).Deno;
 const previousEdgeRuntime = (globalThis as any).EdgeRuntime;
 const previousFetch = global.fetch;
 beforeAll(() => {
- (globalThis as any).Deno = { env: { get: () => 'test' }, serve: (value: typeof handler) => { handler = value; } };
+ (globalThis as any).Deno = { env: { get: (name: string) => name === 'YOURDAY_AI_DEV_TOKEN' ? 'a'.repeat(64) : 'test' }, serve: (value: typeof handler) => { handler = value; } };
  (globalThis as any).EdgeRuntime = { waitUntil: (task: Promise<unknown>) => tasks.push(task) };
  require('./index');
 });
@@ -67,4 +67,23 @@ it('deletes the temporary server copy only after the saved receipt succeeds', as
  expect(mockAdmin.rpc).toHaveBeenCalledWith('yourday_ai_confirm_saved',expect.any(Object));
  expect(storage.remove).toHaveBeenCalledWith(['test-user/test-job-123/0.png']);
  expect(updates).toContainEqual({object_path:null});
+});
+it('uses production quota for missing or forged developer credentials', async () => {
+ for (const value of ['', 'true', 'b'.repeat(64)]) {
+  await handler(new Request('https://example.test/functions/v1/yourday-ai/health', {headers:{Authorization:'Bearer test','x-yourday-dev-token':value}}));
+  expect(mockAdmin.rpc).toHaveBeenLastCalledWith('yourday_ai_remaining',{p_user:'test-user',p_development:false});
+ }
+});
+it('passes verified developer scope through reservation, polling, claiming and saved receipts', async () => {
+ const headers = {Authorization:'Bearer test','x-yourday-dev-token':'a'.repeat(64)};
+ const base = 'https://example.test/functions/v1/yourday-ai';
+ await handler(new Request(`${base}/jobs`,{method:'POST',headers,body:JSON.stringify({id:'test-job-dev',mode:'photo',count:1})}));
+ expect(mockAdmin.rpc).toHaveBeenCalledWith('yourday_ai_reserve',expect.objectContaining({p_development:true}));
+ expect(mockAdmin.rpc).toHaveBeenCalledWith('yourday_ai_remaining',expect.objectContaining({p_development:true}));
+ global.fetch=jest.fn(async()=>({ok:false,status:500})) as never;
+ await handler(new Request(`${base}/jobs/test-job-dev/render/0`,{method:'POST',headers,body:JSON.stringify({base:'/9j/AAAA'})}));
+ expect(mockAdmin.rpc).toHaveBeenCalledWith('yourday_ai_claim',expect.objectContaining({p_development:true}));
+ await Promise.all(tasks);
+ await handler(new Request(`${base}/jobs/test-job-dev/saved`,{method:'POST',headers,body:JSON.stringify({indices:[0]})}));
+ expect(mockAdmin.rpc).toHaveBeenCalledWith('yourday_ai_confirm_saved',expect.objectContaining({p_development:true}));
 });

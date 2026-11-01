@@ -2,9 +2,10 @@ import { planDiaryScene } from './scenePlan.ts';
 import { faceRejections, validateFace } from './faceValidation.ts';
 import { generationRequest, validateStory, type HeroStory } from './generationRequest.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
+import { hasDevelopmentAccess } from './developmentAccess.ts';
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization,apikey,content-type,x-client-info', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization,apikey,content-type,x-client-info,x-yourday-dev-token', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' };
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const resultBucket = 'yourday-ai-results';
 declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void };
@@ -22,15 +23,15 @@ function jpeg(value: unknown) {
   if(typeof value!=='string'||value.length>8500000||!value.startsWith('/9j/')||!/^[A-Za-z0-9+/=]+$/.test(value))throw new Error('invalid_image');
   return new Blob([Uint8Array.from(atob(value),c=>c.charCodeAt(0))],{type:'image/jpeg'});
 }
-const remaining = async (user: string) => { const { data,error }=await admin.rpc('yourday_ai_remaining',{p_user:user});if(error)throw new Error('database_error');return data as number; };
+const remaining = async (user: string, development = false) => { const { data,error }=await admin.rpc('yourday_ai_remaining',{p_user:user,p_development:development});if(error)throw new Error('database_error');return data as number; };
 async function owned(user: string,id: string) {
   const {data,error}=await admin.from('yourday_ai_jobs').select('*').eq('id',id).eq('user_id',user).maybeSingle();
   if(error||!data)throw new Error('not_found');return data;
 }
-async function job(user: string,id: string) {
+async function job(user: string,id: string,development = false) {
   await owned(user,id);
   // Reclaim interrupted/unacknowledged work before returning its status.
-  await remaining(user);
+  await remaining(user,development);
   const {data,error}=await admin.from('yourday_ai_outputs').select('*').eq('job_id',id).order('index');if(error)throw new Error('database_error');
   const outputs=data??[];
   const processing=outputs.some(o=>o.state==='reserved'||o.state==='processing');
@@ -41,7 +42,7 @@ async function job(user: string,id: string) {
       if(signed.error)throw new Error('save_failed');
       return {index:o.index,url:signed.data.signedUrl};
     })),
-    remaining:await remaining(user),error:outputs.find(o=>o.error)?.error,
+    remaining:await remaining(user,development),error:outputs.find(o=>o.error)?.error,
     pending:outputs.filter(o=>o.state==='reserved').map(o=>o.index) };
 }
 async function render(user: string,id: string,index: number,mode: string,base: Blob,reference?: Blob,story?: HeroStory) {
@@ -108,7 +109,8 @@ Deno.serve(async(req: Request)=>{
   }
   const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'');if(!token)return json({error:'unauthorized'},401);
   const auth=await admin.auth.getUser(token);if(auth.error||!auth.data.user)return json({error:'unauthorized'},401);const user=auth.data.user.id;
-  if(req.method==='GET'&&path==='/health')return json({ready:Boolean(Deno.env.get('OPENAI_API_KEY')),remaining:await remaining(user)});
+  const development=hasDevelopmentAccess(req,Deno.env.get('YOURDAY_AI_DEV_TOKEN'));
+  if(req.method==='GET'&&path==='/health')return json({ready:Boolean(Deno.env.get('OPENAI_API_KEY')),remaining:await remaining(user,development)});
   const cancelMatch=path.match(/^\/jobs\/([a-zA-Z0-9-]{8,80})\/cancel$/);
   if(req.method==='POST'&&cancelMatch){
    const id=cancelMatch[1];await owned(user,id);
@@ -119,26 +121,26 @@ Deno.serve(async(req: Request)=>{
    for(const output of cancelled.data??[])activeRenders.get(`${id}:${output.index}`)?.abort();
    await removeResultCopies(id);
    await admin.from('yourday_ai_notifications').delete().eq('job_id',id);
-   return json({cancelled:true,remaining:await remaining(user)});
+   return json({cancelled:true,remaining:await remaining(user,development)});
   }
   const savedMatch=path.match(/^\/jobs\/([a-zA-Z0-9-]{8,80})\/saved$/);
   if(req.method==='POST'&&savedMatch){
    const data=await body(req);
    if(!Array.isArray(data.indices)||data.indices.length<1||data.indices.length>3||!data.indices.every((value: unknown)=>Number.isInteger(value)&&Number(value)>=0&&Number(value)<=2))return json({error:'invalid_request'},400);
-   const confirmed=await admin.rpc('yourday_ai_confirm_saved',{p_user:user,p_id:savedMatch[1],p_indices:data.indices});
+   const confirmed=await admin.rpc('yourday_ai_confirm_saved',{p_user:user,p_id:savedMatch[1],p_indices:data.indices,p_development:development});
    if(confirmed.error)return json({error:'database_error'},500);
    // Confirm disk persistence first; failed deletion is retried by the scheduler.
    await removeResultCopies(savedMatch[1]).catch(()=>undefined);
    return json({remaining:confirmed.data});
   }
   const match=path.match(/^\/jobs\/([a-zA-Z0-9-]{8,80})(?:\/render\/([0-2]))?$/);
-  if(req.method==='GET'&&match&&!match[2])return json(await job(user,match[1]));
+  if(req.method==='GET'&&match&&!match[2])return json(await job(user,match[1],development));
   if(req.method==='POST'&&path==='/jobs'){
    const data=await body(req);if(!/^[a-zA-Z0-9-]{8,80}$/.test(data.id)||!['face','photo'].includes(data.mode)||!Number.isInteger(data.count)||data.count<1||data.count>3)return json({error:'invalid_request'},400);
    if(data.mode==='face'){jpeg(data.reference);await validateFace(user,data.reference,Deno.env.get('OPENAI_API_KEY'));}
-   const reserved=await admin.rpc('yourday_ai_reserve',{p_user:user,p_id:data.id,p_mode:data.mode,p_count:data.count});
+   const reserved=await admin.rpc('yourday_ai_reserve',{p_user:user,p_id:data.id,p_mode:data.mode,p_count:data.count,p_development:development});
    if(reserved.error){const code=['daily_limit','service_limit','request_conflict'].find(c=>reserved.error.message.includes(c));return json({error:code??'database_error'},code==='daily_limit'||code==='service_limit'?429:409);}
-   return json(await job(user,data.id),201);
+   return json(await job(user,data.id,development),201);
   }
   if(req.method==='POST'&&match&&match[2]){
    if(!Deno.env.get('OPENAI_API_KEY'))return json({error:'unavailable'},503);
@@ -153,8 +155,8 @@ Deno.serve(async(req: Request)=>{
      throw error;
     }
    }
-   const claim=await admin.rpc('yourday_ai_claim',{p_user:user,p_id:match[1],p_index:index});if(claim.error){const code=['attempt_limit','service_limit'].find(c=>claim.error.message.includes(c));return json({error:code??'database_error'},code?429:500);}
-   if(!claim.data)return json(await job(user,match[1]),202);
+   const claim=await admin.rpc('yourday_ai_claim',{p_user:user,p_id:match[1],p_index:index,p_development:development});if(claim.error){const code=['daily_limit','attempt_limit','service_limit'].find(c=>claim.error.message.includes(c));return json({error:code??'database_error'},code?429:500);}
+   if(!claim.data)return json(await job(user,match[1],development),202);
    EdgeRuntime.waitUntil(render(user,match[1],index,current.mode,base,reference,story));
    return json({index,status:'processing'},202);
   }

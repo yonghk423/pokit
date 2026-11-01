@@ -2802,8 +2802,8 @@
   "comicDay.personal.hint.photo": "写真全体を漫画のシーンに変えます。",
   "comicDay.personal.count": "選択 {count} / {limit}",
   "comicDay.personal.remove": "写真{count}を削除",
-  "comicDay.personal.limit": "AI画像生成は1日最大3枚です。",
-  "comicDay.personal.lastThree": "この3枚を生成すると、今日は追加で生成できません。",
+  "comicDay.personal.limit": "イラスト生成は1日1回までです。",
+  "comicDay.personal.lastThree": "生成が完了すると、本日の利用回数を使い切ります。",
   "comicDay.personal.servicePending": "写真とシーンを選べます。AI生成はまだ接続されていません。",
   "comicDay.personal.next": "次へ",
   "comicDay.personal.generate": "{count}枚を生成",
@@ -2833,7 +2833,7 @@
   "comicDay.ai.processing": "描いています · {count} / {total}",
   "comicDay.ai.apply": "このシーンを使う",
   "comicDay.ai.sceneTitle": "私のシーン{count}",
-  "comicDay.ai.exhausted": "本日のAI生成3枚を使い切りました。明日また作成できます。",
+  "comicDay.ai.exhausted": "本日のイラスト生成回数を使い切りました。明日またご利用ください。",
   "comicDay.ai.auth": "認証できませんでした。しばらくしてからお試しください。",
   "comicDay.ai.serviceLimit": "サービス全体の本日の生成上限に達しました。明日またご利用ください。",
   "comicCalendar.open": "カレンダーを開く",
@@ -2987,5 +2987,5 @@
   "comicDay.inline.uploading": "少しの間、アプリを開いたままにしてください。",
   "comicDay.inline.backgroundReady": "アプリを閉じても大丈夫です。生成は続きます。再度開くと完成した絵を端末に保存します。",
   "comicDay.inline.remaining": "残り{count}回",
-  "comicDay.inline.unlimited": "本日は無制限"
+  "comicDay.inline.unlimited": "開発モード · 制限なし"
 }
