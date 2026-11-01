@@ -123,13 +123,12 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
   // Both gestures share one native surface. A held thumb sweep must get a chance
   // to turn before the long-press overview gesture can claim the same touch.
   const movement = overviewGesture ? Gesture.Exclusive(gesture, overviewGesture) : gesture;
-  // The overview pan activates after 350ms, before a deletion hold's 500ms.
-  // Give a stationary hold priority instead of racing those timers. Moving more
-  // than 12pt fails the hold and releases the same touch to the swipe gestures.
+  // Decide deletion only on stationary release. Movement can still activate
+  // the overview pan after the hold threshold, rather than being blocked by it.
   const deckGesture = onCardHold
-    ? Gesture.Exclusive(
+    ? Gesture.Simultaneous(
       Gesture.LongPress().enabled(enabled && swipeEnabled && count > 0).minDuration(500).maxDistance(12)
-        .onStart(event => { runOnJS(onCardHold)(event.x, event.y); }),
+        .onEnd((event, success) => { if (success) runOnJS(onCardHold)(event.x, event.y); }),
       movement,
     )
     : movement;

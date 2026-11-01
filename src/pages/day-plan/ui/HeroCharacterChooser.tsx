@@ -1,7 +1,9 @@
+import { HeroReorderableStyleRail } from './HeroReorderableStyleRail';
+import { HERO_CHARACTER_ORDER_KEY } from '../lib/heroCharacterOrder';
 import type { HeroAiResult } from '../lib/heroAiClient';
 import { HeroPhotoInvitation } from './HeroPersonalizationFlow';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, BackHandler, Easing, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TouchableWithoutFeedback, useAnimatedValue, useWindowDimensions, View } from 'react-native';
+import { type PressableProps, AccessibilityInfo, Animated, BackHandler, Easing, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TouchableWithoutFeedback, useAnimatedValue, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
@@ -41,10 +43,10 @@ function useReducedMotion() {
   return reduced;
 }
 
-function CastingCard({ character, chosen, width, height, ink, paper, reduced, artIndex, onSelect }: {
+function CastingCard({ character, chosen, width, height, ink, paper, reduced, artIndex, onPress, onLongPress, onPressIn, onPressOut, delayLongPress }: {
   character: ComicCharacter; chosen: boolean; width: number; height: number; ink: string; paper: string;
-  reduced: boolean; artIndex: number; onSelect: () => void;
-}) {
+  reduced: boolean; artIndex: number;
+} & Pick<PressableProps, 'onPress' | 'onLongPress' | 'onPressIn' | 'onPressOut' | 'delayLongPress'>) {
   const { t } = useTranslation();
   const press = useAnimatedValue(1);
   const scene = character.scenes[artIndex - 1];
@@ -55,11 +57,11 @@ function CastingCard({ character, chosen, width, height, ink, paper, reduced, ar
     press.stopAnimation();
     Animated.timing(press, { toValue: value, duration: reduced ? 0 : 130, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
   };
-  return <Animated.View pointerEvents="auto" style={[s.castingCard, {
+  return <Animated.View testID={`comic-character-column-${character.id}`} pointerEvents="auto" style={[s.castingCard, {
     width, height, backgroundColor: paper, transform: [{ scale: press }],
   }]}>
     <PaperGrain opacity={0.18} />
-    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityState={{ selected: chosen }} accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} onPress={onSelect} onPressIn={() => pressTo(0.985)} onPressOut={() => pressTo(1)} style={s.mainArtwork}>
+    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityState={{ selected: chosen }} accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} onPress={onPress} delayLongPress={delayLongPress} onLongPress={onLongPress} onPressIn={event => { pressTo(0.985); onPressIn?.(event); }} onPressOut={event => { pressTo(1); onPressOut?.(event); }} style={s.mainArtwork}>
       <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
     </Pressable>
     <ThemedText style={[s.personalLabel, { color: ink, paddingTop: 6 }]}>{t(character.name)}</ThemedText>
@@ -206,11 +208,10 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
           </View> : null}
           <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
             <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
-              <ScrollView horizontal testID="comic-character-horizontal-list" showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalCards} style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
-              {COMIC_CHARACTERS.map(character => <View key={character.id} testID={`comic-character-column-${character.id}`} style={{ width: artworkWidth, height: artworkHeight }}>
-                <CastingCard character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
-                  artIndex={artIndices[character.id] ?? 0} onSelect={() => choose(character)} />
-              </View>)}
+              <HeroReorderableStyleRail storageKey={HERO_CHARACTER_ORDER_KEY} itemWidth={artworkWidth} gap={14} scrollTestID="comic-character-horizontal-list" contentContainerStyle={s.horizontalCards} style={{ flex: 1 }} scrollStyle={{ flex: 1 }}>
+              {COMIC_CHARACTERS.map(character => <CastingCard key={character.id} character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
+                  artIndex={artIndices[character.id] ?? 0} onPress={() => choose(character)} />)}
+              <>
               <View style={{ width: artworkWidth, height: artworkHeight }}>
               <AnimatedPressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} accessibilityState={{ selected: personalChosen }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: personalChosen ? 3 : 1, elevation: personalChosen ? 4 : 2 }]}>
                 <PaperGrain opacity={0.18} /><HeroPhotoInvitation ink={ink} size={Math.min(155, artworkWidth * 0.88)} />
@@ -229,7 +230,8 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
                 <SettingsPenFrame color={muted} />
               </Pressable>
               </View>
-              </ScrollView>
+              </>
+              </HeroReorderableStyleRail>
               <View testID="comic-character-thumbnail-lane" style={s.thumbnailLane}>
                 {COMIC_CHARACTERS.filter(character => previewCharacter === character.id && !personalChosen).map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} showPreviews reduced={reduced} ink={ink} />)}
               </View>

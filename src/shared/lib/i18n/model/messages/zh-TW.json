@@ -2829,11 +2829,11 @@
   "comicDay.loading.longer": "需要多一點時間，請稍候。",
   "comicDay.loading.return": "關閉 App 後，仍可重新開啟查看場景。",
   "comicDay.ai.done": "場景已完成",
-  "comicDay.ai.remaining": "今日還可生成{count}張",
+  "comicDay.ai.remaining": "{count}/1",
   "comicDay.ai.processing": "繪製中 · {count} / {total}",
   "comicDay.ai.apply": "使用這些場景",
   "comicDay.ai.sceneTitle": "我的場景{count}",
-  "comicDay.ai.exhausted": "今天的插畫生成次數已用完，請明天再試。",
+  "comicDay.ai.exhausted": "今天可使用的生成次數已全部用完。",
   "comicDay.ai.auth": "無法完成驗證，請稍後再試。",
   "comicDay.ai.serviceLimit": "已達服務今日生成上限，請明天再試。",
   "comicCalendar.open": "開啟月曆",
@@ -2986,6 +2986,6 @@
   "comicDay.inline.uploadingTitle": "應用程式正在準備你的插畫",
   "comicDay.inline.uploading": "請暫時保持應用程式開啟。",
   "comicDay.inline.backgroundReady": "現在可以關閉應用程式，插畫會繼續生成。再次開啟即可將完成的插畫儲存到裝置。",
-  "comicDay.inline.remaining": "剩餘{count}次",
+  "comicDay.inline.remaining": "{count}/1",
   "comicDay.inline.unlimited": "開發模式 · 不限次數"
 }

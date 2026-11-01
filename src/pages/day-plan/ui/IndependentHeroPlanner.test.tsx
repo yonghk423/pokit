@@ -649,9 +649,9 @@ it.each(['', '바로 쓴 제목'])('writes directly on the random card and saves
   act(() => tree.unmount());
 });
 
-it('replaces the active card with the inline result and keeps other cards intact', async () => {
+it('keeps source cards unchanged and saves generated writing only on a new focused card', async () => {
   useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
-  const first = newComicScene('First');
+  const first = { ...newComicScene(''), memo: '', todos: [{ id: 'keep-task', text: 'Existing task', completed: false }] };
   const second = newComicScene('Second');
   const diary = { id: 'inline-diary', title: 'Diary', characterId: COMIC_CHARACTERS[0].id, scenes: [first, second], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
@@ -659,17 +659,20 @@ it('replaces the active card with the inline result and keeps other cards intact
   const ref = createRef<ComicDiaryHandle>();
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
-  act(() => tree.root.findByType(ComicDayBoard).props.onActiveSceneChange(second.id));
+  act(() => tree.root.findByType(ComicDayBoard).props.onActiveSceneChange(first.id));
   await act(async () => ref.current!.openPhotoEntry());
   const flow = tree.root.findByType(HeroInlineComposer);
-  expect(flow.props.targetSceneId).toBe(second.id);
+  expect(flow.props.targetSceneId).toBe(first.id);
   await act(async () => flow.props.onApply({ title: 'New', memo: 'A new story', paper: '#F5E8CF', pen: '#222' }, 'file:///inline-result.png', 'hero-test'));
   const scenes = loadComicDay('2026-10-21');
-  expect(scenes).toHaveLength(2);
+  expect(scenes).toHaveLength(3);
   expect(scenes[0]).toEqual(first);
-  expect(scenes[1]).toMatchObject({ id: second.id, memo: 'A new story', artworkUri: 'file:///inline-result.png' });
+  expect(scenes[1]).toEqual(second);
+  expect(scenes[2]).toMatchObject({ title: 'New', memo: 'A new story', artworkUri: 'file:///inline-result.png', todos: [] });
+  expect(scenes[2].id).not.toBe(first.id);
   expect(tree.root.findAllByType(HeroInlineComposer)).toHaveLength(0);
-  expect(tree.root.findByType(ComicDayBoard).props.items).toHaveLength(2);
+  expect(tree.root.findByType(ComicDayBoard).props.items).toHaveLength(3);
+  expect(tree.root.findByType(ComicDayBoard).props.focusSceneId).toBe(scenes[2].id);
   act(() => tree.unmount());
 });
 

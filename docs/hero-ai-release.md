@@ -20,6 +20,8 @@ The matching local credential is kept in ignored `.env.local` as `EXPO_PUBLIC_YO
 
 The app labels a server-confirmed developer allowance as “개발 모드 · 제한 없음”. The old `temporary-yourday-ai-quota.sql`, `restore-yourday-ai-quota.sql`, and dated dev-window scripts are historical and must not be reapplied: they would overwrite this policy.
 
+Deployment verified on 2026-11-01: applied `20261101080000_yourday_development_quota.sql` to `wvvtyaxsedpqiscogrwk` and provisioned the matching `YOURDAY_AI_DEV_TOKEN` secret. These dependencies must be present before deploying an Edge Function that passes `p_development` to the quota RPCs. Authenticated live health checks returned `remaining: 1` without the developer credential and `remaining: 100000` with it. A developer reservation and claim completed inside a rolled-back transaction without requesting an image; the temporary diagnostic Auth account was removed afterward.
+
 ## Generation and retention
 
 The app uploads JPEG-normalized inputs only after Generate is pressed. Neither original nor face-reference photos are persisted by the function. Each output has a separate background worker (`gpt-image-2`, `low`, `1024x1536`) with a 110-second upstream timeout, within the free Edge Function runtime. Workers do not automatically retry unknown OpenAI outcomes.

@@ -8,7 +8,7 @@ afterEach(() => { jest.useRealTimers(); });
 function layoutCard(tree: ReactTestRenderer, width = 300, height = 400) {
   act(() => tree.root.findAll(node => typeof node.props.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { width, height } } }));
 }
-it('anchors portraits at the top so width filling preserves the head, while wide images remain contained', () => {
+it('anchors portraits at the top so width filling preserves the head, while wide images fill the frame', () => {
   let tree!: ReactTestRenderer;
   const render = (width: number, height: number) => <ComicSceneImage fitToCard source={{ uri: `top-framing-${width}-${height}`, width, height }} imageKey={`top-framing-${width}-${height}`} style={{ width: 300, height: 350 }} />;
   act(() => { tree = create(render(768, 960)); });
@@ -21,12 +21,12 @@ it('anchors portraits at the top so width filling preserves the head, while wide
   expect(frame.height).toBeGreaterThanOrEqual(350);
   expect(image().props.contentPosition).toBe('top');
   act(() => tree.update(render(1200, 800)));
-  expect(image().props.contentFit).toBe('contain');
+  expect(image().props.contentFit).toBe('cover');
   expect(image().props.contentPosition).toBeUndefined();
   act(() => tree.unmount());
 });
 
-it.each([[600, 1000, 'fill'], [1000, 600, 'contain']])('keeps %s×%s artwork framing across new URI objects and remounted cards', (width, height, fit) => {
+it.each([[600, 1000, 'fill'], [1000, 600, 'cover']])('keeps %s×%s artwork framing across new URI objects and remounted cards', (width, height, fit) => {
   let tree!: ReactTestRenderer;
   const uri = `file:///stable-framing-${width}-${height}.png`;
   const render = (key: string) => <ComicSceneImage fitToCard source={{ uri }} imageKey={key} style={{ width: 300, height: 400 }} />;
@@ -95,9 +95,9 @@ it('removes baked sidebars using an exact-ratio image pinned at the top with no 
 });
 
 it.each([
-  [1200, 800, 'contain'],
+  [1200, 800, 'cover'],
   [800, 1200, 'cover'],
-  [900, 900, 'contain'],
+  [900, 900, 'cover'],
 ])('fits %s×%s card artwork with %s before and after native load', (width, height, fit) => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicSceneImage fitToCard source={{ uri: `card-${width}-${height}`, width, height }} imageKey={`card-${width}-${height}`} style={{ width: 300, height: 400 }} />); });
@@ -120,7 +120,7 @@ it('learns remote card orientation and recalculates it for a different fallback 
   act(() => image().props.onError());
   act(() => jest.advanceTimersByTime(600));
   expect(image().props.source.uri).toBe('wide-fallback');
-  expect(image().props.contentFit).toBe('contain');
+  expect(image().props.contentFit).toBe('cover');
   act(() => tree.unmount());
 });
 it('keeps a skeleton until display and starts a fresh session when a recycled cell changes source', () => {

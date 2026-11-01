@@ -5,7 +5,7 @@ import { getYourdayAiDevelopmentHeaders } from '@shared/config/yourdayAi';
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
 import type { ComicSceneId } from './heroSceneImages';
 
-export type HeroStory = { title?: string; text: string; source: 'character' | 'photo'; styleId?: 'protagonist-1' | 'protagonist-2' | 'protagonist-3' | 'protagonist-4' | 'protagonist-5' | 'protagonist-6' };
+export type HeroStory = { cardAspectRatio?: number; title?: string; text: string; source: 'character' | 'photo'; styleId?: 'protagonist-1' | 'protagonist-2' | 'protagonist-3' | 'protagonist-4' | 'protagonist-5' | 'protagonist-6' };
 export type HeroAiResult = { uri: string; sceneId?: ComicSceneId };
 export class HeroAiError extends Error { constructor(public code: string) { super(code); } }
 function config() {

@@ -20,9 +20,10 @@ jest.mock('react-native-gesture-handler', () => ({
   GestureDetector: ({ children }: { children: unknown }) => children,
   Gesture: {
     Exclusive: (...gestures: unknown[]) => ({ kind: 'exclusive', gestures }),
+    Simultaneous: (...gestures: unknown[]) => ({ kind: 'simultaneous', gestures }),
     LongPress: () => {
       const gesture: Record<string, unknown> = {};
-      for (const name of ['enabled', 'minDuration', 'maxDistance', 'onStart']) gesture[name] = (value: unknown) => { gesture[name + 'Value'] = value; return gesture; };
+      for (const name of ['enabled', 'minDuration', 'maxDistance', 'onStart', 'onEnd']) gesture[name] = (value: unknown) => { gesture[name + 'Value'] = value; return gesture; };
       return gesture;
     },
     Pan: () => {
@@ -127,23 +128,26 @@ it('recognizes deletion holds natively alongside card swipes, including a single
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroCardStack active={0} count={1} width={390} height={600} cardWidth={300} cardHeight={350} top={68} enabled onChange={change} onCardHold={hold} renderPage={() => <Text>Card</Text>} />); });
   const composed = tree.root.findByType(GestureDetector).props.gesture;
-  expect(composed.kind).toBe('exclusive');
+  expect(composed.kind).toBe('simultaneous');
   const gestures = composed.gestures;
   expect(gestures[0].minDurationValue).toBe(500);
   expect(gestures[0].maxDistanceValue).toBe(12);
   expect(gestures[0].enabledValue).toBe(true);
-  act(() => gestures[0].onStartValue({ x: 100, y: 150 }));
+  expect(gestures[0].onStartValue).toBeUndefined();
+  act(() => gestures[0].onEndValue({ x: 100, y: 150 }, false));
+  expect(hold).not.toHaveBeenCalled();
+  act(() => gestures[0].onEndValue({ x: 100, y: 150 }, true));
   expect(hold).toHaveBeenCalledWith(100, 150);
   expect(change).not.toHaveBeenCalled();
   act(() => tree.unmount());
 });
 
-it('prioritizes the deletion hold over the earlier overview hold on a multi-card deck', () => {
+it('allows held overview movement alongside stationary-release deletion', () => {
   const overview = { activatesAt: 350 };
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroCardStack active={1} count={3} width={390} height={600} cardWidth={300} cardHeight={350} top={68} enabled overviewGesture={overview as never} onChange={jest.fn()} onCardHold={jest.fn()} renderPage={() => <Text>Card</Text>} />); });
   const composed = tree.root.findByType(GestureDetector).props.gesture;
-  expect(composed.kind).toBe('exclusive');
+  expect(composed.kind).toBe('simultaneous');
   expect(composed.gestures[0].minDurationValue).toBe(500);
   expect(composed.gestures[1].gestures[1]).toBe(overview);
   act(() => tree.unmount());

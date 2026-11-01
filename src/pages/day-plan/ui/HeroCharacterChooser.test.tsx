@@ -1,5 +1,5 @@
 import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
-import { Animated, FlatList, Keyboard, StyleSheet } from 'react-native';
+import { type PanResponderCallbacks, type GestureResponderEvent, type PanResponderGestureState, PanResponder, Animated, FlatList, Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ComicCharacterChooser } from './HeroCharacterChooser';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
@@ -7,6 +7,7 @@ import { initialServiceProgress, useServiceTutorial } from '../../welcome-intro/
 import { ComicSceneImage } from './HeroSceneImage';
 import { SELECTABLE_COMIC_CHARACTERS as COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { HERO_CHARACTER_ORDER_KEY, readHeroCharacterOrder } from '../lib/heroCharacterOrder';
 import { loadComicCharacterName, saveComicCharacterName } from '../lib/heroCharacterName';
 
 jest.mock('@shared/ui/completion-radio-button', () => ({ CompletionRadioButton: jest.requireActual('react-native').Pressable }));
@@ -237,4 +238,40 @@ it('keeps existing diary metadata without displaying a name field', () => {
   expect(onPersonalize).toHaveBeenCalledTimes(1);
   expect(tree.root.findAllByType(HeroPersonalizationFlow)).toHaveLength(0);
   act(() => tree.unmount());
+});
+
+it('reorders character cards after a hold and drag, saves the order, and suppresses selection', () => {
+  localStorageClient.removeItem(HERO_CHARACTER_ORDER_KEY);
+  let handlers!: PanResponderCallbacks;
+  const pan = jest.spyOn(PanResponder, 'create').mockImplementation(config => {
+    handlers = config;
+    return { panHandlers: {} };
+  });
+  let tree!: ReactTestRenderer;
+  const render = () => <ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />;
+  try {
+    act(() => { tree = create(render()); });
+    const first = COMIC_CHARACTERS[0];
+    const second = COMIC_CHARACTERS[1];
+    const column = tree.root.findAllByProps({ testID: `comic-character-column-${first.id}` })[0];
+    const stride = StyleSheet.flatten(column.props.style).width + 14;
+    const card = () => tree.root.findAllByProps({ testID: `comic-character-cover-${first.id}` })[0];
+    act(() => { card().props.onLongPress({ nativeEvent: { pageX: 100 } }); });
+    expect(tree.root.findAllByProps({ testID: 'comic-character-horizontal-list' })[0].props.scrollEnabled).toBe(false);
+    act(() => {
+      handlers.onPanResponderGrant?.({} as GestureResponderEvent, {} as PanResponderGestureState);
+      handlers.onPanResponderMove?.({} as GestureResponderEvent, { moveX: 100 + stride } as PanResponderGestureState);
+    });
+    act(() => { handlers.onPanResponderRelease?.({} as GestureResponderEvent, {} as PanResponderGestureState); });
+    act(() => { card().props.onPress(); });
+    expect(readHeroCharacterOrder().slice(0, 2)).toEqual([second.id, first.id]);
+    expect(tree.root.findAllByType(FlatList)).toHaveLength(0);
+    act(() => { tree.unmount(); tree = create(render()); });
+    const columns = tree.root.findAll(node => typeof node.props.testID === 'string' && node.props.testID.startsWith('comic-character-column-'));
+    expect([...new Set(columns.map(node => node.props.testID))].slice(0, 2)).toEqual([`comic-character-column-${second.id}`, `comic-character-column-${first.id}`]);
+  } finally {
+    act(() => { tree?.unmount(); });
+    pan.mockRestore();
+    localStorageClient.removeItem(HERO_CHARACTER_ORDER_KEY);
+  }
 });

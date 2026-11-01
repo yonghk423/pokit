@@ -40,7 +40,7 @@ export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = 
     onSave?.({ title: draft.title.trim(), memo: draft.memo.trim() });
     tapHaptic('confirm'); finish();
   };
-  return <View style={[s.caption, { borderTopColor: muted }, empty && { borderTopWidth: 0 }]}>
+  return <View style={s.caption}>
 
     {editing ? <HeroCardEditor number={number} ink={ink} muted={muted} paper={paper} draft={draft} onChange={setDraft} onSave={save} onCancel={() => { tapHaptic(); finish(); }} /> : null}
       {empty ? <Pressable testID="hero-card-empty-write" disabled={!onSave} accessibilityRole="button" accessibilityLabel={t('comicDay.emptyDayPrompt')} onPress={startEditing} hitSlop={4}>
@@ -120,7 +120,7 @@ function HeroCardEditor({ number, ink, muted, paper, draft, onChange, onSave, on
   </AppModal>;
 }
 const s = StyleSheet.create({
-  caption: { flex: 1, minHeight: 0, borderTopWidth: 0.5, marginHorizontal: 14, paddingTop: 8, gap: 2 },
+  caption: { flex: 1, minHeight: 0, marginHorizontal: 14, paddingTop: 8, gap: 2 },
   memoDisplay: { flex: 1, minHeight: 0, overflow: 'hidden' },
   compactEdit: { width: 32, height: 28 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

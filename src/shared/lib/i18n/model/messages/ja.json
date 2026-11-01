@@ -2829,11 +2829,11 @@
   "comicDay.loading.longer": "少し時間がかかっています。もうしばらくお待ちください。",
   "comicDay.loading.return": "アプリを閉じても、再び開いて確認できます。",
   "comicDay.ai.done": "シーンが完成しました",
-  "comicDay.ai.remaining": "本日の残り{count}枚",
+  "comicDay.ai.remaining": "{count}/1",
   "comicDay.ai.processing": "描いています · {count} / {total}",
   "comicDay.ai.apply": "このシーンを使う",
   "comicDay.ai.sceneTitle": "私のシーン{count}",
-  "comicDay.ai.exhausted": "本日のイラスト生成回数を使い切りました。明日またご利用ください。",
+  "comicDay.ai.exhausted": "本日の生成回数をすべて使いました。",
   "comicDay.ai.auth": "認証できませんでした。しばらくしてからお試しください。",
   "comicDay.ai.serviceLimit": "サービス全体の本日の生成上限に達しました。明日またご利用ください。",
   "comicCalendar.open": "カレンダーを開く",
@@ -2986,6 +2986,6 @@
   "comicDay.inline.uploadingTitle": "アプリがイラストの準備をしています",
   "comicDay.inline.uploading": "少しの間、アプリを開いたままにしてください。",
   "comicDay.inline.backgroundReady": "アプリを閉じても大丈夫です。生成は続きます。再度開くと完成した絵を端末に保存します。",
-  "comicDay.inline.remaining": "残り{count}回",
+  "comicDay.inline.remaining": "{count}/1",
   "comicDay.inline.unlimited": "開発モード · 制限なし"
 }

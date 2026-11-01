@@ -1,5 +1,5 @@
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
@@ -9,10 +9,16 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
   const lock = useRef(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!saved) return;
+    const timer = setTimeout(() => setSaved(false), 1000);
+    return () => clearTimeout(timer);
+  }, [saved]);
   const run = async (action: 'save' | 'share') => {
-    if (lock.current || (action === 'save' && saved)) return;
+    if (lock.current) return;
     tapHaptic();
     lock.current = true; setBusy(true);
+    if (action === 'save') setSaved(false);
     let temporary: string | undefined;
     try {
       let local = uri;
@@ -57,9 +63,9 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
       lock.current = false; setBusy(false); }
   };
   return <View style={[s.row, compact && s.compactRow]}>
-    {(['save', 'share'] as const).map(action => <Pressable key={action} testID={`hero-image-${action}`} accessibilityRole="button" accessibilityLabel={t(action === 'save' && saved ? 'comicDay.export.saved' : `comicDay.export.${action}`)} disabled={busy || (action === 'save' && saved)} accessibilityState={{ disabled: busy || (action === 'save' && saved), busy }} onPress={() => { void run(action); }} style={[s.button, compact && s.compactButton, (busy || (action === 'save' && saved)) && { opacity: 0.45 }]}>
+    {(['save', 'share'] as const).map(action => <Pressable key={action} testID={`hero-image-${action}`} accessibilityRole="button" accessibilityLabel={t(`comicDay.export.${action}`)} disabled={busy} accessibilityState={{ disabled: busy, busy }} onPress={() => { void run(action); }} style={[s.button, compact && s.compactButton, (busy) && { opacity: 0.45 }]}>
       <Svg width={compact ? 19 : 26} height={compact ? 19 : 26} viewBox="0 0 28 28" accessible={false}>
-        <Path d={action === 'share' ? 'M14 18Q14.3 10 14 3M9 8L14 3 19 8M8 12L5 12 5.5 25 23 24.5 23 12 20 12M6 24L11 24.4' : saved ? 'M5 14L11 21Q17 12 24 6M5.5 14L10.5 20' : 'M14 3Q13.8 11 14 19M8 13L14 19 20 13M4 19L4.5 25 24 24.5 24 19M5 25.5L10 25.3'} stroke="#343B32" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <Path d={action === 'share' ? 'M14 18Q14.3 10 14 3M9 8L14 3 19 8M8 12L5 12 5.5 25 23 24.5 23 12 20 12M6 24L11 24.4' : saved ? 'M5 14L11 21Q17 12 24 6M5.5 14L10.5 20' : 'M14 3Q13.8 11 14 19M8 13L14 19 20 13M4 19L4.5 25 24 24.5 24 19M5 25.5L10 25.3'} stroke={action === 'save' && saved ? '#69BFA9' : '#343B32'} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </Svg>
     </Pressable>)}
   </View>;

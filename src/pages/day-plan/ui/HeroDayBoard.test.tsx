@@ -202,6 +202,10 @@ it('gives the picture more vertical room without overlapping the thumbnail strip
   const { ComicSceneImage } = require('./HeroSceneImage');
   const picture = tree.root.findAllByType(ComicSceneImage).find(node => typeof node.props.style.height === 'number')!;
   expect(picture.props.style.height).toBeGreaterThan(450);
+  const imageHeight = picture.props.style.height;
+  act(() => tree.update(<ComicSceneDeck items={[{ key: 'one', label: 'Written title', memo: 'A diary entry with thoughts and feelings.' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} />));
+  const writtenPicture = tree.root.findAllByType(ComicSceneImage).find(node => typeof node.props.style.height === 'number')!;
+  expect(writtenPicture.props.style.height).toBe(imageHeight);
   act(() => tree.unmount());
 });
 
@@ -347,13 +351,17 @@ it('keeps the edit icon in the return-animation front so the title does not shif
   act(() => { front.unmount(); tree.unmount(); });
 });
 
-it('offers deletion on a photo long press without opening details', () => {
+it('waits for stationary release before offering deletion and suppresses detail taps after a hold', () => {
   const onOpen = jest.fn(); const onRemove = jest.fn();
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicSceneDeck items={[{ key: 'delete-photo', label: 'Photo' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onRemove={onRemove} />); });
   const photo = tree.root.findAll(node => node.props.accessibilityLabel === 'Photo' && typeof node.props.onLongPress === 'function')[0];
   expect(photo.props.delayLongPress).toBe(500);
   act(() => photo.props.onLongPress());
+  expect(onRemove).not.toHaveBeenCalled();
+  act(() => photo.props.onPress());
+  expect(onOpen).not.toHaveBeenCalled();
+  act(() => tree.root.findByType(HeroCardStack).props.onCardHold(160, 80));
   expect(onRemove).toHaveBeenCalledWith('delete-photo');
   expect(onOpen).not.toHaveBeenCalled();
   act(() => tree.unmount());

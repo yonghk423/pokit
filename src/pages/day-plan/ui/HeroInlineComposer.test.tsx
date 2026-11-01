@@ -76,7 +76,7 @@ it('creates one image from writing and commits it to the same card before acknow
   expect(button().props.disabled).toBe(true);
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.onChangeText('카페에서 책을 읽었다.'));
   await act(async () => { button().props.onPress(); await new Promise(resolve => setTimeout(resolve, 500)); });
-  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ mode: 'face', photo: 'file:///person.jpg', scenes: ['05-work'], photos: [], story: { text: '카페에서 책을 읽었다.', source: 'character', styleId: 'protagonist-1' }, targetDiaryId: 'diary', targetSceneId: 'scene' }));
+  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ mode: 'face', photo: 'file:///person.jpg', scenes: ['05-work'], photos: [], story: { cardAspectRatio: 0.8, text: '카페에서 책을 읽었다.', source: 'character', styleId: 'protagonist-1' }, targetDiaryId: 'diary', targetSceneId: 'scene' }));
   expect(apply).toHaveBeenCalledWith(expect.objectContaining({ memo: '카페에서 책을 읽었다.' }), 'file:///result.png', expect.any(String));
   expect(dismissHeroAiJob).toHaveBeenCalledTimes(1);
   act(() => tree.unmount());
@@ -91,7 +91,7 @@ it('requires one uploaded photo plus writing and sends both together', async () 
   expect(source.props.selectionLimit).toBe(1);
   act(() => source.props.onChange('file:///source.jpg'));
   await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); await new Promise(resolve => setTimeout(resolve, 500)); });
-  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ photos: ['file:///source.jpg'], story: { text: '바닷가 여행', source: 'photo', styleId: 'protagonist-1' } }));
+  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ photos: ['file:///source.jpg'], story: { cardAspectRatio: 0.8, text: '바닷가 여행', source: 'photo', styleId: 'protagonist-1' } }));
   act(() => tree.unmount());
 });
 it('resumes the original job without submitting a new generation', async () => {
@@ -295,7 +295,7 @@ it('provides a separate title and lined body, preserving the title on the genera
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.onChangeText('A quiet afternoon'));
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.onChangeText('I read a book by the window.'));
   await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); await new Promise(resolve => setTimeout(resolve, 500)); });
-  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ story: { title: 'A quiet afternoon', text: 'I read a book by the window.', source: 'character', styleId: 'protagonist-1' } }));
+  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ story: { cardAspectRatio: 0.8, title: 'A quiet afternoon', text: 'I read a book by the window.', source: 'character', styleId: 'protagonist-1' } }));
   expect(apply).toHaveBeenCalledWith(expect.objectContaining({ title: 'A quiet afternoon', memo: 'I read a book by the window.' }), 'file:///result.png', expect.any(String));
   act(() => tree.unmount());
 });

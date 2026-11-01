@@ -1,8 +1,10 @@
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Alert } from 'react-native';
 import * as media from 'expo-media-library/legacy';
 import * as sharing from 'expo-sharing';
 import { HeroImageActions } from './HeroImageActions';
+jest.mock('@shared/lib/haptics/tapHaptic', () => ({ tapHaptic: jest.fn() }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('expo-media-library/legacy', () => ({ requestPermissionsAsync: jest.fn(), saveToLibraryAsync: jest.fn() }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(), shareAsync: jest.fn() }));
@@ -13,11 +15,14 @@ let tree: ReactTestRenderer;
 beforeEach(async () => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplementation(() => undefined); jest.mocked(media.requestPermissionsAsync).mockResolvedValue({ granted: true } as never); jest.mocked(media.saveToLibraryAsync).mockResolvedValue(undefined); jest.mocked(sharing.isAvailableAsync).mockResolvedValue(true); jest.mocked(sharing.shareAsync).mockResolvedValue(undefined); await act(async () => { tree = create(<HeroImageActions uri="file:///completed.png" />); }); });
 afterEach(() => act(() => tree.unmount()));
 const button = (kind: string) => tree.root.findAllByProps({ testID: `hero-image-${kind}` })[0];
-it('saves only the selected local PNG and prevents repeated saves', async () => {
+it('allows another download after completion while blocking overlapping saves', async () => {
   await act(async () => { button('save').props.onPress(); button('save').props.onPress(); });
   expect(media.saveToLibraryAsync).toHaveBeenCalledTimes(1);
   expect(media.saveToLibraryAsync).toHaveBeenCalledWith('file:///completed.png');
-  expect(button('save').props.disabled).toBe(true);
+  expect(button('save').props.disabled).toBe(false);
+  await act(async () => button('save').props.onPress());
+  expect(media.saveToLibraryAsync).toHaveBeenCalledTimes(2);
+  expect(tapHaptic).toHaveBeenCalledTimes(2);
 });
 it('does not save without permission', async () => {
   jest.mocked(media.requestPermissionsAsync).mockResolvedValue({ granted: false } as never);

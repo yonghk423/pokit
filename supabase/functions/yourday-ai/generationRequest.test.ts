@@ -52,46 +52,53 @@ it('validates the selected style and carries the fifth palette and full silhouet
   expect(prompt).toContain('ONE restrained muted rust/terracotta accent');
   expect(prompt).toContain('large flat solid black geometric shadows');
   expect(prompt).toContain('complete silhouette, head, both feet');
-  expect(prompt).toContain('no more than 65%');
+  expect(prompt).toContain('no more than 55%');
   expect(prompt).toContain('curvy hourglass figure');
   expect(prompt).toContain('fuller bust, defined waist and fuller hips');
   expect(prompt).toContain('adult female protagonist in her twenties');
 });
 
-it('applies the selected fifth style to photos while preserving their original framing', () => {
-  const request = generationRequest('photo', {} as Blob, {} as Blob, { text: 'Photo', source: 'photo', styleId: 'protagonist-5' }) as unknown as CapturedFormData;
+it.each(['protagonist-5', 'protagonist-6'] as const)('applies %s to photos while preserving their original framing and body proportions', styleId => {
+  const request = generationRequest('photo', {} as Blob, {} as Blob, { text: 'Photo', source: 'photo', styleId }) as unknown as CapturedFormData;
   const prompt = request.values.get('prompt') as string;
-  expect(prompt).toContain('SELECTED STYLE protagonist-5');
+  expect(prompt).toContain('SELECTED STYLE ' + styleId);
   expect(prompt).toContain('Preserve the original framing');
   expect(prompt).not.toContain('FINAL FRAMING REQUIREMENT');
   expect(prompt).not.toContain('CHARACTER BUILD');
 });
-it('pins protagonist-6 scene generation to its single approved painted style reference', () => {
+it('pins protagonist-6 scenes to approved indoor and outdoor style references', () => {
   const story = validateStory({ text: '퇴근길 신호등 앞에서 잠시 멈췄다.', source: 'character', styleId: 'protagonist-6' })!;
   const request = generationRequest('photo', {} as Blob, undefined, story) as unknown as CapturedFormData;
-  expect(request.images).toHaveLength(1);
+  expect(request.images).toHaveLength(2);
   expect(request.images[0].name).toBe('source.jpg');
   const reference = request.images[0].value as Blob;
   expect(reference.type).toBe('image/jpeg');
   expect(reference.size).toBeGreaterThan(10000);
   expect(request.values.get('prompt')).toContain('SELECTED STYLE protagonist-6');
-  expect(request.values.get('prompt')).toContain('single approved protagonist-6 illustration');
-  expect(request.values.get('prompt')).toContain('quiet matte painted planes');
+  expect(request.values.get('prompt')).toContain('curvy hourglass figure');
+  expect(request.values.get('prompt')).toContain('Image1 and Image2 are approved protagonist-6 illustrations');
+  expect(request.values.get('prompt')).toContain('broad opaque angular color shapes');
   expect(request.values.get('prompt')).toContain('Image1 controls how everything is drawn');
   expect(request.values.get('prompt')).not.toContain('ALL three attached images');
-  expect(request.values.get('prompt')).not.toContain('two or three value groups');
+  expect(request.values.get('prompt')).toContain('do not wash the whole scene in beige, gray or sepia');
   expect(request.values.get('prompt')).not.toContain('ONE restrained muted rust/terracotta accent');
 });
 it('describes protagonist-6 face generation using only the style and identity images actually attached', () => {
   const identity = {} as Blob;
   const request = generationRequest('face', {} as Blob, identity, { text: 'A new day.', source: 'character', styleId: 'protagonist-6' }) as unknown as CapturedFormData;
-  expect(request.images).toHaveLength(2);
+  expect(request.images).toHaveLength(3);
   expect(request.images[0].value).not.toBe(identity);
   expect(request.images[1].value).toBe(identity);
   const prompt = request.values.get('prompt') as string;
-  expect(prompt).toContain('Image1 is the single approved protagonist-6 illustration');
+  expect(prompt).toContain('Image1 and Image3 are approved protagonist-6 illustrations');
   expect(prompt).toContain('Image2 is the identity photograph only');
   expect(prompt).not.toContain('Images3–4');
+  expect(prompt).toContain('curvy hourglass figure');
+  expect(prompt).toContain('simplified clothed outer silhouette');
+  expect(prompt).toContain('Skin has a flat warm base and at most one broad shadow shape');
+  expect(prompt).not.toContain('fuller bust, defined waist and fuller hips');
+  expect(prompt).not.toContain('natural slim adult proportions');
+  expect(prompt).not.toContain('graphic ink rendering');
 });
 it('sends only the source in whole-photo mode even if an old client sends a person reference', () => {
   const source = {} as Blob;
@@ -246,4 +253,31 @@ it('accepts a title-only text illustration while rejecting blank drafts', () => 
   expect(() => validateStory({ title: ' ', text: ' ', source: 'character' })).toThrow('invalid_request');
   expect(validateStory({ title: '겨울에는 귤이지', text: '', source: 'photo' })).toEqual({ title: '겨울에는 귤이지', text: '', source: 'photo' });
   expect(() => validateStory({ title: ' ', text: ' ', source: 'photo' })).toThrow('invalid_request');
+});
+
+it.each(['protagonist-5', 'protagonist-6'] as const)('keeps head and feet inside a distant composition for %s', styleId => {
+  const request = generationRequest('face', {} as Blob, {} as Blob, { text: '앉아서 쉬었다.', source: 'character', styleId }) as unknown as CapturedFormData;
+  const prompt = request.values.get('prompt') as string;
+  expect(prompt).toContain('45–55%');
+  expect(prompt).toContain('20% uninterrupted foreground floor');
+  expect(prompt).toContain('both feet, toes, heels and shoe soles fully inside the frame');
+  expect(prompt).toContain('standing and seated poses alike');
+  expect(prompt).not.toContain('55–65%');
+});
+
+it.each([[1, 'x=15–85%', 'y=8–52%'], [0.5, 'x=24–76%', 'y=12–78%']])('protects the actual card crop at aspect ratio %s', (cardAspectRatio, horizontal, vertical) => {
+  const story = validateStory({ text: 'Rest', source: 'character', cardAspectRatio })!;
+  const form = generationRequest('photo', {} as Blob, undefined, story) as unknown as CapturedFormData;
+  const prompt = form.values.get('prompt') as string;
+  expect(story.cardAspectRatio).toBe(cardAspectRatio);
+  expect(prompt).toContain(horizontal);
+  expect(prompt).toContain(vertical);
+  expect(prompt).toContain('no blank margins, borders, letterbox bands');
+});
+it.each([0, -1, 5, NaN, Infinity, '1'])('rejects invalid card geometry %s', cardAspectRatio => {
+  expect(() => validateStory({ text: 'Rest', source: 'character', cardAspectRatio })).toThrow('invalid_request');
+});
+it('preserves photo framing when card geometry is supplied', () => {
+  const form = generationRequest('photo', {} as Blob, undefined, { text: 'Photo', source: 'photo', cardAspectRatio: 1 }) as unknown as CapturedFormData;
+  expect(form.values.get('prompt')).not.toContain('CARD CROP SAFE COMPOSITION');
 });

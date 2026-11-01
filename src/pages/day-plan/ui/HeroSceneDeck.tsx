@@ -1,3 +1,4 @@
+import { HERO_CARD_CAPTION_HEIGHT, rememberHeroGenerationCardSize } from '../lib/heroGenerationFrame';
 import { createCardTapGuard } from '../lib/cardTapGuard';
 import { useHeroThumbnailStrip } from '../model/useHeroThumbnailStrip';
 import { HeroImageActions } from './HeroImageActions';
@@ -38,7 +39,8 @@ let lastActive = 0;
 const ARTWORK_WINDOW = 2;
 
 /** The same layered paper stack as the mate deck, with intact artwork cards. */
-export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onRemove, onEditCard, onShowOverview, onFrameChange, detailOpen = false, interactive = true }: {
+export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, onOpen, onRemove, onEditCard, onShowOverview, onFrameChange, detailOpen = false, interactive = true }: {
+  focusKey?: string | null;
   items: ComicDeckItem[]; ink: string; muted: string; isDark: boolean;
   choices: Record<string, ComicSceneId>; onOpen: (key: string, card?: HeroCardOpen) => void;
   onRemove?: (key: string) => void;
@@ -74,7 +76,11 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
     });
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [focused, detailOpen, measureStage]);
-  const [active, setActive] = useState(() => Math.min(lastActive, Math.max(0, items.length - 1)));
+  const [active, setActive] = useState(() => {
+    const requested = items.findIndex(item => item.key === focusKey);
+    return requested >= 0 ? requested : Math.min(lastActive, Math.max(0, items.length - 1));
+  });
+  const [previousFocusKey, setPreviousFocusKey] = useState(focusKey);
   const [previousCount, setPreviousCount] = useState(items.length);
   const [arrivalKey, setArrivalKey] = useState<string | null>(null);
   // Reconcile before committing native views: never paint the new card count
@@ -85,6 +91,13 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
       setArrivalKey(items[items.length - 1].key);
       setActive(items.length - 1);
     } else setActive(value => Math.min(value, Math.max(0, items.length - 1)));
+  }
+  // A generated result can replace a stock card without changing the count.
+  // Select it before painting, independently of its position in the saved list.
+  if (focusKey !== previousFocusKey) {
+    setPreviousFocusKey(focusKey);
+    const requested = items.findIndex(item => item.key === focusKey);
+    if (requested >= 0) { setActive(requested); setArrivalKey(items[requested].key); }
   }
   useEffect(() => {
     if (!arrivalKey) return;
@@ -105,16 +118,15 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
   useEffect(() => {
     if (focused && interactive && currentArtwork) useHeroTabArtwork.getState().setSource(currentArtwork);
   }, [focused, interactive, currentArtwork]);
-  // Hold one generous frame across all scenes. This keeps the original large-card
-  // feel while preventing portrait, landscape and memo cards from moving the deck.
-  const frameTop = Math.min(60, Math.max(8, availableHeight * 0.1));
-  const originalCardTop = Math.max(8, frameTop - 28);
-  const cardTop = Math.max(8, originalCardTop - 8);
-  // Give the artwork 24px more height, using the space below the lifted stack
-  // while keeping an 8px gap above the thumbnail strip.
-  const cardHeight = Math.min(cardWidth / 0.75 + 198, Math.max(1, availableHeight - originalCardTop + 8));
+  // Expand the frame into the space below the header, preserving its lower edge.
+  // Reserve the same caption space even before writing so artwork never shrinks.
+  const cardTop = 0;
+  const cardHeight = Math.max(1, availableHeight);
   useEffect(() => {
-    if (size.width > 0) onFrameChange?.({ active: safeActive, width: cardWidth, height: cardHeight, top: cardTop });
+    if (size.width > 0) {
+      rememberHeroGenerationCardSize(cardWidth, cardHeight);
+      onFrameChange?.({ active: safeActive, width: cardWidth, height: cardHeight, top: cardTop });
+    }
   }, [safeActive, cardWidth, cardHeight, cardTop, onFrameChange, size.width]);
   useEffect(() => { lastActive = active; }, [active]);
   const thumbRef = useRef<ScrollView>(null);
@@ -143,7 +155,7 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
     if (!item) return null;
         const scene = resolveComicScene(item.key, item.label, choices);
         const face = scenePaper(item.faceColor, isDark);
-        const captionBudget = (item.memo?.trim() ? 105 : item.label.trim() ? 77 : 64) + 28;
+        const captionBudget = HERO_CARD_CAPTION_HEIGHT;
         const imageFrameHeight = Math.max(1, cardHeight - captionBudget);
         const cardInk = item.inkColor ?? ink;
         return <CardArrival animate={trackNative && item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: cardWidth, height: cardHeight, backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
@@ -152,7 +164,7 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
             onTouchMove={event => { const touch = event.nativeEvent; tapGuard.move(touch.pageX, touch.pageY, touch.touches.length); }}
             onTouchEnd={event => { const touch = event.nativeEvent; tapGuard.move(touch.pageX, touch.pageY); }}
             onTouchCancel={() => tapGuard.cancel()}
-            onLongPress={pageInteractive && onRemove ? () => requestRemoval(item.key) : undefined}
+            onLongPress={pageInteractive ? () => tapGuard.cancel() : undefined}
             accessibilityActions={onRemove ? [{ name: 'longpress', label: t('comicDay.deleteScene') }] : undefined}
             onAccessibilityAction={event => { if (pageInteractive && !editingKey && event.nativeEvent.actionName === 'longpress') onRemove?.(item.key); }}
             onPress={() => {
@@ -165,8 +177,8 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={180} fitToCard backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
-              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={180} fitToCard contentFit="cover" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
           </Pressable>
             <HeroCardCaption key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
@@ -220,7 +232,7 @@ export function ComicSceneDeck({ items, ink, muted, isDark, choices, onOpen, onR
             turnRef.current?.turnTo(index);
           }} style={[s.thumb, { backgroundColor: selected ? '#EDE9DF' : face }]}>
             <ComicSceneImage contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
-              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={scene.source}
+              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               style={StyleSheet.absoluteFill} />
             <HanddrawnFrame color={selected ? '#514C43' : isDark ? '#D5D5D5' : '#77786F'} bold={selected} />
           </Pressable>;

@@ -82,9 +82,8 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   const dimensions = imageSize(resolvedSource) ?? (loadedSize?.identity === identity ? loadedSize : knownImageSizes.get(identity));
   const portrait = !!dimensions && typeof dimensions.width === 'number' && typeof dimensions.height === 'number' && dimensions.height > dimensions.width;
   const waitingForSize = fitToCard && (!dimensions || (portrait && !frameSize));
-  // Every character follows the same rule: preserve wide/square scenes in full,
-  // and fill the card edge-to-edge for portraits.
-  const resolvedFit = fitToCard ? (portrait ? 'cover' : 'contain') : contentFit;
+  // Card artwork fills its frame edge-to-edge for every orientation.
+  const resolvedFit = fitToCard ? 'cover' : contentFit;
   const cropCardPadding = resolvedFit === 'cover' && paddedCardSources.has(activeSource);
   // Native cover/position can still crop the head. Render portraits in bounds
   // with the exact source aspect ratio, pinning their actual pixels at y=0.
