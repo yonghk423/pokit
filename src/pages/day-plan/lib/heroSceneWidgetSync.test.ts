@@ -1,7 +1,20 @@
 import { NativeModules, Platform } from 'react-native';
-import { buildComicSceneWidgetBundle } from './heroSceneWidgetSync';
+import {
+  buildComicSceneWidgetBundle,
+  buildComicSceneWidgetBundleWithArtwork,
+} from './heroSceneWidgetSync';
 import { saveComicDiaryLibrary, type ComicDiaryLibrary } from './heroDiaryStorage';
 import { newComicScene } from './heroDayStorage';
+
+jest.mock('expo-asset', () => ({
+  Asset: {
+    fromModule: (source: number) => ({
+      localUri: `file:///catalog/${source}.webp`,
+      uri: `file:///catalog/${source}.webp`,
+      downloadAsync: async () => undefined,
+    }),
+  },
+}));
 
 it('groups scene choices by local diary date and retains migrated calendar dates', () => {
   const scene = newComicScene('Morning');
@@ -18,7 +31,7 @@ it('groups scene choices by local diary date and retains migrated calendar dates
   expect(payload.fallbackSceneId).toBe(`new::${scene.id}`);
 });
 
-it('preserves the selected diary, scene artwork and caption in the native widget payload', () => {
+it('preserves the selected diary, scene artwork and caption in the native widget payload', async () => {
   const scene = { ...newComicScene('회의하기'), image: '03-meeting' as const, memo: '회의 메모', todos: [{ id: 'task', text: '  자료 준비  ', completed: true }, { id: 'blank', text: ' ', completed: false }] };
   const library: ComicDiaryLibrary = {
     version: 1, activeId: 'second', migratedLegacyKeys: [],
@@ -29,6 +42,8 @@ it('preserves the selected diary, scene artwork and caption in the native widget
   const payload = buildComicSceneWidgetBundle(library);
   expect(payload.fallbackSceneId).toBe(`second::${scene.id}`);
   expect(payload.scenes[1]).toMatchObject({ title: '회의하기', imageId: '03-meeting', index: 1, total: 1, memo: '회의 메모', todos: [{ id: 'task', text: '자료 준비', completed: true }] });
+  const withArt = await buildComicSceneWidgetBundleWithArtwork(library);
+  expect(withArt.scenes[1].artworkUri).toMatch(/^file:\/\/\/catalog\//);
   const previousOS = Platform.OS;
   const previousModule = NativeModules.PokitWidgetSync;
   const syncComicSceneWidgetJson = jest.fn();
@@ -36,8 +51,10 @@ it('preserves the selected diary, scene artwork and caption in the native widget
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
     NativeModules.PokitWidgetSync = { syncComicSceneWidgetJson };
     saveComicDiaryLibrary(library);
-    expect(syncComicSceneWidgetJson).toHaveBeenCalledWith(JSON.stringify(payload));
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(syncComicSceneWidgetJson).toHaveBeenCalledWith(JSON.stringify(withArt));
     saveComicDiaryLibrary({ ...library, diaries: [], activeId: null });
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(JSON.parse(syncComicSceneWidgetJson.mock.calls[1][0])).toMatchObject({ scenes: [], fallbackSceneId: null });
   } finally {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: previousOS });
@@ -46,7 +63,7 @@ it('preserves the selected diary, scene artwork and caption in the native widget
 });
 
 
-it('includes generated artwork so native sync can copy it into the widget shared container', () => {
+it('includes generated artwork so native sync can copy it into the widget shared container', async () => {
   const scene = { ...newComicScene('겨울에는 귤이지'), artworkUri: 'file:///Documents/yourday-ai/winter.jpg' };
   const library: ComicDiaryLibrary = {
     version: 1, activeId: 'generated', migratedLegacyKeys: [],
@@ -58,16 +75,17 @@ it('includes generated artwork so native sync can copy it into the widget shared
   const ordinary = { ...scene, artworkUri: undefined };
   library.diaries[0].scenes = [ordinary];
   expect(buildComicSceneWidgetBundle(library).scenes[0]).not.toHaveProperty('artworkUri');
+  const withCatalog = await buildComicSceneWidgetBundleWithArtwork(library);
+  expect(withCatalog.scenes[0].artworkUri).toMatch(/^file:\/\/\/catalog\//);
 });
 
-it('bundles widget artwork for every selectable scene, including newly added protagonists', () => {
+it('keeps only the empty-state scene in the widget asset catalog; used scenes sync via App Group', () => {
   const fs = require('node:fs') as typeof import('node:fs');
   const path = require('node:path') as typeof import('node:path');
-  const { COMIC_SCENES } = require('./heroSceneImages') as typeof import('./heroSceneImages');
   const catalog = path.resolve(__dirname, '../../../../ios/PokitLiveActivity/ComicScenes.xcassets');
-  for (const scene of COMIC_SCENES) {
-    const folder = path.join(catalog, `comic_${scene.id}.imageset`);
-    const contents = JSON.parse(fs.readFileSync(path.join(folder, 'Contents.json'), 'utf8'));
-    expect(fs.statSync(path.join(folder, contents.images[0].filename)).size).toBeGreaterThan(0);
-  }
+  const empty = path.join(catalog, 'comic_10-park-walk.imageset');
+  const contents = JSON.parse(fs.readFileSync(path.join(empty, 'Contents.json'), 'utf8'));
+  expect(fs.statSync(path.join(empty, contents.images[0].filename)).size).toBeGreaterThan(0);
+  const comicSets = fs.readdirSync(catalog).filter((name: string) => /^comic_\d/.test(name));
+  expect(comicSets).toEqual(['comic_10-park-walk.imageset']);
 });

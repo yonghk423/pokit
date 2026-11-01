@@ -1,7 +1,10 @@
-# Convert app illustrations and comic scenes into compact WidgetKit image assets.
+# Convert app illustrations into compact WidgetKit image assets.
+# Catalog comic scenes are NOT duplicated here — the main app copies used scenes into the App Group.
+# Keep only the empty-state preview scene plus icons/textures for the widget extension.
 from pathlib import Path
 from PIL import Image
 import json
+import shutil
 import sys
 
 root = Path(__file__).resolve().parents[1]
@@ -9,6 +12,14 @@ cat = root / 'ios/PokitLiveActivity/ComicScenes.xcassets'
 comic_sources = {p.name[:-len('-960.webp')]: p
                  for p in sorted((root / 'assets/activity-illustrations').glob('protagonist-*/*-960.webp'))}
 scenes_only = '--scenes-only' in sys.argv
+
+# Empty widget state uses a single bundled preview; all other scenes sync via App Group.
+EMPTY_STATE_SCENE = '10-park-walk'
+KEEP_COMIC_PREFIXES = {
+    f'comic_{EMPTY_STATE_SCENE}',
+    'comic_check_checked',
+    'comic_check_unchecked',
+}
 
 
 def write_contents(dest: Path, filename: str) -> None:
@@ -71,16 +82,15 @@ if not scenes_only:
 
     save_icon_png('widget_grain', root / 'assets/color-textures/grain-overlay.webp', 384)
 
-# Comic scenes: prefer 960px optimized webp when present, else recompress existing widget jpg
-for scene_id, p960 in comic_sources.items():
-    save_comic_jpg(scene_id, p960)
+# Only the empty-state preview scene stays in the widget extension catalog.
+if EMPTY_STATE_SCENE in comic_sources:
+    save_comic_jpg(EMPTY_STATE_SCENE, comic_sources[EMPTY_STATE_SCENE])
 
+removed = 0
 for img_set in sorted(cat.glob('comic_*.imageset')):
-    scene_id = img_set.name[len('comic_') : -len('.imageset')]
-    if scenes_only or scene_id in comic_sources:
+    if img_set.name[: -len('.imageset')] in KEEP_COMIC_PREFIXES:
         continue
-    existing = next(img_set.glob('*.jpg'), None)
-    if existing:
-        save_comic_jpg(scene_id, existing)
+    shutil.rmtree(img_set)
+    removed += 1
 
-print('Widget illustration, comic scene, and texture assets optimized')
+print(f'Widget assets optimized; kept empty-state scene and removed {removed} catalog duplicates')

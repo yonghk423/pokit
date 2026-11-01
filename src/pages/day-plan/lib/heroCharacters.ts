@@ -3,12 +3,9 @@ import { COMIC_SCENES } from './heroSceneImages';
 export const DEFAULT_COMIC_CHARACTER_ID = 'protagonist-1';
 const FIRST_CHARACTER_SCENES = COMIC_SCENES.filter(scene => !/^p[23456]-/.test(scene.id));
 const SECOND_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p2-'));
-// The first ten exports in these collections use a different, photographic
-// rendering style. Retain their IDs for saved diaries, but never offer them anew.
-const RETIRED_PAINTED_STYLE_SCENES = /^p[34]-(?:0[1-9]|10)-/;
-export const SELECTABLE_COMIC_SCENES = COMIC_SCENES.filter(scene => !RETIRED_PAINTED_STYLE_SCENES.test(scene.id));
-const THIRD_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p3-') && !RETIRED_PAINTED_STYLE_SCENES.test(scene.id));
-const FOURTH_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p4-') && !RETIRED_PAINTED_STYLE_SCENES.test(scene.id));
+export const SELECTABLE_COMIC_SCENES = COMIC_SCENES;
+const THIRD_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p3-'));
+const FOURTH_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p4-'));
 const FIFTH_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p5-'));
 const SIXTH_CHARACTER_SCENES = COMIC_SCENES.filter(scene => scene.id.startsWith('p6-'));
 /** Each character owns its image collection. */

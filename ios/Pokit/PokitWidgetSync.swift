@@ -55,17 +55,20 @@ class PokitWidgetSync: NSObject {
             let data = json.data(using: .utf8),
             var bundle = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
       else { return }
+      var keepFiles = Set<String>()
       if let rows = bundle["scenes"] as? [[String: Any]] {
         bundle["scenes"] = rows.map { row in
           var next = row
           if let uri = row["artworkUri"] as? String,
              let file = self.sharedComicArtwork(uri) {
             next["artworkFile"] = file
+            keepFiles.insert(file)
           }
           next.removeValue(forKey: "artworkUri")
           return next
         }
       }
+      self.pruneComicArtwork(keeping: keepFiles)
       guard let output = try? JSONSerialization.data(withJSONObject: bundle),
             let stored = String(data: output, encoding: .utf8) else { return }
       ud.set(stored, forKey: PokitAppGroup.comicSceneWidgetJsonKey)
@@ -74,12 +77,33 @@ class PokitWidgetSync: NSObject {
     }
   }
 
+  private func comicArtworkDirectory() -> URL? {
+    guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier)
+    else { return nil }
+    return container.appendingPathComponent("ComicArtwork", isDirectory: true)
+  }
+
+  private func resolveArtworkSourceURL(_ uri: String) -> URL? {
+    if let url = URL(string: uri), url.isFileURL {
+      return url
+    }
+    if uri.hasPrefix("/") {
+      let url = URL(fileURLWithPath: uri)
+      if FileManager.default.fileExists(atPath: url.path) { return url }
+    }
+    let relative = uri.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    if let bundled = Bundle.main.resourceURL?.appendingPathComponent(relative),
+       FileManager.default.fileExists(atPath: bundled.path) {
+      return bundled
+    }
+    return nil
+  }
+
   /// Widgets cannot read the app's private Documents directory. Keep a small JPEG in the shared container.
   private func sharedComicArtwork(_ uri: String) -> String? {
-    guard let source = URL(string: uri), source.isFileURL,
-          let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier)
+    guard let source = resolveArtworkSourceURL(uri),
+          let directory = comicArtworkDirectory()
     else { return nil }
-    let directory = container.appendingPathComponent("ComicArtwork", isDirectory: true)
     let hash = SHA256.hash(data: Data(uri.utf8)).map { String(format: "%02x", $0) }.joined()
     let name = "\(hash).jpg"
     let target = directory.appendingPathComponent(name)
@@ -88,16 +112,26 @@ class PokitWidgetSync: NSObject {
           let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 1000,
+            kCGImageSourceThumbnailMaxPixelSize: 720,
             kCGImageSourceShouldCacheImmediately: true
           ] as CFDictionary),
-          let jpeg = UIImage(cgImage: image).jpegData(compressionQuality: 0.88)
+          let jpeg = UIImage(cgImage: image).jpegData(compressionQuality: 0.78)
     else { return nil }
     do {
       try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
       try jpeg.write(to: target, options: .atomic)
       return name
     } catch { return nil }
+  }
+
+  private func pruneComicArtwork(keeping keepFiles: Set<String>) {
+    guard let directory = comicArtworkDirectory() else { return }
+    guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return }
+    for file in files {
+      guard file.pathExtension.lowercased() == "jpg" else { continue }
+      if keepFiles.contains(file.lastPathComponent) { continue }
+      try? FileManager.default.removeItem(at: file)
+    }
   }
 
   @objc func syncWeatherWidgetJson(_ json: String) {

@@ -705,19 +705,24 @@ it('keeps generated variations with identical writing as separate cards and appl
   act(() => tree.unmount());
 });
 
-it('still resolves a saved retired scene in detail without replacing it with another available scene', async () => {
+it('remaps a saved retired scene id to a kept scene when opening diary detail', async () => {
   useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
-  const image = 'p3-10-night-food-stall' as const;
-  const card = { ...newComicScene('Saved night market'), image };
-  const diary = { id: 'retired-scene-diary', title: 'Diary', characterId: 'protagonist-3', scenes: [card], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
+  const remappedImage = 'p3-46-cook-ramen' as const;
+  const card = { ...newComicScene('Saved night market'), image: remappedImage };
+  // Persist the retired id the way older installs stored it; load path remaps via canonicalComicSceneId.
+  const diary = {
+    id: 'retired-scene-diary', title: 'Diary', characterId: 'protagonist-3',
+    scenes: [{ ...card, image: 'p3-10-night-food-stall' }],
+    createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1,
+  };
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
   saveComicNavigation('protagonist-3', 'board', diary.id);
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
   act(() => tree.root.findByType(ComicDayBoard).props.onOpen(card.id));
-  const artwork = tree.root.findAllByProps({ imageKey: `${image}:original` })[0];
-  expect(artwork.props.source).toBe(COMIC_SCENES.find(scene => scene.id === image)!.source);
-  expect(loadComicDay('2026-10-21')[0]).toEqual(card);
+  const artwork = tree.root.findAllByProps({ imageKey: `${remappedImage}:original` })[0];
+  expect(artwork.props.source).toBe(COMIC_SCENES.find(scene => scene.id === remappedImage)!.source);
+  expect(loadComicDay('2026-10-21')[0]).toMatchObject({ id: card.id, image: remappedImage });
   act(() => tree.unmount());
 });
 

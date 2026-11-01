@@ -1,3 +1,4 @@
+import { Asset } from 'expo-asset';
 import { NativeModules, Platform } from 'react-native';
 import { t } from '@shared/lib/i18n';
 
@@ -39,6 +40,20 @@ function comicDiaryWidgetDate(diary: ComicDiaryLibrary['diaries'][number]): stri
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 }
 
+/** Prefer an already-local file URI so the widget native bridge can copy into App Group. */
+async function resolveCatalogArtworkUri(imageId: string): Promise<string | undefined> {
+  const catalog = COMIC_SCENES.find((item) => item.id === imageId);
+  if (!catalog) return undefined;
+  try {
+    const asset = Asset.fromModule(catalog.source);
+    if (!asset.localUri) await asset.downloadAsync();
+    const uri = asset.localUri ?? asset.uri;
+    return typeof uri === 'string' && uri.length > 0 ? uri : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function buildComicSceneWidgetBundle(library: ComicDiaryLibrary): ComicSceneWidgetBundle {
   const scenes = library.diaries.flatMap((diary) =>
     diary.scenes.map((scene, index) => {
@@ -70,14 +85,32 @@ export function buildComicSceneWidgetBundle(library: ComicDiaryLibrary): ComicSc
   return { version: 1, fallbackSceneId, scenes };
 }
 
+/** Attach local file URIs for catalog scenes so the widget need not ship a full JPG catalog. */
+export async function buildComicSceneWidgetBundleWithArtwork(
+  library: ComicDiaryLibrary,
+): Promise<ComicSceneWidgetBundle> {
+  const bundle = buildComicSceneWidgetBundle(library);
+  const scenes = await Promise.all(
+    bundle.scenes.map(async (scene) => {
+      if (scene.artworkUri) return scene;
+      const artworkUri = await resolveCatalogArtworkUri(scene.imageId);
+      return artworkUri ? { ...scene, artworkUri } : scene;
+    }),
+  );
+  return { ...bundle, scenes };
+}
+
 export function syncComicSceneWidgetToWidget(library: ComicDiaryLibrary): void {
   if (Platform.OS !== 'ios') return;
   const module = NativeModules.PokitWidgetSync as ComicSceneWidgetNativeModule | undefined;
   if (!module?.syncComicSceneWidgetJson) return;
 
-  try {
-    module.syncComicSceneWidgetJson(JSON.stringify(buildComicSceneWidgetBundle(library)));
-  } catch {
-    // Widget refresh is best-effort and must not interrupt editing the diary.
-  }
+  void (async () => {
+    try {
+      const bundle = await buildComicSceneWidgetBundleWithArtwork(library);
+      module.syncComicSceneWidgetJson?.(JSON.stringify(bundle));
+    } catch {
+      // Widget refresh is best-effort and must not interrupt editing the diary.
+    }
+  })();
 }
