@@ -51,3 +51,6 @@ tmp/hero-ai-release/
 
 # Generated previews, screenshots and illustration working files
 /outputs/
+
+/output/
+/tmp/
