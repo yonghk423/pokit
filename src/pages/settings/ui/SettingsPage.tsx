@@ -297,7 +297,7 @@ export function SettingsPage() {
       resetServiceTutorialSession();
       // Return to the normal home after resetting local data.
       if (router.canDismiss()) router.dismissAll();
-      router.replace('/(tabs)/comic-day');
+      router.replace('/(tabs)');
       restartAppSession();
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

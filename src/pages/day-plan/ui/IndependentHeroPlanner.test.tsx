@@ -848,3 +848,35 @@ it('reorders a long-pressed character without selecting it and restores order af
   act(() => tree.unmount());
   spy.mockRestore();
 });
+
+
+it('preserves the home card frame while the AI workspace changes the parent height', async () => {
+  useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
+  const scene = newComicScene('Stable card');
+  const diary = { id: 'stable-workspace-frame', title: 'Diary', characterId: COMIC_CHARACTERS[0].id, scenes: [scene], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
+  saveComicNavigation(COMIC_CHARACTERS[0].id, 'board', diary.id);
+  const frames = new Map<number, FrameRequestCallback>();
+  let next = 0;
+  const request = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(callback => { frames.set(++next, callback); return next; });
+  const cancel = jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(id => { if (id != null) frames.delete(id); });
+  const flush = () => act(() => { for (let i = 0; i < 4; i++) { const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach(callback => callback(0)); } });
+  const { HeroCardStack } = require('./HeroCardStack');
+  const ref = createRef<ComicDiaryHandle>();
+  let tree!: ReactTestRenderer;
+  try {
+    await act(async () => { tree = create(<IndependentComicPlanner ref={ref} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+    const layout = (height: number) => act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height } } }));
+    layout(650); flush();
+    const original = tree.root.findByType(HeroCardStack).props.cardHeight;
+    await act(async () => ref.current!.openPhotoEntry());
+    layout(800); flush();
+    expect(tree.root.findByType(HeroCardStack).props.cardHeight).toBe(original);
+    expect(tree.root.findByType(HeroCardStack).props.enabled).toBe(false);
+    act(() => ref.current!.openSceneEntry()); flush();
+    expect(tree.root.findByType(HeroCardStack).props.cardHeight).toBe(original);
+    expect(tree.root.findByType(HeroCardStack).props.enabled).toBe(true);
+  } finally {
+    act(() => tree?.unmount()); request.mockRestore(); cancel.mockRestore();
+  }
+});

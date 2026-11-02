@@ -1,4 +1,4 @@
-import { HERO_CARD_CAPTION_HEIGHT, rememberHeroGenerationCardSize } from '../lib/heroGenerationFrame';
+import { rememberHeroGenerationCardSize } from '../lib/heroGenerationFrame';
 import { createCardTapGuard } from '../lib/cardTapGuard';
 import { useHeroThumbnailStrip } from '../model/useHeroThumbnailStrip';
 import { HeroImageActions } from './HeroImageActions';
@@ -118,10 +118,10 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
   useEffect(() => {
     if (focused && interactive && currentArtwork) useHeroTabArtwork.getState().setSource(currentArtwork);
   }, [focused, interactive, currentArtwork]);
-  // Expand the frame into the space below the header, preserving its lower edge.
-  // Reserve the same caption space even before writing so artwork never shrinks.
-  const cardTop = 0;
-  const cardHeight = Math.max(1, availableHeight);
+  const frameTop = Math.min(60, Math.max(8, availableHeight * 0.1));
+  const originalCardTop = Math.max(8, frameTop - 28);
+  const cardTop = Math.max(8, originalCardTop - 8);
+  const cardHeight = Math.min(cardWidth / 0.75 + 198, Math.max(1, availableHeight - originalCardTop + 8));
   useEffect(() => {
     if (size.width > 0) {
       rememberHeroGenerationCardSize(cardWidth, cardHeight);
@@ -155,7 +155,7 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
     if (!item) return null;
         const scene = resolveComicScene(item.key, item.label, choices);
         const face = scenePaper(item.faceColor, isDark);
-        const captionBudget = HERO_CARD_CAPTION_HEIGHT;
+        const captionBudget = (item.memo?.trim() ? 105 : item.label.trim() ? 77 : 64) + 28;
         const imageFrameHeight = Math.max(1, cardHeight - captionBudget);
         const cardInk = item.inkColor ?? ink;
         return <CardArrival animate={trackNative && item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: cardWidth, height: cardHeight, backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>

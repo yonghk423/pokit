@@ -34,7 +34,8 @@ import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import { ComicScenePicker } from './HeroScenePicker';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
-import { forwardRef, useCallback, useEffect, useLayoutEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
+import { forwardRef, useCallback, useContext, useEffect, useLayoutEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
+import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
 import { Image as NativeImage, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
@@ -50,6 +51,7 @@ export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps
   return <ComicPlannerForDate key={props.date} {...props} ref={ref} />;
 });
 const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function ComicPlannerForDate(props, ref) {
+  const tabFocused = useContext(DayPlanTabFocusContext);
   const { onTitleChange, onCharacterNameChange, onCharacterChange } = props;
   const activeSceneRef = useRef<string | null>(null);
   const draftRef = useRef<{ image: ComicSceneId; text: HeroCardText } | null>(null);
@@ -316,6 +318,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     {characterPickerOpen ? <HeroCharacterPickerOverlay selectedId={character?.id} isDark={props.isDark} onClose={() => setCharacterPickerOpen(false)} onSelect={next => { setCharacterPickerOpen(false); selectHeaderCharacter(next); }} /> : null}
     {!props.onHeaderCharacterListChange ? <HeroCharacterList open={characterListOpen} ink={props.ink} muted={props.muted} selectedId={character?.id} onSelect={selectHeaderCharacter} /> : null}
     <ServiceTutorialCoach characterChoosing={showChooser} steps={showChooser ? [] : showPlanner ? ['comicStart'] : ['comicStart', 'comicCharacter', 'comicName', 'comicReady']} />
+    <DayPlanTabFocusContext.Provider value={tabFocused && !photoEntryVisible}>
     <View collapsable={false} style={{ flex: 1 }}>
     <Animated.View key={showChooser ? `chooser:${characterDraft}` : diary?.id ?? 'today-draft'}
       testID="comic-board-transition"
@@ -330,6 +333,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     </>}
     </Animated.View>
     </View>
+    </DayPlanTabFocusContext.Provider>
     {inline ? <View testID="hero-inline-workspace" pointerEvents={photoEntryOpen || inlineRecovery ? 'auto' : 'none'} accessibilityElementsHidden={!photoEntryOpen && !inlineRecovery} style={[StyleSheet.absoluteFill, { display: photoEntryOpen || inlineRecovery ? 'flex' : 'none', backgroundColor: props.isDark ? '#262B28' : '#F7F6F4', paddingHorizontal: 8, paddingTop: 4, paddingBottom: 6 }]}>
       <HeroInlineComposer visible={!!(photoEntryOpen || inlineRecovery)} key={inlineRecovery?.id ?? inline.sceneId ?? 'new'} sceneId={inline.image} {...inline.text} ink={inline.text.pen ?? props.ink} targetDiaryId={inline.diaryId} targetSceneId={inline.sceneId} recoveryJob={inlineRecovery} onApply={applyInline} onClose={() => { setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); }} />
     </View> : null}

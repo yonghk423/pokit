@@ -1,4 +1,5 @@
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
+import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -21,7 +22,7 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
     if (action === 'save') setSaved(false);
     let temporary: string | undefined;
     try {
-      let local = uri;
+      let local = uri ? resolveHeroArtworkUri(uri) : undefined;
       if (!local && source != null) {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { Asset } = require('expo-asset') as typeof import('expo-asset');

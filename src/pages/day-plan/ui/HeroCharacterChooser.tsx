@@ -222,7 +222,7 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
               <View style={{ width: artworkWidth, height: artworkHeight }}>
               <Pressable testID="comic-character-coming-soon" onPress={() => tapHaptic('select')} accessible accessibilityRole="button" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: 0 }]}>
                 <PaperGrain opacity={0.18} />
-                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} contentFit="contain" style={s.upcomingImage} />
+                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contentFit="contain" style={s.upcomingImage} />
                 <View style={s.upcomingCaption}>
                   <ThemedText style={[s.personalLabel, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
                   <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>

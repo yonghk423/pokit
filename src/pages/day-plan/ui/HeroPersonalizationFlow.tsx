@@ -22,7 +22,7 @@ import { YOURDAY_AI_DAILY_LIMIT, YOURDAY_AI_MAX_REQUEST_IMAGES, YOURDAY_AI_UNLIM
 
 /** Camera and hands artwork based on the supplied monochrome reference. */
 export function HeroPhotoInvitation({ size = 140 }: { ink: string; size?: number }) {
-  return <Image source={require('../../../../assets/control-illustrations/personal-camera-hands.png')} style={{ width: size, height: size }} resizeMode="contain" accessible={false} />;
+  return <Image source={require('../../../../assets/control-illustrations/personal-camera-hands.webp')} style={{ width: size, height: size }} resizeMode="contain" accessible={false} />;
 }
 
 /** Authenticated Supabase requests; the OpenAI API key never enters the app. */

@@ -81,7 +81,7 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const characterHeight = Math.max(26, Math.ceil(scaleTypeSize(23, appFontScale) * fontScale));
   const comicHeaderHeight = Math.max(44 + characterHeight, 46 + weatherHeight);
   const inTabs = segments.some((segment) => segment === '(tabs)');
-  const isComicTab = tabName ? tabName === 'comic-day' : segments.some(segment => segment === 'comic-day');
+  const isComicTab = tabName ? tabName === 'comic-day' : inTabs && segments.every(segment => segment === '(tabs)');
   const isDayPlanTab = tabName ? tabName === 'day-plan' : inTabs
     ? segments.some((segment) => segment === 'day-plan')
     : headerActions != null;

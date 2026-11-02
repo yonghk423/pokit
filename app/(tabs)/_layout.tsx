@@ -7,7 +7,7 @@ import { Tabs } from 'expo-router';
 import { DayPlanCustomTabBar, DayPlanTabBridgeProvider } from '@pages/day-plan';
 import { useTranslation } from '@shared/lib/i18n';
 
-export const unstable_settings = { initialRouteName: 'comic-day' };
+export const unstable_settings = { initialRouteName: 'index' };
 
 export default function TabLayout() {
   const { t } = useTranslation();
@@ -15,7 +15,7 @@ export default function TabLayout() {
   return (
     <DayPlanTabBridgeProvider><HeroCardToolsProvider><HeroCharacterPickerActionProvider>
       <Tabs
-        initialRouteName="comic-day"
+        initialRouteName="index"
         detachInactiveScreens
         tabBar={(props) => <DayPlanCustomTabBar {...props} />}
         screenOptions={{
@@ -29,7 +29,7 @@ export default function TabLayout() {
             shadowOpacity: 0,
           },
         }}>
-        <Tabs.Screen name="comic-day" options={{ title: t('tabs.comicDay') }} />
+        <Tabs.Screen name="index" options={{ title: t('tabs.comicDay') }} />
         <Tabs.Screen
           name="fixed-routines"
           options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }}

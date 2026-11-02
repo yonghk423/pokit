@@ -5,6 +5,7 @@ import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
+import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 
 // Scenes 11–50 have 24px sidebars baked into their 768px-wide exports.
 // Cover fills the file's bounds, so cards also need to zoom past those bars.
@@ -41,7 +42,8 @@ function fullResolutionSource(source: ImageProps['source']): ImageProps['source'
   const resolved = typeof source === 'number' ? NativeImage.resolveAssetSource(source)
     : typeof source === 'string' ? { uri: source } : source;
   if (!resolved || !('uri' in resolved) || !resolved.uri) return source;
-  return { ...resolved, cacheKey: `comic-full-v1:${resolved.uri}` };
+  const uri = resolveHeroArtworkUri(resolved.uri);
+  return { ...resolved, uri, cacheKey: `comic-full-v1:${uri}` };
 }
 
 /** Artwork already shown this session sits in the memory cache, so remounts skip the skeleton. */

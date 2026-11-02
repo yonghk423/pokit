@@ -1,4 +1,5 @@
 import { DEFAULT_COMIC_CHARACTER_ID } from './heroCharacters';
+import { resolveHeroArtworkUri } from './heroArtworkUri';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { canonicalComicSceneId, type ComicSceneId } from './heroSceneImages';
 export type ComicDayScene = {
@@ -26,7 +27,7 @@ export function normalizeComicScenes(value: unknown): ComicDayScene[] {
       && scene.todos.every(todo => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean');
     if (!ok) continue;
     seen.add(scene.id);
-    scenes.push({ ...scene, image, artworkUri: typeof scene.artworkUri === 'string' && scene.artworkUri.startsWith('file://') ? scene.artworkUri : undefined });
+    scenes.push({ ...scene, image, artworkUri: typeof scene.artworkUri === 'string' && scene.artworkUri.startsWith('file://') ? resolveHeroArtworkUri(scene.artworkUri) : undefined });
   }
   return scenes;
 }

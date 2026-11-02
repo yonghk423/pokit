@@ -6,6 +6,7 @@ import { penContour } from '@shared/ui/pen-frame';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HeroPhotoIcon } from './HeroPhotoSource';
 import { visualGuideWords } from './HeroAiVisualGuide';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 import guideSummary from '../../../../assets/help-videos/guide-summary.json';
 
@@ -63,7 +64,7 @@ export function HeroAiVideoGuide({ locale }: { locale?: string }) {
   return <View testID="hero-ai-video-guide" style={s.root}>
     <View style={s.modes}>{labels.modes.map((label, index) => {
       const selected = mode === index;
-      return <Pressable key={index} testID={`hero-help-mode-${index}`} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => setMode(index)} style={s.mode}>
+      return <Pressable key={index} testID={`hero-help-mode-${index}`} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); setMode(index); }} style={s.mode}>
         <View style={s.modeInner}>
           {index ? <HeroPhotoIcon camera colored size={18} /> : <Svg width={18} height={18} viewBox="0 0 24 24" accessible={false}><Path d="m5 15 9-11 5 4-9 11-6 2Z M13 5l5 4M5 15l5 4" stroke="#343933" strokeWidth={1.2} fill="none" /></Svg>}
           <ThemedText lineBreakStrategyIOS="hangul-word" numberOfLines={2} style={[s.label, selected ? s.labelSelected : null]}>{label}</ThemedText>
@@ -163,6 +164,7 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
     } catch { requested.current = false; setStarting(false); setError(true); }
   };
   const togglePlayback = () => {
+    tapHaptic();
     if (requested.current || playing) { requested.current = false; setStarting(false); player.pause(); }
     else void start();
   };
@@ -173,7 +175,7 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
       {!tipDismissed ? <View pointerEvents="box-none" style={s.tipLayer}>
         <View testID="hero-help-tip" style={s.tip}>
           <ThemedText style={s.tipText}>{summary}</ThemedText>
-          <Pressable testID="hero-help-dismiss-tip" accessibilityRole="button" accessibilityLabel={labels.dismiss} onPress={() => setTipDismissed(true)} style={s.tipClose} hitSlop={4}>
+          <Pressable testID="hero-help-dismiss-tip" accessibilityRole="button" accessibilityLabel={labels.dismiss} onPress={() => { tapHaptic(); setTipDismissed(true); }} style={s.tipClose} hitSlop={4}>
             <Svg width={16} height={16} viewBox="0 0 20 20" accessible={false}><Path d="M5 5l10 10M15 5 5 15" fill="none" stroke="#50594E" strokeWidth={1.5} strokeLinecap="round" /></Svg>
           </Pressable>
         </View>
@@ -184,7 +186,7 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
         {starting ? <ActivityIndicator size="small" color="#343933" /> : <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}><Path d={playing ? 'M7 4h3v16H7ZM14 4h3v16h-3Z' : 'M7 3l14 9-14 9Z'} fill="#000000" /></Svg>}
         <ThemedText style={s.controlLabel}>{starting ? labels.loading : playing ? labels.pause : labels.play}</ThemedText>
       </Pressable>
-      <Pressable testID="hero-help-video-replay" accessibilityRole="button" accessibilityLabel={labels.replay} style={s.control} onPress={() => { void start(true); }}>
+      <Pressable testID="hero-help-video-replay" accessibilityRole="button" accessibilityLabel={labels.replay} style={s.control} onPress={() => { tapHaptic(); void start(true); }}>
         <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}><Path d="M5 8a8 8 0 1 1-1 7M5 3v6h6" stroke="#000000" strokeWidth={1.7} fill="none" strokeLinecap="round" strokeLinejoin="round" /></Svg>
         <ThemedText style={s.controlLabel}>{labels.replay}</ThemedText>
       </Pressable>

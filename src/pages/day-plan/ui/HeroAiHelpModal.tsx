@@ -4,6 +4,7 @@ import { AppModal } from '@shared/ui/app-modal';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { useTranslation } from '@shared/lib/i18n';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 const copy = {
   ko: { title: '이렇게 해봐요', label: 'AI 생성 사용 방법' },
@@ -15,11 +16,12 @@ const copy = {
 export function HeroAiHelpModal({ onClose }: { onClose: () => void }) {
   const { locale, t } = useTranslation();
   const content = copy[locale as keyof typeof copy] ?? copy.ko;
+  const close = () => { tapHaptic(); onClose(); };
   return <AppModal transparent animationType="fade" onRequestClose={onClose}>
     <View style={s.root}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} style={StyleSheet.absoluteFill} />
+      <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={close} style={StyleSheet.absoluteFill} />
       <View testID="hero-ai-help-modal" accessibilityViewIsModal style={s.paper}>
-        <View style={s.heading}><ThemedText accessibilityRole="header" style={s.title}>{content.title}</ThemedText><Pressable testID="hero-ai-help-close" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} style={s.close}><HanddrawnControl name="xmark" color="#343933" size={22} /></Pressable></View>
+        <View style={s.heading}><ThemedText accessibilityRole="header" style={s.title}>{content.title}</ThemedText><Pressable testID="hero-ai-help-close" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={close} style={s.close}><HanddrawnControl name="xmark" color="#343933" size={22} /></Pressable></View>
         <ScrollView showsVerticalScrollIndicator contentContainerStyle={s.body}>
           <HeroAiVideoGuide locale={locale} />
         </ScrollView>

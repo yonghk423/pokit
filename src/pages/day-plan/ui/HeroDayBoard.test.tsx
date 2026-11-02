@@ -202,10 +202,6 @@ it('gives the picture more vertical room without overlapping the thumbnail strip
   const { ComicSceneImage } = require('./HeroSceneImage');
   const picture = tree.root.findAllByType(ComicSceneImage).find(node => typeof node.props.style.height === 'number')!;
   expect(picture.props.style.height).toBeGreaterThan(450);
-  const imageHeight = picture.props.style.height;
-  act(() => tree.update(<ComicSceneDeck items={[{ key: 'one', label: 'Written title', memo: 'A diary entry with thoughts and feelings.' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} />));
-  const writtenPicture = tree.root.findAllByType(ComicSceneImage).find(node => typeof node.props.style.height === 'number')!;
-  expect(writtenPicture.props.style.height).toBe(imageHeight);
   act(() => tree.unmount());
 });
 

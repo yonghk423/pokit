@@ -11,7 +11,7 @@ it('opens the completed job on cold start and ignores duplicate responses', asyn
   jest.mocked(Notifications.getLastNotificationResponseAsync).mockResolvedValueOnce(response as never);
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<Listener />); });
-  expect(mockPush).toHaveBeenCalledWith({ pathname: '/(tabs)/comic-day', params: { generationJob: 'hero-test-123' } });
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/(tabs)', params: { generationJob: 'hero-test-123' } });
   const listener = jest.mocked(Notifications.addNotificationResponseReceivedListener).mock.calls[0][0];
   act(() => listener(response as never));
   expect(mockPush).toHaveBeenCalledTimes(1);

@@ -1,5 +1,6 @@
 import { SettingsPenIcon } from './settingsPen';
-import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { Image } from 'expo-image';
+import { getPreparedFrame } from '@shared/ui/handdrawn-frame/frameCache';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -69,7 +70,15 @@ export function SettingsRowIcon({
 }
 
 export function SettingsInkFrame({ color }: { color: string }) {
-  return <HanddrawnFrame color={color} />;
+  return <Image
+    source={getPreparedFrame()}
+    pointerEvents="none"
+    accessible={false}
+    contentFit="fill"
+    transition={0}
+    tintColor={color}
+    style={[StyleSheet.absoluteFill, { opacity: 0.78 }]}
+  />;
 }
 
 export function SettingsSection({

@@ -16,7 +16,7 @@ export function useHeroAiNotifications(enabled: boolean) {
         const data = response.notification.request.content.data;
         if (!live || data?.type !== 'hero-ai-complete' || typeof data.jobId !== 'string' || !/^hero-[a-zA-Z0-9-]+$/.test(data.jobId) || handled === response.notification.request.identifier) return;
         handled = response.notification.request.identifier;
-        router.push({ pathname: '/(tabs)/comic-day', params: { generationJob: data.jobId } });
+        router.push({ pathname: '/(tabs)', params: { generationJob: data.jobId } });
         void notifications.clearLastNotificationResponseAsync().catch(() => undefined);
       };
       const sub = notifications.addNotificationResponseReceivedListener(open);

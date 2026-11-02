@@ -1,5 +1,5 @@
 import { BottomTabBarHeightContext } from 'expo-router/js-tabs';
-import { type PropsWithChildren, type ReactNode, useCallback, useState } from 'react';
+import { type PropsWithChildren, type ReactNode, useCallback, useContext, useState } from 'react';
 import { type LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-screens/experimental';
@@ -14,8 +14,18 @@ type Props = PropsWithChildren<{ chromeColor?: string; background?: ReactNode }>
 
 /** Keep native tab chrome out of editor bounds without changing keyboard avoidance. */
 export function NativeTabContent({ children, chromeColor, background }: Props) {
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
   if (Platform.OS !== 'ios') return <>{children}</>;
+  // JS tabs already reserve their bar (including the home-indicator inset) outside
+  // the scene. A native SafeAreaView here would inset and remeasure it a second time.
+  if (tabBarHeight !== undefined) return <JsTabContent chromeColor={chromeColor} background={background}>{children}</JsTabContent>;
   return <IosTabContent chromeColor={chromeColor} background={background}>{children}</IosTabContent>;
+}
+
+function JsTabContent({ children, chromeColor, background }: Props) {
+  const isDark = useColorScheme() === 'dark';
+  const chrome = chromeColor ?? (isDark ? TAB_CHROME_DARK : TAB_CHROME_LIGHT);
+  return <View style={[styles.fill, { backgroundColor: chrome }]}>{background}{children}</View>;
 }
 
 function IosTabContent({ children, chromeColor, background }: Props) {

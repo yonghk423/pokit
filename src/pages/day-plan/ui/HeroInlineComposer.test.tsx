@@ -461,3 +461,27 @@ it('loads the remaining count above the generate icon and refreshes when reopene
   expect(tree.root.findAllByProps({ testID: 'hero-inline-remaining' })[0].props.children).toBe('comicDay.inline.unlimited');
   act(() => tree.unmount());
 });
+
+
+it('does not schedule layout animations for keyboard events after returning to the cards', async () => {
+  const listeners = new Map<string, (event: any) => void>();
+  const subscribe = jest.spyOn(Keyboard, 'addListener').mockImplementation((name, callback) => {
+    listeners.set(name, callback);
+    return { remove: jest.fn() } as any;
+  });
+  const animate = jest.spyOn(Keyboard, 'scheduleLayoutAnimation').mockImplementation(() => undefined);
+  const render = (visible: boolean) => <HeroInlineComposer visible={visible} sceneId="05-work" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />;
+  let tree!: ReactTestRenderer;
+  try {
+    await act(async () => { tree = create(render(true)); });
+    act(() => listeners.get('keyboardWillShow')?.({ endCoordinates: { screenY: 500 }, duration: 250 }));
+    expect(animate).toHaveBeenCalledTimes(1);
+    act(() => tree.update(render(false)));
+    animate.mockClear();
+    act(() => listeners.get('keyboardWillHide')?.({ duration: 250 }));
+    expect(animate).not.toHaveBeenCalled();
+  } finally {
+    act(() => tree?.unmount());
+    subscribe.mockRestore(); animate.mockRestore();
+  }
+});

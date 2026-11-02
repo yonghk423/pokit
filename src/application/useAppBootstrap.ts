@@ -1,4 +1,5 @@
 import { getSupabaseUrl } from '@shared/config/supabase';
+import { configureImageCache } from './imageCachePolicy';
 import { migrateHeroAiAuthSession } from '@shared/lib/supabase/heroAiSecureStorage';
 import { initializeHeroCardEditHint } from '@shared/lib/storage/heroCardEditHintStorage';
 import { initializeHeroCharacterNameHint } from '@shared/lib/storage/heroCharacterNameHintStorage';
@@ -98,6 +99,7 @@ export function useAppBootstrap() {
 
   useEffect(() => {
     let cancelled = false;
+    configureImageCache();
     void (async () => {
       await initLocalStorageClient();
       if (cancelled) return;

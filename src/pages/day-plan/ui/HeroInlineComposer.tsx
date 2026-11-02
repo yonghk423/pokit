@@ -9,7 +9,7 @@ import { PenFrame } from '@shared/ui/pen-frame';
 import { HeroStoryNotebook } from './HeroStoryNotebook';
 import { HeroGenerateIcon } from './HeroGenerateIcon';
 import { HeroAiHelpModal, heroAiHelpLabel } from './HeroAiHelpModal';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Animated, Easing, Keyboard, Platform, Pressable, ScrollView, StyleSheet, useAnimatedValue, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { AppAlert } from '@shared/lib/app-alert';
@@ -99,18 +99,18 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   const [keyboardTop, setKeyboardTop] = useState<number | null>(() => Keyboard.metrics?.()?.screenY ?? null);
   useEffect(() => {
     const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', event => {
-      if (Platform.OS === 'ios' && event) Keyboard.scheduleLayoutAnimation?.(event);
+      if (visible && Platform.OS === 'ios' && event) Keyboard.scheduleLayoutAnimation?.(event);
       setKeyboardTop(event?.endCoordinates.screenY ?? null);
       setKeyboardOpen(true);
     });
     const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', event => {
-      if (Platform.OS === 'ios' && event) Keyboard.scheduleLayoutAnimation?.(event);
+      if (visible && Platform.OS === 'ios' && event) Keyboard.scheduleLayoutAnimation?.(event);
       setKeyboardTop(null);
       setKeyboardOpen(false);
     });
     return () => { show.remove(); hide.remove(); };
-  }, []);
-  useEffect(() => {
+  }, [visible]);
+  useLayoutEffect(() => {
     setComposerKeyboardOpen?.(visible && keyboardOpen);
     return () => setComposerKeyboardOpen?.(false);
   }, [visible, keyboardOpen, setComposerKeyboardOpen]);
@@ -279,10 +279,10 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
                       {facesLoading ? <View testID="hero-inline-faces-loading" accessibilityState={{ busy: true }} style={s.faceRailContent}>{[0, 1].map(index => <View key={index} style={[s.avatar, s.imagePlaceholder]} />)}</View> : null}
                       {faces.map((saved, index) => <Pressable key={saved.id} testID={`hero-inline-face-${index}`} accessibilityRole="button" accessibilityLabel={`${t('comicDay.inline.face')} ${index + 1}`} accessibilityState={{ selected: face === saved.uri }} onPress={() => { setFace(saved.uri); setRegister(false); }} delayLongPress={500} onLongPress={() => { tapHaptic('select'); removeFace(saved); }} accessibilityActions={[{ name: 'delete', label: t('comicDay.inline.removeFace') }]} onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'delete') removeFace(saved); }} style={s.person}><View testID={`hero-inline-face-frame-${index}`} style={s.avatarFrame}><View style={s.avatar}><ComicSceneImage imageKey={`saved-face-avatar:${saved.uri}`} source={{ uri: saved.uri }} contentFit="cover" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={[s.clippedImage, s.avatar]} />{face === saved.uri ? <View testID={`hero-inline-face-ring-${index}`} pointerEvents="none" style={[StyleSheet.absoluteFill, s.chosen, { borderRadius: 21 }]} /> : null}</View></View></Pressable>)}
                     </ScrollView>
-                      <Pressable testID="hero-inline-add-face" onPress={() => { editing.current = false; Keyboard.dismiss(); setStylesOpen(false); setRegister(true); }} accessibilityRole="button" accessibilityLabel={t('comicDay.inline.addFace')} style={s.addPerson}><View testID="hero-inline-add-face-icon-slot" style={s.addSlot}><View style={s.add}><Svg width={18} height={18} viewBox="0 0 20 20" accessible={false}><Path d="M10 3.5v13M3.5 10h13" stroke={ink} strokeWidth={1.6} strokeLinecap="round" /></Svg></View></View><ThemedText style={[s.small, { fontSize: 10, lineHeight: 14 }]}>{t('comicDay.inline.addFace')}</ThemedText></Pressable>
+                      <Pressable testID="hero-inline-add-face" onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); setStylesOpen(false); setRegister(true); }} accessibilityRole="button" accessibilityLabel={t('comicDay.inline.addFace')} style={s.addPerson}><View testID="hero-inline-add-face-icon-slot" style={s.addSlot}><View style={s.add}><Svg width={18} height={18} viewBox="0 0 20 20" accessible={false}><Path d="M10 3.5v13M3.5 10h13" stroke={ink} strokeWidth={1.6} strokeLinecap="round" /></Svg></View></View><ThemedText style={[s.small, { fontSize: 10, lineHeight: 14 }]}>{t('comicDay.inline.addFace')}</ThemedText></Pressable>
                   </View> : <HeroPhotoSource variant="toolbar" mode="photo" uri={photo} onChange={setPhoto} actionsOnly selectionLimit={1} />}</View>
           </> : <View style={{ flex: 1 }} />}
-          <Pressable accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || cancelling || resultReady} onPress={() => { if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={ink} size={22} /></Pressable></View>
+          <Pressable accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || cancelling || resultReady} onPress={() => { tapHaptic(); if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={ink} size={22} /></Pressable></View>
         {busy ? <View style={s.loading}><DrawingProgress elapsed={elapsed} complete={resultReady} ink={ink} submitted={submitted} /><ThemedText testID="hero-inline-keep-app-open" accessibilityLiveRegion="polite" style={s.hint}>{t(submitted ? 'comicDay.inline.backgroundReady' : 'comicDay.inline.uploading')}</ThemedText><Pressable testID="hero-inline-cancel-generation" accessibilityRole="button" accessibilityLabel={t('comicDay.inline.cancelGeneration')} disabled={cancelling || resultReady} onPress={confirmCancelGeneration} style={s.cancelGeneration}><HanddrawnControl name="xmark" color={ink} size={18} /><ThemedText style={[s.cancelText, { color: ink }]}>{t(cancelling ? 'comicDay.inline.cancelling' : 'comicDay.inline.cancelGeneration')}</ThemedText></Pressable></View> : <>
           <ScrollView testID="hero-inline-story-scroll" ref={scroll} style={s.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" onLayout={revealStory} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
             <View pointerEvents={job ? 'none' : 'auto'} style={s.content}>
@@ -315,7 +315,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
                     <ThemedText style={s.styleLabel}>{t(character.name)}</ThemedText>
                   </Pressable>)}
                   {[0].map(index => <Pressable key={index} testID={`hero-inline-style-upcoming-${index}`} accessibilityRole="button" accessibilityLabel={t('comicDay.inline.comingSoon')} accessibilityState={{ selected: false }} onPress={() => setShowComingSoon(true)} style={s.styleItem}>
-                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey="inline-style:upcoming" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle color={ink} size={42} /></View>
+                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey="inline-style:upcoming" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle color={ink} size={42} /></View>
                     <ThemedText style={s.futureLabel}>{t('comicDay.inline.comingSoon')}</ThemedText>
                   </Pressable>)}
                   </HeroReorderableStyleRail>
@@ -354,7 +354,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
           <PenFrame color={ink} />
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 12 }}>
             <ThemedText accessibilityRole="header" style={{ flex: 1, color: ink, fontSize: 18 }}>{t('tabs.comicDay')}</ThemedText>
-            <Pressable testID="hero-face-registration-close" accessibilityRole="button" accessibilityLabel={t('common.close')} disabled={savingFace} onPress={() => setRegister(false)} hitSlop={4} style={{ width: 36, height: 32, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable>
+            <Pressable testID="hero-face-registration-close" accessibilityRole="button" accessibilityLabel={t('common.close')} disabled={savingFace} onPress={() => { tapHaptic(); setRegister(false); }} hitSlop={4} style={{ width: 36, height: 32, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable>
           </View>
           <View testID="hero-face-photo-actions" pointerEvents={savingFace ? 'none' : 'auto'}>
             <HeroPhotoSource mode="face" uri={null} onChange={uri => { void addFace(uri); }} actionsOnly selectionLimit={1} />

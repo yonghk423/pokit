@@ -35,7 +35,7 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { route: 'comic-day', icon: require('../../../../assets/tab-icons/comic-portrait-v2.webp'), labelKey: 'tabs.comicDay' },
+  { route: 'index', icon: require('../../../../assets/tab-icons/comic-portrait-v2.webp'), labelKey: 'tabs.comicDay' },
   { route: 'fixed-routines', icon: require('../../../../assets/tab-icons/routine.webp'), labelKey: 'tabs.routines' },
   { route: 'puzzle-history', icon: require('../../../../assets/tab-icons/puzzle.webp'), labelKey: 'tabs.puzzle' },
   { route: 'pokit-story', icon: require('../../../../assets/tab-icons/story-pen.png'), labelKey: 'tabs.story' },
@@ -78,7 +78,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   const focusedRoute = state.routes[state.index]?.name;
   const registerIsDayPlanFocused = bridge.registerIsDayPlanFocused;
-  const isDayPlanFocused = focusedRoute === 'day-plan' || focusedRoute === 'index';
+  const isDayPlanFocused = focusedRoute === 'day-plan';
 
   useEffect(() => {
     registerIsDayPlanFocused(isDayPlanFocused);
@@ -98,7 +98,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const slotCount = visibleTabs.length + 2;
   const itemWidth = Math.min(64, (width - 100 - (slotCount - 1) * 2) / slotCount);
   const pillWidth = slotCount * itemWidth + 12 + (slotCount - 1) * 2;
-  const photoSelected = focusedRoute === 'comic-day' && !!characterPicker?.photoActive;
+  const photoSelected = focusedRoute === 'index' && !!characterPicker?.photoActive;
 
   return (
     <View
@@ -123,7 +123,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityLabel={t(tab.labelKey)}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  if (tab.route === 'comic-day' && isFocused && characterPicker) characterPicker.open();
+                  if (tab.route === 'index' && isFocused && characterPicker) characterPicker.open();
                   else navigation.navigate(tab.route);
                 }}
                 style={({ pressed }) => [
@@ -132,8 +132,8 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   isFocused && !photoSelected && { backgroundColor: colors.activeBg },
                   pressed && { opacity: 0.8 },
                 ]}>
-                <Image source={tab.route === 'comic-day' ? heroArtwork : tab.icon} style={styles.icon} resizeMode="contain" />
-              </Pressable>{tab.route === 'comic-day' ? <>
+                <Image source={tab.route === 'index' ? heroArtwork : tab.icon} style={styles.icon} resizeMode="contain" />
+              </Pressable>{tab.route === 'index' ? <>
                 <Pressable
                   testID="hero-ai-mode-tab"
                   accessibilityRole="tab"
@@ -141,19 +141,19 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   accessibilityState={{ selected: photoSelected }}
                   onPress={() => {
                     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    if (focusedRoute !== 'comic-day') navigation.navigate('comic-day');
+                    if (focusedRoute !== 'index') navigation.navigate('index');
                     characterPicker?.openPhoto();
                   }}
                   style={({ pressed }) => [styles.tabItem, { width: itemWidth }, photoSelected && { backgroundColor: colors.activeBg }, pressed && { opacity: 0.8 }]}>
                   <HeroPhotoEntryIcon ink={isDark ? '#EEECE6' : '#252A26'} size={34} />
                 </Pressable>
-                <HeroThumbnailStripToggle width={itemWidth} isDark={isDark} enabled={focusedRoute === 'comic-day'} />
+                <HeroThumbnailStripToggle width={itemWidth} isDark={isDark} enabled={focusedRoute === 'index'} />
               </> : null}</Fragment>
             );
           })}
         </View>
       </View>
-      <View pointerEvents={focusedRoute === 'comic-day' ? 'auto' : 'none'} accessibilityElementsHidden={focusedRoute !== 'comic-day'} importantForAccessibility={focusedRoute !== 'comic-day' ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', left: Math.min(width - 48, width / 2 - 24 + pillWidth / 2 + 8), top: 14, width: 40, height: 44, opacity: focusedRoute === 'comic-day' ? 1 : 0 }}>{cardTools}</View>
+      <View pointerEvents={focusedRoute === 'index' ? 'auto' : 'none'} accessibilityElementsHidden={focusedRoute !== 'index'} importantForAccessibility={focusedRoute !== 'index' ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', left: Math.min(width - 48, width / 2 - 24 + pillWidth / 2 + 8), top: 14, width: 40, height: 44, opacity: focusedRoute === 'index' ? 1 : 0 }}>{cardTools}</View>
     </View>
   );
 }

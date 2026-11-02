@@ -58,3 +58,17 @@ it('leaves the existing JavaScript tab height provider intact on Android', () =>
   expect(renderer.root.findAllByType(SafeAreaView)).toHaveLength(0);
   expect(renderer.root.findByType(Text).props.children).toBe('110');
 });
+
+
+it('does not add another native bottom inset inside the iOS JavaScript tab navigator', () => {
+  Object.defineProperty(Platform, 'OS', { value: 'ios' });
+  const render = (height: number) => <BottomTabBarHeightContext.Provider value={height}>
+    <NativeTabContent><EditorProbe /></NativeTabContent>
+  </BottomTabBarHeightContext.Provider>;
+  act(() => { renderer = create(render(110)); });
+  expect(renderer.root.findAllByType(SafeAreaView)).toHaveLength(0);
+  expect(renderer.root.findByType(Text).props.children).toBe('110');
+  act(() => renderer.update(render(98)));
+  expect(renderer.root.findByType(Text).props.children).toBe('98');
+  expect(renderer.root.findAllByType(View).some(node => node.props.onLayout)).toBe(false);
+});

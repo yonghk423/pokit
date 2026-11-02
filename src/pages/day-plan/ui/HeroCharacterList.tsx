@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, useAnimatedValue, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
@@ -6,6 +6,15 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { SELECTABLE_COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
 
 const protagonistSelectionInk = '#171510';
+
+function HeaderPortrait({ source, id }: { source: number; id: string }) {
+  const [loadedSource, setLoadedSource] = useState<number | null>(null);
+  const ready = loadedSource === source;
+  return <View style={s.image}>
+    <Image source={source} resizeMode="contain" style={[s.image, !ready && { opacity: 0 }]} onLoad={() => setLoadedSource(source)} />
+    {!ready ? <View testID={`hero-header-portrait-${id}-skeleton`} pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill, s.portraitSkeleton]} /> : null}
+  </View>;
+}
 
 export function HeroCharacterList({ ink, muted, selectedId, onSelect, open, inline = false }: {
   ink: string; muted: string; selectedId?: string; onSelect: (character: ComicCharacter) => void; open: boolean; inline?: boolean;
@@ -22,14 +31,14 @@ export function HeroCharacterList({ ink, muted, selectedId, onSelect, open, inli
       {SELECTABLE_COMIC_CHARACTERS.map(character => {
         const selected = selectedId === character.id;
         return <Pressable key={character.id} testID={`hero-header-character-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} accessibilityState={{ selected }} onPress={() => onSelect(character)} style={s.item}>
-        <View style={s.portrait}><Image source={character.cover} resizeMode="contain" style={s.image} /><Svg pointerEvents="none" width={36} height={36} viewBox="0 0 52 52" style={StyleSheet.absoluteFill}>
+        <View style={s.portrait}><HeaderPortrait source={character.cover} id={character.id} /><Svg pointerEvents="none" width={36} height={36} viewBox="0 0 52 52" style={StyleSheet.absoluteFill}>
           <Path testID={`hero-header-character-ring-${character.id}`} d="M26 2C12 1 2 12 2 26S12 50 26 50 50 40 50 26 40 2 26 2Z" fill="none" stroke={protagonistSelectionInk} strokeWidth={selected ? 1.8 : 1.1} strokeLinecap="round" />
         </Svg></View>
         <ThemedText style={[s.name, { color: ink, fontWeight: selected ? '600' : '400' }]}>{t(character.name)}</ThemedText>
       </Pressable>;
       })}
       <View testID="hero-header-character-upcoming" accessible accessibilityLabel={t('comicDay.character.new') + ', ' + t('comicDay.character.soon')} style={s.item}>
-        <View style={s.portrait}><Image source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} resizeMode="contain" style={s.image} /><Svg pointerEvents="none" width={36} height={36} viewBox="0 0 52 52" style={StyleSheet.absoluteFill}><Path d="M26 2C12 1 2 12 2 26S12 50 26 50 50 40 50 26 40 2 26 2Z" fill="none" stroke={protagonistSelectionInk} strokeWidth={1.1} strokeLinecap="round" /></Svg></View>
+        <View style={s.portrait}><HeaderPortrait source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} id="upcoming" /><Svg pointerEvents="none" width={36} height={36} viewBox="0 0 52 52" style={StyleSheet.absoluteFill}><Path d="M26 2C12 1 2 12 2 26S12 50 26 50 50 40 50 26 40 2 26 2Z" fill="none" stroke={protagonistSelectionInk} strokeWidth={1.1} strokeLinecap="round" /></Svg></View>
         <ThemedText style={[s.name, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
         <ThemedText style={[s.status, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
       </View>
@@ -41,5 +50,6 @@ const s = StyleSheet.create({
   inlineRoot: { position: 'relative', top: 8, flex: 1, minWidth: 0, height: 50, zIndex: 20 },
   list: { gap: 2, paddingBottom: 6 }, item: { width: 44, alignItems: 'center', gap: 1 },
   portrait: { width: 36, height: 36, padding: 4 }, image: { width: 28, height: 28, borderRadius: 14 },
+  portraitSkeleton: { borderRadius: 14, backgroundColor: 'rgba(125, 126, 117, 0.18)' },
   name: { fontSize: 10, lineHeight: 14 }, status: { fontSize: 9, lineHeight: 12 },
 });

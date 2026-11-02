@@ -25,7 +25,7 @@ function renderRoutineInlineSettings(
 export default function DayPlanBagScreen() {
   const focused = useIsFocused();
   const router = useRouter();
-  const close = () => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/comic-day'); };
+  const close = () => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)'); };
   return (
     <DayPlanTabBridgeProvider><DayPlanTabFocusContext.Provider value={focused}><NativeTabContent >
       <DayPlanTabScreenShell tabName="day-plan" onClose={close}>

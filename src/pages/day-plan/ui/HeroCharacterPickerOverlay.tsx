@@ -176,7 +176,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
             </Animated.View>;
           })}
           <View testID="hero-character-picker-upcoming" accessible accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} style={cardStyle}>
-            <PickerPreview id="upcoming" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} fallback={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.png')} contain width={cardWidth - 10} height={imageHeight} isDark={isDark} />
+            <PickerPreview id="upcoming" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} fallback={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contain width={cardWidth - 10} height={imageHeight} isDark={isDark} />
             <View style={{ height: 38, alignItems: 'center', justifyContent: 'center', gap: 2 }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{t('comicDay.character.new')}</ThemedText><ThemedText numberOfLines={1} style={{ color: ink, opacity: 0.6, fontSize: 11 }}>{t('comicDay.character.soon')}</ThemedText></View>
             <PenFrame color={ink} straight />
           </View>

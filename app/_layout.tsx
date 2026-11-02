@@ -6,6 +6,7 @@ import { useAppSessionStore } from '@shared/lib/app-session';
 import { AppAlertRoot } from '@shared/ui/app-alert';
 import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
 import { prepareSurfaceTextures } from '@shared/ui/surface-texture/textureCache';
+import { prepareHanddrawnFrame } from '@shared/ui/handdrawn-frame/frameCache';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -74,7 +75,7 @@ export default function RootLayout() {
     let active = true;
     // Keep startup bounded even if an asset fails or a development server stalls.
     const timeout = setTimeout(() => { if (active) setIconsReady(true); }, 2000);
-    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures()]).finally(() => {
+    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures(), prepareHanddrawnFrame()]).finally(() => {
       clearTimeout(timeout);
       if (active) setIconsReady(true);
     });
@@ -92,8 +93,11 @@ export default function RootLayout() {
   // The native launch screen is the only splash artwork; drawing it again in JS doubles it during the hand-off.
   useEffect(() => {
     if (showSplash) return;
-    void SplashScreen.hideAsync().catch(() => {});
-    void requestAppReviewIfDue();
+    const frame = requestAnimationFrame(() => {
+      void SplashScreen.hideAsync().catch(() => {});
+      void requestAppReviewIfDue();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [showSplash]);
 
   return (
@@ -105,12 +109,13 @@ export default function RootLayout() {
               <ThemeProvider key={sessionEpoch} value={navigationTheme}><TutorialGuideLayer>
                 <Stack
                   screenOptions={{
+                    headerShown: false,
                     contentStyle: { backgroundColor: rootBg },
                     statusBarStyle: resolveStatusBarStyle(isDark),
                     gestureEnabled: !hasPendingAlert,
                   }}>
                   {/* Horizontal drags belong to card decks, never to an interactive pop of the tab host. */}
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false, fullScreenGestureEnabled: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none', gestureEnabled: false, fullScreenGestureEnabled: false }} />
                   <Stack.Screen name="day-plan" options={{ headerShown: false, presentation: 'card', gestureEnabled: false }} />
                   <Stack.Screen name="reading-library" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
