@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Image, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { penContour } from '@shared/ui/pen-frame';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HeroPhotoIcon } from './HeroPhotoSource';
 import { visualGuideWords } from './HeroAiVisualGuide';
@@ -26,29 +27,56 @@ const words = {
   ja: { dismiss: '説明を閉じる', loading: '準備中…', play: '動画を再生', pause: '一時停止', replay: 'もう一度見る', error: '動画を読み込めませんでした。もう一度再生してください。' },
   'zh-TW': { dismiss: '關閉說明', loading: '準備中…', play: '播放影片', pause: '暫停', replay: '重播', error: '無法載入影片，請按重播再試一次。' },
 };
-function PenCapsuleFrame({ color, selected }: { color: string; selected: boolean }) {
-  return <Svg pointerEvents="none" width="100%" height="100%" viewBox="0 0 540 100" preserveAspectRatio="none" style={StyleSheet.absoluteFill} accessible={false}>
-    <Path d="M52 5C184 2 350 7 487 4C516 4 536 21 536 50C537 78 518 96 487 95C350 92 190 98 52 95C22 96 4 78 4 50C3 22 22 4 52 5Z" fill={selected ? '#D7EADF' : 'transparent'} stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-    {selected ? <Path d="M15 69C21 86 34 93 52 94C188 97 350 91 477 94C499 94 514 86 523 70" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" /> : null}
-  </Svg>;
+
+function PenUnderline({ color }: { color: string }) {
+  const [width, setWidth] = useState(0);
+  const w = Math.max(24, width);
+  const y = 3.2;
+  const points = [
+    [1.5, y + 0.35],
+    [w * 0.22, y - 0.25],
+    [w * 0.48, y + 0.45],
+    [w * 0.74, y - 0.15],
+    [w - 1.5, y + 0.3],
+  ] as const;
+  return (
+    <View
+      style={s.underlineSlot}
+      onLayout={({ nativeEvent: { layout } }) => {
+        if (layout.width > 0 && Math.abs(layout.width - width) > 0.5) setWidth(layout.width);
+      }}
+    >
+      {width > 0 ? (
+        <Svg width="100%" height={7} viewBox={`0 0 ${w} 7`}>
+          <Path d={penContour(points, 1.45, 0.6)} fill={color} />
+          <Path d={penContour(points, 0.55, 2.1)} fill={color} opacity={0.35} />
+        </Svg>
+      ) : null}
+    </View>
+  );
 }
+
 export function HeroAiVideoGuide({ locale }: { locale?: string }) {
   const language = locale && locale in sources ? locale as keyof typeof sources : 'ko';
   const [mode, setMode] = useState(0);
   const labels = visualGuideWords(language);
   return <View testID="hero-ai-video-guide" style={s.root}>
-    <View style={s.modes}>{labels.modes.map((label, index) => <Pressable key={index} testID={`hero-help-mode-${index}`} accessibilityRole="tab" accessibilityState={{ selected: mode === index }} onPress={() => setMode(index)} style={s.mode}>
-      <PenCapsuleFrame color={mode === index ? '#719181' : '#92978D'} selected={mode === index} />
-      {index ? <HeroPhotoIcon camera colored size={22} /> : <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}><Path d="m5 15 9-11 5 4-9 11-6 2Z M13 5l5 4M5 15l5 4" stroke="#343933" strokeWidth={1.2} fill="none" /></Svg>}
-      <ThemedText lineBreakStrategyIOS="hangul-word" style={s.label}>{label}</ThemedText>
-    </Pressable>)}</View>
+    <View style={s.modes}>{labels.modes.map((label, index) => {
+      const selected = mode === index;
+      return <Pressable key={index} testID={`hero-help-mode-${index}`} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => setMode(index)} style={s.mode}>
+        <View style={s.modeInner}>
+          {index ? <HeroPhotoIcon camera colored size={18} /> : <Svg width={18} height={18} viewBox="0 0 24 24" accessible={false}><Path d="m5 15 9-11 5 4-9 11-6 2Z M13 5l5 4M5 15l5 4" stroke="#343933" strokeWidth={1.2} fill="none" /></Svg>}
+          <ThemedText lineBreakStrategyIOS="hangul-word" numberOfLines={2} style={[s.label, selected ? s.labelSelected : null]}>{label}</ThemedText>
+        </View>
+        {selected ? <PenUnderline color="#50594E" /> : <View style={s.underlineSpacer} />}
+      </Pressable>;
+    })}</View>
     <GuideMovie source={sources[language][mode]} poster={posters[language][mode]} labels={words[language]} summary={guideSummary[language][mode]} />
   </View>;
 }
 function GuideMovie({ source, poster, labels, summary }: { source: number; poster: number; labels: typeof words.ko; summary: string }) {
   const [playing, setPlaying] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(false);
-  const [showTip, setShowTip] = useState(true);
   const [starting, setStarting] = useState(() => AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
   const requested = useRef(false);
   const ended = useRef(false);
@@ -80,7 +108,6 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
     setPlaying(false);
     setStarting(requested.current);
     setTipDismissed(false);
-    setShowTip(true);
     setFirstFrame(false);
     setError(false);
     replacementQueue.current = replacementQueue.current.catch(() => undefined).then(async () => {
@@ -111,10 +138,9 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
     });
     const time = player.addListener('timeUpdate', event => {
       if (event.currentTime > 0) setFirstFrame(true);
-      setShowTip(event.currentTime < 1.6 || event.currentTime >= 16.4);
     });
     const finish = player.addListener('playToEnd', () => {
-      ended.current = true; requested.current = false; setPlaying(false); setStarting(false); setShowTip(true);
+      ended.current = true; requested.current = false; setPlaying(false); setStarting(false);
     });
     const background = AppState.addEventListener('change', state => {
       if (state !== 'active') { requested.current = false; setStarting(false); player.pause(); }
@@ -144,7 +170,7 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
     <View style={s.frame}>
         <VideoView testID="hero-help-video" player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls fullscreenOptions={{ enable: true }} onFirstFrameRender={() => setFirstFrame(true)} />
       {!firstFrame ? <View pointerEvents="none" style={StyleSheet.absoluteFill}><Image source={poster} style={StyleSheet.absoluteFill} resizeMode="contain" /></View> : null}
-      {showTip && !tipDismissed ? <View pointerEvents="box-none" style={s.tipLayer}>
+      {!tipDismissed ? <View pointerEvents="box-none" style={s.tipLayer}>
         <View testID="hero-help-tip" style={s.tip}>
           <ThemedText style={s.tipText}>{summary}</ThemedText>
           <Pressable testID="hero-help-dismiss-tip" accessibilityRole="button" accessibilityLabel={labels.dismiss} onPress={() => setTipDismissed(true)} style={s.tipClose} hitSlop={4}>
@@ -167,9 +193,14 @@ function GuideMovie({ source, poster, labels, summary }: { source: number; poste
   </>;
 }
 const s = StyleSheet.create({
-  root: { gap: 6 }, modes: { width: '100%', maxWidth: 520, alignSelf: 'center', flexDirection: 'row', gap: 8 },
-  mode: { position: 'relative', flex: 1, minHeight: 58, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 8 },
-  label: { fontSize: 13, lineHeight: 20, flexShrink: 1, textAlign: 'center' },
+  root: { gap: 6 },
+  modes: { width: '100%', maxWidth: 520, alignSelf: 'center', flexDirection: 'row', gap: 12, justifyContent: 'center' },
+  mode: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, paddingTop: 6, gap: 4 },
+  modeInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, maxWidth: '100%' },
+  label: { flexShrink: 1, fontSize: 13, lineHeight: 18, textAlign: 'center', color: '#687061', includeFontPadding: false },
+  labelSelected: { color: '#343933' },
+  underlineSlot: { alignSelf: 'stretch', height: 7, marginHorizontal: 2, justifyContent: 'center' },
+  underlineSpacer: { alignSelf: 'stretch', height: 7, marginHorizontal: 2 },
   frame: { width: '100%', maxWidth: 320, alignSelf: 'center', aspectRatio: 540 / 960, overflow: 'hidden', borderRadius: 14, backgroundColor: '#F7F6F4' },
   tipLayer: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center' },
   tip: { marginHorizontal: 18, paddingHorizontal: 18, paddingTop: 40, paddingBottom: 24, backgroundColor: '#FFFEF8', borderColor: '#50594E', borderWidth: 0.8, borderRadius: 12 },

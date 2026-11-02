@@ -82,10 +82,22 @@ it('dismisses the separate instruction overlay and keeps it closed through the e
   expect(tree.root.findAllByProps({ testID: 'hero-help-tip' }).length).toBeGreaterThan(0);
   act(() => tree.root.findAllByProps({ testID: 'hero-help-dismiss-tip' })[0].props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-help-tip' })).toHaveLength(0);
+  act(() => mockPlayers[0].emit('timeUpdate', { currentTime: 5 }));
   act(() => mockPlayers[0].emit('timeUpdate', { currentTime: 18 }));
   act(() => mockPlayers[0].emit('playToEnd', {}));
   act(() => tree.root.findAllByProps({ testID: 'hero-help-video-replay' })[0].props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-help-tip' })).toHaveLength(0);
+  act(() => tree.unmount());
+});
+
+it('keeps the instruction overlay visible during playback until the user dismisses it', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroAiVideoGuide locale="ko" />); });
+  expect(tree.root.findAllByProps({ testID: 'hero-help-tip' }).length).toBeGreaterThan(0);
+  act(() => mockPlayers[0].emit('timeUpdate', { currentTime: 5 }));
+  expect(tree.root.findAllByProps({ testID: 'hero-help-tip' }).length).toBeGreaterThan(0);
+  act(() => mockPlayers[0].emit('timeUpdate', { currentTime: 18 }));
+  expect(tree.root.findAllByProps({ testID: 'hero-help-tip' }).length).toBeGreaterThan(0);
   act(() => tree.unmount());
 });
 
@@ -95,8 +107,6 @@ it('switches modes without remounting the video player or its view', async () =>
   const player = mockPlayers[0];
   player.play.mockClear();
   act(() => mockPlayers[0].emit('timeUpdate', { currentTime: 5 }));
-  expect(tree.root.findAllByProps({ testID: 'hero-help-tip' })).toHaveLength(0);
-  act(() => mockPlayers[0].emit('timeUpdate', { currentTime: 18 }));
   expect(tree.root.findAllByProps({ testID: 'hero-help-tip' }).length).toBeGreaterThan(0);
   await act(async () => {
     tree.root.findAllByProps({ testID: 'hero-help-mode-1' })[0].props.onPress();
