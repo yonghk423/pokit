@@ -1,11 +1,12 @@
+import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
 import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { PenFrame } from '@shared/ui/pen-frame';
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Animated, AppState, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { syncWeatherToWidget } from '../lib/weatherWidgetSync';
@@ -167,16 +168,11 @@ async function watchFirstFix(timeoutMs: number): Promise<{ lat: number; lon: num
 
 /** Real device coords only — never invent a city. */
 async function resolveCoords(): Promise<{ lat: number; lon: number } | null> {
-  const last = await Location.getLastKnownPositionAsync({ maxAge: 60 * 60 * 1000, requiredAccuracy: 5000 });
-  if (last) return gridCell(last.coords.latitude, last.coords.longitude);
-
-  for (const accuracy of [Location.Accuracy.Lowest, Location.Accuracy.Low, Location.Accuracy.Balanced]) {
-    try {
-      const current = await Location.getCurrentPositionAsync({ accuracy, mayShowUserSettingsDialog: false });
-      return gridCell(current.coords.latitude, current.coords.longitude);
-    } catch {
-      // Cold GPS often returns LocationUnavailable once — keep trying.
-    }
+  try {
+    const last = await Location.getLastKnownPositionAsync({ maxAge: 60 * 60 * 1000, requiredAccuracy: 5000 });
+    if (last) return gridCell(last.coords.latitude, last.coords.longitude);
+  } catch {
+    // Some devices cannot return a cached fix; still request a live location.
   }
 
   return watchFirstFix(GPS_WATCH_MS);
@@ -184,6 +180,8 @@ async function resolveCoords(): Promise<{ lat: number; lon: number } | null> {
 
 export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   const { locale } = useTranslation();
+  const focused = useContext(DayPlanTabFocusContext);
+  const focusedRef = useRef(focused);
   const today = useTodayDate();
   const dateLabel = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
   const weatherTutorialActive = useServiceTutorial(state => state.active && state.mode === 'comic' && state.step === 'comicWeather');
@@ -340,7 +338,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
       }
     } catch (error) {
       if (__DEV__) console.warn('[weather]', error instanceof Error ? error.message : error);
-      if (alive.current) setReport(null);
+      // A temporary network failure must not erase the last successful weather.
     } finally {
       requestInFlight.current = false;
       if (alive.current) setLoading(false);
@@ -348,13 +346,24 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   }, [clearRetry]);
 
   useEffect(() => {
+    const returned = !focusedRef.current && focused;
+    focusedRef.current = focused;
+    if (!focused) clearRetry();
+    if (returned) { retryCount.current = 0; void loadWeather(true); }
+  }, [focused, loadWeather, clearRetry]);
+
+  useEffect(() => {
     loadWeatherRef.current = loadWeather;
     alive.current = true;
     if (__DEV__ && !OPENWEATHER_KEY) console.warn('[weather] EXPO_PUBLIC_OPENWEATHER_API_KEY is missing from the bundle');
-    const initialLoadTimer = OPENWEATHER_KEY ? setTimeout(() => { void loadWeather(); }, 0) : null;
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active' && focusedRef.current) { retryCount.current = 0; void loadWeather(true); }
+    });
+    const initialLoadTimer = OPENWEATHER_KEY ? setTimeout(() => { if (focusedRef.current) void loadWeather(); }, 0) : null;
     return () => {
       alive.current = false;
       clearRetry();
+      subscription.remove();
       if (initialLoadTimer) clearTimeout(initialLoadTimer);
     };
   }, [clearRetry, loadWeather]);
@@ -371,7 +380,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
     if (weatherTutorialActive) useServiceTutorial.getState().advance('comicWeather', 'comicTools');
   }, [weatherTutorialActive]);
 
-  if (!OPENWEATHER_KEY || !report) return null;
+  if (!report) return null;
 
   const labels = locale === 'zh-TW'
     ? weatherDetailCopy['zh-TW']

@@ -670,7 +670,7 @@
 				CODE_SIGN_ENTITLEMENTS = Pokit/Pokit.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -709,7 +709,7 @@
 				CODE_SIGN_ENTITLEMENTS = Pokit/Pokit.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				INFOPLIST_FILE = Pokit/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
@@ -935,7 +935,7 @@
 				CODE_SIGN_ENTITLEMENTS = PokitLiveActivity/PokitLiveActivity.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PokitLiveActivity/Info.plist;
@@ -962,7 +962,7 @@
 				CODE_SIGN_ENTITLEMENTS = PokitLiveActivity/PokitLiveActivity.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = 7Z957H35S5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PokitLiveActivity/Info.plist;

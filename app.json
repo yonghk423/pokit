@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "118",
+      "buildNumber": "119",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -47,7 +47,7 @@
     },
     "android": {
       "version": "2.1.2",
-      "versionCode": 118,
+      "versionCode": 119,
       "adaptiveIcon": {
         "backgroundColor": "#F2EDE4",
         "foregroundImage": "./assets/app-icon4.png"
