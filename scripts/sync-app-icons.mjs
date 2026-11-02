@@ -39,6 +39,13 @@ if (!fs.existsSync(ICON)) {
   process.exit(1);
 }
 
+const dimensions = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', ICON], { encoding: 'utf8' });
+const iconWidth = Number(dimensions.match(/pixelWidth:\s*(\d+)/)?.[1]);
+const iconHeight = Number(dimensions.match(/pixelHeight:\s*(\d+)/)?.[1]);
+if (iconWidth !== 1024 || iconHeight !== 1024) {
+  throw new Error(`App icon must be 1024x1024 without padding; received ${iconWidth}x${iconHeight}`);
+}
+
 const iosAppIcon = path.join(
   ROOT,
   'ios/Pokit/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png',

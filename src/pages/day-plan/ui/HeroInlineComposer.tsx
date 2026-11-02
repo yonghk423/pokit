@@ -337,7 +337,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
           </HeroColorPaletteSurface>)}
           <View style={s.generateSlot}>
           <View testID="hero-inline-quota-slot" accessibilityState={{ busy: quotaLoading }} style={s.remainingSlot}>
-            <ThemedText testID="hero-inline-remaining" accessibilityLiveRegion="polite" accessibilityElementsHidden={quotaLoading} importantForAccessibility={quotaLoading ? 'no-hide-descendants' : 'auto'} numberOfLines={remaining === 0 ? 2 : 1} adjustsFontSizeToFit={remaining !== 0} style={[s.remaining, { color: ink }, remaining === 0 && s.remainingExhausted, quotaLoading && { opacity: 0 }]}>{remaining == null ? '…' : remaining === 0 ? t('comicDay.ai.exhausted') : t(remaining >= 100000 ? 'comicDay.inline.unlimited' : 'comicDay.inline.remaining', { count: remaining })}</ThemedText>
+            <ThemedText testID="hero-inline-remaining" accessibilityLiveRegion="polite" accessibilityElementsHidden={quotaLoading} importantForAccessibility={quotaLoading ? 'no-hide-descendants' : 'auto'} numberOfLines={2} style={[s.remaining, { color: ink }, remaining === 0 && s.remainingExhausted, quotaLoading && { opacity: 0 }]}>{remaining == null ? '…' : remaining === 0 ? t('comicDay.ai.exhausted') : t(remaining >= 100000 ? 'comicDay.inline.unlimited' : 'comicDay.inline.remaining', { count: remaining })}</ThemedText>
             {quotaLoading ? <View testID="hero-inline-quota-skeleton" pointerEvents="none" accessible={false} style={s.remainingSkeleton} /> : null}
           </View>
           <Pressable testID="hero-inline-generate" accessibilityRole="button" accessibilityLabel={t(job ? 'comicDay.inline.retry' : 'comicDay.inline.generateStyle')} accessibilityState={{ disabled: !canGenerate || savingFace }} disabled={!canGenerate || savingFace} onPress={() => { void generate(); }} style={[s.generate, (!canGenerate || savingFace) && { opacity: 0.4 }]}><PenCircle color={ink} />{job ? <HanddrawnControl name="arrow.clockwise" color={ink} size={26} /> : <HeroGenerateIcon ink={ink} />}</Pressable>
@@ -376,8 +376,8 @@ const s = StyleSheet.create({
   bottomToolbar: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, marginTop: 8 },
   clippedImage: { overflow: 'hidden' },
   generateSlot: { width: 120, alignItems: 'center', gap: 3 },
-  remainingSlot: { width: '100%', minHeight: 20, justifyContent: 'center', alignItems: 'center' },
-  remainingSkeleton: { width: 64, height: 7, borderRadius: 4, backgroundColor: '#DDDCD5', opacity: 0.72 },
+  remainingSlot: { width: '100%', minHeight: 40, justifyContent: 'center', alignItems: 'center' },
+  remainingSkeleton: { width: 64, height: 16, borderRadius: 6, backgroundColor: '#DDDCD5', opacity: 0.72 },
   remaining: { fontSize: 15, lineHeight: 20, textAlign: 'center', alignSelf: 'stretch' },
   remainingExhausted: { fontSize: 12, lineHeight: 15 },
   errorRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
