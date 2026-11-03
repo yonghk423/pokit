@@ -1,3 +1,4 @@
+import { HeroCardToolsContentContext } from '../model/heroCardToolsPortal';
 import { rememberHeroGenerationCardSize } from '../lib/heroGenerationFrame';
 import { createCardTapGuard } from '../lib/cardTapGuard';
 import { useHeroThumbnailStrip } from '../model/useHeroThumbnailStrip';
@@ -10,12 +11,11 @@ import { HeroCardStack, type HeroCardStackHandle } from './HeroCardStack';
 import type { HeroCardOpen } from './HeroCardFlip';
 import type { HeroDeckFrame } from './HeroOverviewCardMotion';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
@@ -23,6 +23,7 @@ import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 export type ComicDeckItem = { key: string; label: string; artworkUri?: string; memo?: string; faceColor?: string; inkColor?: string };
 
 const THUMB = 44;
+const THUMB_SCALE = 36 / THUMB;
 const THUMB_GAP = 8;
 const THUMB_STRIDE = THUMB + THUMB_GAP;
 /** Matches the add button: 8px from the bottom, 44px tall, plus its right inset. */
@@ -60,6 +61,7 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
     if (!onRemove || editingKey || Date.now() - lastHold.current < 800) return;
     lastHold.current = Date.now(); tapHaptic('warn'); onRemove(key);
   };
+  const cardTools = useContext(HeroCardToolsContentContext);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const measureStage = useCallback((width: number, height: number) => {
     // Detached native screens can briefly report only their footer or a one-pixel stage.
@@ -182,7 +184,7 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
           </Pressable>
             <HeroCardCaption key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
-              topActions={<HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} compact />}
+              topActions={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}><HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} compact />{index === active ? cardTools : null}</View>}
               showEdit={!!onEditCard}
               onSave={pageInteractive && onEditCard ? text => onEditCard(item.key, text) : undefined}
               onEditingChange={pageInteractive ? editing => setEditingKey(editing ? item.key : null) : undefined} />
@@ -230,11 +232,13 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
           return <Pressable key={item.key} disabled={!!editingKey} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected }} onPress={() => {
             tapHaptic();
             turnRef.current?.turnTo(index);
-          }} style={[s.thumb, { backgroundColor: selected ? '#EDE9DF' : face }]}>
-            <ComicSceneImage contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+          }} style={({ pressed }) => [s.thumb, { backgroundColor: isDark ? '#454742' : '#E8E7E4', shadowOpacity: pressed ? 0.06 : 0.16 }, pressed && { transform: [{ scale: THUMB_SCALE }, { translateY: 1 }] }]}>
+            <View style={s.thumbFace}>
+            <ComicSceneImage fitToCard contentFit="cover" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               style={StyleSheet.absoluteFill} />
-            <HanddrawnFrame color={selected ? '#514C43' : isDark ? '#D5D5D5' : '#77786F'} bold={selected} />
+            <View pointerEvents="none" style={[s.thumbHighlight, { borderTopColor: isDark ? '#73766E' : 'rgba(255,255,255,0.9)', borderLeftColor: isDark ? '#62665E' : 'rgba(255,255,255,0.6)' }]} />
+            </View>
           </Pressable>;
         })}
       </GestureScrollView>
@@ -251,10 +255,12 @@ const s = StyleSheet.create({
   root: { flex: 1, minHeight: 0 },
   card: { borderRadius: 16, shadowColor: '#6F5942', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
   body: { flex: 1, borderRadius: 16, overflow: 'hidden' },
-  thumbs: { position: 'absolute', left: 0, right: ADD_RESERVE, bottom: FOOTER_BOTTOM, height: THUMB, justifyContent: 'center' },
+  thumbs: { position: 'absolute', left: 0, right: ADD_RESERVE, bottom: FOOTER_BOTTOM - 4, height: THUMB + 8, justifyContent: 'center' },
   thumbScroll: { flex: 1 },
-  thumbRow: { flexGrow: 1, alignItems: 'center', gap: THUMB_GAP, paddingHorizontal: 12 },
-  thumb: { width: THUMB, height: THUMB, flexShrink: 0, overflow: 'hidden', transform: [{ scale: 40 / 44 }] },
+  thumbRow: { flexGrow: 1, alignItems: 'center', gap: THUMB_GAP, paddingHorizontal: 12, paddingVertical: 4 },
+  thumb: { width: THUMB, height: THUMB, flexShrink: 0, borderRadius: 10, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowRadius: 3, shadowOpacity: 0.16, elevation: 2, transform: [{ scale: THUMB_SCALE }] },
+  thumbFace: { flex: 1, marginBottom: 1, borderRadius: 10, overflow: 'hidden' },
+  thumbHighlight: { ...StyleSheet.absoluteFill, borderRadius: 10, borderTopWidth: 1, borderLeftWidth: 0.6 },
 });
 
 /** Native position motion adds the new card without moving the stack's layout. */

@@ -1,12 +1,20 @@
 import { SettingsPenIcon } from './settingsPen';
-import { Image } from 'expo-image';
-import { getPreparedFrame } from '@shared/ui/handdrawn-frame/frameCache';
+import Svg, { Path } from 'react-native-svg';
+import { penContour } from '@shared/ui/pen-frame';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CityPopSpacing, RetroFlatColors } from '@shared/config/retroFlat';
 
 const ICON_FACE = 34;
+// Fixed coordinates fill every row immediately, without waiting for image decoding
+// or an onLayout measurement. Nib contours keep the ink's subtle pressure changes.
+const FRAME_PATHS = [
+  [[3, 3], [83, 2.7], [181, 3.3], [278, 2.8], [357, 3]],
+  [[357, 3], [357.3, 24], [356.8, 48], [357, 69]],
+  [[357, 69], [278, 68.7], [181, 69.2], [83, 68.8], [3, 69]],
+  [[3, 69], [2.7, 48], [3.2, 24], [3, 3]],
+].map((points, index) => penContour(points as [number, number][], index % 2 ? 1.35 : 1.15, index * 1.2));
 
 export type SettingsPalette = {
   bg: string;
@@ -70,15 +78,11 @@ export function SettingsRowIcon({
 }
 
 export function SettingsInkFrame({ color }: { color: string }) {
-  return <Image
-    source={getPreparedFrame()}
-    pointerEvents="none"
-    accessible={false}
-    contentFit="fill"
-    transition={0}
-    tintColor={color}
-    style={[StyleSheet.absoluteFill, { opacity: 0.78 }]}
-  />;
+  return <View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
+    <Svg width="100%" height="100%" viewBox="0 0 360 72" preserveAspectRatio="none">
+      {FRAME_PATHS.map((path, index) => <Path key={index} d={path} fill={color} />)}
+    </Svg>
+  </View>;
 }
 
 export function SettingsSection({

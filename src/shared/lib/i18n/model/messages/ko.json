@@ -2799,6 +2799,7 @@
   "comicDay.inline.protagonist": "기본 주인공",
   "comicDay.inline.face": "오늘의 주인공",
   "comicDay.inline.addFace": "오늘의 주인공",
+  "comicDay.inline.addFirstFace": "먼저 주인공을 추가해주세요",
   "comicDay.inline.localFace": "이 기기에 저장돼요. 길게 눌러 삭제할 수 있어요.",
   "comicDay.inline.removeFace": "저장한 주인공 삭제",
   "comicDay.inline.hint": "오늘의 이야기를 적어주세요. 글에 맞는 장면을 그려드려요.",

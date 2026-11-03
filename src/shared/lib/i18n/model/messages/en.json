@@ -2799,6 +2799,7 @@
   "comicDay.inline.protagonist": "Default character",
   "comicDay.inline.face": "Today’s protagonist",
   "comicDay.inline.addFace": "Today’s protagonist",
+  "comicDay.inline.addFirstFace": "Add your protagonist first",
   "comicDay.inline.localFace": "Saved on this device. Hold a face to delete it.",
   "comicDay.inline.removeFace": "Delete saved face",
   "comicDay.inline.hint": "Write about your day. We will illustrate your story.",

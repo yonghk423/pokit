@@ -2799,6 +2799,7 @@
   "comicDay.inline.protagonist": "基本の主人公",
   "comicDay.inline.face": "今日の主人公",
   "comicDay.inline.addFace": "今日の主人公",
+  "comicDay.inline.addFirstFace": "まず主人公を追加してください",
   "comicDay.inline.localFace": "登録した顔はこの端末に保存されます。長押しで削除できます。",
   "comicDay.inline.removeFace": "顔を削除",
   "comicDay.inline.hint": "今日の出来事を書いてください。文章に合う場面を描きます。",

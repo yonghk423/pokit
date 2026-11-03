@@ -11,7 +11,7 @@ import { DECK_OVERVIEW_MOTION } from '../lib/deckOverviewMotion';
 import { HeroOverviewCardMotion, type HeroDeckFrame } from './HeroOverviewCardMotion';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { CardToolsFab, type CardToolAction } from './CardToolsFab';
-import { HeroCardToolsPortal, HeroCardToolsRegisterContext } from '../model/heroCardToolsPortal';
+import { HeroCardToolsPortal, HeroCardToolsRegisterContext, HeroCardToolsOutlet } from '../model/heroCardToolsPortal';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { ComicCheck } from './HeroCheck';
 import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
@@ -202,7 +202,7 @@ export function ComicDayBoard({ focusSceneId, onOpenBag, onAddPhoto, onCreateRan
 
   </View> : null}{!showCards ? <ThemedText style={[s.hint, { color: muted }]}>{t(diaryTitle ? 'comicDiary.sceneCount' : 'comicDay.hint', { count: items.length })}</ThemedText> : null}</>;
   const bagAction: CardToolAction | undefined = FEATURE_FLAGS.mateShortcut && onOpenBag ? { key: 'bag', testID: 'comic-open-mate-bag', label: t('tabs.dayPlan'), onPress: () => { useServiceTutorial.getState().advance('comicTools', 'rhythmAdd', { mode: 'rhythm' }); onOpenBag(); }, tutorialSteps: ['comicTools'], icon: <MateBagIcon isDark={isDark} /> } : undefined;
-  const tools = items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <HeroCardToolsPortal><CardToolsFab docked={!!toolsHost} isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
+  const tools = items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <HeroCardToolsPortal><CardToolsFab compact docked={!!toolsHost} isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
     ...(cardsFirst && gridOpen ? [{ key: 'cards', testID: 'comic-show-cards', label: t('comicDay.showCards'), onPress: () => { setMenuOpen(false); setDeleteMode(false); setDeleteFromCards(false); setSelectedForDeletion([]); setGridOpen(false); }, icon: <Svg width={26} height={26} viewBox="0 0 30 30"><Path d="M10 3L25 4L26 21L12 22ZM6 7L21 6L23 25L7 26Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1} strokeLinejoin="round" /><Path d="M3 11L18 10L20 28L4 28Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" /></Svg> } satisfies CardToolAction] : []),
     ...(!deleteMode ? [{ key: 'layout', testID: 'comic-board-view', label: t('comicDay.boardView'), selected: menuOpen, onPress: () => { if (showCards) setGridOpen(true); else setMenuOpen(value => !value); }, icon: <LayoutDiagram mode={viewMode} ink={ink} size={26} /> } satisfies CardToolAction] : []),
     ...(onRemove || onRemoveMany ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <Image source={require('../../../../assets/control-illustrations/trash.webp')} style={{ width: 29, height: 29 }} contentFit="contain" useAppleWebpCodec={false} accessible={false} /> } satisfies CardToolAction] : []),
@@ -223,10 +223,11 @@ export function ComicDayBoard({ focusSceneId, onOpenBag, onAddPhoto, onCreateRan
         />
       </Pressable></ServiceTutorialTarget>
       </>}
-      <ServiceTutorialTarget steps={['comicStart']}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onCreateRandom ? () => { const text = randomDraftRef.current?.snapshot(); if (text) onCreateRandom(emptyScene.id, text, true); } : onAdd} /></ServiceTutorialTarget>
+      <ServiceTutorialTarget steps={['comicStart']}><SketchPaperButton iconOnly strongFrame frameless softKey label={t('comicDay.add')} ink={ink} onPress={onCreateRandom ? () => { const text = randomDraftRef.current?.snapshot(); if (text) onCreateRandom(emptyScene.id, text, true); } : onAdd} /></ServiceTutorialTarget>
     </View>
     {onAddPhoto && !hideEntryActions ? <View style={{ position: 'absolute', left: 16, top: 8, zIndex: 4 }}><HeroEntryActions ink={ink} character={character} onPhoto={onAddPhoto} onScenes={onAdd} /></View> : null}
     {tools}
+  {!showCards && toolsHost ? <View style={{ position: 'absolute', right: 18, bottom: 80 }}><HeroCardToolsOutlet /></View> : null}
   </View>;
   return <View style={{ flex: 1, backgroundColor: canvas }} onLayout={({ nativeEvent: { layout } }) => { if (focused && layout.width > 0) setStageWidth(previous => previous === layout.width ? previous : layout.width); }}>
     {cardsFirst ? <Animated.View testID="comic-card-deck-layer" pointerEvents={showCards ? 'auto' : 'none'} accessibilityElementsHidden={!showCards} importantForAccessibility={showCards ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, deckVisibility]}>
@@ -234,7 +235,7 @@ export function ComicDayBoard({ focusSceneId, onOpenBag, onAddPhoto, onCreateRan
       <View style={s.deckStage}>
         <ComicSceneDeck focusKey={focusSceneId} detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onRemove={onRemove} onEditCard={onEditCard} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
       </View>
-      <Animated.View pointerEvents={thumbnailStrip.collapsed ? 'none' : 'auto'} accessibilityElementsHidden={thumbnailStrip.collapsed} importantForAccessibility={thumbnailStrip.collapsed ? 'no-hide-descendants' : 'auto'} style={[s.deckAdd, thumbnailStrip.motionStyle]}><ServiceTutorialTarget steps={showCards && !thumbnailStrip.collapsed ? ['comicStart'] : []}><View style={{ transform: [{ scale: 40 / 44 }] }}><SketchPaperButton iconOnly strongFrame label={t('comicDay.add')} ink={ink} onPress={onAdd} hitSlop={3} /></View></ServiceTutorialTarget></Animated.View>
+      <Animated.View pointerEvents={thumbnailStrip.collapsed ? 'none' : 'auto'} accessibilityElementsHidden={thumbnailStrip.collapsed} importantForAccessibility={thumbnailStrip.collapsed ? 'no-hide-descendants' : 'auto'} style={[s.deckAdd, thumbnailStrip.motionStyle]}><ServiceTutorialTarget steps={showCards && !thumbnailStrip.collapsed ? ['comicStart'] : []}><View style={{ transform: [{ scale: 36 / 44 }] }}><SketchPaperButton iconOnly strongFrame frameless softKey label={t('comicDay.add')} ink={ink} onPress={onAdd} hitSlop={3} /></View></ServiceTutorialTarget></Animated.View>
     </Animated.View> : null}
     <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1 }, gridVisibility]}>
   <GestureDetector gesture={gridGesture}><ScrollView ref={gridScrollRef} scrollEnabled={!showCards} testID="comic-card-overview" onScrollBeginDrag={() => setMenuOpen(false)} onScroll={event => { gridOffsetRef.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[s.board, { flexGrow: 1 }]}>
@@ -274,6 +275,7 @@ export function ComicDayBoard({ focusSceneId, onOpenBag, onAddPhoto, onCreateRan
   </View> : null}
   </Animated.View>
   {tools}
+  {!showCards && toolsHost ? <View style={{ position: 'absolute', right: 18, bottom: 80 }}><HeroCardToolsOutlet /></View> : null}
   {menuOpen ? <>
     <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); setMenuOpen(false); }} />
     <View accessibilityViewIsModal style={[s.viewMenu, { backgroundColor: isDark ? '#262B28' : '#FFFFFF' }]}>

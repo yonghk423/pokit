@@ -19,3 +19,8 @@ export function HeroCardToolsPortal({ children }: { children: ReactNode }) {
   }, [register, owner]);
   return register ? null : children;
 }
+
+/** Keep the content subscription out of the board that publishes the tools. */
+export function HeroCardToolsOutlet() {
+  return <>{useContext(HeroCardToolsContentContext)}</>;
+}

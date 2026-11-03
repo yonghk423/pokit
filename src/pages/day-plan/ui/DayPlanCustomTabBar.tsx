@@ -1,3 +1,4 @@
+import { HeroThumbnailStripToggle } from './HeroThumbnailStripToggle';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -8,8 +9,6 @@ import {
 import * as Haptics from 'expo-haptics';
 import { Fragment, useCallback, useContext, useEffect, useMemo } from 'react';
 import { HeroPhotoEntryIcon } from './HeroPhotoEntryIcon';
-import { HeroThumbnailStripToggle } from './HeroThumbnailStripToggle';
-import { HeroCardToolsContentContext } from '../model/heroCardToolsPortal';
 import { Image, LayoutChangeEvent, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,7 +42,6 @@ const TABS: TabDef[] = [
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { width } = useWindowDimensions();
-  const cardTools = useContext(HeroCardToolsContentContext);
   const characterPicker = useContext(HeroCharacterPickerActionContext);
   const heroArtwork = useHeroTabArtwork(state => state.source);
   const { t } = useTranslation();
@@ -95,7 +93,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const visibleTabs = TABS.filter(tab =>
     (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
     && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines'));
-  const slotCount = visibleTabs.length + 2;
+  const slotCount = visibleTabs.length + 1;
   const itemWidth = Math.min(64, (width - 100 - (slotCount - 1) * 2) / slotCount);
   const pillWidth = slotCount * itemWidth + 12 + (slotCount - 1) * 2;
   const photoSelected = focusedRoute === 'index' && !!characterPicker?.photoActive;
@@ -104,7 +102,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     <View
       onLayout={handleBarLayout}
       style={[styles.outerWrap, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]}>
-      <View style={[styles.shell, { transform: [{ translateX: -24 }] }]}>
+      <View style={styles.shell}>
         <View
           style={[
             styles.container,
@@ -145,15 +143,14 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                     characterPicker?.openPhoto();
                   }}
                   style={({ pressed }) => [styles.tabItem, { width: itemWidth }, photoSelected && { backgroundColor: colors.activeBg }, pressed && { opacity: 0.8 }]}>
-                  <HeroPhotoEntryIcon ink={isDark ? '#EEECE6' : '#252A26'} size={34} />
+                  <HeroPhotoEntryIcon ink={isDark ? '#EEECE6' : '#252A26'} size={34} selected={photoSelected} />
                 </Pressable>
-                <HeroThumbnailStripToggle width={itemWidth} isDark={isDark} enabled={focusedRoute === 'index'} />
               </> : null}</Fragment>
             );
           })}
         </View>
       </View>
-      <View pointerEvents={focusedRoute === 'index' ? 'auto' : 'none'} accessibilityElementsHidden={focusedRoute !== 'index'} importantForAccessibility={focusedRoute !== 'index' ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', left: Math.min(width - 48, width / 2 - 24 + pillWidth / 2 + 8), top: 14, width: 40, height: 44, opacity: focusedRoute === 'index' ? 1 : 0 }}>{cardTools}</View>
+      {focusedRoute === 'index' ? <View testID="hero-thumbnail-toggle-beside-tabs" style={{ position: 'absolute', left: Math.min(width - 48, width / 2 + pillWidth / 2 + 8), top: 14 }}><HeroThumbnailStripToggle width={44} isDark={isDark} enabled /></View> : null}
     </View>
   );
 }

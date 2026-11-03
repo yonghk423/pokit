@@ -1,6 +1,5 @@
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import Svg, { Path } from 'react-native-svg';
-import { HeroEntryActions } from './HeroEntryActions';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { HeroCalendarIcon } from './HeroDiaryCalendar';
 import { parseLocalDateKeyToDate } from '@entities/day-plan/lib/localDateKey';
@@ -23,7 +22,6 @@ import { DayPlanHeaderCenterActionsContext, DayPlanShellBackgroundContext, DayPl
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
 import { ComicDiaryMenuButton } from './HeroDiaryMenuButton';
 import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentHeroPlanner';
-import { COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
 
 /** 하단 탭 — 오늘의 주인공(만화 일기) 전용 화면 */
 export function ComicDayPage() {
@@ -34,7 +32,6 @@ export function ComicDayPage() {
   const todayKey = getLocalDateKey(useTodayDate());
   const [displayedDate, setDisplayedDate] = useState<string | null>(null);
   const [photoActive, setPhotoActive] = useState(false);
-  const [sceneIconCharacter, setSceneIconCharacter] = useState<ComicCharacter>(COMIC_CHARACTERS[0]);
   const [headerCharacterList, setHeaderCharacterList] = useState<ReactNode>(null);
   const plannerRef = useRef<ComicDiaryHandle>(null);
   const characterPicker = useContext(HeroCharacterPickerActionContext);
@@ -87,9 +84,9 @@ export function ComicDayPage() {
         <View style={styles.diaryTitleHit} />
         {!registerWeatherActions ? calendarButton : null}
       </View>
-      <View style={styles.entryRow}><HeroEntryActions compact photoActive={photoActive} character={sceneIconCharacter} ink={ink} onPhoto={() => plannerRef.current?.openPhotoEntry()} onScenes={() => plannerRef.current?.openSceneEntry()} />{headerCharacterList}</View>
+      {headerCharacterList ? <View style={styles.entryRow}>{headerCharacterList}</View> : null}
     </View>
-  ), [headerCharacterList, ink, photoActive, sceneIconCharacter, registerWeatherActions, calendarButton, registerCenterActions, todayButton]);
+  ), [headerCharacterList, registerWeatherActions, calendarButton, registerCenterActions, todayButton]);
   useLayoutEffect(() => {
     registerHeaderActions?.(header);
   }, [registerHeaderActions, header]);
@@ -106,7 +103,6 @@ export function ComicDayPage() {
       <IndependentComicPlanner
         ref={plannerRef}
         onDateChange={setDisplayedDate}
-        onCharacterChange={setSceneIconCharacter}
         onPhotoEntryChange={setPhotoActive}
         onHeaderCharacterListChange={setHeaderCharacterList}
         onOpenBag={() => router.push('/day-plan')}

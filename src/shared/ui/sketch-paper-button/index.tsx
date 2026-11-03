@@ -10,8 +10,8 @@ const FRAME = '#929B8B';
 const SHADOW = 'rgba(65, 78, 58, 0.07)';
 
 /** Paper button with the same pencil frame and grain as the layout tiles. */
-export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, strongFrame = false, style, hitSlop }: {
-  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; strongFrame?: boolean; style?: StyleProp<ViewStyle>; hitSlop?: number;
+export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize = 14, iconOnly = false, strongFrame = false, frameless = false, softKey = false, style, hitSlop }: {
+  label: string; onPress: () => void; ink?: string; labelSize?: number; iconOnly?: boolean; strongFrame?: boolean; frameless?: boolean; softKey?: boolean; style?: StyleProp<ViewStyle>; hitSlop?: number;
 }) {
   return (
     <Pressable
@@ -19,11 +19,11 @@ export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize =
       accessibilityLabel={label}
       hitSlop={hitSlop}
       onPress={() => { tapHaptic(); onPress(); }}
-      style={({ pressed }) => [s.shell, style, pressed && s.pressed]}>
-      <View pointerEvents="none" style={s.shadow} />
-      <View style={[s.face, iconOnly && s.iconFace]}>
-        <PaperGrain opacity={0.25} />
-        {strongFrame ? <PenFrame color={ink} straight={iconOnly} /> : <HanddrawnFrame color={FRAME} />}
+      style={({ pressed }) => [s.shell, softKey && s.softShell, style, pressed && s.pressed]}>
+      {!softKey ? <View pointerEvents="none" style={s.shadow} /> : null}
+      <View style={[s.face, iconOnly && s.iconFace, softKey && s.softFace]}>
+        {!softKey ? <PaperGrain opacity={0.25} /> : null}
+        {!frameless ? strongFrame ? <PenFrame color={ink} straight={iconOnly} /> : <HanddrawnFrame color={FRAME} /> : null}
         <Svg width={iconOnly ? 22 : 17} height={iconOnly ? 22 : 18} viewBox="0 0 20 20" accessible={false}>
           {strongFrame ? <>
             <Path d={penContour([[3.2, 10.2], [7, 9.9], [12, 10.1], [16.8, 9.8]], 1.9, 0.4)} fill={ink} />
@@ -51,5 +51,7 @@ const s = StyleSheet.create({
     zIndex: 1,
   },
   iconFace: { width: 44, height: 44, minHeight: 44, paddingHorizontal: 0, paddingVertical: 0 },
+  softShell: { borderRadius: 10, backgroundColor: '#DAD9D6', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.16, shadowRadius: 3, elevation: 2 },
+  softFace: { borderRadius: 10, marginBottom: 1, backgroundColor: '#F1F0ED', borderTopWidth: 1, borderTopColor: '#FFFFFF', borderLeftWidth: 0.6, borderLeftColor: '#FFFFFF' },
   pressed: { transform: [{ translateY: 1 }] },
 });

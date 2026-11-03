@@ -2799,6 +2799,7 @@
   "comicDay.inline.protagonist": "預設主角",
   "comicDay.inline.face": "今日主角",
   "comicDay.inline.addFace": "今日主角",
+  "comicDay.inline.addFirstFace": "請先新增主角",
   "comicDay.inline.localFace": "已登記的臉孔儲存在此裝置上，長按即可刪除。",
   "comicDay.inline.removeFace": "刪除臉孔",
   "comicDay.inline.hint": "寫下今天的故事，我們會繪製符合文字的場景。",

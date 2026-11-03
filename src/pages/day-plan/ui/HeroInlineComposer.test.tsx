@@ -1,7 +1,7 @@
 import { AppAlert } from '@shared/lib/app-alert';
 import { Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { HeroInlineComposer, HERO_SELECTED_STYLE_KEY } from './HeroInlineComposer';
+import { HeroInlineComposer, HERO_SELECTED_STYLE_KEY, HERO_SELECTED_PAPER_KEY } from './HeroInlineComposer';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { HeroPhotoSource } from './HeroPhotoSource';
 import { loadHeroSavedFaces, deleteHeroFace } from '../lib/heroSavedFaces';
@@ -12,7 +12,7 @@ jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: jest.requireActual('reac
 jest.mock('./HeroPhotoSource', () => ({ HeroPhotoSource: jest.requireActual('react-native').View, HeroPhotoIcon: () => null }));
 jest.mock('../lib/heroSavedFaces', () => ({ loadHeroSavedFaces: jest.fn(async () => []), saveHeroFace: jest.fn(), deleteHeroFace: jest.fn() }));
 jest.mock('../lib/heroAiClient', () => ({ generateHeroImages: jest.fn(), resumeHeroAiJob: jest.fn(), getHeroAiRemaining: jest.fn(async () => 3), getPendingHeroAiJob: jest.fn(async () => null), cancelHeroAiJob: jest.fn(async () => undefined), dismissHeroAiJob: jest.fn(async () => undefined), HeroAiError: class extends Error {} }));
-beforeEach(() => { localStorageClient.removeItem(HERO_SELECTED_STYLE_KEY); jest.clearAllMocks(); jest.mocked(getHeroAiRemaining).mockResolvedValue(3); jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'person', uri: 'file:///person.jpg' }]); jest.mocked(generateHeroImages).mockResolvedValue({ images: [{ uri: 'file:///result.png' }], remaining: 2 }); });
+beforeEach(() => { localStorageClient.removeItem(HERO_SELECTED_PAPER_KEY); localStorageClient.removeItem(HERO_SELECTED_STYLE_KEY); jest.clearAllMocks(); jest.mocked(getHeroAiRemaining).mockResolvedValue(3); jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'person', uri: 'file:///person.jpg' }]); jest.mocked(generateHeroImages).mockResolvedValue({ images: [{ uri: 'file:///result.png' }], remaining: 2 }); });
 it('opens face registration outside the writing scroll, dismisses the keyboard and preserves the draft', async () => {
   const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => undefined);
   let tree!: ReactTestRenderer;
@@ -311,7 +311,7 @@ it('keeps the add person control outside the compact horizontal rail with many s
   expect(StyleSheet.flatten(rail.props.contentContainerStyle).gap).toBe(6);
   expect(rail.findAllByProps({ testID: 'hero-inline-face-11' }).length).toBeGreaterThan(0);
   expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-0.jpg' })[0].props.style)).toMatchObject({ width: 42, height: 42 });
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-11' })[0].props.style)).toMatchObject({ borderWidth: 1.5, borderColor: '#368F80' });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-11' })[0].props.style)).toMatchObject({ borderWidth: 1, borderColor: '#000000' });
   expect(rail.findAllByProps({ testID: 'hero-inline-add-face' })).toHaveLength(0);
   const add = tree.root.findAllByProps({ testID: 'hero-inline-add-face' })[0];
   expect(StyleSheet.flatten(add.props.style)).toMatchObject({ width: 52, flexShrink: 0 });
@@ -319,7 +319,7 @@ it('keeps the add person control outside the compact horizontal rail with many s
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
   expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-11.jpg' })[0].props.style)).toMatchObject({ width: 42, height: 42 });
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-0' })[0].props.style)).toMatchObject({ borderWidth: 1.5, borderColor: '#368F80' });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-0' })[0].props.style)).toMatchObject({ borderWidth: 1, borderColor: '#000000' });
   act(() => add.props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-face-photo-actions' })[0].props.pointerEvents).toBe('auto');
   act(() => tree.unmount());
@@ -484,4 +484,31 @@ it('does not schedule layout animations for keyboard events after returning to t
     act(() => tree?.unmount());
     subscribe.mockRestore(); animate.mockRestore();
   }
+});
+
+it('defaults a new workspace to white and restores an explicit paper selection after remounting', async () => {
+  let tree!: ReactTestRenderer;
+  const render = (paper?: string) => <HeroInlineComposer sceneId="05-work" paper={paper} ink="#222" onApply={jest.fn()} onClose={jest.fn()} />;
+  const background = () => StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).backgroundColor;
+  await act(async () => { tree = create(render()); });
+  expect(background()).toBe('#FFFFFF');
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-#C8EBDD' })[0].props.onPress());
+  expect(localStorageClient.getItemRaw(HERO_SELECTED_PAPER_KEY)).toBe('#C8EBDD');
+  act(() => tree.unmount());
+  await act(async () => { tree = create(render('#F5E8CF')); });
+  expect(background()).toBe('#C8EBDD');
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-#FFFFFF' })[0].props.onPress());
+  act(() => tree.unmount());
+  await act(async () => { tree = create(render('#F5E8CF')); });
+  expect(background()).toBe('#FFFFFF');
+  act(() => tree.unmount());
+});
+it('retains an existing card paper without overwriting it with the new default', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" paper="#F5E8CF" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).backgroundColor).toBe('#F5E8CF');
+  expect(localStorageClient.getItemRaw(HERO_SELECTED_PAPER_KEY)).toBeNull();
+  act(() => tree.unmount());
 });

@@ -6,7 +6,6 @@ import { useAppSessionStore } from '@shared/lib/app-session';
 import { AppAlertRoot } from '@shared/ui/app-alert';
 import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
 import { prepareSurfaceTextures } from '@shared/ui/surface-texture/textureCache';
-import { prepareHanddrawnFrame } from '@shared/ui/handdrawn-frame/frameCache';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -75,7 +74,7 @@ export default function RootLayout() {
     let active = true;
     // Keep startup bounded even if an asset fails or a development server stalls.
     const timeout = setTimeout(() => { if (active) setIconsReady(true); }, 2000);
-    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures(), prepareHanddrawnFrame()]).finally(() => {
+    void Promise.allSettled([prepareIllustrations(), prepareSurfaceTextures()]).finally(() => {
       clearTimeout(timeout);
       if (active) setIconsReady(true);
     });
