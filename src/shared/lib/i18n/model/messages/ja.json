@@ -2647,6 +2647,8 @@
   "comicDiary.selectedCount": "{count}件選択中",
   "comicDiary.deleteSelected": "{count}件を削除",
   "comicDiary.selectDate": "{date}の日記をすべて選択・解除",
+  "comicDiary.deleteDay": "{date}の日記をすべて削除",
+  "comicDiary.selectDayForDeletion": "{date}の日記を複数選択",
   "comicDiary.deleteManyMessage": "日記{count}件を削除しますか？\n選んだ日記のシーンとメモも削除されます。",
   "comicDiary.delete": "日記を削除",
   "comicDiary.deleteMessage": "「{title}」を削除しますか？\nこの日記のシーンとメモも削除されます。",
@@ -2911,5 +2913,15 @@
   "comicDay.inline.uploading": "少しの間、アプリを開いたままにしてください。",
   "comicDay.inline.backgroundReady": "イラストが完成するまで、アプリを閉じずにお待ちください。",
   "comicDay.inline.remaining": "1日1回 · 残り{count}/1",
-  "comicDay.inline.unlimited": "開発モード · 制限なし"
+  "comicDay.inline.unlimited": "開発モード · 制限なし",
+  "comicDay.emptyChoose.heading": "今日を一緒に過ごす\n主人公を選んでください",
+  "comicDay.emptyChoose.description": "自分の姿を写したり、お気に入りの\nイラストで一日を記録してみましょう。",
+  "comicDay.emptyChoose.personalIntro": "今日の主人公は",
+  "comicDay.emptyChoose.personalName": "私",
+  "comicDay.emptyChoose.personalDescription": "自分の姿を写します",
+  "comicDay.emptyChoose.personalA11y": "私、自分の姿を写します",
+  "comicDay.emptyChoose.swipeHint": "横にスワイプして主人公を選んでください",
+  "comicDay.emptyChoose.personalStart": "自分の姿で始める",
+  "comicDay.emptyChoose.showGrid": "主人公をすべて表示",
+  "comicDay.emptyChoose.showCarousel": "主人公カードを表示"
 }

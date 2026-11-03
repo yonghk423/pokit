@@ -161,10 +161,11 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             description={isDayPlanTab ? undefined : null}
             middle={isComicTab || (isDayPlanTab && planMode === 'priority') ? headerActions : null}
             fixedMiddle={isComicTab}
+            center={isComicTab ? centerActions : undefined}
             trailingAlign={isComicTab ? 'start' : 'center'}
             trailing={
               <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: comicHeaderHeight }] : styles.trailingRow}>
-                <View style={styles.trailingRow}>
+                <View style={[styles.trailingRow, isComicTab && styles.comicHeaderButtons]}>
                   <SettingsTopBarButton c={c} />
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View>
@@ -172,7 +173,6 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
               </View>
             }
           />
-          {isComicTab ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: DAY_PLAN_TOOLBAR_TOP_PADDING + 6, height: 44, alignItems: 'center', justifyContent: 'center' }}>{centerActions}</View> : null}
         </View>
         <View style={styles.body}>
           {tabName === 'comic-day' || tabName === 'day-plan' ? (
@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  comicHeaderButtons: { minHeight: 44 },
   comicTrailing: {
     alignItems: 'flex-end',
   },

@@ -49,6 +49,7 @@ type Props = {
   /** 상단 행 오른쪽(문의 등) — 좌측 모드 버튼과 동일 베이스라인 */
   trailing?: ReactNode;
   middle?: ReactNode;
+  center?: ReactNode;
   fixedMiddle?: boolean;
   /** `start`면 오른쪽 버튼을 헤더 위에 붙이고, 그 아래에 내용을 둘 수 있다. */
   trailingAlign?: 'center' | 'start';
@@ -63,6 +64,7 @@ export function PlanModeSwitch({
   description,
   trailing,
   middle,
+  center,
   fixedMiddle = false,
   trailingAlign = 'center',
 }: Props) {
@@ -112,7 +114,7 @@ export function PlanModeSwitch({
   return (
     <View style={styles.root}>
       <View style={styles.bleed}>
-        <View
+        <View testID="day-plan-header-row"
           style={[
             styles.row,
             { backgroundColor: c.containerLow, borderBottomColor: c.border },
@@ -149,8 +151,9 @@ export function PlanModeSwitch({
               );
             })}
           </View> : null}
-          {middle ? fixedMiddle ? <View style={styles.fixedMiddle}>{middle}</View> : <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
-          {trailing ? <View style={[styles.trailing, trailingAlign === 'start' && styles.trailingStart]}>{trailing}</View> : null}
+          {fixedMiddle ? <View style={styles.fixedMiddle}>{middle}</View> : middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
+          {fixedMiddle ? <View testID="day-plan-header-center-actions" style={styles.fixedCenter}>{center}</View> : null}
+          {trailing ? <View style={[styles.trailing, trailingAlign === 'start' && styles.trailingStart, fixedMiddle && styles.fixedTrailing]}>{trailing}</View> : null}
         </View>
       </View>
       {hint != null && hint !== '' ? (
@@ -187,6 +190,8 @@ const styles = StyleSheet.create({
   middle: { flexGrow: 0, flexShrink: 1, minWidth: 0 },
   middleContent: { flexGrow: 0, justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: 1 },
   fixedMiddle: { flex: 1, minWidth: 0, alignSelf: 'flex-start' },
+  fixedCenter: { minHeight: 44, flexShrink: 1, alignSelf: 'flex-start', alignItems: 'center', justifyContent: 'center' },
+  fixedTrailing: { flex: 1, minWidth: 0 },
   trailing: {
     marginLeft: 'auto',
     alignItems: 'center',

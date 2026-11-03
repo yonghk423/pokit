@@ -1,6 +1,7 @@
 import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
 import { type PanResponderCallbacks, type GestureResponderEvent, type PanResponderGestureState, PanResponder, Animated, FlatList, Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { HeroSceneThumbnail } from './HeroSceneThumbnail';
 import { ComicCharacterChooser } from './HeroCharacterChooser';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { initialServiceProgress, useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
@@ -123,9 +124,11 @@ it('loads a horizontal thumbnail strip beneath its corresponding character card 
   expect(lane.findByType(FlatList).props.horizontal).toBe(true);
   const strip = lane.findAllByProps({ testID: 'comic-character-thumbnails-protagonist-1' })[0];
   expect(StyleSheet.flatten(strip.props.style).position).toBeUndefined();
-  expect(StyleSheet.flatten(strip.props.style).width).toBe('100%');
+  expect(StyleSheet.flatten(strip.props.style).width).toBe(5 * 44 + 4 * 8 + 2 * 8);
+  expect(StyleSheet.flatten(strip.props.style).alignSelf).toBe('center');
   const thumbnail = lane.findByType(FlatList).props.renderItem({ item: lane.findByType(FlatList).props.data[0], index: 0 });
-  expect(StyleSheet.flatten(thumbnail.props.style).padding).toBe(0);
+  expect(thumbnail.type).toBe(HeroSceneThumbnail);
+  expect(thumbnail.props.children.props.contentFit).toBe('cover');
   act(() => { tree.unmount(); });
 });
 
@@ -254,15 +257,20 @@ it('reorders character cards after a hold and drag, saves the order, and suppres
     const first = COMIC_CHARACTERS[0];
     const second = COMIC_CHARACTERS[1];
     const column = tree.root.findAllByProps({ testID: `comic-character-column-${first.id}` })[0];
-    const stride = StyleSheet.flatten(column.props.style).width + 14;
+    const { width, height } = StyleSheet.flatten(column.props.style);
+    const stride = width + 14;
+    const item = () => tree.root.findAllByProps({ testID: `comic-character-horizontal-list-item-${first.id}` })[0];
     const card = () => tree.root.findAllByProps({ testID: `comic-character-cover-${first.id}` })[0];
     act(() => { card().props.onLongPress({ nativeEvent: { pageX: 100 } }); });
+    expect(StyleSheet.flatten(item().props.style).transform.at(-1)).toEqual({ scale: 1 });
     expect(tree.root.findAllByProps({ testID: 'comic-character-horizontal-list' })[0].props.scrollEnabled).toBe(false);
     act(() => {
       handlers.onPanResponderGrant?.({} as GestureResponderEvent, {} as PanResponderGestureState);
       handlers.onPanResponderMove?.({} as GestureResponderEvent, { moveX: 100 + stride } as PanResponderGestureState);
     });
     act(() => { handlers.onPanResponderRelease?.({} as GestureResponderEvent, {} as PanResponderGestureState); });
+    expect(StyleSheet.flatten(item().props.style).transform).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }]);
+    expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: `comic-character-column-${first.id}` })[0].props.style)).toMatchObject({ width, height });
     act(() => { card().props.onPress(); });
     expect(readHeroCharacterOrder().slice(0, 2)).toEqual([second.id, first.id]);
     expect(tree.root.findAllByType(FlatList)).toHaveLength(0);

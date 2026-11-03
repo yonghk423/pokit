@@ -1,8 +1,14 @@
-import { AccessibilityInfo, LayoutAnimation } from 'react-native';
+import { AccessibilityInfo } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ComicDiaryLibrary } from './HeroDiaryLibrary';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { newComicScene } from '../lib/heroDayStorage';
+jest.mock('react-native-reanimated', () => {
+  const native = jest.requireActual('react-native');
+  const react = jest.requireActual('react');
+  const transition = { duration: () => transition, easing: () => transition };
+  return { __esModule: true, default: { View: native.View, FlatList: native.FlatList }, Easing: native.Easing, LinearTransition: transition, FadeIn: transition, FadeOut: transition, useSharedValue: (value: number) => react.useRef({ value }).current, useAnimatedStyle: (style: () => object) => style(), withTiming: (value: number) => value, interpolate: (value: number, input: number[], output: number[]) => { const index = input.findIndex((point, position) => position < input.length - 1 && value >= point && value <= input[position + 1]); if (index < 0) return output[value <= input[0] ? 0 : output.length - 1]; const ratio = (value - input[index]) / (input[index + 1] - input[index]); return output[index] + (output[index + 1] - output[index]) * ratio; } };
+});
 jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').Modal }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string, params?: { title?: string }) => params?.title ? `${key}:${params.title}` : key }) }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
@@ -106,7 +112,6 @@ it('collapses dates, navigates months and automatically expands search matches a
 
 it.each([false, true])('renders reopened rows at their natural height without waiting for measurement (reduced motion: %s)', async reduceMotion => {
   const motion = jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduceMotion);
-  const animation = jest.spyOn(LayoutAnimation, 'configureNext');
   const diaries = [{ id: 'dated', title: 'Morning', characterId: 'protagonist-1', scenes: [], createdAt: new Date(2026, 9, 29, 7).getTime(), updatedAt: 0 }];
   let tree!: ReactTestRenderer;
   try {
@@ -126,10 +131,11 @@ it.each([false, true])('renders reopened rows at their natural height without wa
       expect(group().props.accessibilityState.expanded).toBe(true);
       expect(content().findAll(node => node.props.accessibilityLabel === 'comicDiary.open:Morning').length).toBeGreaterThan(0);
     }
-    if (reduceMotion) expect(animation).not.toHaveBeenCalled();
-    else expect(animation).toHaveBeenCalledTimes(6);
+    const list = tree.root.findAllByProps({ testID: 'comic-diary-library-list' })[0];
+    if (reduceMotion) expect(list.props.itemLayoutAnimation).toBeUndefined();
+    else expect(list.props.itemLayoutAnimation).toBeDefined();
     act(() => tree.unmount());
-  } finally { motion.mockRestore(); animation.mockRestore(); }
+  } finally { motion.mockRestore(); }
 });
 
 it('selects multiple diaries or an entire date without opening them, and clears selection on cancel', () => {
@@ -159,5 +165,44 @@ it('selects multiple diaries or an entire date without opening them, and clears 
   expect(button('comicDiary.open:First')).toBeDefined();
   act(() => button('comicDiary.select').props.onPress());
   expect(button('comicDiary.deleteSelected').props.disabled).toBe(true);
+  act(() => tree.unmount());
+});
+
+it('deletes a collapsed date as a group and lets its expanded accordion select several diaries', () => {
+  const onDeleteMany = jest.fn();
+  const diaries = [
+    { id: 'one', title: 'First', characterId: 'protagonist-1', scenes: [], createdAt: new Date(2026, 9, 29, 7).getTime(), updatedAt: 0 },
+    { id: 'two', title: 'Second', characterId: 'protagonist-1', scenes: [], createdAt: new Date(2026, 9, 29, 9).getTime(), updatedAt: 0 },
+    { id: 'other-day', title: 'Keep', characterId: 'protagonist-1', scenes: [], createdAt: new Date(2026, 9, 28, 9).getTime(), updatedAt: 0 },
+  ];
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicDiaryLibrary diaries={diaries} activeId="one" onClose={jest.fn()} onCreate={jest.fn()} onOpen={jest.fn()} onRename={jest.fn()} onDelete={jest.fn()} onDeleteMany={onDeleteMany} />); });
+  const button = (label: string) => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
+  const group = () => tree.root.findAllByProps({ testID: 'comic-diary-group-2026-10-29' })[0];
+  const dayAction = () => tree.root.findAllByProps({ testID: 'comic-diary-day-delete-2026-10-29' })[0];
+
+  act(() => group().props.onPress());
+  expect(group().props.accessibilityState.expanded).toBe(false);
+  act(() => dayAction().props.onPress());
+  expect(onDeleteMany).toHaveBeenLastCalledWith(['one', 'two']);
+
+  act(() => group().props.onPress());
+  act(() => dayAction().props.onPress());
+  expect(button('comicDiary.selectItem:First')).toBeDefined();
+  expect(button('comicDiary.selectItem:Keep')).toBeUndefined();
+  const dateCancel = () => tree.root.findAllByProps({ testID: 'comic-diary-day-cancel-2026-10-29' })[0];
+  expect(dateCancel()).toBeDefined();
+  expect(button('common.cancel')).toBe(dateCancel());
+  act(() => dateCancel().props.onPress());
+  expect(button('comicDiary.open:First')).toBeDefined();
+  act(() => dayAction().props.onPress());
+  act(() => button('comicDiary.selectItem:First').props.onPress());
+  expect(button('comicDiary.deleteSelected').props.disabled).toBe(false);
+  const selectDate = () => tree.root.findAllByProps({ testID: 'comic-diary-select-date-2026-10-29' })[0];
+  expect(selectDate().props.accessibilityState.checked).toBe('mixed');
+  act(() => selectDate().props.onPress());
+  expect(selectDate().props.accessibilityState.checked).toBe(true);
+  act(() => button('comicDiary.deleteSelected').props.onPress());
+  expect(onDeleteMany).toHaveBeenLastCalledWith(['one', 'two']);
   act(() => tree.unmount());
 });

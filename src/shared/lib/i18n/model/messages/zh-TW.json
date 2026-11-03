@@ -2647,6 +2647,8 @@
   "comicDiary.selectedCount": "已選取 {count} 篇",
   "comicDiary.deleteSelected": "刪除 {count} 篇",
   "comicDiary.selectDate": "選取或取消選取 {date} 的所有日記",
+  "comicDiary.deleteDay": "刪除 {date} 的所有日記",
+  "comicDiary.selectDayForDeletion": "選取 {date} 的多篇日記",
   "comicDiary.deleteManyMessage": "要刪除 {count} 篇日記嗎？\n所選日記的場景和備忘也會一起刪除。",
   "comicDiary.delete": "刪除日記",
   "comicDiary.deleteMessage": "要刪除「{title}」嗎？\n這篇日記的場景和備忘也會一起刪除。",
@@ -2911,5 +2913,15 @@
   "comicDay.inline.uploading": "請暫時保持應用程式開啟。",
   "comicDay.inline.backgroundReady": "插畫完成前，請保持應用程式開啟並稍候。",
   "comicDay.inline.remaining": "每日1次 · 剩餘{count}/1",
-  "comicDay.inline.unlimited": "開發模式 · 不限次數"
+  "comicDay.inline.unlimited": "開發模式 · 不限次數",
+  "comicDay.emptyChoose.heading": "選擇今天陪伴你的\n主角",
+  "comicDay.emptyChoose.description": "記錄自己的模樣，或用喜歡的\n插畫記下這一天。",
+  "comicDay.emptyChoose.personalIntro": "今天的主角是",
+  "comicDay.emptyChoose.personalName": "我自己",
+  "comicDay.emptyChoose.personalDescription": "直接記錄我的模樣",
+  "comicDay.emptyChoose.personalA11y": "我自己，直接記錄我的模樣",
+  "comicDay.emptyChoose.swipeHint": "左右滑動，選擇喜歡的主角",
+  "comicDay.emptyChoose.personalStart": "用自己的模樣開始",
+  "comicDay.emptyChoose.showGrid": "顯示所有主角",
+  "comicDay.emptyChoose.showCarousel": "顯示主角卡片"
 }

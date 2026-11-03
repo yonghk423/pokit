@@ -120,7 +120,7 @@ export function ComicDayPage() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, minHeight: 0 },
-  header: { minHeight: 70, flex: 1, justifyContent: 'center' },
+  header: { minHeight: 44 },
   headerMainRow: { height: 44, flexDirection: 'row', alignItems: 'center' },
   diaryTitleHit: { minHeight: 44, flex: 1, minWidth: 0, justifyContent: 'center' },
   entryRow: { height: 26, flexDirection: 'row', alignItems: 'center', minWidth: 0 },

@@ -1,6 +1,8 @@
+import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { HeroCharacterPickerOverlay } from './HeroCharacterPickerOverlay';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { HeroInlineComposer } from './HeroInlineComposer';
+import { HeroEmptyTodayChooser } from './HeroEmptyTodayChooser';
 import { flushLocalStorageClientWrites, getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import type { HeroCardText } from './HeroCardCaption';
 import { COMIC_SCENES, type ComicSceneId } from '../lib/heroSceneImages';
@@ -154,7 +156,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   const create = (next: ComicCharacter, characterName?: string) => {
     setCharacterListOpen(false);
     const target = library.diaries.find(item => item.id === addingToId);
-    if (target) {
+    if (target && target.scenes.length > 0) {
       commit({ ...library, activeId: target.id });
       saveComicNavigation(target.characterId, 'board', target.id);
       setAdditionChoice({ diaryId: target.id, character: next }); setAddingToId(null); setChooserReturn(null); setCreating(false);
@@ -162,7 +164,18 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     }
     let number = library.diaries.length + 1;
     for (let attempt = 0; attempt <= library.diaries.length && library.diaries.some(item => item.title === t('comicDiary.defaultTitle', { number })); attempt++) number++;
-    let nextLibrary = createComicDiary(library, next.id, t('comicDiary.defaultTitle', { number }), characterName?.trim() || t(next.name));
+    // An existing but empty diary is also the empty home. Reuse its identity,
+    // title and date instead of leaving another empty diary behind on selection.
+    const emptyDiary = target ?? (diary && !diary.scenes.length ? diary : undefined);
+    let nextLibrary = emptyDiary ? {
+      ...library,
+      activeId: emptyDiary.id,
+      diaries: library.diaries.map(item => item.id === emptyDiary.id ? {
+        ...item,
+        characterId: next.id,
+        characterName: characterName?.trim() || (item.characterId === next.id ? item.characterName : undefined) || t(next.name),
+      } : item),
+    } : createComicDiary(library, next.id, t('comicDiary.defaultTitle', { number }), characterName?.trim() || t(next.name));
     const diaryKey = nextLibrary.activeId!;
     const image = next.scenes[Math.floor(Math.random() * next.scenes.length)] ?? next.scenes[0];
     const initial = { ...newComicScene(''), image: image.id };
@@ -281,8 +294,8 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
       } },
     ], { cancelable: true });
   };
-  const showEmptyBoard = !diary && !creating;
-  const showPlanner = Boolean(diary && character && !creating);
+  const showEmptyBoard = !diary?.scenes.length && !creating;
+  const showPlanner = Boolean(diary?.scenes.length && character && !creating);
   const showChooser = !showEmptyBoard && !showPlanner;
   const inlineRecovery = recoveryJob?.story ? recoveryJob : undefined;
   const inline = inlineRecovery ? {
@@ -314,6 +327,9 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   };
   const photoEntryVisible = !!(inline && (photoEntryOpen || inlineRecovery));
   useLayoutEffect(() => { props.onPhotoEntryChange?.(photoEntryVisible); }, [props.onPhotoEntryChange, photoEntryVisible]);
+  const hasThumbnailCards = showPlanner && !!diary?.scenes.length && !photoEntryVisible;
+  useLayoutEffect(() => { useHeroTabArtwork.getState().setHasCards(hasThumbnailCards); }, [hasThumbnailCards]);
+  useLayoutEffect(() => () => { useHeroTabArtwork.getState().setHasCards(false); }, []);
   return <TutorialGuideLayer><View style={{ flex: 1 }}>
     {characterPickerOpen ? <HeroCharacterPickerOverlay selectedId={character?.id} isDark={props.isDark} onClose={() => setCharacterPickerOpen(false)} onSelect={next => { setCharacterPickerOpen(false); selectHeaderCharacter(next); }} /> : null}
     {!props.onHeaderCharacterListChange ? <HeroCharacterList open={characterListOpen} ink={props.ink} muted={props.muted} selectedId={character?.id} onSelect={selectHeaderCharacter} /> : null}
@@ -325,11 +341,11 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
       entering={FadeIn.duration(240).delay(60).reduceMotion(ReduceMotion.System)}
       exiting={FadeOut.duration(160).reduceMotion(ReduceMotion.System)}
       style={StyleSheet.absoluteFill}>
-    {showEmptyBoard ? <ComicDayBoard hideEntryActions={props.entryActionsInHeader} onDraftChange={captureDraft} onCreateRandom={createRandomDiary} onAddPhoto={openPhotoEntry} onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} focusSceneId={focusSceneId} onActiveSceneChange={captureActiveScene} onAdditionComplete={() => setAdditionChoice(null)} additionCharacter={additionChoice?.diaryId === diary!.id ? additionChoice.character : null}
+    {showEmptyBoard ? <ComicDayBoard emptyContent={<HeroEmptyTodayChooser hasPreviousRecords={library.diaries.some(item => item.scenes.length > 0)} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} onPersonalize={openPhotoEntry} />} hideEntryActions={props.entryActionsInHeader} onDraftChange={captureDraft} onCreateRandom={createRandomDiary} onAddPhoto={openPhotoEntry} onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} focusSceneId={focusSceneId} onActiveSceneChange={captureActiveScene} onAdditionComplete={() => setAdditionChoice(null)} additionCharacter={additionChoice?.diaryId === diary!.id ? additionChoice.character : null}
       onAddCharacter={() => { clearComicNavigation(); setAddingToId(diary!.id); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }}
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onSelectCharacter={() => { if (!diary!.scenes.length) commit(deleteComicDiaries(library, [diary!.id])); clearComicNavigation(); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : <>
-      <ComicCharacterChooser key={characterDraft} lockedCharacterName={addingToId ? (library.diaries.find(item => item.id === addingToId)?.characterName || t(COMIC_CHARACTERS[0].name)) : undefined} targetDiaryId={addingToId ?? undefined} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onPersonalize={() => { setCreating(false); setChooserReturn(null); setAddingToId(null); openPhotoEntry(); }} onStart={create} onGenerated={createGenerated} onClose={chooserReturn ? cancelCreate : undefined} />
+      <ComicCharacterChooser key={characterDraft} showPersonal={chooserReturn !== 'library'} lockedCharacterName={addingToId ? (library.diaries.find(item => item.id === addingToId)?.characterName || t(COMIC_CHARACTERS[0].name)) : undefined} targetDiaryId={addingToId ?? undefined} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onPersonalize={() => { setCreating(false); setChooserReturn(null); setAddingToId(null); openPhotoEntry(); }} onStart={create} onGenerated={createGenerated} onClose={chooserReturn ? cancelCreate : undefined} />
     </>}
     </Animated.View>
     </View>

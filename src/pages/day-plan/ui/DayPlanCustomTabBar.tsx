@@ -1,4 +1,5 @@
-import { HeroThumbnailStripToggle } from './HeroThumbnailStripToggle';
+import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
+import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -43,6 +44,7 @@ const TABS: TabDef[] = [
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { width } = useWindowDimensions();
   const characterPicker = useContext(HeroCharacterPickerActionContext);
+  const hasThumbnailCards = useHeroTabArtwork(state => state.hasCards);
   const heroArtwork = useHeroTabArtwork(state => state.source);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -150,7 +152,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
           })}
         </View>
       </View>
-      {focusedRoute === 'index' ? <View testID="hero-thumbnail-toggle-beside-tabs" style={{ position: 'absolute', left: Math.min(width - 48, width / 2 + pillWidth / 2 + 8), top: 14 }}><HeroThumbnailStripToggle width={44} isDark={isDark} enabled /></View> : null}
+      {focusedRoute === 'index' && hasThumbnailCards ? <View testID="hero-add-beside-tabs" style={{ position: 'absolute', left: Math.min(width - 48, width / 2 + pillWidth / 2 + 8), top: 14 }}><ServiceTutorialTarget steps={['comicStart']}><View style={{ transform: [{ scale: 36 / 44 }] }}><SketchPaperButton iconOnly strongFrame frameless softKey label={t('comicDay.add')} ink={isDark ? '#F0EFE9' : '#292E28'} onPress={() => characterPicker?.openAdd()} hitSlop={3} /></View></ServiceTutorialTarget></View> : null}
     </View>
   );
 }

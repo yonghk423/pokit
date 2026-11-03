@@ -1,3 +1,4 @@
+import { HeroSceneThumbnail } from './HeroSceneThumbnail';
 import { HeroReorderableStyleRail } from './HeroReorderableStyleRail';
 import { HERO_CHARACTER_ORDER_KEY } from '../lib/heroCharacterOrder';
 import type { HeroAiResult } from '../lib/heroAiClient';
@@ -70,9 +71,9 @@ function CastingCard({ character, chosen, width, height, ink, paper, reduced, ar
 }
 
 
-function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, reduced, ink }: {
+function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, reduced, isDark }: {
   character: ComicCharacter; artIndex: number; onChange: (index: number) => void;
-  showPreviews: boolean; reduced: boolean; ink: string;
+  showPreviews: boolean; reduced: boolean; isDark: boolean;
 }) {
   const { t } = useTranslation();
   const previews = useAnimatedValue(0);
@@ -91,15 +92,14 @@ function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, r
   }, [showPreviews, reduced, previews]);
   return (
     <Animated.View testID={`comic-character-thumbnails-${character.id}`} pointerEvents={showPreviews ? 'auto' : 'none'} accessibilityElementsHidden={!showPreviews} importantForAccessibility={showPreviews ? 'auto' : 'no-hide-descendants'} style={[s.thumbnailRail, { opacity: previews, transform: [{ translateY: previews.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }, { scale: previews.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] }]}>
-      <FlatList testID={`comic-character-thumbnail-list-${character.id}`} horizontal data={artwork} keyExtractor={image => image.id} style={{ height: 62 }} contentContainerStyle={s.thumbnailContent} showsHorizontalScrollIndicator={false} nestedScrollEnabled initialNumToRender={4} maxToRenderPerBatch={4} windowSize={3} renderItem={({ item: image, index }) => <Pressable testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: artIndex === index }} onPress={() => { tapHaptic('select'); onChange(index); }} style={s.thumbnail}>
-        <ComicSceneImage showSkeletonOnMount transitionDuration={180} backgroundColor="transparent" imageKey={`${character.id}:${image.id}:thumb`} source={image.source} fallbackSource={image.fallback} contentFit="contain" style={s.cover} />
-        {artIndex === index ? <SettingsPenFrame color={ink} /> : null}
-      </Pressable>} />
+      <FlatList testID={`comic-character-thumbnail-list-${character.id}`} horizontal data={artwork} keyExtractor={image => image.id} style={{ height: 62 }} contentContainerStyle={s.thumbnailContent} showsHorizontalScrollIndicator={false} nestedScrollEnabled initialNumToRender={5} maxToRenderPerBatch={5} windowSize={3} renderItem={({ item: image, index }) => <HeroSceneThumbnail isDark={isDark} testID={`comic-character-thumbnail-${character.id}-${image.id}`} accessibilityRole="button" accessibilityLabel={image.label} accessibilityState={{ selected: artIndex === index }} onPress={() => { tapHaptic('select'); onChange(index); }}>
+        <ComicSceneImage showSkeletonOnMount transitionDuration={180} fitToCard backgroundColor={isDark ? '#3A3C52' : '#F5E8CF'} imageKey={`${character.id}:${image.id}:thumb`} source={image.source} fallbackSource={image.fallback} contentFit="cover" style={StyleSheet.absoluteFill} />
+      </HeroSceneThumbnail>} />
     </Animated.View>
   );
 }
 
-export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false, lockedCharacterName, onPersonalize }: { onPersonalize?: () => void; lockedCharacterName?: string; targetDiaryId?: string; onGenerated?: (images: HeroAiResult[], name: string, reuse?: boolean) => void; requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
+export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false, lockedCharacterName, onPersonalize, showPersonal = true }: { showPersonal?: boolean; onPersonalize?: () => void; lockedCharacterName?: string; targetDiaryId?: string; onGenerated?: (images: HeroAiResult[], name: string, reuse?: boolean) => void; requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
   const { t } = useTranslation();
   const viewport = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -208,21 +208,21 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
           </View> : null}
           <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
             <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
-              <HeroReorderableStyleRail storageKey={HERO_CHARACTER_ORDER_KEY} itemWidth={artworkWidth} gap={14} scrollTestID="comic-character-horizontal-list" contentContainerStyle={s.horizontalCards} style={{ flex: 1 }} scrollStyle={{ flex: 1 }}>
+              <HeroReorderableStyleRail storageKey={HERO_CHARACTER_ORDER_KEY} itemWidth={artworkWidth} gap={14} scrollTestID="comic-character-horizontal-list" contentContainerStyle={s.horizontalCards} style={{ height: artworkHeight + 44, flexGrow: 0, flexShrink: 0 }} scrollStyle={{ flex: 1 }}>
               {COMIC_CHARACTERS.map(character => <CastingCard key={character.id} character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
                   artIndex={artIndices[character.id] ?? 0} onPress={() => choose(character)} />)}
               <>
-              <View style={{ width: artworkWidth, height: artworkHeight }}>
+              {showPersonal ? <View style={{ width: artworkWidth, height: artworkHeight }}>
               <AnimatedPressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} accessibilityState={{ selected: personalChosen }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: personalChosen ? 3 : 1, elevation: personalChosen ? 4 : 2 }]}>
                 <PaperGrain opacity={0.18} /><HeroPhotoInvitation ink={ink} size={Math.min(155, artworkWidth * 0.88)} />
                 <ThemedText style={[s.personalLabel, { color: ink }]}>{t('comicDay.personal.title')}</ThemedText>
                 <SettingsPenFrame color={ink} />
               </AnimatedPressable>
-              </View>
+              </View> : null}
               <View style={{ width: artworkWidth, height: artworkHeight }}>
               <Pressable testID="comic-character-coming-soon" onPress={() => tapHaptic('select')} accessible accessibilityRole="button" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: 0 }]}>
                 <PaperGrain opacity={0.18} />
-                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contentFit="contain" style={s.upcomingImage} />
+                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" backgroundColor={cardPaper} source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contentFit="contain" style={s.upcomingImage} />
                 <View style={s.upcomingCaption}>
                   <ThemedText style={[s.personalLabel, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
                   <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
@@ -233,7 +233,7 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
               </>
               </HeroReorderableStyleRail>
               <View testID="comic-character-thumbnail-lane" style={s.thumbnailLane}>
-                {COMIC_CHARACTERS.filter(character => previewCharacter === character.id && !personalChosen).map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} showPreviews reduced={reduced} ink={ink} />)}
+                {COMIC_CHARACTERS.filter(character => previewCharacter === character.id && !personalChosen).map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} showPreviews reduced={reduced} isDark={isDark} />)}
               </View>
             </Animated.View>
           </ServiceTutorialTarget>
@@ -267,12 +267,12 @@ const s = StyleSheet.create({
   heading: { marginBottom: 12, flexShrink: 0 }, headingCompact: { marginBottom: 6 }, titleRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }, closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   scrollViewport: { flex: 1, minHeight: 0, overflow: 'hidden' },
   scrollContent: { flexGrow: 1 }, keyboardContent: { minHeight: 640 }, keyboardStage: { minHeight: 180 },
-  spotlight: { flex: 1, minHeight: 0, alignSelf: 'stretch' }, stage: { flex: 1, minHeight: 0, marginHorizontal: -24, alignSelf: 'stretch', overflow: 'hidden' },
+  spotlight: { flex: 1, minHeight: 0, alignSelf: 'stretch' }, stage: { flex: 1, minHeight: 0, marginHorizontal: -24, alignSelf: 'stretch', overflow: 'hidden', justifyContent: 'center' },
   horizontalCards: { gap: 14, alignItems: 'center', paddingHorizontal: 16, paddingVertical: 22 },
   personalCard: { padding: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 1, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.12, elevation: 2 }, personalLabel: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
   castingCard: { padding: 7, borderRadius: 6, shadowColor: '#403624', shadowOffset: { width: 2, height: 7 }, shadowRadius: 11, shadowOpacity: 0.16, elevation: 3 },
   mainArtwork: { flex: 1, borderRadius: 3, overflow: 'hidden' }, cover: { width: '100%', height: '100%' },
-  thumbnailLane: { height: 72, width: '100%' }, thumbnailRail: { width: '100%', height: 62, marginTop: 10 }, thumbnailContent: { gap: 6, paddingBottom: 4, paddingHorizontal: 8 }, thumbnail: { width: 43, height: 56, padding: 0, overflow: 'hidden' },
+  thumbnailLane: { height: 72, width: '100%' }, thumbnailRail: { width: 268, maxWidth: '100%', alignSelf: 'center', height: 62, marginTop: 0 }, thumbnailContent: { gap: 8, alignItems: 'center', paddingVertical: 4, paddingHorizontal: 8 },
   caption: { alignItems: 'center', gap: 3, flexShrink: 0 }, name: { fontSize: 24, lineHeight: 30, textAlign: 'center' },
   nameBox: { width: '100%', maxWidth: 320 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 46, borderBottomWidth: 0.6 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 16 }, editButton: { minWidth: 56, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   renameButton: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, marginTop: 0, flexShrink: 0 }, renameLabel: { fontSize: 14 },

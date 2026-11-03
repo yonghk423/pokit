@@ -93,7 +93,8 @@ export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORD
         if (!item) return null;
         const selected = moving?.id === id;
         const shift = moving && !selected ? moving.start < index && index <= moving.target ? -stride : moving.target <= index && index < moving.start ? stride : 0 : 0;
-        return <Animated.View key={id} style={{ zIndex: selected ? 10 : 0, transform: selected ? [{ translateX: x }, { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }, { scale: lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) }] : [] }}>
+        // Keep card size fixed and explicitly reset native transforms after a drop.
+        return <Animated.View key={id} testID={`${scrollTestID}-item-${id}`} style={{ zIndex: selected ? 10 : 0, transform: [{ translateX: selected ? x : 0 }, { translateY: selected ? lift.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) : 0 }, { scale: 1 }] }}>
           <Slot offset={shift}>{cloneElement(item, {
             delayLongPress: 350,
             onPressIn: () => { if (!session.current) suppressed.current = false; },

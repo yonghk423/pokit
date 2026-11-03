@@ -149,3 +149,32 @@ it('reclaims header space only while the comic composer keyboard is open', async
  expect(StyleSheet.flatten(header().props.style).display).not.toBe('none');
  act(()=>tree.unmount());
 });
+
+it('places the menu, Today and settings in one flex row with equal side slots', async () => {
+  const { useContext } = require('react');
+  const { DayPlanHeaderCenterActionsContext } = require('../model/dayPlanHeaderActions');
+  function RegisterHeader() {
+    const registerMenu = useDayPlanHeaderActions();
+    const registerCenter = useContext(DayPlanHeaderCenterActionsContext);
+    useLayoutEffect(() => {
+      registerMenu?.(<View testID="aligned-menu" style={{ height: 44 }} />);
+      registerCenter?.(<View testID="aligned-today" style={{ height: 44 }} />);
+      return () => { registerMenu?.(null); registerCenter?.(null); };
+    }, [registerMenu, registerCenter]);
+    return null;
+  }
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<DayPlanTabScreenShell tabName="comic-day"><RegisterHeader /></DayPlanTabScreenShell>); });
+  const row = tree.root.findAllByProps({ testID: 'day-plan-header-row' })[0];
+  expect(StyleSheet.flatten(row.props.style).flexDirection).toBe('row');
+  const center = row.findAllByProps({ testID: 'day-plan-header-center-actions' })[0];
+  expect(StyleSheet.flatten(center.props.style)).toMatchObject({ minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' });
+  expect(center.findAllByProps({ testID: 'aligned-today' }).length).toBeGreaterThan(0);
+  expect(row.findAllByProps({ testID: 'aligned-menu' }).length).toBeGreaterThan(0);
+  expect(row.findAllByProps({ testID: 'fixed-settings' }).length).toBeGreaterThan(0);
+  expect(center.props.style.position).toBeUndefined();
+  const slots = row.props.children.filter(Boolean);
+  expect(StyleSheet.flatten(slots[0].props.style)).toMatchObject({ flex: 1, minWidth: 0, alignSelf: 'flex-start' });
+  expect(StyleSheet.flatten(slots.at(-1).props.style)).toMatchObject({ flex: 1, minWidth: 0 });
+  act(() => tree.unmount());
+});

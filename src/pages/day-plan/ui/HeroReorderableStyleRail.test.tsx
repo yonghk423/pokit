@@ -1,5 +1,5 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { PanResponder, Pressable, type PanResponderCallbacks } from 'react-native';
+import { PanResponder, Pressable, StyleSheet, type PanResponderCallbacks } from 'react-native';
 import { clearPokitLocalStorage } from '@shared/lib/storage/localStorageClient';
 import { readHeroCharacterOrder } from '../lib/heroCharacterOrder';
 import { HERO_STYLE_ORDER_KEY, HeroReorderableStyleRail } from './HeroReorderableStyleRail';
@@ -32,4 +32,26 @@ it('drags a style without selecting it, persists its position and keeps upcoming
   expect(select).toHaveBeenCalledTimes(1);
   act(() => tree.unmount());
   spy.mockRestore();
+});
+
+it('keeps card scale fixed across repeated moves and resets transforms after release or cancellation', () => {
+  let handlers!: PanResponderCallbacks;
+  const spy = jest.spyOn(PanResponder, 'create').mockImplementation(config => { handlers = config; return { panHandlers: {} }; });
+  let tree!: ReactTestRenderer;
+  try {
+    act(() => { tree = create(<HeroReorderableStyleRail>{readHeroCharacterOrder().map(id => <Pressable key={id} testID={id} />)}{null}</HeroReorderableStyleRail>); });
+    const first = () => tree.root.findAllByProps({ testID: 'protagonist-1' })[0];
+    const wrapper = () => tree.root.findAllByProps({ testID: 'hero-inline-style-scroll-item-protagonist-1' })[0];
+    for (const cancel of [false, true, false]) {
+      act(() => first().props.onLongPress({ nativeEvent: { pageX: 50 } }));
+      act(() => handlers.onPanResponderGrant?.({} as never, {} as never));
+      act(() => handlers.onPanResponderMove?.({} as never, { moveX: 174 } as never));
+      expect(StyleSheet.flatten(wrapper().props.style).transform.at(-1)).toEqual({ scale: 1 });
+      act(() => (cancel ? handlers.onPanResponderTerminate : handlers.onPanResponderRelease)?.({} as never, {} as never));
+      expect(StyleSheet.flatten(wrapper().props.style).transform).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }]);
+    }
+  } finally {
+    act(() => tree?.unmount());
+    spy.mockRestore();
+  }
 });

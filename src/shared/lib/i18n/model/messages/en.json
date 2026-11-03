@@ -2647,6 +2647,8 @@
   "comicDiary.selectedCount": "{count} selected",
   "comicDiary.deleteSelected": "Delete {count}",
   "comicDiary.selectDate": "Select or deselect all diaries for {date}",
+  "comicDiary.deleteDay": "Delete all diaries for {date}",
+  "comicDiary.selectDayForDeletion": "Select multiple diaries for {date}",
   "comicDiary.deleteManyMessage": "Delete {count} diaries?\nTheir scenes and notes will also be deleted.",
   "comicDiary.delete": "Delete diary",
   "comicDiary.deleteMessage": "Delete “{title}”?\nIts scenes and notes will also be deleted.",
@@ -2911,5 +2913,15 @@
   "comicDay.inline.uploading": "Please keep the app open for a moment.",
   "comicDay.inline.backgroundReady": "Please keep the app open until your illustration is complete.",
   "comicDay.inline.remaining": "1 daily · {count}/1 left",
-  "comicDay.inline.unlimited": "Development · Unlimited"
+  "comicDay.inline.unlimited": "Development · Unlimited",
+  "comicDay.emptyChoose.heading": "Choose your protagonist\nfor today",
+  "comicDay.emptyChoose.description": "Capture yourself, or record your day\nwith an illustration you love.",
+  "comicDay.emptyChoose.personalIntro": "Today’s protagonist is",
+  "comicDay.emptyChoose.personalName": "Me",
+  "comicDay.emptyChoose.personalDescription": "Capture my own image",
+  "comicDay.emptyChoose.personalA11y": "Me, capture my own image",
+  "comicDay.emptyChoose.swipeHint": "Swipe to find your favorite protagonist",
+  "comicDay.emptyChoose.personalStart": "Start with my own image",
+  "comicDay.emptyChoose.showGrid": "Show all protagonists",
+  "comicDay.emptyChoose.showCarousel": "Show protagonist carousel"
 }

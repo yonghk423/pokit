@@ -1,3 +1,4 @@
+import { HeroSceneThumbnail } from './HeroSceneThumbnail';
 import { HeroCardToolsContentContext } from '../model/heroCardToolsPortal';
 import { rememberHeroGenerationCardSize } from '../lib/heroGenerationFrame';
 import { createCardTapGuard } from '../lib/cardTapGuard';
@@ -23,7 +24,6 @@ import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 export type ComicDeckItem = { key: string; label: string; artworkUri?: string; memo?: string; faceColor?: string; inkColor?: string };
 
 const THUMB = 44;
-const THUMB_SCALE = 36 / THUMB;
 const THUMB_GAP = 8;
 const THUMB_STRIDE = THUMB + THUMB_GAP;
 /** Matches the add button: 8px from the bottom, 44px tall, plus its right inset. */
@@ -229,17 +229,14 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
           const scene = resolveComicScene(item.key, item.label, choices);
           const face = scenePaper(item.faceColor, isDark);
           const selected = index === active;
-          return <Pressable key={item.key} disabled={!!editingKey} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected }} onPress={() => {
+          return <HeroSceneThumbnail isDark={isDark} key={item.key} disabled={!!editingKey} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected }} onPress={() => {
             tapHaptic();
             turnRef.current?.turnTo(index);
-          }} style={({ pressed }) => [s.thumb, { backgroundColor: isDark ? '#454742' : '#E8E7E4', shadowOpacity: pressed ? 0.06 : 0.16 }, pressed && { transform: [{ scale: THUMB_SCALE }, { translateY: 1 }] }]}>
-            <View style={s.thumbFace}>
+          }}>
             <ComicSceneImage fitToCard contentFit="cover" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               style={StyleSheet.absoluteFill} />
-            <View pointerEvents="none" style={[s.thumbHighlight, { borderTopColor: isDark ? '#73766E' : 'rgba(255,255,255,0.9)', borderLeftColor: isDark ? '#62665E' : 'rgba(255,255,255,0.6)' }]} />
-            </View>
-          </Pressable>;
+          </HeroSceneThumbnail>;
         })}
       </GestureScrollView>
     </Animated.View> : null}
@@ -258,9 +255,6 @@ const s = StyleSheet.create({
   thumbs: { position: 'absolute', left: 0, right: ADD_RESERVE, bottom: FOOTER_BOTTOM - 4, height: THUMB + 8, justifyContent: 'center' },
   thumbScroll: { flex: 1 },
   thumbRow: { flexGrow: 1, alignItems: 'center', gap: THUMB_GAP, paddingHorizontal: 12, paddingVertical: 4 },
-  thumb: { width: THUMB, height: THUMB, flexShrink: 0, borderRadius: 10, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowRadius: 3, shadowOpacity: 0.16, elevation: 2, transform: [{ scale: THUMB_SCALE }] },
-  thumbFace: { flex: 1, marginBottom: 1, borderRadius: 10, overflow: 'hidden' },
-  thumbHighlight: { ...StyleSheet.absoluteFill, borderRadius: 10, borderTopWidth: 1, borderLeftWidth: 0.6 },
 });
 
 /** Native position motion adds the new card without moving the stack's layout. */

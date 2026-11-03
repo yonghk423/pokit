@@ -15,7 +15,7 @@ import { SELECTABLE_COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCha
 function PickerPreview({ source, fallback, width, height, isDark, id, contain = false }: { source: ImageSource | number; fallback: ImageSource | number; width: number; height: number; isDark: boolean; id: string; contain?: boolean }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  return <View style={{ width, height, overflow: 'hidden' }}>
+  return <View testID={`hero-picker-preview-frame-${id}`} style={{ width, height, overflow: 'hidden' }}>
     <Image testID={`hero-picker-image-${id}`} source={failed ? fallback : source} contentFit={contain ? 'contain' : 'cover'} transition={150} style={StyleSheet.absoluteFill} onDisplay={() => setReady(true)} onError={() => { if (failed) setReady(true); else setFailed(true); }} />
     {!ready ? <View testID={`hero-picker-skeleton-${id}`} pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? '#363B37' : '#E9E6DF', padding: 12, justifyContent: 'flex-end', gap: 6 }]}>
       <View style={{ position: 'absolute', top: '16%', left: '18%', width: '64%', height: '45%', borderRadius: 18, backgroundColor: isDark ? '#414640' : '#E0DCD3' }} />
@@ -25,12 +25,21 @@ function PickerPreview({ source, fallback, width, height, isDark, id, contain = 
   </View>;
 }
 
-function MovingCard({ offset, children }: { offset: number; children: React.ReactNode }) {
+function PickerCardSlot({ id, offset, active, width, height, children }: { id: string; offset: number; active: boolean; width: number; height: number; children: React.ReactNode }) {
   const x = useAnimatedValue(0);
-  useEffect(() => {
-    Animated.timing(x, { toValue: offset, duration: 160, useNativeDriver: true }).start();
-  }, [offset, x]);
-  return <Animated.View style={{ transform: [{ translateX: x }] }}>{children}</Animated.View>;
+  const wasActive = useRef(false);
+  // Each card keeps its own translation node through reordering. Never attach
+  // a shared native transform to one card and detach it from another.
+  useLayoutEffect(() => {
+    x.stopAnimation();
+    const immediate = active || wasActive.current;
+    wasActive.current = active;
+    if (immediate) { x.setValue(offset); return; }
+    const animation = Animated.timing(x, { toValue: offset, duration: 160, useNativeDriver: false });
+    animation.start();
+    return () => animation.stop();
+  }, [active, offset, x]);
+  return <Animated.View testID={`hero-picker-position-${id}`} style={{ width, height, flexShrink: 0, zIndex: active ? 10 : 0, transform: [{ translateX: x }] }}>{children}</Animated.View>;
 }
 
 export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClose }: { selectedId?: string; isDark: boolean; onSelect: (character: ComicCharacter) => void; onClose: () => void }) {
@@ -53,15 +62,14 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
   const pointerX = useRef(0);
   const suppressPress = useRef(false);
   const panActive = useRef(false);
-  const dragX = useAnimatedValue(0);
-  const lift = useAnimatedValue(0);
+  const [dragOffset, setDragOffset] = useState(0);
   const stride = cardWidth + 10;
   const updateDrag = (pageX: number) => {
     const current = drag.current;
     if (!current) return;
     pointerX.current = pageX;
     const delta = pageX - current.pageX + scrollOffset.current - current.scrollStart;
-    dragX.setValue(delta);
+    setDragOffset(delta);
     const target = Math.max(0, Math.min(order.length - 1, current.start + Math.round(delta / stride)));
     if (target !== current.target) {
       current.target = target;
@@ -80,8 +88,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
       saveHeroCharacterOrder(next);
     }
     setDragging(null);
-    dragX.setValue(0);
-    Animated.timing(lift, { toValue: 0, duration: 160, useNativeDriver: true }).start();
+    setDragOffset(0);
   };
   const dragHandlers = useRef({ updateDrag, endDrag });
   useLayoutEffect(() => { dragHandlers.current = { updateDrag, endDrag }; });
@@ -151,8 +158,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
               ? dragging.start < index && index <= dragging.target ? -stride
                 : dragging.target <= index && index < dragging.start ? stride : 0
               : 0;
-            return <Animated.View key={character.id} style={{ zIndex: active ? 10 : 0, transform: active ? [{ translateX: dragX }, { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { scale: lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.025] }) }] : [] }}>
-              <MovingCard offset={shift}>
+            return <PickerCardSlot key={character.id} id={character.id} width={cardWidth} height={cardHeight} active={active} offset={active ? dragOffset : shift}>
                 <Pressable testID={`hero-character-picker-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} accessibilityState={{ selected: selectedId === character.id }}
                   delayLongPress={350}
                   onPressIn={() => { if (!drag.current) suppressPress.current = false; }}
@@ -164,7 +170,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                     drag.current = { id: character.id, start: index, target: index, pageX, scrollStart: scrollOffset.current };
                     setDragging({ id: character.id, start: index, target: index });
                     tapHaptic('select');
-                    Animated.timing(lift, { toValue: 1, duration: 160, useNativeDriver: true }).start();
+                    setDragOffset(0);
                   }}
                   onPressOut={() => { setTimeout(() => { if (drag.current && !panActive.current) endDrag(); }, 0); }}
                   onPress={() => { if (suppressPress.current) return; tapHaptic('select'); close(() => onSelect(character)); }} style={cardStyle}>
@@ -172,8 +178,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                   <View style={{ height: 38, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{t(character.name)}</ThemedText></View>
                   <PenFrame color={ink} straight />
                 </Pressable>
-              </MovingCard>
-            </Animated.View>;
+            </PickerCardSlot>;
           })}
           <View testID="hero-character-picker-upcoming" accessible accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} style={cardStyle}>
             <PickerPreview id="upcoming" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} fallback={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contain width={cardWidth - 10} height={imageHeight} isDark={isDark} />

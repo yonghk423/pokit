@@ -1,6 +1,6 @@
 import { localStorageClient } from './localStorageClient';
 
-export type HeroInfoHintKind = 'diary' | 'ai';
+export type HeroInfoHintKind = 'diary' | 'ai' | 'character';
 const listeners = new Set<() => void>();
 const key = (kind: HeroInfoHintKind) => `pokit:hero-info-hint:${kind}:v1`;
 export const isHeroInfoHintPending = (kind: HeroInfoHintKind) => localStorageClient.getItemRaw(key(kind)) !== 'done';

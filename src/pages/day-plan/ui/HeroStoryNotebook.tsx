@@ -27,7 +27,7 @@ export function HeroStoryNotebook({ title, text, ink, autoFocus, onTitleChange, 
   const [scrollY, setScrollY] = useState(0);
   const lineHeight = Math.ceil(scaleTypeSize(32, appScale) * fontScale);
   const fontSize = Math.round(scaleTypeSize(17, appScale) * fontScale);
-  const titleSize = Math.round(scaleTypeSize(22, appScale) * fontScale);
+  const titleSize = Math.round(scaleTypeSize(20, appScale) * fontScale);
   return <View testID="hero-inline-notebook" style={s.root} onLayout={event => {
     if (event.nativeEvent.layout.width > 0 && event.nativeEvent.layout.height > 0) setLayoutReady(true);
   }}>
