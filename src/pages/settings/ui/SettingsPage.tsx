@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -673,7 +674,7 @@ export function SettingsPage() {
               <View style={[chrome.item, { borderTopColor: p.border, backgroundColor: p.dangerBg, alignItems: 'stretch' }]}>
                 <View style={{ flex: 1, gap: 10 }}>
                   <ThemedText style={[chrome.itemTitle, { color: p.dangerTitle }]} lightColor={p.dangerTitle} darkColor={p.dangerTitle}>{t('settings.confirmReset.title', locale)}</ThemedText>
-                  <ThemedText style={[chrome.itemDesc, { color: p.dangerDesc }]} lightColor={p.dangerDesc} darkColor={p.dangerDesc}>{t('settings.confirmReset.message', locale)}</ThemedText>
+                  <ThemedText accessibilityLabel={t('settings.confirmReset.message', locale).replace('[gallery]', t('comicDay.gallery.title', locale))} style={[chrome.itemDesc, { color: p.dangerDesc }]} lightColor={p.dangerDesc} darkColor={p.dangerDesc}>{t('settings.confirmReset.message', locale).split('[gallery]')[0]}<Svg width={17} height={17} viewBox="0 0 24 24" accessible={false}><Path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke={p.dangerDesc} strokeWidth={1.25} strokeLinejoin="round" /></Svg>{t('settings.confirmReset.message', locale).split('[gallery]')[1]}</ThemedText>
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 16 }}>
                     <Pressable accessibilityRole="button" hitSlop={8} disabled={isResettingData} onPress={tap(() => setConfirmingReset(false))}><ThemedText style={{ color: p.title }}>{t('common.cancel', locale)}</ThemedText></Pressable>
                     <Pressable accessibilityRole="button" hitSlop={8} disabled={isResettingData} onPress={tap(() => void runResetData())}><ThemedText style={{ color: p.dangerTitle }}>{isResettingData ? t('settings.resetData.loading', locale) : t('common.reset', locale)}</ThemedText></Pressable>

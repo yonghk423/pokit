@@ -1,18 +1,20 @@
 import { AppAlert } from '@shared/lib/app-alert';
+import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { HeroInlineComposer, HERO_SELECTED_STYLE_KEY, HERO_SELECTED_PAPER_KEY } from './HeroInlineComposer';
+import { HeroInlineComposer, HERO_SELECTED_STYLE_KEY, HERO_SELECTED_PAPER_KEY, HERO_SELECTED_FACE_KEY } from './HeroInlineComposer';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { HeroPhotoSource } from './HeroPhotoSource';
 import { loadHeroSavedFaces, deleteHeroFace } from '../lib/heroSavedFaces';
 import { getHeroAiRemaining, generateHeroImages, resumeHeroAiJob, cancelHeroAiJob, dismissHeroAiJob } from '../lib/heroAiClient';
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('@shared/lib/haptics/tapHaptic', () => ({ tapHaptic: jest.fn() }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: jest.requireActual('react-native').View }));
 jest.mock('./HeroPhotoSource', () => ({ HeroPhotoSource: jest.requireActual('react-native').View, HeroPhotoIcon: () => null }));
 jest.mock('../lib/heroSavedFaces', () => ({ loadHeroSavedFaces: jest.fn(async () => []), saveHeroFace: jest.fn(), deleteHeroFace: jest.fn() }));
 jest.mock('../lib/heroAiClient', () => ({ generateHeroImages: jest.fn(), resumeHeroAiJob: jest.fn(), getHeroAiRemaining: jest.fn(async () => 3), getPendingHeroAiJob: jest.fn(async () => null), cancelHeroAiJob: jest.fn(async () => undefined), dismissHeroAiJob: jest.fn(async () => undefined), HeroAiError: class extends Error {} }));
-beforeEach(() => { localStorageClient.removeItem(HERO_SELECTED_PAPER_KEY); localStorageClient.removeItem(HERO_SELECTED_STYLE_KEY); jest.clearAllMocks(); jest.mocked(getHeroAiRemaining).mockResolvedValue(3); jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'person', uri: 'file:///person.jpg' }]); jest.mocked(generateHeroImages).mockResolvedValue({ images: [{ uri: 'file:///result.png' }], remaining: 2 }); });
+beforeEach(() => { localStorageClient.removeItem(HERO_SELECTED_FACE_KEY); localStorageClient.removeItem(HERO_SELECTED_PAPER_KEY); localStorageClient.removeItem(HERO_SELECTED_STYLE_KEY); jest.clearAllMocks(); jest.mocked(getHeroAiRemaining).mockResolvedValue(3); jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'person', uri: 'file:///person.jpg' }]); jest.mocked(generateHeroImages).mockResolvedValue({ images: [{ uri: 'file:///result.png' }], remaining: 2 }); });
 it('opens face registration outside the writing scroll, dismisses the keyboard and preserves the draft', async () => {
   const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => undefined);
   let tree!: ReactTestRenderer;
@@ -185,6 +187,11 @@ it('changes paper and font colors from the generation row and saves the chosen c
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" memo="A story" onApply={apply} onClose={jest.fn()} />); });
   const row = tree.root.findAllByProps({ testID: 'hero-inline-generation-row' })[0];
+  const appearance = row.findAllByProps({ testID: 'hero-inline-appearance-controls' })[0];
+  expect(appearance.findAllByProps({ testID: 'hero-inline-style-toggle' }).length).toBeGreaterThan(0);
+  expect(appearance.findAllByProps({ testID: 'hero-inline-paper-color' }).length).toBeGreaterThan(0);
+  expect(appearance.findAllByProps({ testID: 'hero-inline-pen-color' }).length).toBeGreaterThan(0);
+  expect(row.findAllByProps({ testID: 'hero-inline-quota-slot' })).toHaveLength(0);
   expect(row.findAllByProps({ testID: 'hero-inline-paper-color' }).length).toBeGreaterThan(0);
   expect(row.findAllByProps({ testID: 'hero-inline-pen-color' }).length).toBeGreaterThan(0);
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
@@ -294,7 +301,9 @@ it('provides a separate title and lined body, preserving the title on the genera
   expect(tree.root.findAllByProps({ testID: 'hero-inline-notebook-lines' }).length).toBeGreaterThan(0);
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.onChangeText('A quiet afternoon'));
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.onChangeText('I read a book by the window.'));
+  jest.mocked(tapHaptic).mockClear();
   await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); await new Promise(resolve => setTimeout(resolve, 500)); });
+  expect(tapHaptic).toHaveBeenCalledTimes(1);
   expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ story: { cardAspectRatio: 0.8, title: 'A quiet afternoon', text: 'I read a book by the window.', source: 'character', styleId: 'protagonist-1' } }));
   expect(apply).toHaveBeenCalledWith(expect.objectContaining({ title: 'A quiet afternoon', memo: 'I read a book by the window.' }), 'file:///result.png', expect.any(String));
   act(() => tree.unmount());
@@ -308,10 +317,11 @@ it('keeps the add person control outside the compact horizontal rail with many s
   const rail = tree.root.findAllByProps({ testID: 'hero-inline-face-rail' })[0];
   expect(rail.props.horizontal).toBe(true);
   expect(StyleSheet.flatten(rail.props.style)).toMatchObject({ flex: 1, minWidth: 0 });
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-selected-face-label' })).toHaveLength(0);
   expect(StyleSheet.flatten(rail.props.contentContainerStyle).gap).toBe(6);
   expect(rail.findAllByProps({ testID: 'hero-inline-face-11' }).length).toBeGreaterThan(0);
   expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-0.jpg' })[0].props.style)).toMatchObject({ width: 42, height: 42 });
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-11' })[0].props.style)).toMatchObject({ borderWidth: 1, borderColor: '#000000' });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-11' })[0].props.style)).toMatchObject({ borderWidth: 3, borderColor: '#9FCAD8', top: 4, left: 4, right: 4, bottom: 4 });
   expect(rail.findAllByProps({ testID: 'hero-inline-add-face' })).toHaveLength(0);
   const add = tree.root.findAllByProps({ testID: 'hero-inline-add-face' })[0];
   expect(StyleSheet.flatten(add.props.style)).toMatchObject({ width: 52, flexShrink: 0 });
@@ -319,7 +329,7 @@ it('keeps the add person control outside the compact horizontal rail with many s
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
   expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-11.jpg' })[0].props.style)).toMatchObject({ width: 42, height: 42 });
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-0' })[0].props.style)).toMatchObject({ borderWidth: 1, borderColor: '#000000' });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-0' })[0].props.style)).toMatchObject({ borderWidth: 3, borderColor: '#9FCAD8', top: 4, left: 4, right: 4, bottom: 4 });
   act(() => add.props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-face-photo-actions' })[0].props.pointerEvents).toBe('auto');
   act(() => tree.unmount());
@@ -510,5 +520,23 @@ it('retains an existing card paper without overwriting it with the new default',
   await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" paper="#F5E8CF" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
   expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).backgroundColor).toBe('#F5E8CF');
   expect(localStorageClient.getItemRaw(HERO_SELECTED_PAPER_KEY)).toBeNull();
+  act(() => tree.unmount());
+});
+
+it('restores the selected person after remount and falls back when that person no longer exists', async () => {
+  jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'first', uri: 'file:///first.jpg' }, { id: 'second', uri: 'file:///second.jpg' }]);
+  let tree!: ReactTestRenderer;
+  const mount = async () => { await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); }); };
+  await mount();
+  act(() => tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.onPress());
+  expect(localStorageClient.getItemRaw(HERO_SELECTED_FACE_KEY)).toBe('first');
+  act(() => tree.unmount());
+  await mount();
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-face-1' })[0].props.accessibilityState.selected).toBe(false);
+  act(() => tree.unmount());
+  jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'second', uri: 'file:///second.jpg' }]);
+  await mount();
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
   act(() => tree.unmount());
 });

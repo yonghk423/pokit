@@ -1,4 +1,4 @@
-export const YOURDAY_AI_DAILY_LIMIT = 1;
+export const YOURDAY_AI_DAILY_LIMIT = 2;
 export const YOURDAY_AI_MAX_REQUEST_IMAGES = 3;
 export const YOURDAY_AI_UNLIMITED = 100000;
 

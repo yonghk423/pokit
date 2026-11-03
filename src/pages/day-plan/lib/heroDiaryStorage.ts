@@ -5,7 +5,7 @@ import { COMIC_CHARACTERS, DEFAULT_COMIC_CHARACTER_ID } from './heroCharacters';
 import { normalizeComicScenes, type ComicDayScene } from './heroDayStorage';
 
 export const COMIC_DIARY_STORAGE_KEY = 'pokit:comic-diaries:v1';
-export type ComicDiary = { id: string; title: string; characterId: string; characterName?: string; scenes: ComicDayScene[]; createdAt: number; updatedAt: number };
+export type ComicDiary = { id: string; title: string; artworkCollection?: 'generated'; characterId: string; characterName?: string; scenes: ComicDayScene[]; createdAt: number; updatedAt: number };
 export type ComicDiaryLibrary = { version: 1; diaries: ComicDiary[]; activeId: string | null; migratedLegacyKeys: string[] };
 const knownCharacter = (id: unknown): id is string => COMIC_CHARACTERS.some(character => character.id === id);
 export function saveComicDiaryLibrary(library: ComicDiaryLibrary) {

@@ -1,3 +1,7 @@
+import * as heroAiLibrary from '../lib/heroAiLibrary';
+import { useHeroTabArtwork } from '../model/heroTabArtwork';
+import { HeroGeneratedArtworkPicker } from './HeroGeneratedArtworkPicker';
+import { HeroEmptyTodayChooser } from './HeroEmptyTodayChooser';
 import { readHeroCharacterOrder } from '../lib/heroCharacterOrder';
 import { HeroInlineComposer } from './HeroInlineComposer';
 import { HeroPersonalizationFlow } from './HeroPersonalizationFlow';
@@ -939,5 +943,34 @@ it('shows plain guidance to a returning user whose Today is empty', async () => 
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<IndependentComicPlanner date="2026-10-30" ink="#222" muted="#888" isDark={false} />); });
   expect(tree.root.findAllByProps({ testID: 'hero-empty-intro' }).length).toBeGreaterThan(0);
+  act(() => tree.unmount());
+});
+
+it('reuses generated artwork as a fresh blank entry while preserving its original writing and date', async () => {
+  const original = { id: 'original-generated', characterId: 'protagonist-6', title: '원본 일기', createdAt: 100000, updatedAt: 100000, scenes: [{ ...newComicScene('원본 제목'), memo: '원본 글', artworkUri: 'file:///Documents/hero-ai/hero-reuse-0.png' }] };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, activeId: null, diaries: [original], migratedLegacyKeys: [] });
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+  act(() => tree.root.findByType(HeroEmptyTodayChooser).props.onChooseGenerated({ uri: original.scenes[0].artworkUri, title: '원본 제목', memo: '원본 글', createdAt: original.createdAt }));
+  const stored = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(stored.diaries.find(item => item.id === original.id)).toMatchObject(original);
+  const fresh = stored.diaries.find(item => item.id === stored.activeId)!;
+  expect(fresh.id).not.toBe(original.id);
+  expect(fresh.createdAt).not.toBe(original.createdAt);
+  expect(fresh.scenes[0]).toMatchObject({ artworkUri: original.scenes[0].artworkUri, title: '', memo: '' });
+  expect(fresh.scenes[0].id).not.toBe(original.scenes[0].id);
+  expect(fresh.artworkCollection).toBe('generated');
+  expect(useHeroTabArtwork.getState().source).toEqual({ uri: original.scenes[0].artworkUri });
+  const loadImages = jest.spyOn(heroAiLibrary, 'loadHeroAiLibrary').mockResolvedValue([{ uri: original.scenes[0].artworkUri }, { uri: 'file:///Documents/hero-ai/hero-next-0.png' }]);
+  await act(async () => tree.root.findByType(ComicDayBoard).props.onAdd());
+  expect(tree.root.findAllByType(HeroGeneratedArtworkPicker)).toHaveLength(0);
+  const added = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!.diaries.find(item => item.id === fresh.id)!;
+  expect(added.scenes).toHaveLength(2);
+  expect(added.scenes[1]).toMatchObject({ artworkUri: 'file:///Documents/hero-ai/hero-next-0.png', title: '', memo: '' });
+  await act(async () => tree.root.findByType(ComicDayBoard).props.onAdd());
+  const wrapped = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!.diaries.find(item => item.id === fresh.id)!;
+  expect(wrapped.scenes[2].artworkUri).toBe(original.scenes[0].artworkUri);
+  loadImages.mockRestore();
+  expect(tree.root.findAllByProps({ testID: 'hero-detail-change-scene' }).length).toBeGreaterThan(0);
   act(() => tree.unmount());
 });

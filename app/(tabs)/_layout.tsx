@@ -30,6 +30,7 @@ export default function TabLayout() {
           },
         }}>
         <Tabs.Screen name="index" options={{ title: t('tabs.comicDay') }} />
+        <Tabs.Screen name="characters" options={{ title: t('comicDay.gallery.title') }} />
         <Tabs.Screen
           name="fixed-routines"
           options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }}
@@ -38,7 +39,7 @@ export default function TabLayout() {
           name="puzzle-history"
           options={{ title: t('tabs.puzzle'), href: FEATURE_FLAGS.puzzle ? undefined : null }}
         />
-        <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story') }} />
+        <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story'), href: FEATURE_FLAGS.pokitStory ? undefined : null }} />
       </Tabs>
     </HeroCharacterPickerActionProvider></HeroCardToolsProvider></DayPlanTabBridgeProvider>
   );

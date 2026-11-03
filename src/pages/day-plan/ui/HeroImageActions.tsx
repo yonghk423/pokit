@@ -1,15 +1,21 @@
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
+import { formatHeroPolaroidDate, HeroPolaroidExport, type HeroPolaroidContent } from './HeroPolaroidExport';
 
-export function HeroImageActions({ uri, source, compact = false }: { uri?: string; source?: number; compact?: boolean }) {
+export function HeroImageActions({ uri, source, title = '', memo, exportDate, compact = false, saveOnly = false }: { uri?: string; source?: number; title?: string; memo?: string; exportDate?: string | number; compact?: boolean; saveOnly?: boolean }) {
   const { t } = useTranslation();
   const lock = useRef(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [captureContent, setCaptureContent] = useState<HeroPolaroidContent | null>(null);
+  const pendingCapture = useRef<{ resolve: (uri: string) => void; reject: (error: unknown) => void } | null>(null);
+  const captureComplete = useCallback((result: string) => { pendingCapture.current?.resolve(result); pendingCapture.current = null; setCaptureContent(null); }, []);
+  const captureFailed = useCallback((error: unknown) => { pendingCapture.current?.reject(error); pendingCapture.current = null; setCaptureContent(null); }, []);
+  useEffect(() => () => { pendingCapture.current?.reject(new Error('export_unmounted')); pendingCapture.current = null; }, []);
   useEffect(() => {
     if (!saved) return;
     const timer = setTimeout(() => setSaved(false), 1000);
@@ -21,6 +27,7 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
     lock.current = true; setBusy(true);
     if (action === 'save') setSaved(false);
     let temporary: string | undefined;
+    let polaroid: string | undefined;
     try {
       let local = uri ? resolveHeroArtworkUri(uri) : undefined;
       if (!local && source != null) {
@@ -45,7 +52,11 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
             return;
           }
         }
-        await media.saveToLibraryAsync(local);
+        polaroid = await new Promise<string>((resolve, reject) => {
+          pendingCapture.current = { resolve, reject };
+          setCaptureContent({ uri: local!, title, ...(memo ? { memo } : {}), date: formatHeroPolaroidDate(exportDate) });
+        });
+        await media.saveToLibraryAsync(polaroid);
         setSaved(true);
         Alert.alert(t('comicDay.export.saved'));
       } else {
@@ -56,6 +67,15 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
       }
     } catch { Alert.alert(t('comicDay.export.failed')); }
     finally {
+      pendingCapture.current = null;
+      setCaptureContent(null);
+      if (polaroid) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { releaseCapture } = require('react-native-view-shot') as typeof import('react-native-view-shot');
+          releaseCapture(polaroid);
+        } catch { /* The export has already been saved or reported as failed. */ }
+      }
       if (temporary) {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const fs = require('expo-file-system/legacy') as typeof import('expo-file-system/legacy');
@@ -64,7 +84,8 @@ export function HeroImageActions({ uri, source, compact = false }: { uri?: strin
       lock.current = false; setBusy(false); }
   };
   return <View style={[s.row, compact && s.compactRow]}>
-    {(['save', 'share'] as const).map(action => <Pressable key={action} testID={`hero-image-${action}`} accessibilityRole="button" accessibilityLabel={t(`comicDay.export.${action}`)} disabled={busy} accessibilityState={{ disabled: busy, busy }} onPress={() => { void run(action); }} style={[s.button, compact && s.compactButton, (busy) && { opacity: 0.45 }]}>
+    {captureContent ? <HeroPolaroidExport content={captureContent} onComplete={captureComplete} onError={captureFailed} /> : null}
+    {(saveOnly ? ['save'] as const : ['save', 'share'] as const).map(action => <Pressable key={action} testID={`hero-image-${action}`} accessibilityRole="button" accessibilityLabel={t(`comicDay.export.${action}`)} disabled={busy} accessibilityState={{ disabled: busy, busy }} onPress={() => { void run(action); }} style={[s.button, compact && s.compactButton, (busy) && { opacity: 0.45 }]}>
       <Svg width={compact ? 19 : 26} height={compact ? 19 : 26} viewBox="0 0 28 28" accessible={false}>
         <Path d={action === 'share' ? 'M14 18Q14.3 10 14 3M9 8L14 3 19 8M8 12L5 12 5.5 25 23 24.5 23 12 20 12M6 24L11 24.4' : saved ? 'M5 14L11 21Q17 12 24 6M5.5 14L10.5 20' : 'M14 3Q13.8 11 14 19M8 13L14 19 20 13M4 19L4.5 25 24 24.5 24 19M5 25.5L10 25.3'} stroke={action === 'save' && saved ? '#69BFA9' : '#343B32'} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </Svg>

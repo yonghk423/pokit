@@ -9,9 +9,9 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { ThemedText } from '@shared/ui/themed-text';
-import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
   AnnouncementHomeOverlay,
@@ -35,10 +35,16 @@ export function ComicDayPage() {
   const [headerCharacterList, setHeaderCharacterList] = useState<ReactNode>(null);
   const plannerRef = useRef<ComicDiaryHandle>(null);
   const characterPicker = useContext(HeroCharacterPickerActionContext);
+  const registerPhoto = characterPicker?.registerPhoto;
+  // Other tabs queue the camera intent before navigating. Consume it only
+  // after the main screen has focus and its planner ref is mounted again.
+  useFocusEffect(useCallback(() => {
+    registerPhoto?.(() => plannerRef.current?.openPhotoEntry());
+    return () => registerPhoto?.(null);
+  }, [registerPhoto]));
   useEffect(() => {
     characterPicker?.register(() => photoActive ? plannerRef.current?.openSceneEntry() : plannerRef.current?.openCharacterPicker());
-    characterPicker?.registerPhoto(() => plannerRef.current?.openPhotoEntry());
-    return () => { characterPicker?.register(null); characterPicker?.registerPhoto(null); };
+    return () => { characterPicker?.register(null); };
   }, [characterPicker, photoActive]);
   const setPhotoTabActive = characterPicker?.setPhotoActive;
   useLayoutEffect(() => { setPhotoTabActive?.(photoActive); return () => setPhotoTabActive?.(false); }, [photoActive, setPhotoTabActive]);

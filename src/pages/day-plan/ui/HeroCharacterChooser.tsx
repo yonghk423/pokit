@@ -1,3 +1,6 @@
+import { HeroGeneratedCollectionCard, useHeroGeneratedImages } from './HeroGeneratedCollectionCard';
+import type { HeroAiLibraryImage } from '../lib/heroAiLibrary';
+import { useComicCharacterNames } from '../lib/heroCharacterName';
 import { HeroSceneThumbnail } from './HeroSceneThumbnail';
 import { HeroReorderableStyleRail } from './HeroReorderableStyleRail';
 import { HERO_CHARACTER_ORDER_KEY } from '../lib/heroCharacterOrder';
@@ -49,6 +52,7 @@ function CastingCard({ character, chosen, width, height, ink, paper, reduced, ar
   reduced: boolean; artIndex: number;
 } & Pick<PressableProps, 'onPress' | 'onLongPress' | 'onPressIn' | 'onPressOut' | 'delayLongPress'>) {
   const { t } = useTranslation();
+  const nameFor = useComicCharacterNames();
   const press = useAnimatedValue(1);
   const scene = character.scenes[artIndex - 1];
   const current = scene
@@ -62,10 +66,10 @@ function CastingCard({ character, chosen, width, height, ink, paper, reduced, ar
     width, height, backgroundColor: paper, transform: [{ scale: press }],
   }]}>
     <PaperGrain opacity={0.18} />
-    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityState={{ selected: chosen }} accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} onPress={onPress} delayLongPress={delayLongPress} onLongPress={onLongPress} onPressIn={event => { pressTo(0.985); onPressIn?.(event); }} onPressOut={event => { pressTo(1); onPressOut?.(event); }} style={s.mainArtwork}>
+    <Pressable testID={`comic-character-cover-${character.id}`} accessibilityRole="button" accessibilityState={{ selected: chosen }} accessibilityLabel={t('comicDay.character.choose', { name: nameFor(character.id, t(character.name)) })} onPress={onPress} delayLongPress={delayLongPress} onLongPress={onLongPress} onPressIn={event => { pressTo(0.985); onPressIn?.(event); }} onPressOut={event => { pressTo(1); onPressOut?.(event); }} style={s.mainArtwork}>
       <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey={`${character.id}:${current.id}:960`} source={current.source} fallbackSource={current.fallback} contentFit="contain" style={s.cover} priority="high" />
     </Pressable>
-    <ThemedText style={[s.personalLabel, { color: ink, paddingTop: 6 }]}>{t(character.name)}</ThemedText>
+    <ThemedText style={[s.personalLabel, { color: ink, paddingTop: 6 }]}>{nameFor(character.id, t(character.name))}</ThemedText>
     <SettingsPenFrame color={ink} />
   </Animated.View>;
 }
@@ -76,11 +80,12 @@ function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, r
   showPreviews: boolean; reduced: boolean; isDark: boolean;
 }) {
   const { t } = useTranslation();
+  const nameFor = useComicCharacterNames();
   const previews = useAnimatedValue(0);
   const artwork = useMemo(() => [
-    { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: t(character.name) },
+    { id: 'cover', source: character.cover, fallback: character.preview[0].source, label: nameFor(character.id, t(character.name)) },
     ...character.scenes.map(scene => ({ id: scene.id, source: COMIC_SCENE_THUMBNAILS[scene.id], fallback: scene.source, label: t(scene.label) })),
-  ], [character, t]);
+  ], [character, t, nameFor]);
   useEffect(() => {
     previews.stopAnimation();
     const animation = Animated.timing(previews, {
@@ -99,8 +104,10 @@ function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, r
   );
 }
 
-export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false, lockedCharacterName, onPersonalize, showPersonal = true }: { showPersonal?: boolean; onPersonalize?: () => void; lockedCharacterName?: string; targetDiaryId?: string; onGenerated?: (images: HeroAiResult[], name: string, reuse?: boolean) => void; requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
+export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, requireExplicitChoice = false, lockedCharacterName, onPersonalize, showPersonal = true, onChooseGenerated }: { onChooseGenerated?: (image: HeroAiLibraryImage) => void; showPersonal?: boolean; onPersonalize?: () => void; lockedCharacterName?: string; targetDiaryId?: string; onGenerated?: (images: HeroAiResult[], name: string, reuse?: boolean) => void; requireExplicitChoice?: boolean; onStart: (character: ComicCharacter, name?: string) => void; onClose?: () => void; ink: string; muted: string; isDark: boolean }) {
   const { t } = useTranslation();
+  const nameFor = useComicCharacterNames();
+  const generatedImages = useHeroGeneratedImages();
   const viewport = useWindowDimensions();
   const reduced = useReducedMotion();
   const layoutRef = useRef<View>(null);
@@ -111,7 +118,7 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
   const [layoutHeight, setLayoutHeight] = useState<number | null>(null);
   const [stageSize, setStageSize] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<ComicCharacter | null>(requireExplicitChoice ? null : COMIC_CHARACTERS[0]);
-  const names = useMemo(() => Object.fromEntries(COMIC_CHARACTERS.map(character => [character.id, lockedCharacterName ?? t(character.name)])), [lockedCharacterName, t]);
+  const names = useMemo(() => Object.fromEntries(COMIC_CHARACTERS.map(character => [character.id, lockedCharacterName ?? nameFor(character.id, t(character.name))])), [lockedCharacterName, t, nameFor]);
   const [previewCharacter, setPreviewCharacter] = useState<string | null>(null);
   const [personalChosen, setPersonalChosen] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -209,8 +216,8 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
           <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
             <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
               <HeroReorderableStyleRail storageKey={HERO_CHARACTER_ORDER_KEY} itemWidth={artworkWidth} gap={14} scrollTestID="comic-character-horizontal-list" contentContainerStyle={s.horizontalCards} style={{ height: artworkHeight + 44, flexGrow: 0, flexShrink: 0 }} scrollStyle={{ flex: 1 }}>
-              {COMIC_CHARACTERS.map(character => <CastingCard key={character.id} character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
-                  artIndex={artIndices[character.id] ?? 0} onPress={() => choose(character)} />)}
+              {[...COMIC_CHARACTERS.map(character => <CastingCard key={character.id} character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
+                  artIndex={artIndices[character.id] ?? 0} onPress={() => choose(character)} />), ...(generatedImages.length ? [<HeroGeneratedCollectionCard key="generated-illustrations" images={generatedImages} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} onChoose={onChooseGenerated} />] : [])]}
               <>
               {showPersonal ? <View style={{ width: artworkWidth, height: artworkHeight }}>
               <AnimatedPressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} accessibilityState={{ selected: personalChosen }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: personalChosen ? 3 : 1, elevation: personalChosen ? 4 : 2 }]}>

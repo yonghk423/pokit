@@ -1,3 +1,4 @@
+import { useComicCharacterNames } from '../lib/heroCharacterName';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, useAnimatedValue, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -20,6 +21,7 @@ export function HeroCharacterList({ ink, muted, selectedId, onSelect, open, inli
   ink: string; muted: string; selectedId?: string; onSelect: (character: ComicCharacter) => void; open: boolean; inline?: boolean;
 }) {
   const { t } = useTranslation();
+  const nameFor = useComicCharacterNames();
   const reveal = useAnimatedValue(0);
   useEffect(() => {
     const animation = Animated.timing(reveal, { toValue: open ? 1 : 0, duration: open ? 220 : 160, easing: Easing.out(Easing.cubic), useNativeDriver: true });
@@ -30,11 +32,11 @@ export function HeroCharacterList({ ink, muted, selectedId, onSelect, open, inli
     <ScrollView testID="hero-header-character-scroll" horizontal showsHorizontalScrollIndicator keyboardShouldPersistTaps="handled" contentContainerStyle={s.list}>
       {SELECTABLE_COMIC_CHARACTERS.map(character => {
         const selected = selectedId === character.id;
-        return <Pressable key={character.id} testID={`hero-header-character-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: t(character.name) })} accessibilityState={{ selected }} onPress={() => onSelect(character)} style={s.item}>
+        return <Pressable key={character.id} testID={`hero-header-character-${character.id}`} accessibilityRole="button" accessibilityLabel={t('comicDay.character.choose', { name: nameFor(character.id, t(character.name)) })} accessibilityState={{ selected }} onPress={() => onSelect(character)} style={s.item}>
         <View style={s.portrait}><HeaderPortrait source={character.cover} id={character.id} /><Svg pointerEvents="none" width={36} height={36} viewBox="0 0 52 52" style={StyleSheet.absoluteFill}>
           <Path testID={`hero-header-character-ring-${character.id}`} d="M26 2C12 1 2 12 2 26S12 50 26 50 50 40 50 26 40 2 26 2Z" fill="none" stroke={protagonistSelectionInk} strokeWidth={selected ? 1.8 : 1.1} strokeLinecap="round" />
         </Svg></View>
-        <ThemedText style={[s.name, { color: ink, fontWeight: selected ? '600' : '400' }]}>{t(character.name)}</ThemedText>
+        <ThemedText style={[s.name, { color: ink, fontWeight: selected ? '600' : '400' }]}>{nameFor(character.id, t(character.name))}</ThemedText>
       </Pressable>;
       })}
       <View testID="hero-header-character-upcoming" accessible accessibilityLabel={t('comicDay.character.new') + ', ' + t('comicDay.character.soon')} style={s.item}>

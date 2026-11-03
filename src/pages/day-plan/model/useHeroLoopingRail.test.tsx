@@ -6,7 +6,7 @@ import { useHeroLoopingRail } from './useHeroLoopingRail';
 import { wrapHeroRailOffset } from '../lib/heroLoopingRail';
 
 let result!: ReturnType<typeof useHeroLoopingRail>;
-function Probe() { const rail = useHeroLoopingRail(600, true); useEffect(() => { result = rail; }); return null; }
+function Probe({ direction = 'right' }: { direction?: 'left' | 'right' }) { const rail = useHeroLoopingRail(600, true, direction); useEffect(() => { result = rail; }); return null; }
 let tick: FrameRequestCallback;
 const originalAppState = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 beforeEach(() => {
@@ -67,5 +67,15 @@ it.each(['motion', 'reader'])('respects the %s accessibility preference', async 
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<Probe />); });
   expect(result.autoPlaying).toBe(false);
+  act(() => tree.unmount());
+});
+
+it('moves left when the initial chooser requests the reverse direction', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<Probe direction="left" />); });
+  const scrollTo = jest.fn();
+  Object.assign(result.ref, { current: { scrollTo } });
+  tick(0); tick(16);
+  expect(scrollTo.mock.calls.at(-1)?.[0].x).toBeCloseTo(600.288);
   act(() => tree.unmount());
 });

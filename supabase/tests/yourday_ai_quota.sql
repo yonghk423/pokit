@@ -3,24 +3,26 @@ begin;
 select pg_advisory_xact_lock(2801028);
 update public.yourday_ai_limits set global_daily=100000 where singleton;
 do $test$
-declare u uuid:=gen_random_uuid(); a text:='quota-test-'||gen_random_uuid(); b text:='quota-test-'||gen_random_uuid();
+declare u uuid:=gen_random_uuid(); a text:='quota-test-'||gen_random_uuid(); b text:='quota-test-'||gen_random_uuid(); c text:='quota-test-'||gen_random_uuid();
  dev text:='quota-dev-'||gen_random_uuid(); next_id text; n integer; global_used integer;
 begin
  insert into auth.users(id) values(u);
  if has_table_privilege('authenticated','public.yourday_ai_jobs','SELECT') then raise exception 'Unexpected direct job access'; end if;
  if has_function_privilege('authenticated','public.yourday_ai_reserve(uuid,text,text,integer,boolean)','EXECUTE')
  or has_function_privilege('anon','public.yourday_ai_remaining(uuid,boolean)','EXECUTE') then raise exception 'Public developer bypass'; end if;
- if public.yourday_ai_remaining(u)<>1 then raise exception 'Production allowance is not one'; end if;
+ if public.yourday_ai_remaining(u)<>2 then raise exception 'Production allowance is not two'; end if;
  begin
-  perform public.yourday_ai_reserve(u,b,'photo',2);
+  perform public.yourday_ai_reserve(u,b,'photo',3);
   raise exception 'Production batch bypassed quota';
  exception when others then if sqlerrm<>'daily_limit' then raise; end if; end;
  perform public.yourday_ai_reserve(u,a,'photo',1);
  perform public.yourday_ai_reserve(u,a,'photo',1);
- if public.yourday_ai_remaining(u)<>0 then raise exception 'Incorrect reservation count'; end if;
+ if public.yourday_ai_remaining(u)<>1 then raise exception 'Incorrect reservation count'; end if;
+ perform public.yourday_ai_reserve(u,b,'photo',1);
+ if public.yourday_ai_remaining(u)<>0 then raise exception 'Second production slot was not reserved'; end if;
  begin
-  perform public.yourday_ai_reserve(u,b,'photo',1);
-  raise exception 'Second production reservation succeeded';
+  perform public.yourday_ai_reserve(u,c,'photo',1);
+  raise exception 'Third production reservation succeeded';
  exception when others then if sqlerrm<>'daily_limit' then raise; end if; end;
  if not public.yourday_ai_claim(u,a,0) then raise exception 'First claim failed'; end if;
  if public.yourday_ai_claim(u,a,0) then raise exception 'Duplicate claim succeeded'; end if;
@@ -41,9 +43,9 @@ begin
   if not public.yourday_ai_claim(u,next_id,0,true) then raise exception 'Developer attempt capped'; end if;
  end loop;
  if public.yourday_ai_remaining(u)<>1 then raise exception 'Developer attempts used production allowance'; end if;
- perform public.yourday_ai_reserve(u,b,'photo',1);
+ perform public.yourday_ai_reserve(u,c,'photo',1);
  if public.yourday_ai_remaining(u)<>0 then raise exception 'Production slot was not reserved'; end if;
- update public.yourday_ai_jobs set created_at=now()-interval '21 minutes' where id=b;
+ update public.yourday_ai_jobs set created_at=now()-interval '21 minutes' where id=c;
  if public.yourday_ai_remaining(u)<>1 then raise exception 'Expired reservation not released'; end if;
  -- Developer credentials do not disable the shared service budget.
  select count(*) into global_used from public.yourday_ai_outputs o join public.yourday_ai_jobs j on j.id=o.job_id

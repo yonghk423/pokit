@@ -12,7 +12,7 @@ import { HeroCardStack, type HeroCardStackHandle } from './HeroCardStack';
 import type { HeroCardOpen } from './HeroCardFlip';
 import type { HeroDeckFrame } from './HeroOverviewCardMotion';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
-import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -21,7 +21,7 @@ import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 
-export type ComicDeckItem = { key: string; label: string; artworkUri?: string; memo?: string; faceColor?: string; inkColor?: string };
+export type ComicDeckItem = { key: string; label: string; artworkUri?: string; exportDate?: string | number; memo?: string; faceColor?: string; inkColor?: string };
 
 const THUMB = 44;
 const THUMB_GAP = 8;
@@ -116,7 +116,9 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
   const safeActive = Math.max(0, Math.min(active, items.length - 1));
   const currentItem = items[safeActive];
   const currentScene = currentItem ? resolveComicScene(currentItem.key, currentItem.label, choices) : null;
-  const currentArtwork = currentScene ? COMIC_SCENE_THUMBNAILS[currentScene.id] ?? currentScene.source : null;
+  const savedArtwork = currentItem?.artworkUri;
+  const generatedArtwork = useMemo(() => savedArtwork ? { uri: savedArtwork } : null, [savedArtwork]);
+  const currentArtwork = generatedArtwork ?? (currentScene ? COMIC_SCENE_THUMBNAILS[currentScene.id] ?? currentScene.source : null);
   useEffect(() => {
     if (focused && interactive && currentArtwork) useHeroTabArtwork.getState().setSource(currentArtwork);
   }, [focused, interactive, currentArtwork]);
@@ -184,7 +186,7 @@ export function ComicSceneDeck({ focusKey, items, ink, muted, isDark, choices, o
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
           </Pressable>
             <HeroCardCaption key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
-              topActions={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}><HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} compact />{index === active ? cardTools : null}</View>}
+              topActions={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}><HeroImageActions key={item.artworkUri ?? scene.id} uri={item.artworkUri} source={scene.source} title={item.label} exportDate={item.exportDate} compact />{index === active ? cardTools : null}</View>}
               showEdit={!!onEditCard}
               onSave={pageInteractive && onEditCard ? text => onEditCard(item.key, text) : undefined}
               onEditingChange={pageInteractive ? editing => setEditingKey(editing ? item.key : null) : undefined} />

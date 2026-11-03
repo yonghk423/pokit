@@ -56,7 +56,7 @@ it('starts without a name input and preserves historical names in storage', () =
   const start = tree.root.findAllByProps({ testID: 'comic-character-start' })[0];
   expect(start.props.disabled).toBe(false);
   act(() => { start.props.onPress(); jest.advanceTimersByTime(600); });
-  expect(onStart).toHaveBeenCalledWith(character, character.name);
+  expect(onStart).toHaveBeenCalledWith(character, '이전 이름');
   expect(loadComicCharacterName(character.id)).toBe('이전 이름');
   act(() => tree.unmount());
   localStorageClient.removeItem(`pokit:comic-character-name:${character.id}`);

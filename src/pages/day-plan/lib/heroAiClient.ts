@@ -1,3 +1,4 @@
+import { notifyHeroAiLibraryChanged, saveHeroAiLibraryMetadata } from './heroAiLibrary';
 import * as fs from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabasePublishableKey, getSupabaseUrl } from '@shared/config/supabase';
@@ -179,8 +180,10 @@ async function finishHeroAiJob(pending: PendingHeroAiJob, job: JobSnapshot, onPr
       await downloadResult(result.url, target);
     }
     checkCancellation(signal);
+    saveHeroAiLibraryMetadata(target, pending);
     images.push({ uri: target, ...(mode === 'face' ? { sceneId: scenes[index] } : {}) });
   }
+  notifyHeroAiLibraryChanged();
   const result = { images, remaining: job.remaining, error: job.error, indices: job.results.map(value => value.index) };
   checkCancellation(signal);
   await AsyncStorage.setItem(PENDING_KEY, JSON.stringify({ ...pending, result }));
@@ -201,6 +204,7 @@ async function saveDirectResult(id: string, index: number, result: { index?: num
   try {
     await fs.writeAsStringAsync(temporary, result.b64_json, { encoding: fs.EncodingType.Base64 });
     await fs.moveAsync({ from: temporary, to: target });
+    notifyHeroAiLibraryChanged();
   } catch {
     await fs.deleteAsync(temporary, { idempotent: true }).catch(() => undefined);
     throw new HeroAiError('save_failed');
@@ -220,6 +224,7 @@ async function downloadResult(url: string, target: string) {
     const signature = await fs.readAsStringAsync(temporary, { encoding: fs.EncodingType.Base64, position: 0, length: 8 });
     if (!signature.startsWith('iVBORw0KGgo')) throw new Error('invalid_result');
     await fs.moveAsync({ from: temporary, to: target });
+    notifyHeroAiLibraryChanged();
   } catch {
     await fs.deleteAsync(temporary, { idempotent: true }).catch(() => undefined);
     throw new HeroAiError('save_failed');

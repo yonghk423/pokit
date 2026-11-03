@@ -7,7 +7,7 @@ const SPEED = 18;
 const RESUME_DELAY = 1800;
 
 /** Imperative native scrolling keeps animation frames out of React rendering. */
-export function useHeroLoopingRail(span: number, ready: boolean) {
+export function useHeroLoopingRail(span: number, ready: boolean, direction: 'left' | 'right' = 'right') {
   const focused = useContext(DayPlanTabFocusContext);
   const [active, setActive] = useState(AppState.currentState === 'active');
   const [reduced, setReduced] = useState(true);
@@ -44,14 +44,14 @@ export function useHeroLoopingRail(span: number, ready: boolean) {
       const elapsed = previous === undefined ? 0 : Math.min(timestamp - previous, 32);
       previous = timestamp;
       if (!touching.current && !dragging.current && Date.now() >= pausedUntil.current) {
-        position.current = wrapHeroRailOffset(position.current - SPEED * elapsed / 1000, span);
+        position.current = wrapHeroRailOffset(position.current + (direction === 'left' ? 1 : -1) * SPEED * elapsed / 1000, span);
         ref.current?.scrollTo({ x: position.current, y: 0, animated: false });
       }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [autoPlaying, span]);
+  }, [autoPlaying, span, direction]);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (touching.current || dragging.current || Date.now() < pausedUntil.current) position.current = event.nativeEvent.contentOffset.x;

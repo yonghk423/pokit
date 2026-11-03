@@ -55,3 +55,22 @@ it('keeps card scale fixed across repeated moves and resets transforms after rel
     spy.mockRestore();
   }
 });
+
+it('includes the generated collection in the same saved order and restores it after remount', () => {
+  let handlers!: PanResponderCallbacks;
+  const spy = jest.spyOn(PanResponder, 'create').mockImplementation(config => { handlers = config; return { panHandlers: {} }; });
+  const render = () => <HeroReorderableStyleRail>{[...readHeroCharacterOrder().map(id => <Pressable key={id} testID={id} />), <Pressable key="generated-illustrations" testID="generated" />]}{null}</HeroReorderableStyleRail>;
+  let tree!: ReactTestRenderer;
+  try {
+    act(() => { tree = create(render()); });
+    act(() => tree.root.findAllByProps({ testID: 'generated' })[0].props.onLongPress({ nativeEvent: { pageX: 450 } }));
+    act(() => handlers.onPanResponderGrant?.({} as never, {} as never));
+    act(() => handlers.onPanResponderMove?.({} as never, { moveX: 78 } as never));
+    act(() => handlers.onPanResponderRelease?.({} as never, {} as never));
+    expect(readHeroCharacterOrder(HERO_STYLE_ORDER_KEY, ['generated-illustrations'])[0]).toBe('generated-illustrations');
+    act(() => tree.unmount());
+    act(() => { tree = create(render()); });
+    const children = tree.root.findAllByProps({ testID: 'hero-inline-style-scroll' })[0].props.children.flat();
+    expect(children[0].key).toBe('generated-illustrations');
+  } finally { act(() => tree?.unmount()); spy.mockRestore(); }
+});

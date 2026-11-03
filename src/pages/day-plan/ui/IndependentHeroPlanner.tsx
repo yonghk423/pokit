@@ -1,3 +1,4 @@
+import { loadHeroAiLibrary, type HeroAiLibraryImage } from '../lib/heroAiLibrary';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { HeroCharacterPickerOverlay } from './HeroCharacterPickerOverlay';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
@@ -22,7 +23,7 @@ import { ComicMemoField } from './HeroMemoField';
 import { ComicDiaryLibrary } from './HeroDiaryLibrary';
 import { COMIC_DIARY_STORAGE_KEY, loadComicDiaryLibrary, createComicDiary, deleteComicDiaries, saveComicDiaryLibrary, updateComicDiary, type ComicDiary, type ComicDiaryLibrary as LibraryState } from '../lib/heroDiaryStorage';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { PenFrame } from '@shared/ui/pen-frame';
+import { HeroImageActions } from './HeroImageActions';
 import { PaperControl } from '@shared/ui/paper-control';
 import { clearComicNavigation, loadComicNavigation, saveComicNavigation } from '../lib/heroNavigation';
 import { ComicSceneImage } from './HeroSceneImage';
@@ -58,6 +59,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   const activeSceneRef = useRef<string | null>(null);
   const draftRef = useRef<{ image: ComicSceneId; text: HeroCardText } | null>(null);
   const captureDraft = useCallback((image: ComicSceneId, text: HeroCardText) => { draftRef.current = { image, text }; }, []);
+  const [writingSceneId, setWritingSceneId] = useState<string | null>(null);
   const [focusSceneId, setFocusSceneId] = useState<string | null>(null);
   const captureActiveScene = useCallback((id: string) => {
     activeSceneRef.current = id;
@@ -173,9 +175,9 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
       diaries: library.diaries.map(item => item.id === emptyDiary.id ? {
         ...item,
         characterId: next.id,
-        characterName: characterName?.trim() || (item.characterId === next.id ? item.characterName : undefined) || t(next.name),
+        characterName: characterName?.trim() || (item.characterId === next.id ? item.characterName : undefined) || loadComicCharacterName(next.id) || t(next.name),
       } : item),
-    } : createComicDiary(library, next.id, t('comicDiary.defaultTitle', { number }), characterName?.trim() || t(next.name));
+    } : createComicDiary(library, next.id, t('comicDiary.defaultTitle', { number }), characterName?.trim() || loadComicCharacterName(next.id) || t(next.name));
     const diaryKey = nextLibrary.activeId!;
     const image = next.scenes[Math.floor(Math.random() * next.scenes.length)] ?? next.scenes[0];
     const initial = { ...newComicScene(''), image: image.id };
@@ -251,6 +253,28 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     commit(next); saveComicNavigation(character.id, 'board', id);
     if (useServiceTutorial.getState().active) useServiceTutorial.getState().pause();
     setChooserReturn(null); setCreating(false); Keyboard.dismiss();
+  };
+  const reuseGeneratedArtwork = (image: HeroAiLibraryImage) => {
+    const source = COMIC_CHARACTERS[0];
+    const blank = { ...newComicScene(''), image: image.sceneId ?? source.scenes[0].id, artworkUri: image.uri };
+    const target = library.diaries.find(item => item.id === addingToId);
+    let next = library;
+    if (target) {
+      next = { ...updateComicDiary(library, target.id, { scenes: [...target.scenes, blank] }), activeId: target.id };
+    } else {
+      let number = library.diaries.length + 1;
+      while (library.diaries.some(item => item.title === t('comicDiary.defaultTitle', { number }))) number++;
+      next = createComicDiary(library, source.id, t('comicDiary.defaultTitle', { number }), loadComicCharacterName('generated-illustrations') ?? t('comicDay.gallery.generated'));
+      next = updateComicDiary(next, next.activeId!, { scenes: [blank] });
+    }
+    next = { ...next, diaries: next.diaries.map(item => item.id === next.activeId ? { ...item, artworkCollection: 'generated' as const } : item) };
+    commit(next);
+    saveComicNavigation(target?.characterId ?? source.id, 'board', next.activeId!);
+    setFocusSceneId(blank.id);
+    setWritingSceneId(blank.id);
+    setCharacterPickerOpen(false); setCharacterListOpen(false); setAddingToId(null); setAdditionChoice(null);
+    setChooserReturn(null); setCreating(false); setLibraryOpen(false); Keyboard.dismiss();
+    if (useServiceTutorial.getState().active) useServiceTutorial.getState().pause();
   };
   const createRandomDiary = (image: ComicSceneId, text: HeroCardText, addAnother = false) => {
     const character = COMIC_CHARACTERS[0];
@@ -331,7 +355,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   useLayoutEffect(() => { useHeroTabArtwork.getState().setHasCards(hasThumbnailCards); }, [hasThumbnailCards]);
   useLayoutEffect(() => () => { useHeroTabArtwork.getState().setHasCards(false); }, []);
   return <TutorialGuideLayer><View style={{ flex: 1 }}>
-    {characterPickerOpen ? <HeroCharacterPickerOverlay selectedId={character?.id} isDark={props.isDark} onClose={() => setCharacterPickerOpen(false)} onSelect={next => { setCharacterPickerOpen(false); selectHeaderCharacter(next); }} /> : null}
+    {characterPickerOpen ? <HeroCharacterPickerOverlay onChooseGenerated={reuseGeneratedArtwork} selectedId={character?.id} isDark={props.isDark} onClose={() => setCharacterPickerOpen(false)} onSelect={next => { setCharacterPickerOpen(false); selectHeaderCharacter(next); }} /> : null}
     {!props.onHeaderCharacterListChange ? <HeroCharacterList open={characterListOpen} ink={props.ink} muted={props.muted} selectedId={character?.id} onSelect={selectHeaderCharacter} /> : null}
     <ServiceTutorialCoach characterChoosing={showChooser} steps={showChooser ? [] : showPlanner ? ['comicStart'] : ['comicStart', 'comicCharacter', 'comicName', 'comicReady']} />
     <DayPlanTabFocusContext.Provider value={tabFocused && !photoEntryVisible}>
@@ -341,11 +365,11 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
       entering={FadeIn.duration(240).delay(60).reduceMotion(ReduceMotion.System)}
       exiting={FadeOut.duration(160).reduceMotion(ReduceMotion.System)}
       style={StyleSheet.absoluteFill}>
-    {showEmptyBoard ? <ComicDayBoard emptyContent={<HeroEmptyTodayChooser hasPreviousRecords={library.diaries.some(item => item.scenes.length > 0)} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} onPersonalize={openPhotoEntry} />} hideEntryActions={props.entryActionsInHeader} onDraftChange={captureDraft} onCreateRandom={createRandomDiary} onAddPhoto={openPhotoEntry} onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} focusSceneId={focusSceneId} onActiveSceneChange={captureActiveScene} onAdditionComplete={() => setAdditionChoice(null)} additionCharacter={additionChoice?.diaryId === diary!.id ? additionChoice.character : null}
+    {showEmptyBoard ? <ComicDayBoard emptyContent={<HeroEmptyTodayChooser onChooseGenerated={reuseGeneratedArtwork} hasPreviousRecords={library.diaries.some(item => item.scenes.length > 0)} ink={props.ink} muted={props.muted} isDark={props.isDark} onStart={create} onPersonalize={openPhotoEntry} />} hideEntryActions={props.entryActionsInHeader} onDraftChange={captureDraft} onCreateRandom={createRandomDiary} onAddPhoto={openPhotoEntry} onOpenBag={props.onOpenBag} hideCharacterHeading={props.hideCharacterHeading} diaryTitle={t('comicDiary.title')} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={() => { useServiceTutorial.getState().advance('comicStart', 'comicCharacter'); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} focusSceneId={focusSceneId} writingSceneId={writingSceneId} onWritingOpened={() => setWritingSceneId(null)} onActiveSceneChange={captureActiveScene} onAdditionComplete={() => setAdditionChoice(null)} additionCharacter={additionChoice?.diaryId === diary!.id ? additionChoice.character : null}
       onAddCharacter={() => { clearComicNavigation(); setAddingToId(diary!.id); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }}
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onSelectCharacter={() => { if (!diary!.scenes.length) commit(deleteComicDiaries(library, [diary!.id])); clearComicNavigation(); setChooserReturn('board'); setCharacterDraft(value => value + 1); setCreating(true); }} /> : <>
-      <ComicCharacterChooser key={characterDraft} showPersonal={chooserReturn !== 'library'} lockedCharacterName={addingToId ? (library.diaries.find(item => item.id === addingToId)?.characterName || t(COMIC_CHARACTERS[0].name)) : undefined} targetDiaryId={addingToId ?? undefined} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onPersonalize={() => { setCreating(false); setChooserReturn(null); setAddingToId(null); openPhotoEntry(); }} onStart={create} onGenerated={createGenerated} onClose={chooserReturn ? cancelCreate : undefined} />
+      <ComicCharacterChooser onChooseGenerated={reuseGeneratedArtwork} key={characterDraft} showPersonal={chooserReturn !== 'library'} lockedCharacterName={addingToId ? (library.diaries.find(item => item.id === addingToId)?.characterName || t(COMIC_CHARACTERS[0].name)) : undefined} targetDiaryId={addingToId ?? undefined} requireExplicitChoice={tutorialActive} ink={props.ink} muted={props.muted} isDark={props.isDark} onPersonalize={() => { setCreating(false); setChooserReturn(null); setAddingToId(null); openPhotoEntry(); }} onStart={create} onGenerated={createGenerated} onClose={chooserReturn ? cancelCreate : undefined} />
     </>}
     </Animated.View>
     </View>
@@ -375,9 +399,11 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
       onRename={(id, title) => commit(updateComicDiary(library, id, { title }))} onDelete={id => removeMany([id])} onDeleteMany={removeMany} /> : null}
   </View></TutorialGuideLayer>;
 });
-function CharacterComicPlanner({ focusSceneId, ink, muted, isDark, character, diary, onUpdate, onSelectCharacter, hideCharacterHeading, onOpenBag, onAddCharacter, additionCharacter, onActiveSceneChange, onAdditionComplete }: PlannerProps & { focusSceneId?: string | null; onAdditionComplete: () => void; onActiveSceneChange?: (id: string) => void; onAddCharacter: () => void; additionCharacter: ComicCharacter | null; diary: ComicDiary; onUpdate: (scenes: ComicDayScene[]) => void; character: ComicCharacter; onSelectCharacter: () => void }) {
+function CharacterComicPlanner({ date, writingSceneId, onWritingOpened, focusSceneId, ink, muted, isDark, character, diary, onUpdate, onSelectCharacter, hideCharacterHeading, onOpenBag, onAddCharacter, additionCharacter, onActiveSceneChange, onAdditionComplete }: PlannerProps & { writingSceneId?: string | null; onWritingOpened: () => void; focusSceneId?: string | null; onAdditionComplete: () => void; onActiveSceneChange?: (id: string) => void; onAddCharacter: () => void; additionCharacter: ComicCharacter | null; diary: ComicDiary; onUpdate: (scenes: ComicDayScene[]) => void; character: ComicCharacter; onSelectCharacter: () => void }) {
   const { t } = useTranslation();
   const scenes = diary.scenes;
+  const addingGenerated = useRef(false);
+  const generatedCollection = diary.artworkCollection === 'generated' || (scenes.length > 0 && scenes.every(scene => scene.artworkUri?.includes('/hero-ai/')));
   const [pickerOpen, setPickerOpen] = useState(false);
   const showPicker = (open: boolean) => {
     if (!open) {
@@ -391,6 +417,11 @@ function CharacterComicPlanner({ focusSceneId, ink, muted, isDark, character, di
   };
   const [changingScene, setChangingScene] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!writingSceneId || !scenes.some(scene => scene.id === writingSceneId)) return;
+    setSelectedId(writingSceneId);
+    onWritingOpened();
+  }, [writingSceneId, scenes, onWritingOpened]);
   const [todoDraft, setTodoDraft] = useState('');
   const flipRef = useRef<HeroCardFlipHandle>(null);
   const [detailFrontReady, setDetailFrontReady] = useState(false);
@@ -426,6 +457,21 @@ function CharacterComicPlanner({ focusSceneId, ink, muted, isDark, character, di
     setDetailFrontReady(false); setOpenedCard(null); setTodoDraft(''); setSelectedId(tutorialScene);
   }, [activeTutorialStep, tutorialScene, selectedId, scenes]);
   const addOrResume = () => {
+    if (generatedCollection) {
+      if (addingGenerated.current) return;
+      addingGenerated.current = true;
+      void loadHeroAiLibrary().then(images => {
+        if (!images.length) return;
+        const filename = (uri?: string) => uri?.split('/').pop();
+        const last = scenes[scenes.length - 1];
+        const previous = images.findIndex(image => filename(image.uri) === filename(last?.artworkUri));
+        const image = images[(previous + 1) % images.length];
+        update([...scenes, { ...newComicScene(''), image: image.sceneId ?? character.scenes[0].id, artworkUri: image.uri }]);
+        showPicker(false);
+        Keyboard.dismiss();
+      }).catch(() => undefined).finally(() => { addingGenerated.current = false; });
+      return;
+    }
     const unused = character.scenes.filter(image => !scenes.some(scene => scene.image === image.id));
     const pool = unused.length ? unused : character.scenes;
     const image = pool[Math.floor(Math.random() * pool.length)] ?? character.scenes[0];
@@ -473,7 +519,7 @@ function CharacterComicPlanner({ focusSceneId, ink, muted, isDark, character, di
   };
   return <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }}>
     {!selected ? <ServiceTutorialCoach steps={['comicTools', 'comicOpen', 'comicMemo', 'comicTask', 'comicCheck', 'comicSuccess']} /> : null}
-    <ComicDayBoard focusSceneId={focusSceneId} onActiveSceneChange={onActiveSceneChange} onOpenBag={onOpenBag} character={character} sceneLibrary={character.scenes} detailOpen={!!selected && detailFrontReady} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} onSelectCharacter={onSelectCharacter} items={scenes.map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, artworkUri: scene.artworkUri, icon: '', faceColor: scene.paper, inkColor: scene.pen }))}
+    <ComicDayBoard focusSceneId={focusSceneId} onActiveSceneChange={onActiveSceneChange} onOpenBag={onOpenBag} character={character} sceneLibrary={character.scenes} detailOpen={!!selected && detailFrontReady} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} onSelectCharacter={onSelectCharacter} items={scenes.map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, artworkUri: scene.artworkUri, exportDate: diary.createdAt > 0 ? diary.createdAt : date, icon: '', faceColor: scene.paper, inkColor: scene.pen }))}
       ink={ink} muted={muted} isDark={isDark} choices={Object.fromEntries(scenes.map(scene => [scene.id, scene.image]))}
       onOpen={open}
       onEditCard={(id, text) => patch(id, text)}
@@ -493,9 +539,8 @@ function CharacterComicPlanner({ focusSceneId, ink, muted, isDark, character, di
               <ComicSceneImage contentFit="contain" contentPosition="center" backgroundColor={selected.paper} imageKey={`${selected.artworkUri ?? selected.image}:original`} source={selected.artworkUri ? { uri: selected.artworkUri } : selectedArtwork!.source} style={{ width: '100%', height: detailImageWidth / detailImageRatio }} />
               <View style={s.memoHeadingRow}>
                 <ThemedText style={{ flex: 1, fontSize: 19, color: selected.pen }}>{t('comicDay.memo')}</ThemedText>
-              <Pressable testID="hero-detail-change-scene" accessibilityRole="button" accessibilityLabel={t('comicDay.change')} onPress={() => { tapHaptic(); Keyboard.dismiss(); setChangingScene(true); }} style={({ pressed }) => [s.changeSceneButton, { opacity: pressed ? 0.6 : 1 }]}>
-                <PenFrame color={selected.pen} />
-                <Svg width={17} height={17} viewBox="0 0 24 24" accessible={false}><Path d="M4 5q8-.5 16 0l-.2 15-15.9-.1ZM5 17l5-6 4 4 2-2 3 4M16 8h.1" fill="none" stroke={selected.pen} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+              <HeroImageActions saveOnly uri={selected.artworkUri} source={selectedArtwork?.source} title={selected.title} memo={selected.memo} exportDate={diary.createdAt > 0 ? diary.createdAt : date} />
+              <Pressable testID="hero-detail-change-scene" accessibilityRole="button" accessibilityLabel={t('comicDay.change')} onPress={() => { tapHaptic(); Keyboard.dismiss(); setChangingScene(true); }} style={({ pressed }) => [s.changeSceneButton, { borderColor: selected.pen, opacity: pressed ? 0.6 : 1 }]}>
                 <ThemedText style={{ color: selected.pen, fontSize: 13 }}>{t('comicDay.change')}</ThemedText>
               </Pressable>
               </View>
@@ -557,7 +602,7 @@ const s = StyleSheet.create({
   headerClose: { width: 52, height: 52, marginTop: 4, marginRight: -4, alignItems: 'center', justifyContent: 'center' },
   closeButton: { marginLeft: 'auto', minWidth: 76, minHeight: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#5F655C', borderRadius: 4 },
   memoHeadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginTop: 10, marginBottom: 8 },
-  changeSceneButton: { minHeight: 40, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 14 },
+  changeSceneButton: { borderWidth: 0.9, borderRadius: 1, minHeight: 44, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 14 },
   detailFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 18, paddingVertical: 10 },
   touch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   content: { paddingBottom: 24 }, detailFields: { paddingHorizontal: 20 }, title: { fontSize: 23, minHeight: 44, marginHorizontal: 20 },

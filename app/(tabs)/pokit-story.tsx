@@ -1,5 +1,6 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect } from 'expo-router';
 
 import { PokitStoryPage } from '@pages/pokit-story';
 import { useDayPlanTabBridge } from '@pages/day-plan';
@@ -7,6 +8,11 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { NativeTabContent } from '@shared/ui/native-tab-content';
 
 export default function PokitStoryTab() {
+  if (!FEATURE_FLAGS.pokitStory) return <Redirect href="/" />;
+  return <EnabledPokitStoryTab />;
+}
+
+function EnabledPokitStoryTab() {
   const { registerStoryWebLight } = useDayPlanTabBridge();
   const isDark = useColorScheme() === 'dark';
   const [initialLoading, setInitialLoading] = useState(true);

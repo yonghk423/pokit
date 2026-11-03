@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs -- The animation hook returns handlers alongside an animated ref; render never reads ref.current. */
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Animated, Easing, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -8,12 +8,17 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { SELECTABLE_COMIC_CHARACTERS, type ComicCharacter } from '../lib/heroCharacters';
+import { useComicCharacterNames } from '../lib/heroCharacterName';
 import { useHeroLoopingRail } from '../model/useHeroLoopingRail';
+import { AppModal } from '@shared/ui/app-modal';
+import { loadHeroAiLibrary, subscribeHeroAiLibrary, type HeroAiLibraryImage } from '../lib/heroAiLibrary';
+import { HeroGeneratedArtworkPicker } from './HeroGeneratedArtworkPicker';
 import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 
 const CAMERA = require('../../../../assets/control-illustrations/personal-camera-hands.webp');
-const PEOPLE = [null, ...SELECTABLE_COMIC_CHARACTERS];
+type EmptyChoice = ComicCharacter | 'generated' | null;
+const PEOPLE: EmptyChoice[] = [null, ...SELECTABLE_COMIC_CHARACTERS];
 const COPIES = [0, 1, 2];
 const GAP = 14;
 const FOOTER = 28;
@@ -28,12 +33,27 @@ function randomPreviews() {
   }));
 }
 
-/** A card tap chooses directly; three matching copies keep the rightward loop seamless. */
-export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonalize }: {
-  ink: string; muted: string; isDark: boolean; hasPreviousRecords?: boolean; onStart: (character: ComicCharacter) => void; onPersonalize: () => void;
+/** A card tap chooses directly; three matching copies keep the loop seamless. */
+export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonalize, onChooseGenerated }: {
+  onChooseGenerated?: (image: HeroAiLibraryImage) => void; ink: string; muted: string; isDark: boolean; hasPreviousRecords?: boolean; onStart: (character: ComicCharacter) => void; onPersonalize: () => void;
 }) {
   const { t } = useTranslation();
+  const nameFor = useComicCharacterNames();
   const { width } = useWindowDimensions();
+  const [generated, setGenerated] = useState<HeroAiLibraryImage[]>([]);
+  const [generatedOpen, setGeneratedOpen] = useState(false);
+  useEffect(() => {
+    let live = true, revision = 0;
+    const refresh = async () => {
+      const request = ++revision;
+      try { const images = await loadHeroAiLibrary(); if (live && request === revision) setGenerated(images); } catch { /* Keep the last successful device library. */ }
+    };
+    void refresh();
+    const unsubscribe = subscribeHeroAiLibrary(() => { void refresh(); });
+    const app = AppState.addEventListener('change', state => { if (state === 'active') void refresh(); });
+    return () => { live = false; unsubscribe(); app.remove(); };
+  }, []);
+  const people: EmptyChoice[] = generated.length ? [...PEOPLE, 'generated'] : PEOPLE;
   const [grid, setGrid] = useState(false);
   const [reduced, setReduced] = useState(true);
   const layoutOpacity = useAnimatedValue(0);
@@ -62,10 +82,11 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
   const cardHeight = Math.max(140, Math.min(360, (railSize.height || 444) - 124, railSize.width * 0.58 / 0.75));
   const cardWidth = cardHeight * 0.75;
   const pictureHeight = Math.max(0, cardHeight - FOOTER - 14);
-  const span = PEOPLE.length * (cardWidth + GAP);
-  const loop = useHeroLoopingRail(span, contentReady && railSize.height > 0 && !grid);
+  const span = people.length * (cardWidth + GAP);
+  const loop = useHeroLoopingRail(span, contentReady && railSize.height > 0 && !grid && !generatedOpen, 'left');
   const paper = isDark ? '#262B28' : '#FFFFFF';
-  const choose = (character: ComicCharacter | null) => {
+  const choose = (character: EmptyChoice) => {
+    if (character === 'generated') { tapHaptic('select'); setGeneratedOpen(true); return; }
     if (starting.current) return;
     starting.current = true;
     tapHaptic('select');
@@ -75,21 +96,23 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
   };
   const gridWidth = Math.max(70, (railSize.width - 32 - 2 * 10) / 3);
   const gridHeight = Math.max(76, Math.min(gridWidth * 1.5, ((railSize.height || 600) - 80) / 3));
-  const renderCard = (character: ComicCharacter | null, copy = 1, asGrid = false) => {
-    const personal = !character;
-    const id = character?.id ?? 'personal';
+  const renderCard = (choice: EmptyChoice, copy = 1, asGrid = false) => {
+    const isGenerated = choice === 'generated';
+    const character = typeof choice === 'object' ? choice : null;
+    const personal = !character && !isGenerated;
+    const id = isGenerated ? 'generated-illustrations' : character?.id ?? 'personal';
     const testID = personal ? 'comic-empty-photo-add' : `hero-empty-character-${id}`;
     const scene = character ? previews[character.id] : undefined;
-    const source = personal ? CAMERA : COMIC_SCENE_THUMBNAILS[scene!.id as keyof typeof COMIC_SCENE_THUMBNAILS] ?? scene!.source;
-    const name = personal ? t('comicDay.emptyChoose.personalName') : t(character.name);
+    const source = isGenerated ? { uri: generated[0].uri } : personal ? CAMERA : COMIC_SCENE_THUMBNAILS[scene!.id as keyof typeof COMIC_SCENE_THUMBNAILS] ?? scene!.source;
+    const name = isGenerated ? nameFor('generated-illustrations', t('comicDay.gallery.generated')) : personal ? t('comicDay.emptyChoose.personalName') : nameFor(character!.id, t(character!.name));
     const w = asGrid ? gridWidth : cardWidth;
     const h = asGrid ? gridHeight : cardHeight;
     return <Pressable key={`${copy}:${id}`} testID={copy === 1 && grid === asGrid ? testID : `${testID}-${asGrid ? 'grid' : 'rail'}-${copy}`} 
       accessibilityRole="button" accessibilityLabel={personal ? t('comicDay.emptyChoose.personalA11y') : t('comicDay.character.choose', { name })}
       accessibilityState={{ selected: selected === id }} accessibilityElementsHidden={copy !== 1 || grid !== asGrid} importantForAccessibility={copy === 1 && grid === asGrid ? 'auto' : 'no-hide-descendants'}
-      onPress={() => choose(character)} style={[s.card, { width: w, height: h, backgroundColor: paper }]}>
+      onPress={() => choose(choice)} style={[s.card, { width: w, height: h, backgroundColor: paper }]}>
       <PaperGrain opacity={0.18} />
-      <ComicSceneImage source={source} backgroundColor={paper} imageKey={personal ? 'empty-today-personal-camera' : `empty-today:${id}:${scene!.id}`}
+      <ComicSceneImage source={source} backgroundColor={paper} imageKey={personal ? 'empty-today-personal-camera' : `empty-today:${id}:${isGenerated ? generated[0].uri : scene!.id}`}
         contentFit={personal ? 'contain' : 'cover'} fitToCard={!personal} contentPosition={personal ? 'center' : 'top'} showSkeletonOnMount style={{ width: w, height: asGrid ? h - FOOTER : pictureHeight + 14 }} />
       {personal ? <View style={[s.personalOverlay, asGrid && s.gridPersonalOverlay, { backgroundColor: isDark ? 'rgba(38,43,40,0.86)' : 'rgba(255,255,255,0.86)' }]}>
         <ThemedText numberOfLines={1} adjustsFontSizeToFit style={[s.eyebrow, asGrid && s.gridSmallText, { color: ink }]}>{t('comicDay.emptyChoose.personalIntro')}</ThemedText>
@@ -114,14 +137,15 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
           onScroll={loop.onScroll} onScrollBeginDrag={loop.onScrollBeginDrag} onScrollEndDrag={loop.onScrollEndDrag}
           decelerationRate="fast" onTouchStart={loop.onTouchStart} onTouchEnd={loop.onTouchEnd} onTouchCancel={loop.onTouchEnd}
           onContentSizeChange={() => setContentReady(true)} contentContainerStyle={s.rail}>
-          {COPIES.flatMap(copy => PEOPLE.map(character => renderCard(character, copy)))}
+          {COPIES.flatMap(copy => people.map(character => renderCard(character, copy)))}
         </ScrollView>
       </Animated.View>
       <Animated.View pointerEvents={grid ? 'auto' : 'none'} accessibilityElementsHidden={!grid} importantForAccessibility={grid ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, { opacity: layoutOpacity }]}>
-        <View testID="hero-empty-character-grid" style={s.grid}>{PEOPLE.map(character => renderCard(character, 1, true))}</View>
+        <View testID="hero-empty-character-grid" style={s.grid}>{people.map(character => renderCard(character, 1, true))}</View>
       </Animated.View>
     </ServiceTutorialTarget>
     </View>
+    {generatedOpen ? <AppModal visible animationType="fade" onRequestClose={() => setGeneratedOpen(false)}><HeroGeneratedArtworkPicker images={generated} ink={ink} paper={isDark ? '#262B28' : '#FFFFFF'} onClose={() => setGeneratedOpen(false)} onChoose={image => { setGeneratedOpen(false); onChooseGenerated?.(image); }} /></AppModal> : null}
     <Pressable testID="hero-empty-layout-toggle" accessibilityRole="button" accessibilityLabel={t(grid ? 'comicDay.emptyChoose.showCarousel' : 'comicDay.emptyChoose.showGrid')} accessibilityState={{ expanded: grid }}
       onPress={toggleLayout} style={s.layoutToggle}>
       <Svg width={23} height={23} viewBox="0 0 24 24" accessible={false}>
