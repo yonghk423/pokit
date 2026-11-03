@@ -113,3 +113,17 @@ The client prevents late results from being applied and retains cancellation int
 ## Daily allowance update (2026-11-03)
 
 `20261103060000_yourday_two_daily_outputs.sql` increases the production allowance to two outputs per anonymous account per Asia/Seoul calendar day. It replaces only the existing remaining-count function, preserving usage already recorded today, failed-output refunds, developer separation, service-wide limits and existing production-only RPC wrappers. App copy and its fallback allowance are updated to two in all four supported languages.
+
+
+### Protagonist-1 mandatory accent (2026-11-03)
+
+The production `yourday-ai` function now requires exactly one visible chromatic accent for `protagonist-1`, including character/story and photo-style requests with an illustration reference. It reuses the existing 30-hue palette and diary-content hash selection; the accent occupies approximately 1–5% on one focal object or part, while the remaining image stays black ink and neutral cream. The palette is varied by content, not a fresh random draw on every request.
+
+Deployed only this three-line rule change on top of the downloaded production source and read back all six source files to confirm they match. Existing `verify_jwt: false` and explicit `admin.auth.getUser(token)` authentication were preserved. Prompt tests: 45 passed. No billable generation was requested for verification.
+
+
+### Protagonist-2 varied chromatic palette (2026-11-03)
+
+Production requests for `protagonist-2` now override sample-specific hue copying with a rich, scene-appropriate chromatic palette with no fixed hue-count limit across clothing, objects and surroundings. Purple/lavender remain optional rather than the default dominant palette. The reference still defines watercolor/gouache medium, brush edges, paper texture, gentle saturation and shading. The override applies in both character and photo generation; protagonist-1 retains its required single accent.
+
+Deployed the isolated palette change on top of a fresh production source copy. Read back all six deployed files and confirmed an exact match. Prompt suite: 47 tests passed; no paid generation was requested.

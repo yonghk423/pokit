@@ -281,3 +281,29 @@ it('preserves photo framing when card geometry is supplied', () => {
   const form = generationRequest('photo', {} as Blob, undefined, { text: 'Photo', source: 'photo', cardAspectRatio: 1 }) as unknown as CapturedFormData;
   expect(form.values.get('prompt')).not.toContain('CARD CROP SAFE COMPOSITION');
 });
+
+
+it.each(['character', 'photo'] as const)('requires one visible chromatic accent for protagonist-1 in %s generation even with a style reference', source => {
+  const request = generationRequest('photo', {} as Blob, {} as Blob, { text: '창가에서 책을 읽었다', source, styleId: 'protagonist-1' }) as unknown as CapturedFormData;
+  const prompt = request.values.get('prompt') as string;
+  expect(prompt).toContain('Use exactly ONE chromatic accent hue:');
+  expect(prompt).toContain('The accent is REQUIRED');
+  expect(prompt).toContain('roughly 1–5%');
+  expect(prompt).toContain('do not omit the accent');
+  expect(ACCENT_COLORS.filter(color => prompt.includes(`hue: ${color}.`))).toHaveLength(1);
+  expect(prompt).not.toContain('REFERENCE PALETTE:');
+});
+
+
+it.each(['character', 'photo'] as const)('varies protagonist-2 chromatic hues instead of copying purple reference colors in %s mode', source => {
+  const request = generationRequest('photo', {} as Blob, {} as Blob, { text: '새로운 하루', source, styleId: 'protagonist-2' }) as unknown as CapturedFormData;
+  const prompt = request.values.get('prompt') as string;
+  expect(prompt).toContain('PROTAGONIST-2 PALETTE OVERRIDE');
+  expect(prompt).toContain('no fixed limit on the number of hue families');
+  expect(prompt).toContain('reds, oranges, yellows, greens, blues, purples, pinks');
+  expect(prompt).not.toContain('3–5 distinct hue families');
+  expect(prompt).toContain('Purple and lavender are optional colors');
+  expect(prompt).toContain('reference defines rendering style, not fixed hues');
+  expect(prompt).not.toContain('REFERENCE PALETTE:');
+  expect(prompt).not.toContain('Use exactly ONE chromatic accent hue:');
+});

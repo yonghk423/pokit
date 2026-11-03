@@ -133,6 +133,12 @@ it('caps estimated progress before the image arrives and shows 100 only for a re
   await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); });
   const percent = () => tree.root.findAllByProps({ testID: 'hero-inline-progress' })[0].props.accessibilityValue.now;
   expect(percent()).toBe(0);
+  const progressOpacity = () => StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-progress-surface' })[0].props.style).opacity as { __getValue: () => number };
+  const nativeOpacity = progressOpacity();
+  act(() => jest.advanceTimersByTime(650));
+  expect(progressOpacity()).toBe(nativeOpacity);
+  expect(nativeOpacity.__getValue()).toBe(1);
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-keep-app-open' }).length).toBeGreaterThan(0);
   act(() => jest.advanceTimersByTime(120000));
   expect(percent()).toBeGreaterThan(0);
   act(() => jest.advanceTimersByTime(600000));

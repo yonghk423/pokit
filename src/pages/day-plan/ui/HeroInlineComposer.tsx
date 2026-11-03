@@ -159,9 +159,12 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   const [savingFace, setSavingFace] = useState(false);
   const [busy, setBusy] = useState(false);
   const [paintPressed, setPaintPressed] = useState(false);
-  const feedback = useAnimatedValue(0);
+  const feedback = useAnimatedValue(1);
   useEffect(() => {
-    if (!paintPressed) { feedback.setValue(0); return; }
+    // The progress surface keeps this native animated node for its entire life.
+    // Ending the button flourish must leave progress visible, not reset it to 0.
+    if (!paintPressed) { feedback.setValue(1); return; }
+    feedback.setValue(0);
     // Requests start immediately. Keep the pressed button visible briefly while
     // the loading surface fades over it, rather than removing it on this frame.
     const animation = Animated.timing(feedback, { toValue: 1, duration: 580, easing: Easing.inOut(Easing.cubic), useNativeDriver: true });
@@ -304,7 +307,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
           </> : <View style={{ flex: 1 }} />}
           <Pressable accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || cancelling || resultReady} onPress={() => { tapHaptic(); if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={ink} size={22} /></Pressable></View>
         <View style={{ flex: 1, minHeight: 0 }}>
-        {busy ? <Animated.View style={[s.loading, StyleSheet.absoluteFill, { zIndex: 20, opacity: paintPressed ? feedback : 1 }]}><DrawingProgress elapsed={elapsed} complete={resultReady} ink={ink} submitted={submitted} /><ThemedText testID="hero-inline-keep-app-open" accessibilityLiveRegion="polite" style={s.hint}>{t(submitted ? 'comicDay.inline.backgroundReady' : 'comicDay.inline.uploading')}</ThemedText><Pressable testID="hero-inline-cancel-generation" accessibilityRole="button" accessibilityLabel={t('comicDay.inline.cancelGeneration')} disabled={cancelling || resultReady} onPress={confirmCancelGeneration} style={s.cancelGeneration}><HanddrawnControl name="xmark" color={ink} size={18} /><ThemedText style={[s.cancelText, { color: ink }]}>{t(cancelling ? 'comicDay.inline.cancelling' : 'comicDay.inline.cancelGeneration')}</ThemedText></Pressable></Animated.View> : null}
+        {busy ? <Animated.View testID="hero-inline-progress-surface" style={[s.loading, StyleSheet.absoluteFill, { zIndex: 20, opacity: feedback }]}><DrawingProgress elapsed={elapsed} complete={resultReady} ink={ink} submitted={submitted} /><ThemedText testID="hero-inline-keep-app-open" accessibilityLiveRegion="polite" style={s.hint}>{t(submitted ? 'comicDay.inline.backgroundReady' : 'comicDay.inline.uploading')}</ThemedText><Pressable testID="hero-inline-cancel-generation" accessibilityRole="button" accessibilityLabel={t('comicDay.inline.cancelGeneration')} disabled={cancelling || resultReady} onPress={confirmCancelGeneration} style={s.cancelGeneration}><HanddrawnControl name="xmark" color={ink} size={18} /><ThemedText style={[s.cancelText, { color: ink }]}>{t(cancelling ? 'comicDay.inline.cancelling' : 'comicDay.inline.cancelGeneration')}</ThemedText></Pressable></Animated.View> : null}
         {!busy || paintPressed ? <Animated.View pointerEvents={busy ? 'none' : 'auto'} style={[{ flex: 1 }, busy && { opacity: feedback.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
           <ScrollView testID="hero-inline-story-scroll" ref={scroll} style={s.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" onLayout={revealStory} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
             <View pointerEvents={job ? 'none' : 'auto'} style={s.content}>
