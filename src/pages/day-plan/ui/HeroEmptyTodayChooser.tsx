@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs -- The animation hook returns handlers alongside an animated ref; render never reads ref.current. */
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, Animated, Easing, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View, useAnimatedValue, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -34,7 +34,7 @@ function randomPreviews() {
 }
 
 /** A card tap chooses directly; three matching copies keep the loop seamless. */
-export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonalize, onChooseGenerated }: {
+export function HeroEmptyTodayChooser({ ink, isDark, onStart, onPersonalize, onChooseGenerated }: {
   onChooseGenerated?: (image: HeroAiLibraryImage) => void; ink: string; muted: string; isDark: boolean; hasPreviousRecords?: boolean; onStart: (character: ComicCharacter) => void; onPersonalize: () => void;
 }) {
   const { t } = useTranslation();
@@ -95,7 +95,10 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
     else { onPersonalize(); starting.current = false; }
   };
   const gridWidth = Math.max(70, (railSize.width - 32 - 2 * 10) / 3);
-  const gridHeight = Math.max(76, Math.min(gridWidth * 1.5, ((railSize.height || 600) - 80) / 3));
+  // Preview half of the third row so the remaining characters are discoverable.
+  const gridHeight = railSize.height > 0
+    ? Math.max(76, (railSize.height - 10 - 2 * 10) / 2.5)
+    : gridWidth * 1.5;
   const renderCard = (choice: EmptyChoice, copy = 1, asGrid = false) => {
     const isGenerated = choice === 'generated';
     const character = typeof choice === 'object' ? choice : null;
@@ -124,8 +127,10 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
   };
   return <View testID="hero-empty-today-chooser" style={s.content}>
     <View testID="hero-empty-intro" style={s.intro}>
-      <ThemedText style={[s.heading, { color: ink }]}>{t('comicDay.emptyChoose.heading')}</ThemedText>
-      <ThemedText style={[s.description, { color: muted }]}>{t('comicDay.emptyChoose.description')}</ThemedText>
+      <View style={s.introCard}>
+        <Text allowFontScaling={false} style={s.introText}>{t('comicDay.emptyChoose.heading')}</Text>
+        <Text allowFontScaling={false} style={s.introText}>{t('comicDay.emptyChoose.description')}</Text>
+      </View>
     </View>
     <View style={s.gallery} onLayout={({ nativeEvent: { layout } }) => {
       if (layout.width > 0 && layout.height > 0) setRailSize(current => current.width === layout.width && current.height === layout.height ? current : { width: layout.width, height: layout.height });
@@ -141,7 +146,9 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
         </ScrollView>
       </Animated.View>
       <Animated.View pointerEvents={grid ? 'auto' : 'none'} accessibilityElementsHidden={!grid} importantForAccessibility={grid ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, { opacity: layoutOpacity }]}>
-        <View testID="hero-empty-character-grid" style={s.grid}>{people.map(character => renderCard(character, 1, true))}</View>
+        <ScrollView testID="hero-empty-character-grid" style={s.gallery} contentContainerStyle={s.grid} showsVerticalScrollIndicator={false}>
+          {people.map(character => renderCard(character, 1, true))}
+        </ScrollView>
       </Animated.View>
     </ServiceTutorialTarget>
     </View>
@@ -157,17 +164,27 @@ export function HeroEmptyTodayChooser({ ink, muted, isDark, onStart, onPersonali
 }
 
 const s = StyleSheet.create({
-  content: { flex: 1, minHeight: 0, paddingTop: 18, paddingBottom: 14 },
-  intro: { flexShrink: 0, paddingHorizontal: 18, paddingRight: 62, paddingBottom: 16, gap: 6 },
-  heading: { fontSize: 18, lineHeight: 25 },
-  description: { fontSize: 13, lineHeight: 19 },
+  content: { flex: 1, minHeight: 0, paddingTop: 0, paddingBottom: 14 },
+  intro: { flexShrink: 0, paddingHorizontal: 24, paddingBottom: 18 },
+  introCard: {
+    alignSelf: 'flex-start', maxWidth: '100%',
+    backgroundColor: '#F5F3F1', borderRadius: 44,
+    borderTopWidth: 1.5, borderLeftWidth: 1, borderColor: '#FFFFFF',
+    paddingHorizontal: 28, paddingVertical: 24, gap: 18,
+    boxShadow: [
+      { offsetX: 12, offsetY: 18, blurRadius: 24, color: 'rgba(66, 60, 54, 0.16)' },
+      { offsetX: -4, offsetY: -4, blurRadius: 12, color: 'rgba(255, 255, 255, 0.8)' },
+    ],
+  },
+  // This card keeps its own typography, independent of app font preferences.
+  introText: { fontFamily: 'OwnglyphCorncorn_400Regular', fontWeight: '400', fontSize: 16, lineHeight: 24, color: '#000000' },
   gallery: { flex: 1, minHeight: 0 },
   rail: { height: '100%', paddingHorizontal: 16, paddingVertical: 22, gap: GAP, alignItems: 'center' },
   card: { flexShrink: 0, padding: 0, borderRadius: 3, position: 'relative', shadowColor: '#403624', shadowOffset: { width: 2, height: 9 }, shadowRadius: 14, shadowOpacity: 0.23, elevation: 5 },
   labels: { height: FOOTER, alignItems: 'center', justifyContent: 'center', paddingBottom: 2 },
   name: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
   personalName: { fontSize: 24, lineHeight: 32, textAlign: 'center' },
-  grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'flex-start', gap: 10, paddingHorizontal: 16 },
+  grid: { flexGrow: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', justifyContent: 'flex-start', gap: 10, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 24 },
   layoutToggle: { position: 'absolute', top: 0, right: 16, width: 42, height: 42, alignItems: 'center', justifyContent: 'center', zIndex: 3 },
   gridPersonalOverlay: { bottom: 4, gap: 0 },
   gridSmallText: { fontSize: 11, lineHeight: 14 },
