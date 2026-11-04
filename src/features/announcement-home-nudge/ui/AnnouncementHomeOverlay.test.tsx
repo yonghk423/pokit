@@ -1,5 +1,6 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { AppModal } from '@shared/ui/app-modal';
+import { AppPresentationReadyContext } from '@shared/lib/app-presentation';
 import { AnnouncementHomeOverlay } from './AnnouncementHomeOverlay';
 import { AnnouncementHomeNudge } from './AnnouncementHomeNudge';
 import type { Announcement } from '@entities/announcement';
@@ -19,10 +20,14 @@ it('shows only a fetched announcement on the focused home screen and forwards re
   const dismiss = jest.fn();
   const update = jest.fn();
   let tree!: ReactTestRenderer;
-  const render = (announcement: Announcement | null) => <AnnouncementHomeOverlay announcement={announcement} onDismiss={dismiss} onUpdatePress={update} />;
+  const render = (announcement: Announcement | null, ready = true) => <AppPresentationReadyContext.Provider value={ready}><AnnouncementHomeOverlay announcement={announcement} onDismiss={dismiss} onUpdatePress={update} /></AppPresentationReadyContext.Provider>;
   act(() => { tree = create(render(null)); });
   expect(tree.root.findByType(AppModal).props.visible).toBe(false);
-  act(() => { tree.update(render(notice)); });
+  // A fast response during cold startup must wait for the splash hand-off.
+  act(() => { tree.update(render(notice, false)); });
+  expect(tree.root.findByType(AppModal).props.visible).toBe(false);
+  expect(dismiss).not.toHaveBeenCalled();
+  act(() => { tree.update(render(notice, true)); });
   expect(tree.root.findByType(AppModal).props.visible).toBe(true);
   act(() => { tree.root.findByType(AnnouncementHomeNudge).props.onUpdatePress(); });
   expect(update).toHaveBeenCalledTimes(1);

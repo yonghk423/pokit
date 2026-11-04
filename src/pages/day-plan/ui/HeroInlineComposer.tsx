@@ -15,6 +15,7 @@ import { ActivityIndicator, AppState, Animated, Easing, Keyboard, Platform, Pres
 import Svg, { Path } from 'react-native-svg';
 import { AppAlert } from '@shared/lib/app-alert';
 import { useTranslation } from '@shared/lib/i18n';
+import { useComicCharacterNames } from '../lib/heroCharacterName';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { PaperGrain } from '@shared/ui/paper-grain';
@@ -97,6 +98,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   onApply: (text: HeroCardText, uri: string, jobId: string) => Promise<void>; onClose: () => void;
 }) {
   const { t, locale } = useTranslation();
+  const nameFor = useComicCharacterNames();
   const setComposerKeyboardOpen = useContext(DayPlanComposerKeyboardContext);
   const [keyboardOpen, setKeyboardOpen] = useState(() => Keyboard.isVisible?.() ?? false);
   const [keyboardTop, setKeyboardTop] = useState<number | null>(() => Keyboard.metrics?.()?.screenY ?? null);
@@ -155,7 +157,6 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   const [faces, setFaces] = useState<HeroSavedFace[]>([]);
   const [face, setFace] = useState<string | null>(null);
   const [register, setRegister] = useState(false);
-  const [showComingSoon, setShowComingSoon] = useState(false);
   const [savingFace, setSavingFace] = useState(false);
   const [busy, setBusy] = useState(false);
   const [paintPressed, setPaintPressed] = useState(false);
@@ -317,7 +318,6 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
                   {mode === 'character' ? null : <HeroPhotoSource variant="strip" mode="photo" uri={photo} onChange={setPhoto} compactPreview previewHeight={130} selectionLimit={1} />}
                 </View>
               </View>
-              {showComingSoon ? <ThemedText testID="hero-inline-coming-soon" accessibilityLiveRegion="polite" style={s.hint}>{t('comicDay.inline.preparingStyles')}</ThemedText> : null}
               <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={visible && !recoveryJob} onTitleChange={setDraftTitle} onTextChange={setText}
                 onFocus={() => { setStylesOpen(false); setPalette(null); editing.current = true; revealStory(); }} onBlur={() => { editing.current = false; }} />
             </View>
@@ -334,20 +334,17 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
           <View testID="hero-inline-generation-row" onLayout={({ nativeEvent: { layout } }) => { if (layout.width > 0) setGenerationWidth(layout.width); }} style={s.generationRow}>
             <View testID="hero-inline-appearance-controls" pointerEvents={job ? 'none' : 'auto'} style={s.appearanceControls}>
                 <View testID="hero-inline-style-list" style={s.styles}>
-                  <Pressable testID="hero-inline-style-toggle" accessibilityRole="button" accessibilityLabel={t(selectedStyle.name)} accessibilityState={{ selected: true, expanded: stylesOpen }} onPress={() => { setPalette(null); setStylesOpen(open => !open); setShowComingSoon(false); }} style={[s.styleItem, s.selectedStyleItem]}>
+                  <Pressable testID="hero-inline-style-toggle" accessibilityRole="button" accessibilityLabel={nameFor(selectedStyle.id, t(selectedStyle.name))} accessibilityState={{ selected: true, expanded: stylesOpen }} onPress={() => { setPalette(null); setStylesOpen(open => !open); }} style={[s.styleItem, s.selectedStyleItem]}>
                     <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${selectedStyle.id}`} source={selectedStyle.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle selected color={ink} size={42} /></View>
-                                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.styleLabel, { color: ink, alignSelf: 'stretch' }]}>{t(selectedStyle.name)}</ThemedText>
+                                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.styleLabel, { color: ink, alignSelf: 'stretch' }]}>{nameFor(selectedStyle.id, t(selectedStyle.name))}</ThemedText>
 </Pressable>
                   <Animated.View testID="hero-inline-style-options" pointerEvents={stylesOpen ? 'auto' : 'none'} accessibilityElementsHidden={!stylesOpen} importantForAccessibility={stylesOpen ? 'auto' : 'no-hide-descendants'} style={[s.styleOptions, { width: Math.max(1, generationWidth - 56), opacity: styleReveal, transform: [{ translateY: styleReveal.interpolate({ inputRange: [0, 1], outputRange: [-5, 0] }) }] }]}>
                   <HeroReorderableStyleRail>
-                  {SELECTABLE_COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`hero-inline-style-${character.id}`} accessibilityRole="button" accessibilityLabel={t(character.name)} accessibilityState={{ selected: styleId === character.id }} onPress={() => { localStorageClient.setItemRaw(HERO_SELECTED_STYLE_KEY, character.id); setStyleId(character.id); setShowComingSoon(false); setStylesOpen(false); }} style={s.styleItem}>
+                  {SELECTABLE_COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`hero-inline-style-${character.id}`} accessibilityRole="button" accessibilityLabel={nameFor(character.id, t(character.name))} accessibilityState={{ selected: styleId === character.id }} onPress={() => { localStorageClient.setItemRaw(HERO_SELECTED_STYLE_KEY, character.id); setStyleId(character.id); setStylesOpen(false); }} style={s.styleItem}>
                     <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${character.id}`} source={character.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle selected={styleId === character.id} color={ink} size={42} /></View>
-                    <ThemedText style={s.styleLabel}>{t(character.name)}</ThemedText>
+                    <ThemedText style={s.styleLabel}>{nameFor(character.id, t(character.name))}</ThemedText>
                   </Pressable>)}
-                  {[0].map(index => <Pressable key={index} testID={`hero-inline-style-upcoming-${index}`} accessibilityRole="button" accessibilityLabel={t('comicDay.inline.comingSoon')} accessibilityState={{ selected: false }} onPress={() => setShowComingSoon(true)} style={s.styleItem}>
-                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey="inline-style:upcoming" source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle color={ink} size={42} /></View>
-                    <ThemedText style={s.futureLabel}>{t('comicDay.inline.comingSoon')}</ThemedText>
-                  </Pressable>)}
+                  {null}
                   </HeroReorderableStyleRail>
                   </Animated.View>
                 </View>
@@ -435,5 +432,4 @@ const s = StyleSheet.create({
   styleImage: { width: 34, height: 34 },
   check: { position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5E8CF' },
   styleLabel: { fontSize: 10, lineHeight: 14, textAlign: 'center' },
-  futureLabel: { fontSize: 10, lineHeight: 14, textAlign: 'center', color: '#767A6D' },
 root: { flex: 1, minHeight: 0, width: '100%' }, paper: { flex: 1, borderRadius: 18, overflow: 'hidden', paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 }, heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, minHeight: 44, marginBottom: 2 }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, content: { flexGrow: 1, gap: 10 }, row: { flexDirection: 'row', gap: 10, alignItems: 'center' }, tab: { flex: 1, maxWidth: 140, aspectRatio: 4, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, avatar: { width: 42, height: 42, borderRadius: 21 }, avatarFrame: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, chosen: { position: 'absolute', top: 4, left: 4, right: 4, bottom: 4, borderRadius: 24, borderWidth: 3, borderColor: '#9FCAD8' }, faceHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, minWidth: 0 }, faceRail: { flex: 1, minWidth: 0 }, faceRailContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 }, person: { alignItems: 'center', width: 56, flexShrink: 0 }, addPerson: { width: 52, flexShrink: 0, alignItems: 'center' }, addSlot: { width: 52, height: 56, alignItems: 'center', justifyContent: 'center' }, small: { fontSize: 12, lineHeight: 18 }, add: { width: 36, height: 36, borderRadius: 18, borderWidth: 0.6, borderColor: '#343933', alignItems: 'center', justifyContent: 'center' }, input: { flexShrink: 0, minHeight: 110, maxHeight: 150, borderBottomWidth: 0.5, borderBottomColor: '#AFB1A7', fontSize: 16, lineHeight: 23, padding: 8 }, generate: { width: 44, height: 44, alignSelf: 'flex-start', alignItems: 'center', justifyContent: 'center', marginRight: 2 }, loading: { flex: 1, gap: 16, alignItems: 'center', justifyContent: 'center', padding: 20 }, center: { textAlign: 'center', fontSize: 16 }, hint: { fontSize: 12, lineHeight: 18, textAlign: 'center', color: '#666D60' }, error: { fontSize: 13, lineHeight: 19, color: '#934C3C' } });

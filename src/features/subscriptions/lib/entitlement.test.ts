@@ -41,7 +41,7 @@ describe('isProEntitlementActive', () => {
     expect(isProEntitlementActive(null)).toBe(false);
   });
 
-  it('returns true when pokit_pro is active', () => {
+  it('returns true when yourday_pro is active', () => {
     expect(isProEntitlementActive(stubCustomerInfo([REVENUECAT_ENTITLEMENT_PRO]))).toBe(true);
   });
 

@@ -39,11 +39,6 @@ export function HeroCharacterList({ ink, muted, selectedId, onSelect, open, inli
         <ThemedText style={[s.name, { color: ink, fontWeight: selected ? '600' : '400' }]}>{nameFor(character.id, t(character.name))}</ThemedText>
       </Pressable>;
       })}
-      <View testID="hero-header-character-upcoming" accessible accessibilityLabel={t('comicDay.character.new') + ', ' + t('comicDay.character.soon')} style={s.item}>
-        <View style={s.portrait}><HeaderPortrait source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} id="upcoming" /><Svg pointerEvents="none" width={36} height={36} viewBox="0 0 52 52" style={StyleSheet.absoluteFill}><Path d="M26 2C12 1 2 12 2 26S12 50 26 50 50 40 50 26 40 2 26 2Z" fill="none" stroke={protagonistSelectionInk} strokeWidth={1.1} strokeLinecap="round" /></Svg></View>
-        <ThemedText style={[s.name, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
-        <ThemedText style={[s.status, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
-      </View>
     </ScrollView>
   </Animated.View>;
 }

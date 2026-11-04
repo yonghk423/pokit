@@ -4,6 +4,7 @@ import { Keyboard, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { HeroInlineComposer, HERO_SELECTED_STYLE_KEY, HERO_SELECTED_PAPER_KEY, HERO_SELECTED_FACE_KEY } from './HeroInlineComposer';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { saveComicCharacterName } from '../lib/heroCharacterName';
 import { HeroPhotoSource } from './HeroPhotoSource';
 import { loadHeroSavedFaces, deleteHeroFace } from '../lib/heroSavedFaces';
 import { getHeroAiRemaining, generateHeroImages, resumeHeroAiJob, cancelHeroAiJob, dismissHeroAiJob } from '../lib/heroAiClient';
@@ -33,6 +34,25 @@ it('opens face registration outside the writing scroll, dismisses the keyboard a
   act(() => tree.unmount());
   dismiss.mockRestore();
 });
+it('updates style labels when a character is renamed while the composer is open', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
+  try {
+    act(() => { saveComicCharacterName('protagonist-1', '서연'); });
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.accessibilityLabel).toBe('서연');
+    act(() => tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.onPress());
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-style-protagonist-1' })[0].props.accessibilityLabel).toBe('서연');
+    expect(tree.root.findAll(node => node.props.children === '서연').length).toBeGreaterThan(0);
+    act(() => { saveComicCharacterName('protagonist-1', '지우'); });
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.accessibilityLabel).toBe('지우');
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-style-protagonist-1' })[0].props.accessibilityLabel).toBe('지우');
+    expect(tree.root.findAll(node => node.props.children === '서연')).toHaveLength(0);
+  } finally {
+    act(() => tree.unmount());
+    localStorageClient.removeItem('pokit:comic-character-name:protagonist-1');
+  }
+});
+
 it('restores the selected fifth style after leaving and sends its matching reference and profile', async () => {
   let tree!: ReactTestRenderer;
   const render = () => <HeroInlineComposer sceneId="05-work" memo="공항에서 비행기를 기다렸다." ink="#222" onApply={jest.fn(async () => undefined)} onClose={jest.fn()} />;
@@ -107,15 +127,14 @@ it('resumes the original job without submitting a new generation', async () => {
   act(() => tree.unmount());
 });
 
-it('uses the saved person without a default character item and keeps upcoming styles informational', async () => {
+it('uses the saved person and available styles without placeholder items', async () => {
   jest.mocked(loadHeroSavedFaces).mockResolvedValue([{ id: 'person', uri: 'file:///person.jpg' }]);
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" onApply={jest.fn(async () => undefined)} onClose={jest.fn()} />); });
   expect(tree.root.findAll(node => node.props.children === 'comicDay.inline.protagonist')).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.onPress());
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-style-upcoming-0' })[0].props.onPress());
-  expect(tree.root.findAllByProps({ testID: 'hero-inline-coming-soon' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-style-upcoming-0' })).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'hero-inline-style-protagonist-1' })[0].props.accessibilityState.selected).toBe(true);
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.onChangeText('오늘의 이야기'));
   await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); await new Promise(resolve => setTimeout(resolve, 500)); });

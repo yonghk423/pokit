@@ -12,3 +12,4 @@ export {
   selectProExpirationDate,
   useSubscriptionStore,
 } from './model/subscriptionStore';
+export { manageSubscription } from './lib/manageSubscription';

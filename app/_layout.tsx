@@ -3,6 +3,7 @@ import '@app/silenceKnownLogs';
 import { TutorialGuideLayer } from '@shared/ui/tutorial-guide-layer';
 import { useAppAlertStore } from '@shared/lib/app-alert';
 import { useAppSessionStore } from '@shared/lib/app-session';
+import { AppPresentationReadyContext } from '@shared/lib/app-presentation';
 import { AppAlertRoot } from '@shared/ui/app-alert';
 import { prepareIllustrations } from '@shared/ui/icon-symbol/illustrationCache';
 import { prepareSurfaceTextures } from '@shared/ui/surface-texture/textureCache';
@@ -46,6 +47,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [splashMinimumElapsed, setSplashMinimumElapsed] = useState(false);
+  const [appPresented, setAppPresented] = useState(false);
 
   const navigationTheme = isDark
     ? {
@@ -92,17 +94,30 @@ export default function RootLayout() {
   // The native launch screen is the only splash artwork; drawing it again in JS doubles it during the hand-off.
   useEffect(() => {
     if (showSplash) return;
+    let active = true;
+    let presentedFrame: number | undefined;
     const frame = requestAnimationFrame(() => {
-      void SplashScreen.hideAsync().catch(() => {});
-      void requestAppReviewIfDue();
+      void SplashScreen.hideAsync().then(() => {
+        if (!active) return;
+        presentedFrame = requestAnimationFrame(() => {
+          if (!active) return;
+          setAppPresented(true);
+          void requestAppReviewIfDue();
+        });
+      }).catch(() => {});
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      active = false;
+      cancelAnimationFrame(frame);
+      if (presentedFrame !== undefined) cancelAnimationFrame(presentedFrame);
+    };
   }, [showSplash]);
 
   return (
     <I18nextProvider i18n={i18n}>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: showSplash ? SPLASH_BACKGROUND_COLOR : rootBg }}>
         <SafeAreaProvider>
+          <AppPresentationReadyContext.Provider value={appPresented && !showSplash}>
           <AppAlertRoot enabled={contentReady && !showSplash}>
             {contentReady ? (
               <ThemeProvider key={sessionEpoch} value={navigationTheme}><TutorialGuideLayer>
@@ -193,6 +208,7 @@ export default function RootLayout() {
               </View>
             ) : null}
           </AppAlertRoot>
+          </AppPresentationReadyContext.Provider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </I18nextProvider>

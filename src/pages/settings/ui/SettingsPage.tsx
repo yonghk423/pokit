@@ -33,8 +33,6 @@ import { useHorizonCompletionStore } from '@entities/horizon-completion';
 import { clearPuzzleRevealSeen, usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
-  presentCustomerCenter,
-  presentPaywall,
   restorePurchases,
   selectIsPro,
   useSubscriptionStore,
@@ -75,8 +73,9 @@ import {
   settingsChromeStyles as chrome,
 } from '../lib/settingsChrome';
 
-/** Pro 구독 설정 섹션 — 정식 시행 전까지 숨김 (`true`로 바꾸면 다시 표시) */
-const SHOW_POKIT_PRO_SETTINGS = false;
+/** 설정 UI 미리보기. 실제 판매 준비 후 목업 모드를 해제한다. */
+const SHOW_POKIT_PRO_SETTINGS = true;
+const POKIT_PRO_PREVIEW = false;
 
 /** 화면 테마(라이트/다크) 설정 — 출시 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_APPEARANCE_SETTINGS = false;
@@ -128,7 +127,7 @@ export function SettingsPage() {
 
   useFocusEffect(
     useCallback(() => {
-      if (SHOW_POKIT_PRO_SETTINGS) {
+      if (SHOW_POKIT_PRO_SETTINGS && !POKIT_PRO_PREVIEW) {
         void useSubscriptionStore.getState().refreshCustomerInfo();
       }
 
@@ -151,28 +150,14 @@ export function SettingsPage() {
   );
 
   const runPresentPaywall = async () => {
-    if (isSubscriptionBusy) return;
-    setIsSubscriptionBusy(true);
-    try {
-      const outcome = await presentPaywall();
-      await useSubscriptionStore.getState().refreshCustomerInfo();
-      if (outcome === 'purchased' || outcome === 'restored') {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(t('alert.pro.title', locale), t('alert.pro.activated', locale));
-      } else if (outcome === 'error') {
-        Alert.alert(
-          t('alert.paywall.title', locale),
-          t('alert.paywall.error', locale),
-        );
-      } else if (outcome === 'skipped') {
-        Alert.alert(t('alert.subscription.title', locale), t('alert.subscription.unavailable', locale));
-      }
-    } finally {
-      setIsSubscriptionBusy(false);
-    }
+    router.push('/pro-preview');
   };
 
   const runRestorePurchases = async () => {
+    if (POKIT_PRO_PREVIEW) {
+      Alert.alert(t('settings.pro.previewTitle', locale), t('settings.pro.previewMessage', locale));
+      return;
+    }
     if (isSubscriptionBusy) return;
     setIsSubscriptionBusy(true);
     try {
@@ -190,25 +175,6 @@ export function SettingsPage() {
       } else {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert(t('alert.restore.failed', locale), result.message ?? t('alert.retry', locale));
-      }
-    } finally {
-      setIsSubscriptionBusy(false);
-    }
-  };
-
-  const runCustomerCenter = async () => {
-    if (isSubscriptionBusy) return;
-    setIsSubscriptionBusy(true);
-    try {
-      const outcome = await presentCustomerCenter();
-      await useSubscriptionStore.getState().refreshCustomerInfo();
-      if (outcome === 'error') {
-        Alert.alert(
-          t('alert.manage.title', locale),
-          t('alert.manage.error', locale),
-        );
-      } else if (outcome === 'skipped') {
-        Alert.alert(t('alert.manage.title', locale), t('alert.manage.unavailable', locale));
       }
     } finally {
       setIsSubscriptionBusy(false);
@@ -394,6 +360,61 @@ export function SettingsPage() {
             </Pressable>
           </SettingsSection>
 
+          {SHOW_POKIT_PRO_SETTINGS ? (
+            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
+                onPress={tap(() => {
+                  void runPresentPaywall();
+                })}
+                disabled={isSubscriptionBusy}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isPro ? t('settings.a11y.pro.manage', locale) : t('settings.a11y.pro.subscribe', locale)
+                }>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="pro.crown" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {POKIT_PRO_PREVIEW
+                        ? t('settings.pro.previewDesc', locale)
+                        : !subscriptionConfigured
+                        ? t('settings.pro.moduleMissing', locale)
+                        : isPro
+                          ? t('settings.pro.manageDesc', locale)
+                          : t('proPreview.open', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+              <Pressable
+                style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
+                onPress={tap(() => {
+                  void runRestorePurchases();
+                })}
+                disabled={isSubscriptionBusy}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.a11y.restore', locale)}>
+                <View style={chrome.itemLeft}>
+                  <SettingsRowIcon name="arrow.clockwise" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                  <View style={chrome.itemTextWrap}>
+                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                      {t('settings.restore.title', locale)}
+                    </ThemedText>
+                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                      {t('settings.restore.desc', locale)}
+                    </ThemedText>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+              </Pressable>
+            </SettingsSection>
+          ) : null}
+
           {FEATURE_FLAGS.dailyRhythmWindow || SHOW_LAYOUT_SETTINGS ? (
             <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
               {FEATURE_FLAGS.dailyRhythmWindow ? (
@@ -504,59 +525,7 @@ export function SettingsPage() {
             </Pressable>
           </SettingsSection>
 
-          {SHOW_POKIT_PRO_SETTINGS ? (
-            <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-              <Pressable
-                style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
-                onPress={tap(() => {
-                  if (isPro) void runCustomerCenter();
-                  else void runPresentPaywall();
-                })}
-                disabled={isSubscriptionBusy}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isPro ? t('settings.a11y.pro.manage', locale) : t('settings.a11y.pro.subscribe', locale)
-                }>
-                <View style={chrome.itemLeft}>
-                  <SettingsRowIcon name="star.fill" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
-                  <View style={chrome.itemTextWrap}>
-                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                      {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
-                    </ThemedText>
-                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                      {!subscriptionConfigured
-                        ? t('settings.pro.moduleMissing', locale)
-                        : isPro
-                          ? t('settings.pro.manageDesc', locale)
-                          : t('settings.pro.featuresDesc', locale)}
-                    </ThemedText>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-              </Pressable>
-              <Pressable
-                style={[chrome.item, { borderTopColor: p.border }, isSubscriptionBusy && styles.disabledItem]}
-                onPress={tap(() => {
-                  void runRestorePurchases();
-                })}
-                disabled={isSubscriptionBusy}
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.a11y.restore', locale)}>
-                <View style={chrome.itemLeft}>
-                  <SettingsRowIcon name="arrow.clockwise" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
-                  <View style={chrome.itemTextWrap}>
-                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                      {t('settings.restore.title', locale)}
-                    </ThemedText>
-                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                      {t('settings.restore.desc', locale)}
-                    </ThemedText>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-              </Pressable>
-            </SettingsSection>
-          ) : null}
+
 
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <Pressable

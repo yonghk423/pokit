@@ -442,7 +442,7 @@ it.each(['scenes', 'cancel'])('opens a header list over the existing board and k
   expect(tree.root.findAllByProps({ testID: 'hero-header-character-ring-protagonist-1' })[0].props.stroke).toBe('#171510');
   expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(0);
   expect(tree.root.findByType(ComicDayBoard).props.items).toHaveLength(1);
-  expect(tree.root.findAllByProps({ testID: 'hero-header-character-upcoming' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-header-character-upcoming' })).toHaveLength(0);
   expect(tree.root.findAllByType(ComicScenePicker)).toHaveLength(0);
   if (mode === 'cancel') {
     act(() => ref.current!.openSceneEntry());
@@ -494,11 +494,10 @@ it('opens a character overlay over the mounted board and changes character only 
   expect(tree.root.findAllByType(ComicCharacterChooser)).toHaveLength(0);
   const picker = tree.root.findByType(HeroCharacterPickerOverlay);
   const scroll = picker.findAllByProps({ testID: 'hero-character-picker-scroll' })[0];
-  expect(scroll.props.children.flat().at(-1).props.testID).toBe('hero-character-picker-upcoming');
+  expect(scroll.props.children.flat().some((child: { props?: { testID?: string } }) => child.props?.testID === 'hero-character-picker-upcoming')).toBe(false);
   const firstCard = picker.findAllByProps({ testID: 'hero-character-picker-protagonist-1' })[0];
-  const upcoming = picker.findAllByProps({ testID: 'hero-character-picker-upcoming' })[0];
   expect(firstCard.props.style.width).toBeLessThanOrEqual(124);
-  expect(upcoming.props.style.height).toBe(firstCard.props.style.height);
+  expect(picker.findAllByProps({ testID: 'hero-character-picker-upcoming' })).toHaveLength(0);
   expect(firstCard.props.style.shadowOpacity).toBeGreaterThan(0);
   expect(picker.findAllByProps({ testID: 'hero-picker-skeleton-protagonist-1' }).length).toBeGreaterThan(0);
   const preview = picker.findAllByProps({ testID: 'hero-picker-image-protagonist-1' })[0];
@@ -869,7 +868,7 @@ it('reorders a long-pressed character without selecting it and restores order af
   const scroll = tree.root.findAllByProps({ testID: 'hero-character-picker-scroll' })[0];
   const cards = scroll.props.children.flat();
   expect(cards[0].key).toBe('protagonist-2');
-  expect(cards.at(-1).props.testID).toBe('hero-character-picker-upcoming');
+  expect(cards.some((card: { props?: { testID?: string } }) => card.props?.testID === 'hero-character-picker-upcoming')).toBe(false);
   act(() => tree.unmount());
   spy.mockRestore();
 });

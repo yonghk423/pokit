@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Announcement } from '@entities/announcement';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { useAppPresentationReady } from '@shared/lib/app-presentation';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { AppModal } from '@shared/ui/app-modal';
@@ -20,11 +21,12 @@ type Props = {
 /** 오늘의 주인공 화면 위에 뜨는 공지. 목록 높이는 차지하지 않는다. */
 export function AnnouncementHomeOverlay({ announcement, onDismiss, onUpdatePress }: Props) {
   const focused = useIsFocused();
+  const appPresented = useAppPresentationReady();
   const isDark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   return (
-    <AppModal visible={focused && announcement != null} transparent animationType="fade" onRequestClose={onDismiss}>
+    <AppModal visible={appPresented && focused && announcement != null} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={[styles.root, { paddingTop: Math.max(24, insets.top), paddingBottom: Math.max(24, insets.bottom) }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); onDismiss(); }} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         {announcement ? (

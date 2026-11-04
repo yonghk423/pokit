@@ -197,19 +197,10 @@ it('reveals the chooser only after its measured layout settles', () => {
   timing.mockRestore();
 });
 
-it('places the upcoming protagonist in a non-overlapping horizontal list and gives feedback without selecting it', () => {
+it('does not show a placeholder protagonist in the horizontal list', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<ComicCharacterChooser onStart={jest.fn()} ink="#222" muted="#888" isDark={false} />); });
-  const stage = tree.root.findAllByProps({ testID: 'comic-character-casting' })[0];
-  const upcoming = stage.findAllByProps({ testID: 'comic-character-coming-soon' })[0];
-  expect(tree.root.findAllByProps({ testID: 'comic-character-coming-soon' }).filter(node => node.type === upcoming.type)).toHaveLength(1);
-  expect(upcoming.props.accessibilityState.disabled).toBe(true);
-  const selectedBefore = tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' })[0].props.accessibilityState.selected;
-  act(() => upcoming.props.onPress());
-  expect(tree.root.findAllByProps({ testID: 'comic-character-cover-protagonist-1' })[0].props.accessibilityState.selected).toBe(selectedBefore);
-  expect(upcoming.findByType(ComicSceneImage).props.imageKey).toBe('upcoming:coffee-walk');
-  expect(StyleSheet.flatten(upcoming.props.style).position).not.toBe('absolute');
-  expect(StyleSheet.flatten(upcoming.props.style).transform).toBeUndefined();
+  expect(tree.root.findAllByProps({ testID: 'comic-character-coming-soon' })).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'comic-character-horizontal-list' })[0].props.horizontal).toBe(true);
   act(() => tree.unmount());
 });

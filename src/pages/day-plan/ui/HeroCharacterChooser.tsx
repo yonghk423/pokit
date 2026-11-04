@@ -226,17 +226,6 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
                 <SettingsPenFrame color={ink} />
               </AnimatedPressable>
               </View> : null}
-              <View style={{ width: artworkWidth, height: artworkHeight }}>
-              <Pressable testID="comic-character-coming-soon" onPress={() => tapHaptic('select')} accessible accessibilityRole="button" accessibilityLabel={`${t('comicDay.character.new')}, ${t('comicDay.character.soon')}`} accessibilityState={{ disabled: true }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: 0 }]}>
-                <PaperGrain opacity={0.18} />
-                <ComicSceneImage showSkeletonOnMount transitionDuration={180} imageKey="upcoming:coffee-walk" backgroundColor={cardPaper} source={require('../../../../assets/control-illustrations/coming-soon-coffee-walk.webp')} contentFit="contain" style={s.upcomingImage} />
-                <View style={s.upcomingCaption}>
-                  <ThemedText style={[s.personalLabel, { color: muted }]}>{t('comicDay.character.new')}</ThemedText>
-                  <ThemedText style={[s.upcomingLabel, { color: muted }]}>{t('comicDay.character.soon')}</ThemedText>
-                </View>
-                <SettingsPenFrame color={muted} />
-              </Pressable>
-              </View>
               </>
               </HeroReorderableStyleRail>
               <View testID="comic-character-thumbnail-lane" style={s.thumbnailLane}>
@@ -283,9 +272,6 @@ const s = StyleSheet.create({
   caption: { alignItems: 'center', gap: 3, flexShrink: 0 }, name: { fontSize: 24, lineHeight: 30, textAlign: 'center' },
   nameBox: { width: '100%', maxWidth: 320 }, nameInput: { textAlign: 'center', fontSize: 22, minHeight: 46, borderBottomWidth: 0.6 }, editActions: { flexDirection: 'row', justifyContent: 'center', gap: 16 }, editButton: { minWidth: 56, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   renameButton: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, marginTop: 0, flexShrink: 0 }, renameLabel: { fontSize: 14 },
-  upcomingCaption: { alignItems: 'center', gap: 2 },
-  upcomingImage: { width: '100%', flex: 1, minHeight: 0, opacity: 0.7 },
-  upcomingLabel: { fontSize: 12, opacity: 0.7 },
   footer: { flexShrink: 0, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10, gap: 6 },
   start: { alignSelf: 'center', width: 180, height: 44, alignItems: 'center', justifyContent: 'center' },
 
