@@ -32,3 +32,12 @@ it('retains locally saved AI artwork when a diary is reloaded', () => {
   saveComicDay('2026-10-21', [scene]);
   expect(loadComicDay('2026-10-21')[0].artworkUri).toBe(scene.artworkUri);
 });
+
+it('persists independent card fonts and drops unsupported font IDs without dropping the record', () => {
+  const first = { ...newComicScene('First'), fontId: 'hiMelody' as const };
+  const second = { ...newComicScene('Second'), fontId: 'cafe24ShiningStar' as const };
+  saveComicDay('2026-10-21', [first, second]);
+  expect(loadComicDay('2026-10-21').map(scene => scene.fontId)).toEqual(['hiMelody', 'cafe24ShiningStar']);
+  localStorageClient.setJson('pokit:comic-day:2026-10-21', [{ ...first, fontId: 'unsupported-font' }]);
+  expect(loadComicDay('2026-10-21')[0]).toMatchObject({ title: 'First', fontId: undefined });
+});

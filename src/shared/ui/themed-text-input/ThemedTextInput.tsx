@@ -8,9 +8,12 @@ import {
   useAppFontSizeScale,
   useEffectiveAppFontId,
   type AppFontWeight,
+  type AppFontId,
 } from '@shared/lib/ui-font';
 
 export type ThemedTextInputProps = TextInputProps & {
+  /** Optional record-specific font; undefined follows app settings. */
+  fontId?: AppFontId;
   ref?: Ref<TextInput>;
   /** Override when a lined editor has already scaled text and ruling together. */
   typographyScale?: number;
@@ -39,13 +42,15 @@ function applyFontSizeScale(style: TextStyle, scale: number): TextStyle {
 /** ThemedText와 같은 앱 글씨체·크기 배율을 TextInput에 적용 (React 19: ref는 props) */
 export function ThemedTextInput({
   style,
+  fontId: fontOverride,
   underlineColorAndroid = 'transparent',
   ref,
   typographyScale,
   ...rest
 }: ThemedTextInputProps) {
-  const fontId = useEffectiveAppFontId();
-  const sizeScale = useAppFontSizeScale();
+  const appFontId = useEffectiveAppFontId();
+  const fontId = fontOverride ?? appFontId;
+  const sizeScale = useAppFontSizeScale(fontId);
   const singleFace = isSingleFaceAppFont(fontId);
   const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
   const weight = weightFromStyle(flat.fontWeight);

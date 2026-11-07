@@ -1,3 +1,4 @@
+import { BackChevron } from '@shared/ui/icon-symbol';
 import { useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from '@shared/lib/i18n';
@@ -19,7 +20,7 @@ export function HeroSavedPhotos({ onBack, onApply }: { onBack: () => void; onApp
     return () => { live = false; };
   }, [attempt]);
   return <View style={s.root}>
-    <View style={s.header}><Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => { tapHaptic(); onBack(); }} hitSlop={8} style={s.back}><ThemedText style={s.backIcon}>‹</ThemedText></Pressable><ThemedText style={s.title}>{t('comicDay.saved.title')}</ThemedText></View>
+    <View style={s.header}><Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => { tapHaptic(); onBack(); }} hitSlop={8} style={s.back}><BackChevron color="#202020" /></Pressable><ThemedText style={s.title}>{t('comicDay.saved.title')}</ThemedText></View>
     <ThemedText style={s.hint}>{t('comicDay.saved.hint')}</ThemedText>
     <FlatList data={images} numColumns={3} keyExtractor={item => item.uri} contentContainerStyle={s.list} columnWrapperStyle={s.row}
       ListEmptyComponent={<View style={s.empty}><ThemedText>{t(status === 'loading' ? 'comicDay.saved.loading' : status === 'error' ? 'comicDay.saved.error' : 'comicDay.saved.empty')}</ThemedText>{status === 'error' ? <Pressable onPress={() => { tapHaptic(); setStatus('loading'); setAttempt(value => value + 1); }}><ThemedText>{t('common.retry')}</ThemedText></Pressable> : null}</View>}

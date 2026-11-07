@@ -21,3 +21,20 @@ it.each([
 ])('keeps unrelated paths unchanged: %s', uri => {
   expect(resolveHeroArtworkUri(uri)).toBe(uri);
 });
+
+it('rebases restored Drive images after the iOS app container changes', () => {
+  expect(resolveHeroArtworkUri('file:///old/Documents/drive-backups/1793931000-ab/restored-1.png'))
+    .toBe('file:///current/Documents/drive-backups/1793931000-ab/restored-1.png');
+  expect(resolveHeroArtworkUri('file:///old/Documents/drive-backups/../secret.png'))
+    .toBe('file:///old/Documents/drive-backups/../secret.png');
+});
+
+it('keeps original-photo cards readable after the iOS container changes', () => {
+  const uri = 'file:///old/Documents/hero-photos/photo-1793931000-abc.heic';
+  const expected = 'file:///current/Documents/hero-photos/photo-1793931000-abc.heic';
+  expect(resolveHeroArtworkUri(uri)).toBe(expected);
+  const scene = { ...newComicScene('사진'), artworkUri: uri };
+  expect(normalizeComicScenes([scene])[0].artworkUri).toBe(expected);
+  expect(resolveHeroArtworkUri('file:///old/Documents/hero-photos/../secret.jpg'))
+    .toBe('file:///old/Documents/hero-photos/../secret.jpg');
+});

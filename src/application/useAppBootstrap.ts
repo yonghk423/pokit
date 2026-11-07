@@ -1,3 +1,4 @@
+import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { getSupabaseUrl } from '@shared/config/supabase';
 import { configureImageCache } from './imageCachePolicy';
 import { migrateHeroAiAuthSession } from '@shared/lib/supabase/heroAiSecureStorage';
@@ -60,6 +61,7 @@ function hydrateAppState() {
   // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정
   savePriorityDayRollMode('reset');
   useAppearanceStore.getState().hydrate();
+  useWallpaperStore.getState().hydrate();
   useAppFontStore.getState().hydrate();
   useDayPlanLayoutModeVisibilityStore.getState().hydrate();
   useDayPlanChromeSettingsStore.getState().hydrate();

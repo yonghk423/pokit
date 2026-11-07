@@ -30,7 +30,7 @@ export function buildSettingsPalette(isDark: boolean): SettingsPalette {
   const c = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const ink = isDark ? '#F1E7D2' : '#171510';
   return {
-    bg: isDark ? '#282724' : '#F8F6F0',
+    bg: isDark ? '#282724' : '#F7F6F4',
     surface: 'transparent',
     border: isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)',
     sectionTitle: ink,

@@ -1,3 +1,5 @@
+import { BackChevron } from '@shared/ui/icon-symbol';
+import { AppAlert } from '@shared/lib/app-alert';
 import { groupDiaryLibrary, groupedDiaryTitle } from '../lib/heroDiaryGroups';
 import { parseLocalDateKeyToDate } from '@entities/day-plan/lib/localDateKey';
 import { loadComicCharacterName } from '../lib/heroCharacterName';
@@ -98,8 +100,8 @@ function DiaryAccordionPanel({ open, reduceMotion, children }: { open: boolean; 
   </Animated.View>;
 }
 
-export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose, onCreate, onOpen, onRename, onDelete, onDeleteMany }: {
-  diaries: ComicDiary[]; activeId: string | null; initialRenameId?: string | null; onClose: () => void; onCreate: () => void;
+export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose, onCreate, onOpen, onRename, onDelete, onDeleteMany, embedded = false }: {
+  embedded?: boolean; diaries: ComicDiary[]; activeId: string | null; initialRenameId?: string | null; onClose: () => void; onCreate: () => void;
   onOpen: (id: string) => void; onRename: (id: string, title: string) => void; onDelete: (id: string) => void; onDeleteMany?: (ids: string[]) => void;
 }) {
   const { t, locale } = useTranslation();
@@ -116,6 +118,11 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
   const firstDate = (renameDate && renameDate !== 'undated' ? renameDate : allGroups.find(group => group.date !== 'undated')?.date) ?? '';
   const [month, setMonth] = useState(() => firstDate.slice(0, 7));
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => ({ [renameDate ?? firstDate]: true, undated: true }));
+  useEffect(() => {
+    if (month || !firstDate) return;
+    setMonth(firstDate.slice(0, 7));
+    setExpanded(current => ({ ...current, [firstDate]: true }));
+  }, [month, firstDate]);
   const [query, setQuery] = useState('');
   const [selecting, setSelecting] = useState(false);
   const [selectingDate, setSelectingDate] = useState<string | null>(null);
@@ -201,12 +208,11 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
     </View>;
 
   };
-  return <AppModal visible transparent animationType="fade" onRequestClose={onClose}>
-    <View style={s.overlay}>
-      <Pressable accessibilityLabel={t('common.close')} style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); onClose(); }} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[s.paper, { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <PaperGrain opacity={0.24} /><HanddrawnFrame color="#939393" />
-        <View style={s.header}><ThemedText style={s.heading}>{t('comicDiary.library')}</ThemedText><Pressable accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.close}>×</ThemedText></Pressable></View>
+  const content = <View testID={embedded ? "comic-diary-history-screen" : undefined} style={[s.overlay, embedded && { backgroundColor: 'transparent' }]}>
+      {!embedded ? <Pressable accessibilityLabel={t('common.close')} style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); onClose(); }} /> : null}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[s.paper, { paddingTop: Math.max(insets.top, 16), paddingBottom: embedded ? 12 : Math.max(insets.bottom, 16) }, embedded && { width: '100%', maxWidth: undefined, backgroundColor: 'transparent' }]}>
+        {!embedded ? <PaperGrain opacity={0.24} /> : null}{!embedded ? <HanddrawnFrame color="#939393" /> : null}
+        <View style={s.header}><ThemedText style={s.heading}>{t(embedded ? 'comicDiary.history' : 'comicDiary.library')}</ThemedText>{!embedded ? <Pressable accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.close}>×</ThemedText></Pressable> : null}</View>
         <View style={s.toolbar}>
           {!selectionMode ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.create')} onPress={createDiary} style={s.create}><HeroCreateDiaryIcon variant="stack" size={32} /></Pressable> : <ThemedText accessibilityLiveRegion="polite" style={s.count}>{t('comicDiary.selectedCount', { count: selected.length })}</ThemedText>}
           {onDeleteMany && (diaries.length > 0 || selecting) ? <Pressable accessibilityRole="button" accessibilityLabel={t(selecting ? 'common.cancel' : 'comicDiary.select')} onPress={toggleSelectionMode} style={s.menuButton}><ThemedText style={s.selectionText}>{t(selecting ? 'common.cancel' : 'comicDiary.select')}</ThemedText></Pressable> : null}
@@ -219,9 +225,9 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
           <SearchPenLine />
         </View>
         {month && !searchQuery ? <View style={s.monthRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.previous')} onPress={() => moveMonth(-1)} style={s.touch}><ThemedText style={s.monthArrow}>‹</ThemedText></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.previous')} onPress={() => moveMonth(-1)} style={s.touch}><BackChevron color="#555A4F" /></Pressable>
           <ThemedText style={s.monthLabel}>{month.replace('-', '.')}</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.next')} onPress={() => moveMonth(1)} style={s.touch}><ThemedText style={s.monthArrow}>›</ThemedText></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.next')} onPress={() => moveMonth(1)} style={s.touch}><View style={{ transform: [{ rotate: '180deg' }] }}><BackChevron color="#555A4F" /></View></Pressable>
         </View> : null}
         <Animated.FlatList testID="comic-diary-library-list" itemLayoutAnimation={reduceMotion ? undefined : ACCORDION_LAYOUT} removeClippedSubviews={false} data={sections} extraData={{ expanded, activeId, menuId, renamingId, draft, selecting, selectingDate, selectedIds }} keyExtractor={group => group.date} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[s.list, sections.length === 0 && s.listEmpty]} ListEmptyComponent={query.trim() || diaries.length > 0 ? <ThemedText style={s.empty}>{t('comicDiary.noResults')}</ThemedText> : <Pressable testID="comic-empty-diary-create" accessibilityRole="button" accessibilityLabel={t('comicDiary.create')} onPress={createDiary} style={s.emptyIconButton}><HeroEmptyDiaryIcon /></Pressable>} renderItem={({ item: group }) => {
             const open = Boolean(searchQuery || expanded[group.date] || group.diaries.some(diary => diary.id === renamingId));
@@ -236,15 +242,15 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
               {!open ? <View style={s.previewPair}>{group.diaries.slice(0, 2).map((diary, index) => <View key={diary.id} style={{ width: 30, height: 34, marginLeft: index ? -7 : 0, transform: [{ rotate: index ? '7deg' : '-6deg' }] }}><ComicSceneImage backgroundColor="#FFFFFF" imageKey={`library-preview:${diary.id}:${diary.scenes[0]?.artworkUri ?? diary.scenes[0]?.image ?? 'cover'}`} source={previewSource(diary)} style={StyleSheet.absoluteFill} /></View>)}</View> : null}
               <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}><Path d={penContour(open ? [[5, 15], [11.7, 8], [19, 14.5]] : [[5, 8], [12, 15], [19, 7.5]], 1.4, 0.6)} fill="#555A4F" /></Svg>
             </Pressable>
-              <AnimatedDiaryDateAction date={group.date} mode={selectingDate === group.date ? 'cancel' : !selectionMode && onDeleteMany && !searchQuery ? open ? 'select' : 'delete' : null} reduceMotion={reduceMotion} onDelete={() => { tapHaptic('warn'); onDeleteMany?.(allDayDiaries.map(diary => diary.id)); }} onSelect={() => startDateSelection(group.date)} onCancel={toggleSelectionMode} deleteLabel={t('comicDiary.deleteDay', { date: day ? day.toLocaleDateString(locale ?? 'ko', { month: 'long', day: 'numeric' }) : t('comicDiary.undated') })} selectLabel={t('comicDiary.selectDayForDeletion', { date: day ? day.toLocaleDateString(locale ?? 'ko', { month: 'long', day: 'numeric' }) : t('comicDiary.undated') })} cancelLabel={t('common.cancel')} />
+              <AnimatedDiaryDateAction date={group.date} mode={selectingDate === group.date ? 'cancel' : !selectionMode && onDeleteMany && !searchQuery ? open ? 'select' : 'delete' : null} reduceMotion={reduceMotion} onDelete={() => { tapHaptic('warn'); const ids = allDayDiaries.map(diary => diary.id); AppAlert.alert(t('comicDiary.delete'), t('comicDiary.deleteManyMessage', { count: ids.length }), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('comicDiary.deleteSelected', { count: ids.length }), style: 'destructive', onPress: () => onDeleteMany?.(ids) }], { cancelable: true }); }} onSelect={() => startDateSelection(group.date)} onCancel={toggleSelectionMode} deleteLabel={t('comicDiary.deleteDay', { date: day ? day.toLocaleDateString(locale ?? 'ko', { month: 'long', day: 'numeric' }) : t('comicDiary.undated') })} selectLabel={t('comicDiary.selectDayForDeletion', { date: day ? day.toLocaleDateString(locale ?? 'ko', { month: 'long', day: 'numeric' }) : t('comicDiary.undated') })} cancelLabel={t('common.cancel')} />
             </View>
               <DiaryAccordionPanel open={open} reduceMotion={reduceMotion}>{group.diaries.map(item => <View key={item.id}>{renderDiary(item, selecting || selectingDate === group.date)}</View>)}</DiaryAccordionPanel>
             </View>;
         }} />
         <AnimatedSelectionFooter visible={selectionMode} reduceMotion={reduceMotion} label={t('comicDiary.deleteSelected', { count: selected.length })} disabled={!selected.length} onPress={() => { tapHaptic('warn'); onDeleteMany?.(selected.map(diary => diary.id)); }} />
       </KeyboardAvoidingView>
-    </View>
-  </AppModal>;
+    </View>;
+  return embedded ? content : <AppModal visible transparent animationType="fade" onRequestClose={onClose}>{content}</AppModal>;
 }
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }, paper: { width: '87%', maxWidth: 420, flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 17 },

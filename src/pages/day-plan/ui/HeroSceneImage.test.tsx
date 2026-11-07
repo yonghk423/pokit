@@ -238,3 +238,24 @@ it('keeps portraits in full and fills their side space with a blurred backdrop',
   expect(image().props.contentFit).toBe('contain');
   act(() => tree.unmount());
 });
+
+it('fills a wide uploaded photo after its dimensions load in the detail view', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage source={{ uri: 'file:///Documents/hero-photos/photo-456-abc.jpg' }} imageKey="wide-original-detail" style={{ width: 300, height: 450 }} />); });
+  const image = () => tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  act(() => image().props.onLoad({ source: { width: 1800, height: 600 } }));
+  expect(image().props.contentFit).toBe('cover');
+  expect(image().props.contentPosition).toBe('center');
+  act(() => tree.unmount());
+});
+
+it.each([[1200, 675], [600, 1200], [900, 900]])('fills original %s×%s photos without side margins', (width, height) => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicSceneImage fitToCard contentFit="cover" source={{ uri: 'file:///Documents/hero-photos/photo-123-abc.jpg', width, height }} imageKey={`original-${width}-${height}`} style={{ width: 300, height: 400 }} />); });
+  layoutCard(tree);
+  const image = tree.root.findAll(node => typeof node.props.onDisplay === 'function')[0];
+  expect(image.props.contentFit).toBe('cover');
+  expect(image.props.contentPosition).toBe('center');
+  expect(StyleSheet.flatten(image.props.style).width).toBeUndefined();
+  act(() => tree.unmount());
+});

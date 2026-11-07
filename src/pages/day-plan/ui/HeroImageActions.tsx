@@ -1,3 +1,5 @@
+import type { PolaroidDraft } from './HeroPolaroidEditor';
+import type { AppFontId } from '@shared/lib/ui-font';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -6,8 +8,9 @@ import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
 import { formatHeroPolaroidDate, HeroPolaroidExport, type HeroPolaroidContent } from './HeroPolaroidExport';
 
-export function HeroImageActions({ uri, source, title = '', memo, exportDate, compact = false, saveOnly = false }: { uri?: string; source?: number; title?: string; memo?: string; exportDate?: string | number; compact?: boolean; saveOnly?: boolean }) {
+export function HeroImageActions({ uri, source, title = '', memo, paper, pen, fontId, exportDate, compact = false, saveOnly = false, directDownload = false, onDelete }: { onDelete?: () => void; uri?: string; source?: number; title?: string; memo?: string; paper?: string; pen?: string; fontId?: AppFontId; exportDate?: string | number; compact?: boolean; saveOnly?: boolean; directDownload?: boolean }) {
   const { t } = useTranslation();
+  const [editorOpen, setEditorOpen] = useState(false);
   const lock = useRef(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -21,7 +24,7 @@ export function HeroImageActions({ uri, source, title = '', memo, exportDate, co
     const timer = setTimeout(() => setSaved(false), 1000);
     return () => clearTimeout(timer);
   }, [saved]);
-  const run = async (action: 'save' | 'share') => {
+  const run = async (action: 'save' | 'share', draft?: PolaroidDraft) => {
     if (lock.current) return;
     tapHaptic();
     lock.current = true; setBusy(true);
@@ -52,18 +55,25 @@ export function HeroImageActions({ uri, source, title = '', memo, exportDate, co
             return;
           }
         }
+
+      }
+      if (action === 'save' || draft) {
         polaroid = await new Promise<string>((resolve, reject) => {
           pendingCapture.current = { resolve, reject };
-          setCaptureContent({ uri: local!, title, ...(memo ? { memo } : {}), date: formatHeroPolaroidDate(exportDate) });
+          setCaptureContent({ uri: local!, title, paper, pen, fontId, ...(memo ? { memo } : {}), date: formatHeroPolaroidDate(exportDate), ...draft });
         });
-        await media.saveToLibraryAsync(polaroid);
+      }
+      if (action === 'save') {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const media = require('expo-media-library/legacy') as typeof import('expo-media-library/legacy');
+        await media.saveToLibraryAsync(polaroid!);
         setSaved(true);
         Alert.alert(t('comicDay.export.saved'));
       } else {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const sharing = require('expo-sharing') as typeof import('expo-sharing');
         if (!await sharing.isAvailableAsync()) { Alert.alert(t('comicDay.export.unavailable')); return; }
-        await sharing.shareAsync(local, { mimeType: 'image/png', UTI: 'public.png' });
+        await sharing.shareAsync(polaroid ?? local, { mimeType: 'image/png', UTI: 'public.png' });
       }
     } catch { Alert.alert(t('comicDay.export.failed')); }
     finally {
@@ -83,13 +93,25 @@ export function HeroImageActions({ uri, source, title = '', memo, exportDate, co
       }
       lock.current = false; setBusy(false); }
   };
+  // Load the native subscription UI only when the editor is opened.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Editor = editorOpen ? (require('./HeroPolaroidEditor') as typeof import('./HeroPolaroidEditor')).HeroPolaroidEditor : null;
   return <View style={[s.row, compact && s.compactRow]}>
-    {captureContent ? <HeroPolaroidExport content={captureContent} onComplete={captureComplete} onError={captureFailed} /> : null}
-    {(saveOnly ? ['save'] as const : ['save', 'share'] as const).map(action => <Pressable key={action} testID={`hero-image-${action}`} accessibilityRole="button" accessibilityLabel={t(`comicDay.export.${action}`)} disabled={busy} accessibilityState={{ disabled: busy, busy }} onPress={() => { void run(action); }} style={[s.button, compact && s.compactButton, (busy) && { opacity: 0.45 }]}>
-      <Svg width={compact ? 19 : 26} height={compact ? 19 : 26} viewBox="0 0 28 28" accessible={false}>
-        <Path d={action === 'share' ? 'M14 18Q14.3 10 14 3M9 8L14 3 19 8M8 12L5 12 5.5 25 23 24.5 23 12 20 12M6 24L11 24.4' : saved ? 'M5 14L11 21Q17 12 24 6M5.5 14L10.5 20' : 'M14 3Q13.8 11 14 19M8 13L14 19 20 13M4 19L4.5 25 24 24.5 24 19M5 25.5L10 25.3'} stroke={action === 'save' && saved ? '#69BFA9' : '#343B32'} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    {Editor ? <Editor uri={uri ? resolveHeroArtworkUri(uri) : undefined} source={source} initial={{ title, memo, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate) }} busy={busy} onClose={() => setEditorOpen(false)} onExport={run}>
+      {captureContent ? <HeroPolaroidExport content={captureContent} onComplete={captureComplete} onError={captureFailed} /> : null}
+    </Editor> : null}
+    {!editorOpen && captureContent ? <HeroPolaroidExport content={captureContent} onComplete={captureComplete} onError={captureFailed} /> : null}
+    {onDelete ? <Pressable testID="hero-image-delete" accessibilityRole="button" accessibilityLabel={t('comicDay.deleteScene')} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => { tapHaptic('warn'); onDelete(); }} style={[s.button, compact && s.compactButton, busy && { opacity: 0.45 }]}>
+      <Svg width={compact ? 22 : 30} height={compact ? 22 : 30} viewBox="0 0 28 28" accessible={false}><Path d="M5 7.5h18M10 7V4h8v3M7 8l1 16h12l1-16M11 11l.5 9M17 11l-.5 9" stroke={pen ?? '#343B32'} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>
+    </Pressable> : null}
+    {(saveOnly ? ['save'] as const : ['save', 'share'] as const).map(action => <Pressable key={action} testID={`hero-image-${action}`} accessibilityRole="button" accessibilityLabel={t(`comicDay.export.${action}`)} disabled={busy} accessibilityState={{ disabled: busy, busy }} onPress={() => { if (action === 'save') { tapHaptic(); setEditorOpen(true); } else if (directDownload) void run('share', { title, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate) }); else void run(action); }} style={[s.button, compact && s.compactButton, (busy) && { opacity: 0.45 }]}>
+      <Svg width={compact ? 22 : 30} height={compact ? 22 : 30} viewBox={action === 'save' && !saved ? '0 0 32 32' : '0 0 28 28'} accessible={false}>
+        {action === 'save' && !saved ? <Path d="M5 3.3q11-.4 22-.1l-.2 26.1-21.5.1Zm3.5 3.5 15-.2-.1 15-14.7.2Z" stroke={pen ?? '#343B32'} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" fill="none" /> : <Path d={action === 'share' ? 'M14 18Q14.3 10 14 3M9 8L14 3 19 8M8 12L5 12 5.5 25 23 24.5 23 12 20 12M6 24L11 24.4' : 'M5 14L11 21Q17 12 24 6M5.5 14L10.5 20'} stroke={pen ?? '#343B32'} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />}
       </Svg>
     </Pressable>)}
+    {directDownload ? <Pressable testID="hero-image-direct-download" accessibilityRole="button" accessibilityLabel="폴라로이드 다운로드" disabled={busy} onPress={() => void run('save', { title, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate) })} style={[s.button, busy && { opacity: 0.45 }]}>
+      <Svg width={30} height={30} viewBox="0 0 28 28" accessible={false}><Path d="M14 3v15m-5-5 5 5 5-5M6 17v6h16v-6" stroke={pen ?? '#343B32'} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>
+    </Pressable> : null}
   </View>;
 }
 const s = StyleSheet.create({ compactRow: { gap: 2 }, compactButton: { width: 32, height: 28 }, row: { flexDirection: 'row', justifyContent: 'flex-end', gap: 6 }, button: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' } });

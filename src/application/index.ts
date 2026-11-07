@@ -10,4 +10,4 @@ export { SPLASH_BACKGROUND_COLOR } from './splashAssets';
 export { resetAppStatusBarCache, syncAppStatusBar } from '@shared/lib/status-bar/appStatusBar';
 export { useAppBootstrap } from './useAppBootstrap';
 export { useAnalyticsScreenViews } from './useAnalyticsScreenViews';
-export { useCityPopFonts } from './useCityPopFonts';
+export { loadCityPopFont, useCityPopFonts } from './useCityPopFonts';

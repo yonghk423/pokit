@@ -1,7 +1,7 @@
+import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { getHeroGenerationAspectRatio } from '../lib/heroGenerationFrame';
-import { HeroColorPaletteSurface } from './HeroColorPaletteSurface';
 import { HeroReorderableStyleRail } from './HeroReorderableStyleRail';
-import { DayPlanComposerKeyboardContext } from '../model/dayPlanHeaderActions';
+import { DayPlanShellBackgroundContext, DayPlanComposerKeyboardContext } from '../model/dayPlanHeaderActions';
 import { HeroInfoHint } from './HeroInfoHint';
 import { completeHeroInfoHint } from '@shared/lib/storage/heroInfoHintStorage';
 import { AppModal } from '@shared/ui/app-modal';
@@ -20,15 +20,16 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ComicSceneImage } from './HeroSceneImage';
-import { HeroPhotoSource } from './HeroPhotoSource';
+import { HeroPhotoSource, HeroPhotoIcon } from './HeroPhotoSource';
+import { HeroPhotoPreview } from './HeroPhotoPreview';
 import { SELECTABLE_COMIC_CHARACTERS } from '../lib/heroCharacters';
-import { COMIC_PAPER_COLORS, COMIC_PEN_COLORS } from '../lib/heroScenePalette';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { type ComicSceneId } from '../lib/heroSceneImages';
 import { getHeroAiRemaining, generateHeroImages, resumeHeroAiJob, cancelHeroAiJob, getPendingHeroAiJob, dismissHeroAiJob, HeroAiError, type PendingHeroAiJob } from '../lib/heroAiClient';
 import { loadHeroSavedFaces, saveHeroFace, deleteHeroFace, type HeroSavedFace } from '../lib/heroSavedFaces';
 import type { HeroCardText } from './HeroCardCaption';
+import { saveHeroOriginalPhoto, saveHeroOriginalPhotoMetadata } from '../lib/heroOriginalPhoto';
 
 export const HERO_SELECTED_STYLE_KEY = 'pokit:hero-selected-illustration-style-v1';
 export const HERO_SELECTED_FACE_KEY = 'pokit:hero-selected-face-v1';
@@ -42,12 +43,22 @@ function PenCircle({ selected = false, color, size }: { selected?: boolean; colo
   </Svg>;
 }
 
-/** Traced proportions from the approved 5:45 reference, including the capsule. */
-function StoryModeIcon({ mode, ink, paper, selected }: { mode: 'character' | 'photo'; ink: string; paper: string; selected: boolean }) {
-  return <Svg width="100%" height="100%" viewBox="0 0 500 125" accessible={false} pointerEvents="none" style={StyleSheet.absoluteFill}>
-    <Path d="M62 3Q251 2 439 3C471 3 495 28 496 61c1 33-24 61-57 61L62 121C29 121 4 96 4 63 3 30 29 3 62 3Z" fill="none" stroke={ink} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" opacity={selected ? 1 : .8} />
-    {selected ? <Path d="M21 103Q38 120 64 120L439 121q29-1 45-20" fill="none" stroke={ink} strokeWidth={4.3} strokeLinecap="round" /> : null}
-    {mode === 'character' ? <>
+/** Text mode labels with the existing ink underline. Original artwork is kept below. */
+function StoryModeIcon({ mode, ink, paper, selected }: { mode: 'character' | 'photo' | 'original'; ink: string; paper: string; selected: boolean }) {
+  const { t } = useTranslation();
+  const label = t(mode === 'character' ? 'comicDay.inline.fromText' : mode === 'photo' ? 'comicDay.inline.fromPhoto' : 'comicDay.inline.asIs');
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+
+    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: ink, fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 2 }}>{label}</ThemedText>
+    {/* Original mode artwork — retained for a future icon variant.
+    <Svg width={54} height={36} viewBox="175 0 170 125" accessible={false}>
+    {mode === 'original' ? <>
+      <Path d="m205 29 67-5 5 75-67 4Z" fill={paper} stroke={ink} strokeWidth={2.5} strokeLinejoin="round" />
+      <Path d="m224 24 66 9-10 74-66-9Z" fill="#F8F7EF" stroke={ink} strokeWidth={2.5} strokeLinejoin="round" />
+      <Path d="m231 35 49 7-7 45-49-7Z" fill="#D8E5DC" stroke={ink} strokeWidth={1.7} />
+      <Path d="m225 73 17-15 10 11 10-7 12 18M264 49a5 5 0 1 0 .1 0" fill="none" stroke={ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M290 80v24m-12-12h24" fill="none" stroke={ink} strokeWidth={3} strokeLinecap="round" />
+    </> : mode === 'character' ? <>
       <Path d="m223 52-36 13 36 41 79-23-24-27Z" fill="#FFFFFF" />
       <Path d="m272 14-15 23 18 12 18-23Z" fill="#75B9A5" />
       <Path d="m256 46-14 13-4 26-5 10 9 2 10-12 16-11 1-18Z" fill="#D8BD72" />
@@ -67,10 +78,14 @@ function StoryModeIcon({ mode, ink, paper, selected }: { mode: 'character' | 'ph
       <Path d="m290 44 36 8-9 42-36-8Z" fill="#FFFFFF" stroke={ink} strokeWidth={1.7} strokeLinejoin="round" />
       <Path d="m286 80-1 6 6 1m19 4 6 1 2-6" fill="none" stroke="#315E63" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
     </>}
-  </Svg>;
+  </Svg> */}
+  </View>;
 }
 
-function DrawingProgress({ elapsed, complete, ink, submitted }: { elapsed: number; complete: boolean; ink: string; submitted: boolean }) {
+const GENERATION_PROGRESS_INK = '#000000';
+
+function DrawingProgress({ elapsed, complete, submitted }: { elapsed: number; complete: boolean; submitted: boolean }) {
+  const ink = GENERATION_PROGRESS_INK;
   const { t } = useTranslation();
   // The API returns finished images, so intermediate progress is explicitly estimated.
   const percent = complete ? 100 : Math.min(95, Math.floor(95 * (1 - Math.exp(-elapsed / 50))));
@@ -87,38 +102,38 @@ function DrawingProgress({ elapsed, complete, ink, submitted }: { elapsed: numbe
       <View style={s.progressClip}><Animated.View style={[s.progressFill, { backgroundColor: '#69BFAE', transform: [{ scaleX: fill }] }]} /></View>
       <Svg pointerEvents="none" width="100%" height="100%" viewBox="0 0 240 16" preserveAspectRatio="none" style={StyleSheet.absoluteFill}><Path d="M8 2.3Q119 1 231 2.2C240 2 239 14 231 13.8Q122 15 8 13.9C-.4 14.5.4 2.6 8 2.3Z" fill="none" stroke={ink} strokeWidth={1.1} /><Path d="M12 14.8Q104 15.4 193 14.7" fill="none" stroke={ink} strokeWidth={0.4} opacity={0.5} /></Svg>
     </View>
-    <ThemedText style={s.hint}>{t('comicDay.loading.estimated')}</ThemedText>
-    <ThemedText style={s.hint}>{t('comicDay.inline.elapsed', { seconds: elapsed })}</ThemedText>
-    {elapsed >= 90 ? <ThemedText style={s.hint}>{t('comicDay.loading.longer')}</ThemedText> : null}
+    <ThemedText style={[s.hint, { color: ink }]}>{t('comicDay.loading.estimated')}</ThemedText>
+    <ThemedText style={[s.hint, { color: ink }]}>{t('comicDay.inline.elapsed', { seconds: elapsed })}</ThemedText>
+    {elapsed >= 90 ? <ThemedText style={[s.hint, { color: ink }]}>{t('comicDay.loading.longer')}</ThemedText> : null}
   </View>;
 }
 
-export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper, ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, onApply, onClose }: {
-  visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob;
+export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper, ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, initialMode = 'character', fullScreen = false, onApply, onClose }: {
+  fullScreen?: boolean; visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob; initialMode?: 'character' | 'photo' | 'original';
   onApply: (text: HeroCardText, uri: string, jobId: string) => Promise<void>; onClose: () => void;
 }) {
   const { t, locale } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
+  const mainBackground = isDark ? '#262B28' : '#F7F6F4';
   const nameFor = useComicCharacterNames();
   const setComposerKeyboardOpen = useContext(DayPlanComposerKeyboardContext);
-  const [keyboardOpen, setKeyboardOpen] = useState(() => Keyboard.isVisible?.() ?? false);
+  const setShellBackground = useContext(DayPlanShellBackgroundContext);
   const [keyboardTop, setKeyboardTop] = useState<number | null>(() => Keyboard.metrics?.()?.screenY ?? null);
   useEffect(() => {
     const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', event => {
       if (visible && Platform.OS === 'ios' && event) Keyboard.scheduleLayoutAnimation?.(event);
       setKeyboardTop(event?.endCoordinates.screenY ?? null);
-      setKeyboardOpen(true);
     });
     const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', event => {
       if (visible && Platform.OS === 'ios' && event) Keyboard.scheduleLayoutAnimation?.(event);
       setKeyboardTop(null);
-      setKeyboardOpen(false);
     });
     return () => { show.remove(); hide.remove(); };
   }, [visible]);
   useLayoutEffect(() => {
-    setComposerKeyboardOpen?.(visible && keyboardOpen);
+    setComposerKeyboardOpen?.(visible);
     return () => setComposerKeyboardOpen?.(false);
-  }, [visible, keyboardOpen, setComposerKeyboardOpen]);
+  }, [visible, setComposerKeyboardOpen]);
   const [helpOpen, setHelpOpen] = useState(false);
   const [stylesOpen, setStylesOpen] = useState(false);
   const [generationWidth, setGenerationWidth] = useState(320);
@@ -135,29 +150,59 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     : selectedStyle.id === 'protagonist-5' ? 'p5-01-platform'
     : selectedStyle.id === 'protagonist-6' ? 'p6-01-rush-hour-commute'
     : selectedStyle.scenes.some(scene => scene.id === sceneId) ? sceneId : selectedStyle.preview[0].id;
-  useEffect(() => { if (!visible) { setHelpOpen(false); setStylesOpen(false); setPalette(null); } }, [visible]);
+  useEffect(() => { if (!visible) { setHelpOpen(false); setStylesOpen(false); } }, [visible]);
   const styleReveal = useAnimatedValue(0);
   useEffect(() => {
     const animation = Animated.timing(styleReveal, { toValue: stylesOpen ? 1 : 0, duration: stylesOpen ? 220 : 160, easing: Easing.out(Easing.cubic), useNativeDriver: true });
     animation.start();
     return () => animation.stop();
   }, [stylesOpen, styleReveal]);
-  const [paper, setPaper] = useState(() => {
+  const [paper] = useState(() => {
     const saved = localStorageClient.getItemRaw(HERO_SELECTED_PAPER_KEY);
     const savedPaper = saved && /^#[0-9a-f]{6}$/i.test(saved) ? saved : undefined;
     return recoveryJob?.cardAppearance?.paper ?? savedPaper ?? cardPaper ?? '#FFFFFF';
   });
-  const [ink, setInk] = useState(recoveryJob?.cardAppearance?.pen ?? cardInk);
-  const [palette, setPalette] = useState<'paper' | 'pen' | null>(null);
-  const [mode, setMode] = useState<'character' | 'photo'>(recoveryJob?.story?.source ?? 'character');
+  const [ink] = useState(recoveryJob?.cardAppearance?.pen ?? cardInk);
+  // Editing colors belong to the record; controls must remain legible on its paper.
+  const uiInk = fullScreen ? (isDark ? '#EEECE6' : '#202020') : paper.toUpperCase() === '#000000' ? '#FFFFFF' : '#202020';
+  useEffect(() => {
+    if (!fullScreen || !visible) return;
+    setShellBackground?.(mainBackground);
+    return () => setShellBackground?.(null);
+  }, [fullScreen, visible, mainBackground, setShellBackground]);
+  const [mode, setMode] = useState<'character' | 'photo' | 'original'>(recoveryJob?.story?.source ?? initialMode);
+  const modeFade = useAnimatedValue(1);
+  const underlineX = useAnimatedValue(0);
+  const [modeFrames, setModeFrames] = useState<Record<string, { x: number; width: number }>>({});
+  const previousMode = useRef(mode);
+  useLayoutEffect(() => {
+    if (previousMode.current === mode) return;
+    previousMode.current = mode;
+    modeFade.stopAnimation();
+    modeFade.setValue(0.35);
+    const animation = Animated.timing(modeFade, { toValue: 1, duration: 230, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [mode, modeFade]);
+  useEffect(() => {
+    const frame = modeFrames[mode];
+    if (!frame) return;
+    const animation = Animated.timing(underlineX, { toValue: frame.x + (frame.width - 52) / 2, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [mode, modeFrames, underlineX]);
+  const measureMode = (value: string, frame: { x: number; width: number }) => setModeFrames(current => current[value]?.x === frame.x && current[value]?.width === frame.width ? current : { ...current, [value]: { x: frame.x, width: frame.width } });
+
   const [draftTitle, setDraftTitle] = useState(recoveryJob?.story?.title ?? title);
   const [text, setText] = useState(recoveryJob?.story?.text ?? memo);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [originalPhoto, setOriginalPhoto] = useState<{ uri: string; fileName?: string | null } | null>(null);
   const [facesLoading, setFacesLoading] = useState(true);
   const [faces, setFaces] = useState<HeroSavedFace[]>([]);
   const [face, setFace] = useState<string | null>(null);
   const [register, setRegister] = useState(false);
   const [savingFace, setSavingFace] = useState(false);
+  const [importingPhoto, setImportingPhoto] = useState(false);
   const [busy, setBusy] = useState(false);
   const [paintPressed, setPaintPressed] = useState(false);
   const feedback = useAnimatedValue(1);
@@ -246,10 +291,46 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     { text: t('common.cancel'), style: 'cancel' },
     { text: t('comicDay.inline.removeFace'), style: 'destructive', onPress: () => { void deleteHeroFace(saved.id).then(values => { setFaces(values); if (face === saved.uri) { setFace(null); localStorageClient.removeItem(HERO_SELECTED_FACE_KEY); } }).catch(() => setError(t('comicDay.ai.failed'))); } },
   ]);
+  const chooseOriginalPhoto = async () => {
+    if (locked.current || job) return;
+    locked.current = true; setImportingPhoto(true); setError(null);
+    editing.current = false; Keyboard.dismiss();
+    try {
+      // Local photo selection does not call AI or reserve a generation job.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const picker = require('expo-image-picker') as typeof import('expo-image-picker');
+      const result = await picker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, allowsEditing: false, allowsMultipleSelection: false });
+      if (alive.current && !result.canceled && result.assets[0]?.uri) {
+        const asset = result.assets[0];
+        setOriginalPhoto({ uri: asset.uri, fileName: asset.fileName });
+      }
+    } catch {
+      if (alive.current) setError(t('comicDay.photo.pickError'));
+    } finally {
+      locked.current = false;
+      if (alive.current) setImportingPhoto(false);
+    }
+  };
+  const saveOriginalPhoto = async () => {
+    if (locked.current || job || !originalPhoto) return;
+    locked.current = true; setImportingPhoto(true); setError(null); Keyboard.dismiss();
+    try {
+      const uri = await saveHeroOriginalPhoto(originalPhoto.uri, originalPhoto.fileName);
+      if (!alive.current) return;
+      await onApply({ title: draftTitle.trim(), memo: text.trim(), paper, pen: ink }, uri, '');
+      saveHeroOriginalPhotoMetadata({ uri, title: draftTitle.trim(), memo: text.trim(), createdAt: Date.now() });
+    } catch {
+      if (alive.current) setError(t('comicDay.photo.saveError'));
+    } finally {
+      locked.current = false;
+      if (alive.current) setImportingPhoto(false);
+    }
+  };
   const generate = async () => {
+    if (mode === 'original') return;
     if (locked.current) return;
     if (!canGenerate) return;
-    setPalette(null); setStylesOpen(false);
+    setStylesOpen(false);
     const controller = new AbortController(); operation.current = controller;
     locked.current = true; setCancelling(false); setBusy(true); setSubmitted(false); setResultReady(false); setError(null); setElapsed(0); Keyboard.dismiss();
     const id = job?.id ?? `hero-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
@@ -290,25 +371,42 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   useEffect(() => { if (recoveryJob && !started.current) { started.current = true; void generate(); } }, [recoveryJob]); // eslint-disable-line react-hooks/exhaustive-deps
   const needsFirstFace = !facesLoading && faces.length === 0;
   const addFaceLabel = t(needsFirstFace ? 'comicDay.inline.addFirstFace' : 'comicDay.inline.addFace');
+  const needsFace = !job && mode === 'character' && !face && !facesLoading && !!(draftTitle.trim() || text.trim());
   const canGenerate = !!job || !!(draftTitle.trim() || text.trim()) && (mode === 'character' ? !!face && !facesLoading : !!photo);
   return <View ref={root} collapsable={false} testID="hero-inline-composer" style={s.root} onLayout={() => root.current?.measureInWindow((_x, y, _width, height) => setWorkspaceBottom(y + height))}>
     {/* Measure the unpadded workspace in screen coordinates so collapsing the header
         cannot leave keyboard padding calculated from the previous header position. */}
     <View testID="hero-inline-keyboard-space" style={[s.root, { paddingBottom: keyboardTop === null ? 0 : Math.max(0, workspaceBottom - keyboardTop) }]}>
-      <View testID="hero-inline-paper" style={[s.paper, { backgroundColor: paper }]}><PaperGrain opacity={0.15} />
-        <View style={[s.heading, { alignItems: 'flex-start', zIndex: 30 }]}>
+      <View testID="hero-inline-paper" style={[s.paper, { backgroundColor: fullScreen ? mainBackground : paper }, fullScreen && s.fullScreenPaper]}>{!fullScreen && paper !== '#000000' ? <PaperGrain opacity={0.15} /> : null}
+        <Animated.View style={[s.heading, { opacity: modeFade, alignItems: 'flex-start', zIndex: 30 }]}>
           {!busy ? <>
-            <View pointerEvents={job ? 'none' : 'auto'} style={{ flex: 1, minWidth: 0 }}>{mode === 'character' ? <View style={s.faceHeader}>
-                      <Pressable testID="hero-inline-add-face" onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); setStylesOpen(false); setRegister(true); }} accessibilityRole="button" accessibilityLabel={addFaceLabel} style={[s.addPerson, needsFirstFace && s.emptyAddPerson]}><View testID="hero-inline-add-face-icon-slot" style={s.addSlot}><View style={s.add}><Svg width={18} height={18} viewBox="0 0 20 20" accessible={false}><Path d="M10 3.5v13M3.5 10h13" stroke={ink} strokeWidth={1.6} strokeLinecap="round" /></Svg></View></View>{needsFirstFace ? <ThemedText testID="hero-inline-add-face-label" style={s.emptyAddFaceLabel}>{addFaceLabel}</ThemedText> : null}</Pressable>
+            <View pointerEvents={job ? 'none' : 'auto'} style={{ flex: 1, minWidth: 0 }}>{mode === 'original' ? null : mode === 'character' ? <View style={s.faceHeader}>
+                      <Pressable testID="hero-inline-add-face" onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); setStylesOpen(false); setRegister(true); }} accessibilityRole="button" accessibilityLabel={addFaceLabel} style={[s.addPerson, needsFirstFace && s.emptyAddPerson]}><View testID="hero-inline-add-face-icon-slot" style={s.addSlot}><View style={[s.add, { borderColor: uiInk }]}><Svg width={18} height={18} viewBox="0 0 20 20" accessible={false}><Path d="M10 3.5v13M3.5 10h13" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></View></View>{needsFirstFace ? <ThemedText testID="hero-inline-add-face-label" style={[s.emptyAddFaceLabel, { color: uiInk }]}>{addFaceLabel}</ThemedText> : null}</Pressable>
                     {!needsFirstFace ? <ScrollView testID="hero-inline-face-rail" horizontal style={s.faceRail} showsHorizontalScrollIndicator={false} contentContainerStyle={s.faceRailContent}>
                       {facesLoading ? <View testID="hero-inline-faces-loading" accessibilityState={{ busy: true }} style={s.faceRailContent}>{[0, 1].map(index => <View key={index} style={[s.avatar, s.imagePlaceholder]} />)}</View> : null}
                       {faces.map((saved, index) => <Pressable key={saved.id} testID={`hero-inline-face-${index}`} accessibilityRole="button" accessibilityLabel={`${t('comicDay.inline.face')} ${index + 1}`} accessibilityState={{ selected: face === saved.uri }} onPress={() => { tapHaptic('select'); localStorageClient.setItemRaw(HERO_SELECTED_FACE_KEY, saved.id); setFace(saved.uri); setRegister(false); }} delayLongPress={500} onLongPress={() => { tapHaptic('select'); removeFace(saved); }} accessibilityActions={[{ name: 'delete', label: t('comicDay.inline.removeFace') }]} onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'delete') removeFace(saved); }} style={s.person}><View testID={`hero-inline-face-frame-${index}`} style={s.avatarFrame}><View style={s.avatar}><ComicSceneImage imageKey={`saved-face-avatar:${saved.uri}`} source={{ uri: saved.uri }} contentFit="cover" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={[s.clippedImage, s.avatar]} /></View>{face === saved.uri ? <View testID={`hero-inline-face-ring-${index}`} pointerEvents="none" style={s.chosen} /> : null}</View></Pressable>)}
                     </ScrollView> : null}
                   </View> : <HeroPhotoSource variant="toolbar" mode="photo" uri={photo} onChange={setPhoto} actionsOnly selectionLimit={1} />}</View>
           </> : <View style={{ flex: 1 }} />}
-          <Pressable accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || cancelling || resultReady} onPress={() => { tapHaptic(); if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={ink} size={22} /></Pressable></View>
-        <View style={{ flex: 1, minHeight: 0 }}>
-        {busy ? <Animated.View testID="hero-inline-progress-surface" style={[s.loading, StyleSheet.absoluteFill, { zIndex: 20, opacity: feedback }]}><DrawingProgress elapsed={elapsed} complete={resultReady} ink={ink} submitted={submitted} /><ThemedText testID="hero-inline-keep-app-open" accessibilityLiveRegion="polite" style={s.hint}>{t(submitted ? 'comicDay.inline.backgroundReady' : 'comicDay.inline.uploading')}</ThemedText><Pressable testID="hero-inline-cancel-generation" accessibilityRole="button" accessibilityLabel={t('comicDay.inline.cancelGeneration')} disabled={cancelling || resultReady} onPress={confirmCancelGeneration} style={s.cancelGeneration}><HanddrawnControl name="xmark" color={ink} size={18} /><ThemedText style={[s.cancelText, { color: ink }]}>{t(cancelling ? 'comicDay.inline.cancelling' : 'comicDay.inline.cancelGeneration')}</ThemedText></Pressable></Animated.View> : null}
+          {!fullScreen ? <Pressable testID="hero-inline-close" accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || importingPhoto || cancelling || resultReady} onPress={() => { tapHaptic(); if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={uiInk} size={22} /></Pressable> : null}</Animated.View>
+        <Animated.View style={{ flex: 1, minHeight: 0, opacity: modeFade }}>
+        {mode === 'original' ? <View testID="hero-original-photo-tab" style={{ flex: 1 }}>
+          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentContainerStyle={s.scrollContent}>
+            <Pressable testID="hero-original-photo-picker" accessibilityRole="button" accessibilityLabel={t(originalPhoto ? 'comicDay.photo.changeOriginal' : 'comicDay.photo.choose')} disabled={importingPhoto} onPress={() => { tapHaptic(); void chooseOriginalPhoto(); }} style={{ height: originalPhoto ? 180 : 128, alignItems: 'center', justifyContent: 'center', marginVertical: 8, padding: 8 }}>
+              <PenFrame color={uiInk} />
+              {originalPhoto ? <HeroPhotoPreview uri={originalPhoto.uri} resizeMode="contain" style={{ width: '100%', height: '100%' }} /> : <View style={{ alignItems: 'center', gap: 10 }}><HeroPhotoIcon size={48} colored /><ThemedText style={{ color: uiInk }}>{t('comicDay.photo.choose')}</ThemedText></View>}
+              {importingPhoto ? <ActivityIndicator color={uiInk} style={StyleSheet.absoluteFill} /> : null}
+            </Pressable>
+            {originalPhoto ? <ThemedText style={[s.hint, { color: uiInk }]}>{t('comicDay.photo.changeOriginal')}</ThemedText> : null}
+            <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={false} onTitleChange={setDraftTitle} onTextChange={setText} onFocus={field => { editing.current = field === 'body'; }} onBlur={() => { editing.current = false; }} />
+            {error ? <ThemedText accessibilityLiveRegion="polite" style={s.error}>{error}</ThemedText> : null}
+          </ScrollView>
+          <Pressable testID="hero-original-photo-save" accessibilityRole="button" accessibilityLabel={t('common.save')} accessibilityState={{ disabled: !originalPhoto || importingPhoto, busy: importingPhoto }} disabled={!originalPhoto || importingPhoto} onPress={() => { tapHaptic(); void saveOriginalPhoto(); }} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', marginVertical: 8, opacity: !originalPhoto || importingPhoto ? 0.4 : 1 }}>
+            <PenFrame color={uiInk} />
+            <ThemedText style={{ color: uiInk, fontSize: 17 }}>{t('common.save')}</ThemedText>
+          </Pressable>
+        </View> : <>
+        {busy ? <Animated.View testID="hero-inline-progress-surface" style={[s.loading, StyleSheet.absoluteFill, { zIndex: 20, opacity: feedback }]}><DrawingProgress elapsed={elapsed} complete={resultReady} submitted={submitted} /><ThemedText testID="hero-inline-keep-app-open" accessibilityLiveRegion="polite" style={[s.hint, { color: GENERATION_PROGRESS_INK }]}>{t(submitted ? 'comicDay.inline.backgroundReady' : 'comicDay.inline.uploading')}</ThemedText><Pressable testID="hero-inline-cancel-generation" accessibilityRole="button" accessibilityLabel={t('comicDay.inline.cancelGeneration')} disabled={cancelling || resultReady} onPress={confirmCancelGeneration} style={s.cancelGeneration}><HanddrawnControl name="xmark" color={GENERATION_PROGRESS_INK} size={18} /><ThemedText style={[s.cancelText, { color: GENERATION_PROGRESS_INK }]}>{t(cancelling ? 'comicDay.inline.cancelling' : 'comicDay.inline.cancelGeneration')}</ThemedText></Pressable></Animated.View> : null}
         {!busy || paintPressed ? <Animated.View pointerEvents={busy ? 'none' : 'auto'} style={[{ flex: 1 }, busy && { opacity: feedback.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
           <ScrollView testID="hero-inline-story-scroll" ref={scroll} style={s.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" onLayout={revealStory} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
             <View pointerEvents={job ? 'none' : 'auto'} style={s.content}>
@@ -318,8 +416,8 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
                   {mode === 'character' ? null : <HeroPhotoSource variant="strip" mode="photo" uri={photo} onChange={setPhoto} compactPreview previewHeight={130} selectionLimit={1} />}
                 </View>
               </View>
-              <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={visible && !recoveryJob} onTitleChange={setDraftTitle} onTextChange={setText}
-                onFocus={() => { setStylesOpen(false); setPalette(null); editing.current = true; revealStory(); }} onBlur={() => { editing.current = false; }} />
+              <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={false} onTitleChange={setDraftTitle} onTextChange={setText}
+                onFocus={field => { setStylesOpen(false); editing.current = field === 'body'; revealStory(); }} onBlur={() => { editing.current = false; }} />
             </View>
             {error ? <View testID="hero-inline-error" style={s.errorRow}>
               <Svg width={17} height={17} viewBox="0 0 24 24" accessible={false} style={{ marginTop: 1, flexShrink: 0 }}><Path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19ZM12 7v6m0 3v.5" fill="none" stroke="#934C3C" strokeWidth={1.5} strokeLinecap="round" /></Svg>
@@ -327,61 +425,50 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
             </View> : null}
           </ScrollView>
           <View style={s.generationArea}>
+          {needsFace ? <ThemedText testID="hero-inline-face-required" accessibilityLiveRegion="polite" style={{ color: uiInk, fontSize: 14, lineHeight: 21, textAlign: 'right', marginBottom: 6 }}>{t('comicDay.inline.faceRequired')}</ThemedText> : null}
           <View testID="hero-inline-quota-slot" accessibilityState={{ busy: quotaLoading }} style={s.remainingSlot}>
-            <ThemedText testID="hero-inline-remaining" accessibilityLiveRegion="polite" accessibilityElementsHidden={quotaLoading} importantForAccessibility={quotaLoading ? 'no-hide-descendants' : 'auto'} numberOfLines={2} style={[s.remaining, { color: ink }, remaining === 0 && s.remainingExhausted, quotaLoading && { opacity: 0 }]}>{remaining == null ? '…' : remaining === 0 ? t('comicDay.ai.exhausted') : t(remaining >= 100000 ? 'comicDay.inline.unlimited' : 'comicDay.inline.remaining', { count: remaining })}</ThemedText>
+            <ThemedText testID="hero-inline-remaining" accessibilityLiveRegion="polite" accessibilityElementsHidden={quotaLoading} importantForAccessibility={quotaLoading ? 'no-hide-descendants' : 'auto'} numberOfLines={2} style={[s.remaining, { color: uiInk }, remaining === 0 && s.remainingExhausted, quotaLoading && { opacity: 0 }]}>{remaining == null ? '…' : remaining === 0 ? t('comicDay.ai.exhausted') : t(remaining >= 100000 ? 'comicDay.inline.unlimited' : 'comicDay.inline.remaining', { count: remaining })}</ThemedText>
             {quotaLoading ? <View testID="hero-inline-quota-skeleton" pointerEvents="none" accessible={false} style={s.remainingSkeleton} /> : null}
           </View>
           <View testID="hero-inline-generation-row" onLayout={({ nativeEvent: { layout } }) => { if (layout.width > 0) setGenerationWidth(layout.width); }} style={s.generationRow}>
             <View testID="hero-inline-appearance-controls" pointerEvents={job ? 'none' : 'auto'} style={s.appearanceControls}>
                 <View testID="hero-inline-style-list" style={s.styles}>
-                  <Pressable testID="hero-inline-style-toggle" accessibilityRole="button" accessibilityLabel={nameFor(selectedStyle.id, t(selectedStyle.name))} accessibilityState={{ selected: true, expanded: stylesOpen }} onPress={() => { setPalette(null); setStylesOpen(open => !open); }} style={[s.styleItem, s.selectedStyleItem]}>
-                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${selectedStyle.id}`} source={selectedStyle.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle selected color={ink} size={42} /></View>
-                                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.styleLabel, { color: ink, alignSelf: 'stretch' }]}>{nameFor(selectedStyle.id, t(selectedStyle.name))}</ThemedText>
+                  <Pressable testID="hero-inline-style-toggle" accessibilityRole="button" accessibilityLabel={nameFor(selectedStyle.id, t(selectedStyle.name))} accessibilityState={{ selected: true, expanded: stylesOpen }} onPress={() => { tapHaptic('select'); setStylesOpen(open => !open); }} style={[s.styleItem, s.selectedStyleItem]}>
+                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${selectedStyle.id}`} source={selectedStyle.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View></View>
+                                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.styleLabel, { alignSelf: 'stretch' }]}>{nameFor(selectedStyle.id, t(selectedStyle.name))}</ThemedText>
 </Pressable>
-                  <Animated.View testID="hero-inline-style-options" pointerEvents={stylesOpen ? 'auto' : 'none'} accessibilityElementsHidden={!stylesOpen} importantForAccessibility={stylesOpen ? 'auto' : 'no-hide-descendants'} style={[s.styleOptions, { width: Math.max(1, generationWidth - 56), opacity: styleReveal, transform: [{ translateY: styleReveal.interpolate({ inputRange: [0, 1], outputRange: [-5, 0] }) }] }]}>
-                  <HeroReorderableStyleRail>
-                  {SELECTABLE_COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`hero-inline-style-${character.id}`} accessibilityRole="button" accessibilityLabel={nameFor(character.id, t(character.name))} accessibilityState={{ selected: styleId === character.id }} onPress={() => { localStorageClient.setItemRaw(HERO_SELECTED_STYLE_KEY, character.id); setStyleId(character.id); setStylesOpen(false); }} style={s.styleItem}>
-                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${character.id}`} source={character.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View><PenCircle selected={styleId === character.id} color={ink} size={42} /></View>
-                    <ThemedText style={s.styleLabel}>{nameFor(character.id, t(character.name))}</ThemedText>
+                  <Animated.View testID="hero-inline-style-options" pointerEvents={stylesOpen ? 'auto' : 'none'} accessibilityElementsHidden={!stylesOpen} importantForAccessibility={stylesOpen ? 'auto' : 'no-hide-descendants'} style={[s.styleOptions, { backgroundColor: fullScreen ? mainBackground : paper, width: Math.max(1, generationWidth - 56), opacity: styleReveal, transform: [{ translateY: styleReveal.interpolate({ inputRange: [0, 1], outputRange: [-5, 0] }) }] }]}>
+                  <HeroReorderableStyleRail itemWidth={44}>
+                  {SELECTABLE_COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`hero-inline-style-${character.id}`} accessibilityRole="button" accessibilityLabel={nameFor(character.id, t(character.name))} accessibilityState={{ selected: styleId === character.id }} onPress={() => { tapHaptic('select'); localStorageClient.setItemRaw(HERO_SELECTED_STYLE_KEY, character.id); setStyleId(character.id); setStylesOpen(false); }} style={[s.styleItem, styleId === character.id && s.selectedStyleCard]}>
+                    <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${character.id}`} source={character.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View></View>
+                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={s.styleLabel}>{nameFor(character.id, t(character.name))}</ThemedText>
                   </Pressable>)}
                   {null}
                   </HeroReorderableStyleRail>
                   </Animated.View>
                 </View>
-          <View pointerEvents={job ? 'none' : 'auto'} style={s.colorControls}>
-            <Pressable testID="hero-inline-paper-color" accessibilityRole="button" accessibilityLabel={t('comicDay.paper')} accessibilityState={{ expanded: palette === 'paper' }} onPress={() => { tapHaptic('select'); setStylesOpen(false); setPalette(value => value === 'paper' ? null : 'paper'); }} style={s.colorButton}>
-              <Svg width={25} height={28} viewBox="0 0 28 30" accessible={false}><Path d="M7 3 22 4 21 22 16 27 6 26Z" fill={paper} stroke={ink} strokeWidth={1.2} strokeLinejoin="round" /><Path d="M16 27 16 22 21 22M4 7 3 28 13 28M10 10 18 10M10 14 18 14" fill="none" stroke={ink} strokeWidth={0.85} strokeLinecap="round" /></Svg>
-            </Pressable>
-            <Pressable testID="hero-inline-pen-color" accessibilityRole="button" accessibilityLabel={t('comicDay.pen')} accessibilityState={{ expanded: palette === 'pen' }} onPress={() => { tapHaptic('select'); setStylesOpen(false); setPalette(value => value === 'pen' ? null : 'pen'); }} style={s.colorButton}><ThemedText style={{ color: ink, fontSize: 22, lineHeight: 30 }}>Aa</ThemedText></Pressable>
           </View>
-          </View>
-          {(['paper', 'pen'] as const).map(paletteType => <HeroColorPaletteSurface key={paletteType} open={palette === paletteType} style={s.colorPalette}>
-            <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} contentContainerStyle={s.colorSwatches}>
-              {(paletteType === 'paper' ? COMIC_PAPER_COLORS : COMIC_PEN_COLORS).map(color => <Pressable key={color} testID={`hero-inline-${paletteType}-${color}`} accessibilityRole="button" accessibilityLabel={`${t(paletteType === 'paper' ? 'comicDay.paper' : 'comicDay.pen')} ${color}`} accessibilityState={{ selected: (paletteType === 'paper' ? paper : ink) === color }} onPress={() => { tapHaptic('select'); if (paletteType === 'paper') { localStorageClient.setItemRaw(HERO_SELECTED_PAPER_KEY, color); setPaper(color); } else setInk(color); }} style={s.colorSwatchTouch}>
-                <View style={{ width: 25, height: 25, borderRadius: 13, backgroundColor: color, borderWidth: (paletteType === 'paper' ? paper : ink) === color ? 2 : 0.5, borderColor: ink }} />
-              </Pressable>)}
-            </ScrollView>
-          </HeroColorPaletteSurface>)}
-          <Pressable testID="hero-inline-generate" accessibilityRole="button" accessibilityLabel={t(job ? 'comicDay.inline.retry' : 'comicDay.inline.generateStyle')} accessibilityState={{ disabled: !canGenerate || savingFace }} disabled={!canGenerate || savingFace} onPress={() => { if (!canGenerate || savingFace || locked.current) return; tapHaptic(); setPaintPressed(true); void generate(); }} onPressIn={() => { if (canGenerate && !savingFace && !locked.current) setPaintPressed(true); }} style={[s.generate, (!canGenerate || savingFace) && { opacity: 0.4 }]}><HeroGenerateBloom active={paintPressed} /><PenCircle color={ink} />{job ? <HanddrawnControl name="arrow.clockwise" color={ink} size={26} /> : <HeroGenerateIcon ink={ink} />}</Pressable>
+          <Pressable testID="hero-inline-generate" accessibilityRole="button" accessibilityLabel={t(job ? 'comicDay.inline.retry' : 'comicDay.inline.generateStyle')} accessibilityState={{ disabled: !canGenerate || savingFace || importingPhoto }} disabled={!canGenerate || savingFace || importingPhoto} onPress={() => { if (!canGenerate || savingFace || importingPhoto || locked.current) return; tapHaptic(); setPaintPressed(true); void generate(); }} onPressIn={() => { if (canGenerate && !savingFace && !importingPhoto && !locked.current) setPaintPressed(true); }} style={[s.generate, (!canGenerate || savingFace || importingPhoto) && { opacity: 0.4 }]}><HeroGenerateBloom active={paintPressed} /><PenCircle color={uiInk} />{job ? <HanddrawnControl name="arrow.clockwise" color={uiInk} size={26} /> : <HeroGenerateIcon ink={uiInk} />}</Pressable>
           </View>
           </View>
         </Animated.View> : null}
-        </View>
-        <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : '키보드 내리기'} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={ink} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} accessibilityState={{ selected: mode === value }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={ink} paper={paper} selected={mode === value} /></Pressable>)}</View> : <View style={{ flex: 1 }} />}<Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={ink} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={ink} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable></View>
+        </>}
+        </Animated.View>
+        <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : '키보드 내리기'} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={uiInk} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} onLayout={event => measureMode(value, event.nativeEvent.layout)} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} disabled={importingPhoto} accessibilityState={{ selected: mode === value, disabled: importingPhoto }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={uiInk} paper={paper} selected={mode === value} /></Pressable>)}<Pressable testID="hero-inline-add-original-photo" onLayout={event => measureMode('original', event.nativeEvent.layout)} accessibilityRole="button" accessibilityLabel={t('comicDay.inline.asIs')} disabled={importingPhoto || savingFace || !!job} accessibilityState={{ disabled: importingPhoto || savingFace || !!job, busy: importingPhoto, selected: mode === 'original' }} onPress={() => { if (locked.current) return; tapHaptic('select'); setMode('original'); setError(null); setStylesOpen(false); setRegister(false); setHelpOpen(false); }} style={[s.tab, importingPhoto && { opacity: 0.45 }]}>{importingPhoto ? <ActivityIndicator color={uiInk} /> : <StoryModeIcon mode="original" ink={uiInk} paper={paper} selected={mode === 'original'} />}</Pressable>{modeFrames[mode] ? <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, bottom: 0, width: 52, height: 5, transform: [{ translateX: underlineX }] }}><Svg testID={`hero-mode-underline-${mode}`} width={52} height={5} viewBox="0 0 52 5" accessible={false}><Path d="M2 2.6Q15 1.7 27 2.4T50 1.9M5 3.8Q26 3 46 3.3" fill="none" stroke={uiInk} strokeWidth={1.1} strokeLinecap="round" /></Svg></Animated.View> : null}</View> : <View style={{ flex: 1 }} />}{mode !== 'original' ? <Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={uiInk} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable> : <View style={{ width: 32 }} />}</View>
       </View>
     </View>
     {visible && register ? <AppModal transparent animationType="fade" onRequestClose={() => { if (!savingFace) setRegister(false); }}>
       <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: 'rgba(25,30,25,0.24)' }}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { if (!savingFace) setRegister(false); }} style={StyleSheet.absoluteFill} />
         <View testID="hero-face-registration-modal" accessibilityViewIsModal style={{ width: '100%', maxWidth: 360, alignSelf: 'center', padding: 10, backgroundColor: paper }}>
-          <PenFrame color={ink} straight />
+          <PenFrame color={uiInk} straight />
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 12 }}>
-            <ThemedText accessibilityRole="header" style={{ flex: 1, color: ink, fontSize: 18 }}>{t('tabs.comicDay')}</ThemedText>
-            <Pressable testID="hero-face-registration-close" accessibilityRole="button" accessibilityLabel={t('common.close')} disabled={savingFace} onPress={() => { tapHaptic(); setRegister(false); }} hitSlop={4} style={{ width: 36, height: 32, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable>
+            <ThemedText accessibilityRole="header" style={{ flex: 1, color: uiInk, fontSize: 18 }}>{t('tabs.comicDay')}</ThemedText>
+            <Pressable testID="hero-face-registration-close" accessibilityRole="button" accessibilityLabel={t('common.close')} disabled={savingFace} onPress={() => { tapHaptic(); setRegister(false); }} hitSlop={4} style={{ width: 36, height: 32, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="xmark" color={uiInk} size={20} /></Pressable>
           </View>
           <View testID="hero-face-photo-actions" pointerEvents={savingFace ? 'none' : 'auto'}>
             <HeroPhotoSource mode="face" uri={null} onChange={uri => { void addFace(uri); }} actionsOnly selectionLimit={1} />
-            {savingFace ? <ActivityIndicator color={ink} /> : null}
+            {savingFace ? <ActivityIndicator color={uiInk} /> : null}
           </View>
         </View>
       </View>
@@ -390,6 +477,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   </View>;
 }
 const s = StyleSheet.create({
+  fullScreenPaper: { borderRadius: 0, paddingHorizontal: 16, paddingTop: 0, paddingBottom: 0 },
   appearanceControls: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   colorControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   emptyAddPerson: { flex: 1, width: 'auto', minWidth: 0, alignItems: 'flex-start' },
@@ -422,14 +510,14 @@ const s = StyleSheet.create({
   sectionLabel: { fontSize: 13, lineHeight: 20 },
   emptyPortrait: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 8 },
   referenceHint: { fontSize: 12, lineHeight: 18, color: '#666D60', marginTop: 4 },
-  styles: { width: 56, alignItems: 'center', gap: 7, paddingTop: 1 },
-  styleOptions: { position: 'absolute', left: 0, bottom: '100%', height: 82, backgroundColor: 'transparent', zIndex: 30 },
+  styles: { width: 48, alignItems: 'center', gap: 7, paddingTop: 1 },
+  styleOptions: { position: 'absolute', left: 0, bottom: '100%', height: 90, backgroundColor: 'transparent', zIndex: 30 },
   styleOptionsContent: { paddingVertical: 8, paddingHorizontal: 4, gap: 12, alignItems: 'flex-start' },
-  styleItem: { width: 50, flexShrink: 0, alignItems: 'center', gap: 4, minHeight: 44 },
-  selectedStyleItem: { width: '100%' },
-  styleFrame: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  styleClip: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden' },
-  styleImage: { width: 34, height: 34 },
+  styleItem: { width: 44, flexShrink: 0, alignItems: 'center', gap: 3, paddingHorizontal: 4, paddingTop: 3, paddingBottom: 5, backgroundColor: '#FFFEFA', borderWidth: 1, borderColor: 'transparent', shadowColor: '#403624', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.30, shadowRadius: 3, elevation: 4 },
+  selectedStyleItem: { width: 44, borderColor: '#9FCAD8' }, selectedStyleCard: { borderColor: '#9FCAD8' },
+  styleFrame: { width: 34, height: 38, alignItems: 'center', justifyContent: 'center' },
+  styleClip: { width: 34, height: 38, overflow: 'hidden' },
+  styleImage: { width: 34, height: 38 },
   check: { position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5E8CF' },
-  styleLabel: { fontSize: 10, lineHeight: 14, textAlign: 'center' },
-root: { flex: 1, minHeight: 0, width: '100%' }, paper: { flex: 1, borderRadius: 18, overflow: 'hidden', paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 }, heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, minHeight: 44, marginBottom: 2 }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, content: { flexGrow: 1, gap: 10 }, row: { flexDirection: 'row', gap: 10, alignItems: 'center' }, tab: { flex: 1, maxWidth: 140, aspectRatio: 4, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, avatar: { width: 42, height: 42, borderRadius: 21 }, avatarFrame: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, chosen: { position: 'absolute', top: 4, left: 4, right: 4, bottom: 4, borderRadius: 24, borderWidth: 3, borderColor: '#9FCAD8' }, faceHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, minWidth: 0 }, faceRail: { flex: 1, minWidth: 0 }, faceRailContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 }, person: { alignItems: 'center', width: 56, flexShrink: 0 }, addPerson: { width: 52, flexShrink: 0, alignItems: 'center' }, addSlot: { width: 52, height: 56, alignItems: 'center', justifyContent: 'center' }, small: { fontSize: 12, lineHeight: 18 }, add: { width: 36, height: 36, borderRadius: 18, borderWidth: 0.6, borderColor: '#343933', alignItems: 'center', justifyContent: 'center' }, input: { flexShrink: 0, minHeight: 110, maxHeight: 150, borderBottomWidth: 0.5, borderBottomColor: '#AFB1A7', fontSize: 16, lineHeight: 23, padding: 8 }, generate: { width: 44, height: 44, alignSelf: 'flex-start', alignItems: 'center', justifyContent: 'center', marginRight: 2 }, loading: { flex: 1, gap: 16, alignItems: 'center', justifyContent: 'center', padding: 20 }, center: { textAlign: 'center', fontSize: 16 }, hint: { fontSize: 12, lineHeight: 18, textAlign: 'center', color: '#666D60' }, error: { fontSize: 13, lineHeight: 19, color: '#934C3C' } });
+  styleLabel: { fontSize: 10, lineHeight: 14, textAlign: 'center', color: '#30332D' },
+root: { flex: 1, minHeight: 0, width: '100%' }, paper: { flex: 1, borderRadius: 18, overflow: 'hidden', paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 }, heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, minHeight: 44, marginBottom: 2 }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, content: { flexGrow: 1, gap: 10 }, row: { flexDirection: 'row', gap: 10, alignItems: 'center' }, tab: { flex: 1, maxWidth: 140, aspectRatio: 4, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, avatar: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden' }, avatarFrame: { width: 44, height: 54, alignItems: 'center', justifyContent: 'center' }, chosen: { position: 'absolute', top: 9, left: 4, width: 36, height: 36, borderRadius: 18, borderWidth: 3, borderColor: '#69B6C5' }, faceHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, minWidth: 0 }, faceRail: { flex: 1, minWidth: 0 }, faceRailContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 }, person: { alignItems: 'center', width: 48, flexShrink: 0 }, addPerson: { width: 52, flexShrink: 0, alignItems: 'center' }, addSlot: { width: 52, height: 54, alignItems: 'center', justifyContent: 'center' }, small: { fontSize: 12, lineHeight: 18 }, add: { width: 36, height: 36, borderRadius: 18, borderWidth: 0.6, borderColor: '#343933', alignItems: 'center', justifyContent: 'center' }, input: { flexShrink: 0, minHeight: 110, maxHeight: 150, borderBottomWidth: 0.5, borderBottomColor: '#AFB1A7', fontSize: 16, lineHeight: 23, padding: 8 }, generate: { width: 44, height: 44, alignSelf: 'flex-start', alignItems: 'center', justifyContent: 'center', marginRight: 2 }, loading: { flex: 1, gap: 16, alignItems: 'center', justifyContent: 'center', padding: 20 }, center: { textAlign: 'center', fontSize: 16 }, hint: { fontSize: 12, lineHeight: 18, textAlign: 'center', color: '#666D60' }, error: { fontSize: 13, lineHeight: 19, color: '#934C3C' } });

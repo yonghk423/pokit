@@ -48,3 +48,34 @@ it('retains a camera request made before the lazy main tab mounts', () => {
   expect(camera).toHaveBeenCalledTimes(1);
   act(() => tree.unmount());
 });
+
+it('selecting the diary clears camera selection and cancels queued camera entry', () => {
+  let actions!: NonNullable<React.ContextType<typeof HeroCharacterPickerActionContext>>;
+  function Consumer() { actions = useContext(HeroCharacterPickerActionContext)!; return null; }
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCharacterPickerActionProvider><Consumer /></HeroCharacterPickerActionProvider>); });
+  const diary = jest.fn(), camera = jest.fn();
+  act(() => { actions.register(diary); actions.setPhotoActive(true); actions.openPhoto(true); });
+  act(() => actions.open());
+  expect(actions.photoActive).toBe(false);
+  expect(diary).toHaveBeenCalledTimes(1);
+  act(() => actions.registerPhoto(camera));
+  expect(camera).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+});
+
+it('restores the diary only after the frozen main tab registers on focus', () => {
+  let actions!: NonNullable<React.ContextType<typeof HeroCharacterPickerActionContext>>;
+  function Consumer() { actions = useContext(HeroCharacterPickerActionContext)!; return null; }
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCharacterPickerActionProvider><Consumer /></HeroCharacterPickerActionProvider>); });
+  const stale = jest.fn(), focused = jest.fn();
+  act(() => { actions.register(stale); actions.setPhotoActive(false); actions.open(true); });
+  expect(stale).not.toHaveBeenCalled();
+  act(() => { actions.register(null); actions.register(focused); });
+  expect(focused).toHaveBeenCalledWith(true);
+  expect(actions.photoActive).toBe(false);
+  act(() => actions.register(focused));
+  expect(focused).toHaveBeenCalledTimes(1);
+  act(() => tree.unmount());
+});

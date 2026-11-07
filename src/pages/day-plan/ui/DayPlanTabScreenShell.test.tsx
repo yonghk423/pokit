@@ -178,3 +178,20 @@ it('places the menu, Today and settings in one flex row with equal side slots', 
   expect(StyleSheet.flatten(slots.at(-1).props.style)).toMatchObject({ flex: 1, minWidth: 0 });
   act(() => tree.unmount());
 });
+
+it('hides the home header for the camera tab even when the keyboard is closed', async () => {
+  const React = jest.requireActual('react') as typeof import('react');
+  const { HeroCharacterPickerActionProvider, HeroCharacterPickerActionContext } = jest.requireActual('../model/heroCharacterPickerAction');
+  function CameraSelection() {
+    const actions = React.useContext(HeroCharacterPickerActionContext) as { setPhotoActive: (active: boolean) => void };
+    React.useLayoutEffect(() => { actions.setPhotoActive(true); }, [actions.setPhotoActive]);
+    return <View />;
+  }
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCharacterPickerActionProvider><DayPlanTabScreenShell tabName="comic-day"><CameraSelection /></DayPlanTabScreenShell></HeroCharacterPickerActionProvider>); });
+  try {
+    const header = tree.root.findAllByProps({ testID: 'day-plan-shell-header' })[0];
+    expect(StyleSheet.flatten(header.props.style).display).toBe('none');
+    expect(header.props.accessibilityElementsHidden).toBe(true);
+  } finally { act(() => tree.unmount()); }
+});

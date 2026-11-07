@@ -12,9 +12,9 @@ afterEach(() => {
 it('updates the native widget when the app font changes', () => {
  Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
  const syncAppFontId = jest.fn(); NativeModules.PokitWidgetSync = { syncAppFontId };
- useAppFontStore.getState().setFontId('kimJungWon');
- expect(saveAppFontId).toHaveBeenCalledWith('kimJungWon');
- expect(syncAppFontId).toHaveBeenCalledWith('kimJungWon');
+ useAppFontStore.getState().setFontId('cafe24ShiningStar');
+ expect(saveAppFontId).toHaveBeenCalledWith('cafe24ShiningStar');
+ expect(syncAppFontId).toHaveBeenCalledWith('cafe24ShiningStar');
 });
 it('sends the persisted font to the widget on app startup', () => {
  Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });

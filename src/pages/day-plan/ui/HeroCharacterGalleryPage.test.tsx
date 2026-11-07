@@ -1,3 +1,4 @@
+import { loadHeroOriginalPhotoLibrary } from '../lib/heroOriginalPhoto';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Alert, FlatList } from 'react-native';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -8,6 +9,7 @@ import { HeroEmptyTodayChooser } from './HeroEmptyTodayChooser';
 import { HeroCharacterGalleryPage } from './HeroCharacterGalleryPage';
 import { HeroImageActions } from './HeroImageActions';
 
+jest.mock('../lib/heroOriginalPhoto', () => ({ loadHeroOriginalPhotoLibrary: jest.fn(async () => []), deleteHeroOriginalPhotoLibraryImages: jest.fn() }));
 jest.mock('../lib/heroAiLibrary', () => ({ ...jest.requireActual('../lib/heroAiLibrary'), loadHeroAiLibrary: jest.fn(), deleteHeroAiLibraryImages: jest.fn() }));
 jest.mock('../model/useHeroLoopingRail', () => ({ useHeroLoopingRail: () => ({ ref: { current: null } }) }));
 jest.mock('../../welcome-intro/ui/ServiceTutorialTarget', () => ({ ServiceTutorialTarget: jest.requireActual('react-native').View }));
@@ -22,7 +24,7 @@ jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-n
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: jest.requireActual('react-native').View }));
 jest.mock('@shared/lib/haptics/tapHaptic', () => ({ tapHaptic: jest.fn() }));
 
-beforeEach(() => { jest.mocked(loadHeroAiLibrary).mockResolvedValue([]); for (const id of ['protagonist-1', 'protagonist-6']) localStorageClient.removeItem(`pokit:comic-character-name:${id}`); });
+beforeEach(() => { jest.mocked(loadHeroOriginalPhotoLibrary).mockResolvedValue([]); jest.mocked(loadHeroAiLibrary).mockResolvedValue([]); for (const id of ['protagonist-1', 'protagonist-6']) localStorageClient.removeItem(`pokit:comic-character-name:${id}`); });
 afterEach(() => { for (const id of ['protagonist-1', 'protagonist-6']) localStorageClient.removeItem(`pokit:comic-character-name:${id}`); });
 it('opens only the selected character artwork, previews an image, and returns to the list', async () => {
   let tree!: ReactTestRenderer;
@@ -149,4 +151,50 @@ it('uses generated selection mode to choose artwork instead of opening its galle
   expect(choose).toHaveBeenCalledWith(image);
   expect(tree.root.findAllByProps({ testID: 'hero-gallery-polaroid' })).toHaveLength(0);
   act(() => tree.unmount());
+});
+
+it('groups every uploaded original in one live My Photos collection while keeping AI illustrations separate', async () => {
+  const first = { uri: 'file:///Documents/hero-photos/photo-1-a.jpg', title: '첫 사진', memo: '첫 기록', createdAt: 1 };
+  const second = { uri: 'file:///Documents/hero-photos/photo-2-b.jpg', title: '두 번째 사진', createdAt: 2 };
+  jest.mocked(loadHeroOriginalPhotoLibrary).mockResolvedValue([second, first]);
+  jest.mocked(loadHeroAiLibrary).mockResolvedValue([{ uri: 'file:///Documents/hero-ai/hero-1-0.png' }]);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCharacterGalleryPage />); });
+  try {
+    const groups = () => tree.root.findByProps({ testID: 'hero-character-gallery-list' }).props.data;
+    expect(groups().filter((item: { id: string }) => item.id === 'original-photos')).toHaveLength(1);
+    expect(groups().filter((item: { id: string }) => item.id === 'generated-illustrations')).toHaveLength(1);
+    act(() => tree.root.findAllByProps({ testID: 'hero-gallery-character-original-photos' })[0].props.onPress());
+    const photos = () => tree.root.findByProps({ testID: 'hero-character-artwork-list' }).props.data;
+    expect(photos().map((item: { id: string }) => item.id)).toEqual([second.uri, first.uri]);
+    const third = { uri: 'file:///Documents/hero-photos/photo-3-c.jpg', title: '새 사진', createdAt: 3 };
+    jest.mocked(loadHeroOriginalPhotoLibrary).mockResolvedValue([third, second, first]);
+    await act(async () => { notifyHeroAiLibraryChanged(); });
+    expect(photos()).toHaveLength(3);
+    expect(groups().filter((item: { id: string }) => item.id === 'original-photos')).toHaveLength(1);
+  } finally { act(() => tree.unmount()); }
+});
+
+it('renames a single character image, persists it and does not open its preview', async () => {
+  const { loadHeroSceneTitle } = require('../lib/heroSceneTitle');
+  const scene = COMIC_CHARACTERS[0].scenes[0];
+  const storageKey = `pokit:comic-scene-title:protagonist-1:${encodeURIComponent(scene.id)}`;
+  localStorageClient.removeItem(storageKey);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCharacterGalleryPage />); });
+  try {
+    act(() => tree.root.findAllByProps({ testID: 'hero-gallery-character-protagonist-1' })[0].props.onPress());
+    const stopPropagation = jest.fn();
+    act(() => tree.root.findAllByProps({ testID: `hero-gallery-scene-rename-${scene.id}` })[0].props.onPress({ stopPropagation }));
+    expect(stopPropagation).toHaveBeenCalled();
+    expect(tree.root.findAllByProps({ testID: 'hero-gallery-preview-close' })).toHaveLength(0);
+    act(() => tree.root.findAllByProps({ testID: 'hero-gallery-scene-title-input' })[0].props.onChangeText('  나의 아침 운동  '));
+    act(() => tree.root.findAllByProps({ testID: 'hero-gallery-scene-title-save' })[0].props.onPress());
+    expect(loadHeroSceneTitle('protagonist-1', scene.id)).toBe('나의 아침 운동');
+    expect(loadHeroSceneTitle('protagonist-2', scene.id)).toBeNull();
+    act(() => tree.unmount());
+    await act(async () => { tree = create(<HeroCharacterGalleryPage />); });
+    act(() => tree.root.findAllByProps({ testID: 'hero-gallery-character-protagonist-1' })[0].props.onPress());
+    expect(tree.root.findAllByProps({ testID: `hero-gallery-scene-${scene.id}` })[0].props.accessibilityLabel).toBe('나의 아침 운동');
+  } finally { act(() => tree.unmount()); localStorageClient.removeItem(storageKey); }
 });

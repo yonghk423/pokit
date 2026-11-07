@@ -1,3 +1,4 @@
+import { AppAlert } from '@shared/lib/app-alert';
 import { AccessibilityInfo } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ComicDiaryLibrary } from './HeroDiaryLibrary';
@@ -168,7 +169,8 @@ it('selects multiple diaries or an entire date without opening them, and clears 
   act(() => tree.unmount());
 });
 
-it('deletes a collapsed date as a group and lets its expanded accordion select several diaries', () => {
+it('confirms before deleting a collapsed date and lets its expanded accordion select several diaries', () => {
+  const alert = jest.spyOn(AppAlert, 'alert').mockImplementation(() => {});
   const onDeleteMany = jest.fn();
   const diaries = [
     { id: 'one', title: 'First', characterId: 'protagonist-1', scenes: [], createdAt: new Date(2026, 9, 29, 7).getTime(), updatedAt: 0 },
@@ -184,7 +186,13 @@ it('deletes a collapsed date as a group and lets its expanded accordion select s
   act(() => group().props.onPress());
   expect(group().props.accessibilityState.expanded).toBe(false);
   act(() => dayAction().props.onPress());
+  expect(onDeleteMany).not.toHaveBeenCalled();
+  const buttons = alert.mock.calls[0][2]!;
+  act(() => buttons.find(button => button.style === 'cancel')?.onPress?.());
+  expect(onDeleteMany).not.toHaveBeenCalled();
+  act(() => buttons.find(button => button.style === 'destructive')?.onPress?.());
   expect(onDeleteMany).toHaveBeenLastCalledWith(['one', 'two']);
+  alert.mockRestore();
 
   act(() => group().props.onPress());
   act(() => dayAction().props.onPress());
@@ -204,5 +212,13 @@ it('deletes a collapsed date as a group and lets its expanded accordion select s
   expect(selectDate().props.accessibilityState.checked).toBe(true);
   act(() => button('comicDiary.deleteSelected').props.onPress());
   expect(onDeleteMany).toHaveBeenLastCalledWith(['one', 'two']);
+  act(() => tree.unmount());
+});
+
+it('uses a full-width screen without a modal or close button in history tab mode', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<ComicDiaryLibrary embedded diaries={[]} activeId={null} onClose={jest.fn()} onCreate={jest.fn()} onOpen={jest.fn()} onRename={jest.fn()} onDelete={jest.fn()} />); });
+  expect(tree.root.findAllByProps({ testID: 'comic-diary-history-screen' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAll(node => node.props.accessibilityLabel === 'common.close' && typeof node.props.onPress === 'function')).toHaveLength(0);
   act(() => tree.unmount());
 });

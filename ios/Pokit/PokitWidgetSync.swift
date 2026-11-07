@@ -12,7 +12,7 @@ class PokitWidgetSync: NSObject {
   @objc static func requiresMainQueueSetup() -> Bool { false }
 
   @objc func syncAppFontId(_ fontId: String) {
-    guard ["corncorn", "kimJungWon", "hiMelody"].contains(fontId),
+    guard ["corncorn", "hiMelody", "cafe24ShiningStar", "cafe24Syongsyong"].contains(fontId),
           let ud = UserDefaults(suiteName: PokitAppGroup.identifier) else { return }
     guard ud.string(forKey: PokitAppGroup.appFontIdKey) != fontId else { return }
     ud.set(fontId, forKey: PokitAppGroup.appFontIdKey)

@@ -1,9 +1,10 @@
+import { BackChevron } from '@shared/ui/icon-symbol';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { penContour } from '@shared/ui/pen-frame';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { AppModal } from '@shared/ui/app-modal';
 import { AppAlert } from '@shared/lib/app-alert';
 import { useTranslation } from '@shared/lib/i18n';
@@ -24,7 +25,7 @@ export function HeroCalendarIcon({ ink, size = 24 }: { ink: string; size?: numbe
   </Svg>;
 }
 /** A blank sheet with a gently curled corner: no diary on this date yet. */
-function EmptyDiaryIcon({ ink }: { ink: string }) {
+export function EmptyDiaryIcon({ ink }: { ink: string }) {
   return <Svg width={76} height={66} viewBox="0 0 76 66" accessible={false}>
     <Path d="M19.8 8.9Q36 8.3 52.5 8.5Q52.1 26.3 54.3 42.6C55.5 49.8 49.2 55.8 41.3 56.1L20.5 56.7Q21.1 32.9 19.8 8.9Z" stroke={ink} strokeWidth={1.05} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     <Path d="M41.3 56.1Q46.3 51.3 46.3 46.8Q51.2 47.6 54.3 42.6M46.3 46.8Q48 51 41.3 56.1" stroke={ink} strokeWidth={0.75} fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -33,19 +34,17 @@ function EmptyDiaryIcon({ ink }: { ink: string }) {
 }
 function HangingScene({ scene, width, stacked = false, angle = -2, isDark }: { scene: ComicDayScene; width: number; stacked?: boolean; angle?: number; isDark: boolean }) {
   const height = width * 1.2;
-  const paper = isDark ? '#353832' : '#F3E9D8';
+  const paper = isDark ? '#353832' : '#E6E3DA';
   const original = COMIC_SCENES.find(item => item.id === scene.image)?.source;
   return <View pointerEvents="none" style={{ width, height: height + 10, marginTop: 2 }}>
     {stacked ? <><View style={[s.paper, { backgroundColor: paper, width, height, top: 11, transform: [{ rotate: '5deg' }, { translateX: 2 }] }]} /><View style={[s.paper, { backgroundColor: paper, width, height, top: 8, transform: [{ rotate: '-4deg' }, { translateX: -2 }] }]} /></> : null}
-    <View style={[s.paper, { backgroundColor: paper, width, height, top: 8, padding: 2, transform: [{ rotate: `${angle}deg` }] }]}>
-      <View style={{ flex: 1, borderRadius: 5, overflow: 'hidden' }}>
+    <View style={[s.paper, { backgroundColor: paper, width, height, top: 8, padding: Math.max(2, width * 0.035), transform: [{ rotate: `${angle}deg` }] }]}>
+      <PaperGrain opacity={0.85} />
+      <View style={{ flex: 1, borderRadius: 0, overflow: 'hidden' }}>
         <ComicSceneImage imageKey={`calendar:${scene.artworkUri ?? scene.image}`} source={scene.artworkUri ? { uri: scene.artworkUri } : original} fallbackSource={original} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
       </View>
     </View>
-    <Svg width={14} height={19} style={{ position: 'absolute', top: 0, left: width / 2 - 7 }} viewBox="0 0 14 19" accessible={false}>
-      <Path d="M7 5L6 15" stroke="#383A35" strokeWidth={1.1} /><Circle cx={6} cy={15} r={1.8} stroke="#53554B" strokeWidth={0.8} fill="none" />
-      <Circle cx={7} cy={4} r={3} fill="#56574F" stroke="#282B25" strokeWidth={0.7} /><Path d="M5.8 3.2L7.2 2.5" stroke="#E4E3D9" strokeWidth={0.8} strokeLinecap="round" />
-    </Svg>
+
   </View>;
 }
 export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose, onOpen }: { diaries: ComicDiary[]; today: string; ink: string; muted: string; isDark: boolean; onClose: () => void; onOpen: (id: string) => void }) {
@@ -78,12 +77,11 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
   ]); };
   return <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={onClose}>
     <View style={[s.root, { backgroundColor: isDark ? '#20241F' : '#F7F6F4', paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <PaperGrain opacity={0.16} />
       <View style={s.header}>
         <View style={s.monthNavigation}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.previous')} onPress={() => move(-1)} style={s.touch}><ThemedText style={[s.arrow, { color: ink }]}>‹</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.previous')} onPress={() => move(-1)} style={[s.touch, s.previous]}><BackChevron color={ink} /></Pressable>
         <ThemedText accessibilityRole="header" style={[s.month, { color: ink }]}>{month.getFullYear()}.{String(month.getMonth() + 1).padStart(2, '0')}</ThemedText>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.next')} onPress={() => move(1)} style={s.touch}><ThemedText style={[s.arrow, { color: ink }]}>›</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('comicCalendar.next')} onPress={() => move(1)} style={[s.touch, s.next]}><View style={{ transform: [{ rotate: '180deg' }] }}><BackChevron color={ink} /></View></Pressable>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={[s.touch, s.close]}><Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}><Path d="M5 5L19 19M19 5L5 19" stroke={ink} strokeWidth={1.5} strokeLinecap="round" /></Svg></Pressable>
       </View>
@@ -124,9 +122,9 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
   </AppModal>;
 }
 const s = StyleSheet.create({
-  root: { flex: 1 }, header: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 58, minHeight: 52 }, monthNavigation: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }, close: { position: 'absolute', right: 10, top: 0, bottom: 0 }, touch: { minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, arrow: { fontSize: 34, lineHeight: 40 }, month: { fontSize: 24, lineHeight: 34, textAlign: 'center', width: 130, flexShrink: 1 },
+  root: { flex: 1 }, header: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, minHeight: 52 }, monthNavigation: { width: '70%', maxWidth: 320, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, previous: { position: 'absolute', left: 0, top: 0, bottom: 0 }, next: { position: 'absolute', right: 0, top: 0, bottom: 0 }, close: { position: 'absolute', right: 10, top: 0, bottom: 0 }, touch: { minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, arrow: { fontSize: 34, lineHeight: 40 }, month: { fontSize: 24, lineHeight: 34, textAlign: 'center', width: 130, flexShrink: 1 },
   content: { paddingHorizontal: 12, paddingBottom: 24 }, body: { width: '100%', maxWidth: 840, alignSelf: 'center' }, weekdays: { flexDirection: 'row', borderBottomWidth: 0.7, borderColor: '#B9BBB2', paddingVertical: 9 }, weekday: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 14, lineHeight: 22 }, grid: { flexDirection: 'row', flexWrap: 'wrap' }, day: { borderRightWidth: 0.4, borderBottomWidth: 0.4, borderColor: '#C4C5BD', paddingHorizontal: 2 }, dateNumber: { width: 30, height: 28, alignItems: 'center', justifyContent: 'center' },
-  paper: { position: 'absolute', borderRadius: 6, borderWidth: 0.5, borderColor: '#C2B9A7', shadowColor: '#29271F', shadowOffset: { width: 0, height: 2 }, shadowRadius: 2, shadowOpacity: 0.13, elevation: 2 },
+  paper: { position: 'absolute', borderRadius: 0, borderWidth: 0.3, borderColor: '#CFCCC3', shadowColor: '#29271F', shadowOffset: { width: 2, height: 3 }, shadowRadius: 3, shadowOpacity: 0.2, elevation: 2 },
   moreSlot: { height: 40, alignItems: 'center', justifyContent: 'center' }, moreButton: { minWidth: 52, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   detail: { borderRadius: 3, marginTop: 20, paddingVertical: 12, overflow: 'hidden' }, detailDate: { fontSize: 19, lineHeight: 28, paddingHorizontal: 14, marginBottom: 6 }, diaryHeading: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, minHeight: 38, alignItems: 'center' }, sceneRow: { gap: 14, paddingHorizontal: 16, paddingBottom: 14 }, sceneHit: { paddingTop: 4, paddingHorizontal: 3, paddingBottom: 8 }, empty: { minHeight: 100, gap: 10, alignItems: 'center', justifyContent: 'center' },
 });

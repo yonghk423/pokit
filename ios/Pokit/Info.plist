@@ -35,6 +35,12 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
+          <string>com.googleusercontent.apps.369601261739-c26jr4a2kkfrrenofrn3b23hclpga9ed</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
           <string>pokit</string>
           <string>com.yonghee.pokit</string>
         </array>

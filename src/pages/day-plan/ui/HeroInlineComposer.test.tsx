@@ -5,10 +5,15 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { HeroInlineComposer, HERO_SELECTED_STYLE_KEY, HERO_SELECTED_PAPER_KEY, HERO_SELECTED_FACE_KEY } from './HeroInlineComposer';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { saveComicCharacterName } from '../lib/heroCharacterName';
+import { ThemedText } from '@shared/ui/themed-text';
 import { HeroPhotoSource } from './HeroPhotoSource';
+import { launchImageLibraryAsync } from 'expo-image-picker';
+import { saveHeroOriginalPhoto } from '../lib/heroOriginalPhoto';
 import { loadHeroSavedFaces, deleteHeroFace } from '../lib/heroSavedFaces';
 import { getHeroAiRemaining, generateHeroImages, resumeHeroAiJob, cancelHeroAiJob, dismissHeroAiJob } from '../lib/heroAiClient';
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
+jest.mock('../lib/heroOriginalPhoto', () => ({ saveHeroOriginalPhoto: jest.fn(), saveHeroOriginalPhotoMetadata: jest.fn() }));
 jest.mock('@shared/lib/haptics/tapHaptic', () => ({ tapHaptic: jest.fn() }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: jest.requireActual('react-native').View }));
@@ -207,40 +212,21 @@ it('previews the target card colors in the composer and preserves them on comple
   expect(apply).toHaveBeenCalledWith(expect.objectContaining({ paper: '#B0E8D7', pen: '#B22222' }), expect.any(String), expect.any(String));
   act(() => tree.unmount());
 });
-it('changes paper and font colors from the generation row and saves the chosen colors on the card', async () => {
-  const apply = jest.fn(async () => undefined);
+it.each([['#FFFFFF', '#202020'], ['#000000', '#FFFFFF']])('keeps controls readable on %s paper when the writing color is white', async (paper, controlInk) => {
   let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" memo="A story" onApply={apply} onClose={jest.fn()} />); });
-  const row = tree.root.findAllByProps({ testID: 'hero-inline-generation-row' })[0];
-  const appearance = row.findAllByProps({ testID: 'hero-inline-appearance-controls' })[0];
-  expect(appearance.findAllByProps({ testID: 'hero-inline-style-toggle' }).length).toBeGreaterThan(0);
-  expect(appearance.findAllByProps({ testID: 'hero-inline-paper-color' }).length).toBeGreaterThan(0);
-  expect(appearance.findAllByProps({ testID: 'hero-inline-pen-color' }).length).toBeGreaterThan(0);
-  expect(row.findAllByProps({ testID: 'hero-inline-quota-slot' })).toHaveLength(0);
-  expect(row.findAllByProps({ testID: 'hero-inline-paper-color' }).length).toBeGreaterThan(0);
-  expect(row.findAllByProps({ testID: 'hero-inline-pen-color' }).length).toBeGreaterThan(0);
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-#C8EBDD' })[0].props.onPress());
-  expect(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style[1].backgroundColor).toBe('#C8EBDD');
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-pen-color' })[0].props.onPress());
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-pen-#47436A' })[0].props.onPress());
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.style).color).toBe('#47436A');
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.style).color).toBe('#47436A');
-  await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); await new Promise(resolve => setTimeout(resolve, 500)); });
-  expect(generateHeroImages).toHaveBeenCalledWith(expect.objectContaining({ cardAppearance: { paper: '#C8EBDD', pen: '#47436A' } }));
-  expect(apply).toHaveBeenCalledWith(expect.objectContaining({ paper: '#C8EBDD', pen: '#47436A' }), 'file:///result.png', expect.any(String));
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" paper={paper} ink="#FFFFFF" onApply={jest.fn()} onClose={jest.fn()} />); });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.style).color).toBe('#FFFFFF');
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-pen-color' })).toHaveLength(0);
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-remaining' })[0].props.style).color).toBe(controlInk);
   act(() => tree.unmount());
 });
 
-it('opens color and illustration palettes separately without losing the writing', async () => {
+it('removes color selection while keeping illustration selection and writing', async () => {
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" memo="Keep my story" onApply={jest.fn()} onClose={jest.fn()} />); });
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-pen-color' })).toHaveLength(0);
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.onPress());
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
-  expect(tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.accessibilityState.expanded).toBe(false);
-  expect(tree.root.findAllByProps({ testID: 'hero-inline-color-palette' }).length).toBeGreaterThan(0);
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.onPress());
-  expect(tree.root.findAllByProps({ testID: 'hero-inline-color-palette' })).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.value).toBe('Keep my story');
   act(() => tree.unmount());
 });
@@ -345,16 +331,16 @@ it('keeps the add person control outside the compact horizontal rail with many s
   expect(tree.root.findAllByProps({ testID: 'hero-inline-selected-face-label' })).toHaveLength(0);
   expect(StyleSheet.flatten(rail.props.contentContainerStyle).gap).toBe(6);
   expect(rail.findAllByProps({ testID: 'hero-inline-face-11' }).length).toBeGreaterThan(0);
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-0.jpg' })[0].props.style)).toMatchObject({ width: 42, height: 42 });
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-11' })[0].props.style)).toMatchObject({ borderWidth: 3, borderColor: '#9FCAD8', top: 4, left: 4, right: 4, bottom: 4 });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-0.jpg' })[0].props.style)).toMatchObject({ width: 36, height: 36 });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-11' })[0].props.style)).toMatchObject({ borderWidth: 3, borderColor: '#69B6C5', top: 9, left: 4, width: 36, height: 36 });
   expect(rail.findAllByProps({ testID: 'hero-inline-add-face' })).toHaveLength(0);
   const add = tree.root.findAllByProps({ testID: 'hero-inline-add-face' })[0];
   expect(StyleSheet.flatten(add.props.style)).toMatchObject({ width: 52, flexShrink: 0 });
-  expect(StyleSheet.flatten(add.findByProps({ testID: 'hero-inline-add-face-icon-slot' }).props.style)).toMatchObject({ height: 56, alignItems: 'center', justifyContent: 'center' });
+  expect(StyleSheet.flatten(add.findByProps({ testID: 'hero-inline-add-face-icon-slot' }).props.style)).toMatchObject({ height: 54, alignItems: 'center', justifyContent: 'center' });
   act(() => tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-11.jpg' })[0].props.style)).toMatchObject({ width: 42, height: 42 });
-  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-0' })[0].props.style)).toMatchObject({ borderWidth: 3, borderColor: '#9FCAD8', top: 4, left: 4, right: 4, bottom: 4 });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ imageKey: 'saved-face-avatar:file:///person-11.jpg' })[0].props.style)).toMatchObject({ width: 36, height: 36 });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-face-ring-0' })[0].props.style)).toMatchObject({ borderWidth: 3, borderColor: '#69B6C5', top: 9, left: 4, width: 36, height: 36 });
   act(() => add.props.onPress());
   expect(tree.root.findAllByProps({ testID: 'hero-face-photo-actions' })[0].props.pointerEvents).toBe('auto');
   act(() => tree.unmount());
@@ -521,23 +507,12 @@ it('does not schedule layout animations for keyboard events after returning to t
   }
 });
 
-it('defaults a new workspace to white and restores an explicit paper selection after remounting', async () => {
+it('restores previously saved paper without exposing color selection', async () => {
+  localStorageClient.setItemRaw(HERO_SELECTED_PAPER_KEY, '#C8EBDD');
   let tree!: ReactTestRenderer;
-  const render = (paper?: string) => <HeroInlineComposer sceneId="05-work" paper={paper} ink="#222" onApply={jest.fn()} onClose={jest.fn()} />;
-  const background = () => StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).backgroundColor;
-  await act(async () => { tree = create(render()); });
-  expect(background()).toBe('#FFFFFF');
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-#C8EBDD' })[0].props.onPress());
-  expect(localStorageClient.getItemRaw(HERO_SELECTED_PAPER_KEY)).toBe('#C8EBDD');
-  act(() => tree.unmount());
-  await act(async () => { tree = create(render('#F5E8CF')); });
-  expect(background()).toBe('#C8EBDD');
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })[0].props.onPress());
-  act(() => tree.root.findAllByProps({ testID: 'hero-inline-paper-#FFFFFF' })[0].props.onPress());
-  act(() => tree.unmount());
-  await act(async () => { tree = create(render('#F5E8CF')); });
-  expect(background()).toBe('#FFFFFF');
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
+  expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).backgroundColor).toBe('#C8EBDD');
+  expect(tree.root.findAllByProps({ testID: 'hero-inline-paper-color' })).toHaveLength(0);
   act(() => tree.unmount());
 });
 it('retains an existing card paper without overwriting it with the new default', async () => {
@@ -564,4 +539,59 @@ it('restores the selected person after remount and falls back when that person n
   await mount();
   expect(tree.root.findAllByProps({ testID: 'hero-inline-face-0' })[0].props.accessibilityState.selected).toBe(true);
   act(() => tree.unmount());
+});
+
+it.each([{ title: '사진 기록', memo: '내 사진' }, { title: '', memo: '' }])('adds an original photo without AI quota or required text: %p', async ({ title, memo }) => {
+  jest.mocked(getHeroAiRemaining).mockResolvedValue(0);
+  jest.mocked(launchImageLibraryAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///cache/photo.jpg', fileName: 'photo.jpg', width: 1000, height: 1500 }] });
+  jest.mocked(saveHeroOriginalPhoto).mockResolvedValue('file:///Documents/hero-photos/photo-saved.jpg');
+  const onApply = jest.fn(async () => undefined);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" title={title} memo={memo} ink="#222" onApply={onApply} onClose={jest.fn()} />); });
+  try {
+    await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-add-original-photo' })[0].props.onPress(); });
+    expect(launchImageLibraryAsync).not.toHaveBeenCalled();
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-face-rail' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-generate' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-quota-slot' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'hero-original-photo-save' })[0].props.disabled).toBe(true);
+    await act(async () => { tree.root.findAllByProps({ testID: 'hero-original-photo-picker' })[0].props.onPress(); });
+    expect(onApply).not.toHaveBeenCalled();
+    expect(saveHeroOriginalPhoto).not.toHaveBeenCalled();
+    expect(tree.root.findAllByProps({ testID: 'hero-original-photo-save' })[0].props.disabled).toBe(false);
+    await act(async () => { tree.root.findAllByProps({ testID: 'hero-original-photo-save' })[0].props.onPress(); });
+    expect(saveHeroOriginalPhoto).toHaveBeenCalledWith('file:///cache/photo.jpg', 'photo.jpg');
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ title, memo, pen: '#222' }), 'file:///Documents/hero-photos/photo-saved.jpg', '');
+    expect(generateHeroImages).not.toHaveBeenCalled();
+    expect(dismissHeroAiJob).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
+});
+
+it('keeps the draft and creates no card when original photo selection is cancelled', async () => {
+  jest.mocked(launchImageLibraryAsync).mockResolvedValue({ canceled: true, assets: null });
+  const onApply = jest.fn(async () => undefined);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" memo="작성 중" ink="#222" onApply={onApply} onClose={jest.fn()} />); });
+  try {
+    await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-add-original-photo' })[0].props.onPress(); });
+    await act(async () => { tree.root.findAllByProps({ testID: 'hero-original-photo-picker' })[0].props.onPress(); });
+    expect(saveHeroOriginalPhoto).not.toHaveBeenCalled();
+    expect(onApply).not.toHaveBeenCalled();
+    expect(generateHeroImages).not.toHaveBeenCalled();
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.value).toBe('작성 중');
+  } finally { act(() => tree.unmount()); }
+});
+
+it('renders the camera workspace on the main background regardless of card paper, without the main close button', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer fullScreen sceneId="05-work" paper="#B0E8D7" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
+  try {
+    expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).borderRadius).toBe(0);
+    expect(StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-inline-paper' })[0].props.style).backgroundColor).toBe('#F7F6F4');
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-close' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-bottom-toolbar' }).length).toBeGreaterThan(0);
+    act(() => tree.root.findAllByProps({ testID: 'hero-inline-add-face' })[0].props.onPress());
+    expect(tree.root.findAllByProps({ testID: 'hero-face-registration-close' }).length).toBeGreaterThan(0);
+  } finally { act(() => tree.unmount()); }
 });

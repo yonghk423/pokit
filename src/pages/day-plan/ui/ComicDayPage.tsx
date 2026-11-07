@@ -1,12 +1,12 @@
-import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
-import Svg, { Path } from 'react-native-svg';
+import { HeroPolaroidOverviewIcon } from './HeroPolaroidOverviewIcon';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { HeroCalendarIcon } from './HeroDiaryCalendar';
-import { parseLocalDateKeyToDate } from '@entities/day-plan/lib/localDateKey';
+import { useTranslation } from '@shared/lib/i18n';
+import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
+import { DIARY_DATE_FONT_SIZE } from '@shared/lib/ui-font';
+import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { getLocalDateKey } from '@entities/day-plan';
 import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
-import { useTranslation } from '@shared/lib/i18n';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -20,21 +20,25 @@ import {
 
 import { DayPlanHeaderCenterActionsContext, DayPlanShellBackgroundContext, DayPlanWeatherActionsContext, useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
-import { ComicDiaryMenuButton } from './HeroDiaryMenuButton';
 import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentHeroPlanner';
 
 /** 하단 탭 — 오늘의 주인공(만화 일기) 전용 화면 */
 export function ComicDayPage() {
   const router = useRouter();
-  const { generationJob } = useLocalSearchParams<{ generationJob?: string }>();
   const { t } = useTranslation();
+  const [overviewOpen, setOverviewOpen] = useState(false);
+  const { generationJob, historyCreate, historyEntry } = useLocalSearchParams<{ generationJob?: string; historyCreate?: string; historyEntry?: string }>();
   const isDark = useColorScheme() === 'dark';
   const todayKey = getLocalDateKey(useTodayDate());
-  const [displayedDate, setDisplayedDate] = useState<string | null>(null);
   const [photoActive, setPhotoActive] = useState(false);
   const [headerCharacterList, setHeaderCharacterList] = useState<ReactNode>(null);
   const plannerRef = useRef<ComicDiaryHandle>(null);
   const characterPicker = useContext(HeroCharacterPickerActionContext);
+  useFocusEffect(useCallback(() => {
+    if (!historyCreate) return;
+    plannerRef.current?.openNewDiary();
+    router.setParams({ historyCreate: undefined });
+  }, [historyCreate, router]));
   const registerPhoto = characterPicker?.registerPhoto;
   // Other tabs queue the camera intent before navigating. Consume it only
   // after the main screen has focus and its planner ref is mounted again.
@@ -42,10 +46,11 @@ export function ComicDayPage() {
     registerPhoto?.(() => plannerRef.current?.openPhotoEntry());
     return () => registerPhoto?.(null);
   }, [registerPhoto]));
-  useEffect(() => {
-    characterPicker?.register(() => photoActive ? plannerRef.current?.openSceneEntry() : plannerRef.current?.openCharacterPicker());
-    return () => { characterPicker?.register(null); };
-  }, [characterPicker, photoActive]);
+  const registerHome = characterPicker?.register;
+  useFocusEffect(useCallback(() => {
+    registerHome?.((restoreOnly = false) => restoreOnly || photoActive ? plannerRef.current?.openSceneEntry(restoreOnly) : plannerRef.current?.openCharacterPicker());
+    return () => registerHome?.(null);
+  }, [registerHome, photoActive]));
   const setPhotoTabActive = characterPicker?.setPhotoActive;
   useLayoutEffect(() => { setPhotoTabActive?.(photoActive); return () => setPhotoTabActive?.(false); }, [photoActive, setPhotoTabActive]);
   const announcementHome = useAnnouncementHomeNudge();
@@ -58,7 +63,8 @@ export function ComicDayPage() {
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const ink = tone.text;
   const muted = tone.textMuted;
-  const surface = isDark ? tone.bg : '#F7F6F4';
+  const hasWallpaper = useWallpaperStore(state => state.wallpaper !== 'default');
+  const surface = hasWallpaper ? 'transparent' : isDark ? tone.bg : 'transparent';
 
   useEffect(() => {
     setShellBackground?.(isDark ? null : '#F7F6F4');
@@ -69,30 +75,23 @@ export function ComicDayPage() {
     };
   }, [isDark, setShellBackground, registerComicDiaryLight]);
 
-  const selectedDate = displayedDate && displayedDate !== todayKey ? parseLocalDateKeyToDate(displayedDate) : null;
-  const historyLabel = selectedDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(displayedDate?.slice(0, 4) !== todayKey.slice(0, 4) ? { year: 'numeric' } : {}) });
-  const todayButton = useMemo(() => <View testID="comic-date-navigation" style={{ minHeight: 44, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
-    {historyLabel ? <View accessible={false} style={{ width: 64 }} /> : null}
-    {historyLabel ? <ThemedText testID="comic-selected-date" style={{ color: ink, fontSize: 13, lineHeight: 20 }}>{historyLabel}</ThemedText> : null}
-    <Pressable testID="comic-today-open" accessibilityRole="button" accessibilityLabel="Today" onPress={() => { tapHaptic(); plannerRef.current?.openToday(); }} style={({ pressed }) => ({ width: 64, minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.55 : 1 })}>
-      {historyLabel ? <Svg pointerEvents="none" width={64} height={30} viewBox="0 0 64 30" style={{ position: 'absolute', top: 7 }} accessible={false}><Path d="M16 1.5q16-.5 32 0c20-.2 20 27 0 27q-16 .5-32 0c-20 0-20-27 0-27Z" fill="none" stroke={ink} strokeWidth={1.05} strokeLinecap="round" /><Path d="M5 23q4 5.5 12 5.5h30q8 0 12-5" fill="none" stroke={ink} strokeWidth={0.7} strokeLinecap="round" /></Svg> : null}
-      <ThemedText style={{ color: ink, fontSize: 13, lineHeight: 20, opacity: 1 }}>Today</ThemedText></Pressable>
-  </View>, [ink, historyLabel]);
+  const todayButton = useMemo(() => <View testID="comic-date-navigation" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: DIARY_DATE_FONT_SIZE, lineHeight: 26 }}>{todayKey.replace(/-/g, '.')}</ThemedText></View>, [ink, todayKey]);
   useLayoutEffect(() => { registerCenterActions?.(todayButton); return () => registerCenterActions?.(null); }, [registerCenterActions, todayButton]);
-  const calendarLabel = t('comicCalendar.open');
-  const calendarButton = useMemo(() => <Pressable testID="comic-calendar-open" accessibilityRole="button" accessibilityLabel={calendarLabel} hitSlop={6} onPress={() => { tapHaptic(); plannerRef.current?.openCalendar(); }} style={{ width: 32, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}><HeroCalendarIcon ink={ink} size={23} /></Pressable>, [calendarLabel, ink]);
-  useLayoutEffect(() => { registerWeatherActions?.(calendarButton); return () => registerWeatherActions?.(null); }, [registerWeatherActions, calendarButton]);
+  const overviewButton = useMemo(() => photoActive ? null : <Pressable testID="comic-header-toggle-overview" accessibilityRole="button" accessibilityLabel={t(overviewOpen ? 'comicDay.showCards' : 'comicDay.boardView')} accessibilityState={{ expanded: overviewOpen }} onPress={() => { tapHaptic('select'); setOverviewOpen(value => !value); }} style={({ pressed }) => ({ width: 40, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+    <HeroPolaroidOverviewIcon ink={ink} expanded={overviewOpen} />
+  </Pressable>, [photoActive, overviewOpen, t, ink]);
+  useLayoutEffect(() => { registerWeatherActions?.(overviewButton); return () => registerWeatherActions?.(null); }, [registerWeatherActions, overviewButton]);
+  useEffect(() => { setOverviewOpen(false); }, [todayKey, photoActive]);
   const header = useMemo(() => (
     <View style={styles.header}>
       {!registerCenterActions ? <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { top: 0, bottom: undefined, height: 44, alignItems: 'center', justifyContent: 'center', zIndex: 1 }]}>{todayButton}</View> : null}
       <View style={styles.headerMainRow}>
-        <ComicDiaryMenuButton onPress={() => plannerRef.current?.openLibrary()} />
+        <View style={{ width: 42, height: 44 }} />
         <View style={styles.diaryTitleHit} />
-        {!registerWeatherActions ? calendarButton : null}
       </View>
       {headerCharacterList ? <View style={styles.entryRow}>{headerCharacterList}</View> : null}
     </View>
-  ), [headerCharacterList, registerWeatherActions, calendarButton, registerCenterActions, todayButton]);
+  ), [headerCharacterList, registerCenterActions, todayButton]);
   useLayoutEffect(() => {
     registerHeaderActions?.(header);
   }, [registerHeaderActions, header]);
@@ -108,13 +107,14 @@ export function ComicDayPage() {
       {!registerHeaderActions ? header : null}
       <IndependentComicPlanner
         ref={plannerRef}
-        onDateChange={setDisplayedDate}
+        overviewOpen={overviewOpen}
+        onOverviewChange={setOverviewOpen}
         onPhotoEntryChange={setPhotoActive}
         onHeaderCharacterListChange={setHeaderCharacterList}
         onOpenBag={() => router.push('/day-plan')}
         entryActionsInHeader
         hideCharacterHeading
-        key={`${todayKey}:${generationJob ?? ''}`}
+        key={`${todayKey}:${generationJob ?? ''}:${historyEntry ?? ''}`}
         date={todayKey}
         ink={ink}
         muted={muted}

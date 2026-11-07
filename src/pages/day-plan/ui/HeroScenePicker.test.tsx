@@ -1,3 +1,4 @@
+import { useHeroGeneratedImages } from './useHeroGeneratedImages';
 import { useState } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { FlatList } from 'react-native';
@@ -5,6 +6,8 @@ import { ComicScenePicker } from './HeroScenePicker';
 import { ComicSceneSequence, moveComicScene } from './HeroSceneSequence';
 import { newComicScene, type ComicDayScene } from '../lib/heroDayStorage';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+jest.mock('./useHeroGeneratedImages', () => ({ useHeroGeneratedImages: jest.fn(() => []) }));
+beforeEach(() => { jest.mocked(useHeroGeneratedImages).mockReturnValue([]); });
 jest.mock('@shared/ui/completion-radio-button', () => ({ CompletionRadioButton: jest.requireActual('react-native').Pressable }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
@@ -115,4 +118,66 @@ it('uses the same gallery for single-card replacement without sequence controls 
   expect(choose).toHaveBeenCalledWith(grid.props.data[0].id);
   expect(change).not.toHaveBeenCalled();
   act(() => { card.unmount(); tree.unmount(); });
+});
+
+it('switches protagonist libraries without changing existing cards and returns the chosen scene', () => {
+  const { SELECTABLE_COMIC_CHARACTERS } = jest.requireActual('../lib/heroCharacters') as typeof import('../lib/heroCharacters');
+  const initial = SELECTABLE_COMIC_CHARACTERS[5];
+  const other = SELECTABLE_COMIC_CHARACTERS[1];
+  const choose = jest.fn(), change = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicScenePicker embedded selectionPurpose="add" library={initial.scenes} scenes={[newComicScene('기존 기록')]} onChange={change} onSelectScene={choose} onClose={jest.fn()} />); });
+  try {
+    const grid = () => tree.root.findAllByType(FlatList).find(node => node.props.numColumns != null)!;
+    expect(grid().props.data).toBe(initial.scenes);
+    expect(tree.root.findAllByProps({ testID: `comic-scene-picker-${initial.id}` })[0].props.accessibilityState.selected).toBe(true);
+    act(() => tree.root.findAllByProps({ testID: `comic-scene-picker-${other.id}` })[0].props.onPress());
+    expect(grid().props.data).toBe(other.scenes);
+    expect(change).not.toHaveBeenCalled();
+    expect(choose).not.toHaveBeenCalled();
+    const item = other.scenes[0];
+    act(() => grid().props.renderItem({ item, index: 0 }).props.children.props.onToggle(item.id));
+    expect(choose).toHaveBeenCalledWith(item.id);
+    expect(change).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
+});
+
+it.each([false, true])('switches the same grid to the saved collection (original: %s), without opening another chooser', original => {
+  const generated = [{ uri: 'file:///Documents/hero-ai/hero-new-0.png', title: '생성 이미지' }];
+  const photos = [{ uri: 'file:///Documents/hero-photos/photo-1-a.jpg', title: '내 사진' }, { uri: 'file:///Documents/hero-photos/photo-2-b.jpg' }];
+  jest.mocked(useHeroGeneratedImages).mockImplementation(isOriginal => isOriginal ? photos : generated);
+  const change = jest.fn(), close = jest.fn();
+  const existing = newComicScene('기존 내용');
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicScenePicker embedded scenes={[existing]} onChange={change} onClose={close} />); });
+  try {
+    const groupId = original ? 'hero-original-collection-card' : 'hero-generated-collection-card';
+    act(() => tree.root.findAllByProps({ testID: groupId })[0].props.onPress());
+    const grid = () => tree.root.findAllByProps({ testID: 'comic-scene-picker-saved-grid' })[0];
+    expect(grid().props.data).toEqual(original ? photos : generated);
+    expect(grid().props.numColumns).toBe(3);
+    expect(tree.root.findAllByProps({ testID: 'hero-generated-writing-picker' })).toHaveLength(0);
+    expect(change).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+    const twoColumns = tree.root.findAll(node => node.props.accessibilityLabel === 'comicDay.viewTwo' && typeof node.props.onPress === 'function')[0];
+    act(() => twoColumns.props.onPress());
+    expect(grid().props.numColumns).toBe(2);
+    const item = original ? photos[0] : generated[0];
+    act(() => grid().props.renderItem({ item }).props.onPress());
+    expect(change).toHaveBeenCalledWith([existing, expect.objectContaining({ artworkUri: item.uri, title: '', memo: '' })]);
+    expect(close).toHaveBeenCalledTimes(1);
+  } finally { act(() => tree.unmount()); }
+});
+
+it('opens the photo collection with protagonist navigation and can switch to bundled scenes', () => {
+  jest.mocked(useHeroGeneratedImages).mockImplementation(original => original ? [{ uri: 'file:///hero-photos/photo.jpg' }] : []);
+  const onSelectScene = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<ComicScenePicker initialCollectionId="original-photos" scenes={[]} onChange={jest.fn()} onClose={jest.fn()} onSelectScene={onSelectScene} />); });
+  expect(tree.root.findAllByProps({ testID: 'comic-scene-picker-saved-grid' }).length).toBeGreaterThan(0);
+  const tab = tree.root.findAll(node => node.props.accessibilityRole === 'tab' && !node.props.testID?.includes('photos') && !node.props.testID?.includes('generated'))[0];
+  act(() => tab.props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'comic-scene-picker-saved-grid' })).toHaveLength(0);
+  expect(tree.root.findAllByType(FlatList).some(node => node.props.data?.length > 0)).toBe(true);
+  act(() => tree.unmount());
 });

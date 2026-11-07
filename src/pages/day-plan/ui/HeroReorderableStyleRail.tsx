@@ -9,8 +9,8 @@ function Slot({ offset, children }: { offset: number; children: ReactElement }) 
   useEffect(() => { Animated.timing(x, { toValue: offset, duration: 160, useNativeDriver: true }).start(); }, [offset, x]);
   return <Animated.View style={{ transform: [{ translateX: x }] }}>{children}</Animated.View>;
 }
-export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORDER_KEY, itemWidth = 50, gap = 12, scrollTestID = 'hero-inline-style-scroll', style, scrollStyle, contentContainerStyle }: {
-  children: [ReactElement<PressableProps>[], ReactNode]; storageKey?: string; itemWidth?: number; gap?: number; scrollTestID?: string; style?: StyleProp<ViewStyle>; scrollStyle?: StyleProp<ViewStyle>; contentContainerStyle?: StyleProp<ViewStyle>;
+export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORDER_KEY, leadingItemKey, itemWidth = 50, gap = 12, scrollTestID = 'hero-inline-style-scroll', style, scrollStyle, contentContainerStyle }: {
+  children: [ReactElement<PressableProps>[], ReactNode]; storageKey?: string; leadingItemKey?: string; itemWidth?: number; gap?: number; scrollTestID?: string; style?: StyleProp<ViewStyle>; scrollStyle?: StyleProp<ViewStyle>; contentContainerStyle?: StyleProp<ViewStyle>;
 }) {
   const [items, upcoming] = children;
   const itemIds = items.map(item => String(item.key));
@@ -18,7 +18,11 @@ export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORD
   const stride = itemWidth + gap;
   const contentWidth = useRef(0);
   const [savedOrder, setOrder] = useState(() => readHeroCharacterOrder(storageKey, itemIds));
-  const order = useMemo(() => [...new Set([...savedOrder, ...idsKey.split('|')])].filter(id => idsKey.split('|').includes(id)), [savedOrder, idsKey]);
+  const order = useMemo(() => {
+    const ids = idsKey.split('|');
+    const merged = [...new Set([...savedOrder, ...ids])].filter(id => ids.includes(id));
+    return leadingItemKey && ids.includes(leadingItemKey) ? [leadingItemKey, ...merged.filter(id => id !== leadingItemKey)] : merged;
+  }, [savedOrder, idsKey, leadingItemKey]);
   const [moving, setMoving] = useState<{ id: string; start: number; target: number } | null>(null);
   const session = useRef<{ id: string; start: number; target: number; x: number; scroll: number } | null>(null);
   const suppressed = useRef(false);
@@ -29,7 +33,6 @@ export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORD
   const scroll = useRef<ScrollView>(null);
   const viewport = useRef<View>(null);
   const x = useAnimatedValue(0);
-  const lift = useAnimatedValue(0);
   const update = (pageX: number) => {
     const current = session.current;
     if (!current) return;
@@ -55,7 +58,6 @@ export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORD
     }
     setMoving(null);
     x.setValue(0);
-    Animated.timing(lift, { toValue: 0, duration: 140, useNativeDriver: true }).start();
   };
   const handlers = useRef({ update, finish });
   useLayoutEffect(() => { handlers.current = { update, finish }; });
@@ -97,7 +99,7 @@ export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORD
         const selected = moving?.id === id;
         const shift = moving && !selected ? moving.start < index && index <= moving.target ? -stride : moving.target <= index && index < moving.start ? stride : 0 : 0;
         // Keep card size fixed and explicitly reset native transforms after a drop.
-        return <Animated.View key={id} testID={`${scrollTestID}-item-${id}`} style={{ zIndex: selected ? 10 : 0, transform: [{ translateX: selected ? x : 0 }, { translateY: selected ? lift.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) : 0 }, { scale: 1 }] }}>
+        return <Animated.View key={id} testID={`${scrollTestID}-item-${id}`} style={{ zIndex: selected ? 10 : 0, transform: [{ translateX: selected ? x : 0 }, { translateY: 0 }, { scale: 1 }] }}>
           <Slot offset={shift}>{cloneElement(item, {
             delayLongPress: 350,
             onPressIn: () => { if (!session.current) suppressed.current = false; },
@@ -108,7 +110,6 @@ export function HeroReorderableStyleRail({ children, storageKey = HERO_STYLE_ORD
               session.current = { id, start: index, target: index, x: pageX, scroll: offset.current };
               setMoving({ id, start: index, target: index });
               tapHaptic('select');
-              Animated.timing(lift, { toValue: 1, duration: 140, useNativeDriver: true }).start();
             },
             onPressOut: () => { setTimeout(() => { if (session.current && !claimed.current) handlers.current.finish(); }, 0); },
             onPress: event => { if (suppressed.current) return false; item.props.onPress?.(event); },

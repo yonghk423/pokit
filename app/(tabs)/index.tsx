@@ -9,7 +9,7 @@ const FrozenComicDayPage = freezeHeavyTabScreen(ComicDayPage);
 export default function ComicDayTabScreen() {
   const focused = useIsFocused();
   return (
-    <DayPlanTabFocusContext.Provider value={focused}><NativeTabContent>
+    <DayPlanTabFocusContext.Provider value={focused}><NativeTabContent chromeColor="transparent">
       <DayPlanTabScreenShell tabName="comic-day">
         <FrozenComicDayPage />
       </DayPlanTabScreenShell>

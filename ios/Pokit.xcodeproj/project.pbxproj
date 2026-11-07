@@ -33,13 +33,18 @@
 		B2C3D4E1D4E5F60011223344 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E4D4E5F60011223344 /* Localizable.strings */; };
 		B2C3D4E2D4E5F60011223344 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E4D4E5F60011223344 /* Localizable.strings */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C24F00000000000000000002 /* Cafe24Shiningstar-v2.0.otf in Resources */ = {isa = PBXBuildFile; fileRef = C24F00000000000000000001 /* Cafe24Shiningstar-v2.0.otf */; };
+		C24F00000000000000000007 /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = C24F00000000000000000006 /* LICENSE.txt */; };
+		C24F00000000000000000008 /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = C24F00000000000000000006 /* LICENSE.txt */; };
+		C24F00000000000000000012 /* Cafe24Syongsyong-v2.0.otf in Resources */ = {isa = PBXBuildFile; fileRef = C24F00000000000000000011 /* Cafe24Syongsyong-v2.0.otf */; };
+		C24F00000000000000000013 /* Cafe24Syongsyong-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = C24F00000000000000000014 /* Cafe24Syongsyong-LICENSE.txt */; };
+		C24F00000000000000000015 /* Cafe24Syongsyong-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = C24F00000000000000000014 /* Cafe24Syongsyong-LICENSE.txt */; };
 		D4E5F601D4E5F60011223344 /* ComicSceneWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F602D4E5F60011223344 /* ComicSceneWidget.swift */; };
 		D4E5F603D4E5F60011223344 /* ComicScenes.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D4E5F604D4E5F60011223344 /* ComicScenes.xcassets */; };
 		E1F2A3B4D4E5F60011223344 /* PriorityModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B5D4E5F60011223344 /* PriorityModeLiveActivityView.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F1E2D3C4D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */; };
 		FA12BEEFE001000000000002 /* Ownglyph_corncorn-Rg.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */; };
-		FA12BEEFE002000000000002 /* Griun_Kimjungwon-Rg.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA12BEEFE002000000000001 /* Griun_Kimjungwon-Rg.ttf */; };
 		FA12BEEFE003000000000002 /* HiMelody_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */; };
 /* End PBXBuildFile section */
 
@@ -99,6 +104,10 @@
 		B2C3D4E6D4E5F60011223344 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B2C3D4E7D4E5F60011223344 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		C24F00000000000000000001 /* Cafe24Shiningstar-v2.0.otf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Cafe24Shiningstar-v2.0.otf"; path = "../assets/fonts/cafe24-shiningstar/Cafe24Shiningstar-v2.0.otf"; sourceTree = SOURCE_ROOT; };
+		C24F00000000000000000006 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE.txt; path = "../assets/fonts/cafe24-shiningstar/LICENSE.txt"; sourceTree = SOURCE_ROOT; };
+		C24F00000000000000000011 /* Cafe24Syongsyong-v2.0.otf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Cafe24Syongsyong-v2.0.otf"; path = "../assets/fonts/cafe24-syongsyong/Cafe24Syongsyong-v2.0.otf"; sourceTree = SOURCE_ROOT; };
+		C24F00000000000000000014 /* Cafe24Syongsyong-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = "Cafe24Syongsyong-LICENSE.txt"; path = "../assets/fonts/cafe24-syongsyong/Cafe24Syongsyong-LICENSE.txt"; sourceTree = SOURCE_ROOT; };
 		C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Pokit/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CAE95808112387BA5F3DC33A /* Pods-Pokit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokit.debug.xcconfig"; path = "Target Support Files/Pods-Pokit/Pods-Pokit.debug.xcconfig"; sourceTree = "<group>"; };
 		D4E5F602D4E5F60011223344 /* ComicSceneWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComicSceneWidget.swift; sourceTree = "<group>"; };
@@ -109,7 +118,6 @@
 		F11748442D0722820044C1D9 /* Pokit-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Pokit-Bridging-Header.h"; path = "Pokit/Pokit-Bridging-Header.h"; sourceTree = "<group>"; };
 		F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMemoModeLiveActivityView.swift; sourceTree = "<group>"; };
 		FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Ownglyph_corncorn-Rg.ttf"; path = "../assets/fonts/ownglyph-corncorn/Ownglyph_corncorn-Rg.ttf"; sourceTree = SOURCE_ROOT; };
-		FA12BEEFE002000000000001 /* Griun_Kimjungwon-Rg.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Griun_Kimjungwon-Rg.ttf"; path = "../assets/fonts/griun-kimjungwon/Griun_Kimjungwon-Rg.ttf"; sourceTree = SOURCE_ROOT; };
 		FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = HiMelody_400Regular.ttf; path = "../node_modules/@expo-google-fonts/hi-melody/400Regular/HiMelody_400Regular.ttf"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -148,6 +156,8 @@
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				C6F2085864CBC917219DC28E /* PrivacyInfo.xcprivacy */,
 				A3F1B2C0D4E5F60011223301 /* GoogleService-Info.plist */,
+				C24F00000000000000000006 /* LICENSE.txt */,
+				C24F00000000000000000014 /* Cafe24Syongsyong-LICENSE.txt */,
 			);
 			name = Pokit;
 			sourceTree = "<group>";
@@ -213,8 +223,10 @@
 				B2C3D4B5D4E5F60011223344 /* PinnedRoutineWidget.swift */,
 				D4E5F602D4E5F60011223344 /* ComicSceneWidget.swift */,
 				FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */,
-				FA12BEEFE002000000000001 /* Griun_Kimjungwon-Rg.ttf */,
 				FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */,
+				C24F00000000000000000001 /* Cafe24Shiningstar-v2.0.otf */,
+				C24F00000000000000000011 /* Cafe24Syongsyong-v2.0.otf */,
+				C24F00000000000000000006 /* LICENSE.txt */,
 				B2C3D4B1D4E5F60011223344 /* DayPlanWidgetSupport.swift */,
 				D4E5F604D4E5F60011223344 /* ComicScenes.xcassets */,
 				A1B2C313D4E5F60011223344 /* Info.plist */,
@@ -362,6 +374,8 @@
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				5030F36FA407208EADC84060 /* PrivacyInfo.xcprivacy in Resources */,
 				A3F1B2C0D4E5F60011223302 /* GoogleService-Info.plist in Resources */,
+				C24F00000000000000000007 /* LICENSE.txt in Resources */,
+				C24F00000000000000000013 /* Cafe24Syongsyong-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -372,8 +386,11 @@
 				B2C3D4E2D4E5F60011223344 /* Localizable.strings in Resources */,
 				D4E5F603D4E5F60011223344 /* ComicScenes.xcassets in Resources */,
 				FA12BEEFE003000000000002 /* HiMelody_400Regular.ttf in Resources */,
-				FA12BEEFE002000000000002 /* Griun_Kimjungwon-Rg.ttf in Resources */,
 				FA12BEEFE001000000000002 /* Ownglyph_corncorn-Rg.ttf in Resources */,
+				C24F00000000000000000002 /* Cafe24Shiningstar-v2.0.otf in Resources */,
+				C24F00000000000000000012 /* Cafe24Syongsyong-v2.0.otf in Resources */,
+				C24F00000000000000000008 /* LICENSE.txt in Resources */,
+				C24F00000000000000000015 /* Cafe24Syongsyong-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -450,6 +467,7 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Pokit/Pods-Pokit-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/AppAuth/AppAuthCore_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
@@ -463,7 +481,10 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreInternal/FirebaseCoreInternal_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCrashlytics/FirebaseCrashlytics_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseInstallations/FirebaseInstallations_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GTMAppAuth/GTMAppAuth_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher_Core_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleDataTransport/GoogleDataTransport_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleSignIn/GoogleSignIn.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/PromisesSwift/Promises_Privacy.bundle",
@@ -483,6 +504,7 @@
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AppAuthCore_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
@@ -496,7 +518,10 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseCoreInternal_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseCrashlytics_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseInstallations_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMAppAuth_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMSessionFetcher_Core_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleDataTransport_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleSignIn.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleUtilities_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FBLPromises_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Promises_Privacy.bundle",

@@ -36,15 +36,15 @@ it('opens the latest diary created today, ignoring recent edits to yesterday', (
   seed([{ ...old, updatedAt: new Date(2026, 9, 30).getTime() }, morning, evening]);
   expect(loadComicDiaryHome('2026-10-29', title).activeId).toBe(evening.id);
 });
-it('keeps explicitly opened history across remounts on the same day', () => {
+it('ignores a past history selection on the same day and keeps the empty today home', () => {
   seed();
   loadComicDiaryHome('2026-10-29', title);
   const library = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY)!;
   rememberComicDiaryHistorySelection('2026-10-29', old.id);
   saveComicDiaryLibrary({ ...library, activeId: old.id });
   saveComicNavigation(old.characterId, 'board', old.id);
-  expect(loadComicDiaryHome('2026-10-29', title).activeId).toBe(old.id);
-  expect(loadComicNavigation()?.diaryId).toBe(old.id);
+  expect(loadComicDiaryHome('2026-10-29', title).activeId).toBeNull();
+  expect(loadComicNavigation()).toBeNull();
   expect(loadComicDiaryHome('2026-10-30', title).activeId).toBeNull();
 });
 it('shows the empty home for an unfinished empty diary when a day is first opened', () => {

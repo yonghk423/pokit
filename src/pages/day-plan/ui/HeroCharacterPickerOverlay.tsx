@@ -6,7 +6,8 @@ import { AccessibilityInfo, Animated, Easing, PanResponder, Pressable, ScrollVie
 import { Image, type ImageSource } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppModal } from '@shared/ui/app-modal';
-import { PenFrame } from '@shared/ui/pen-frame';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { SurfaceTexture } from '@shared/ui/surface-texture';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useTranslation } from '@shared/lib/i18n';
@@ -58,8 +59,9 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
     return [character.id, scene ? COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source : character.cover];
   })));
   const generatedImages = useHeroGeneratedImages();
-  const [savedOrder, setOrder] = useState(() => readHeroCharacterOrder(undefined, ['generated-illustrations']));
-  const order = savedOrder.filter(id => id !== 'generated-illustrations' || generatedImages.length > 0);
+  const originalImages = useHeroGeneratedImages(true);
+  const [savedOrder, setOrder] = useState(() => readHeroCharacterOrder(undefined, ['generated-illustrations', 'original-photos']));
+  const order = savedOrder.filter(id => (id !== 'generated-illustrations' || generatedImages.length > 0) && (id !== 'original-photos' || originalImages.length > 0));
   const characters = order.map(id => SELECTABLE_COMIC_CHARACTERS.find(character => character.id === id) ?? { ...SELECTABLE_COMIC_CHARACTERS[0], id });
   const [dragging, setDragging] = useState<{ id: string; start: number; target: number } | null>(null);
   const drag = useRef<{ id: string; start: number; target: number; pageX: number; scrollStart: number } | null>(null);
@@ -89,7 +91,8 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
     drag.current = null;
     panActive.current = false;
     if (!cancel) {
-      const next = moveHeroCharacter(order, current.id, current.target);
+      const visible = moveHeroCharacter(order, current.id, current.target);
+      const next = [...visible, ...savedOrder.filter(id => !visible.includes(id))];
       setOrder(next);
       saveHeroCharacterOrder(next);
     }
@@ -127,7 +130,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
   }, [!!dragging, width, stride, order.length]);
   const ink = isDark ? '#EEEDE5' : '#292E28';
   const paper = isDark ? '#262B28' : '#F7F6F4';
-  const cardStyle = { width: cardWidth, height: cardHeight, flexShrink: 0, padding: 5, backgroundColor: paper, shadowColor: '#161B16', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.22 : 0.1, shadowRadius: 4, elevation: 2 };
+  const cardStyle = { width: cardWidth, height: cardHeight, flexShrink: 0, padding: 5, backgroundColor: paper, shadowColor: '#161B16', shadowOffset: { width: 2, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 2 };
   const progress = useAnimatedValue(0);
   const closing = useRef(false);
   const live = useRef(true);
@@ -153,6 +156,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(25,30,25,0.14)', opacity: progress }]} />
       <Pressable testID="hero-character-picker-backdrop" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => close()} style={StyleSheet.absoluteFill} />
       <Animated.View testID="hero-character-picker-overlay" {...pan.panHandlers} accessibilityViewIsModal style={{ width: '100%', maxWidth: 440, alignSelf: 'center', backgroundColor: paper, padding: 8, overflow: 'hidden', opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
+        {isDark ? <PaperGrain opacity={0.3} /> : <SurfaceTexture kind="wrinkled" opacity={0.35} />}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 8 }}>
           <ThemedText numberOfLines={1} style={{ flex: 1, color: ink, fontSize: 17 }}>{t('tabs.comicDay')}</ThemedText>
           <Pressable testID="hero-character-picker-close" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => close()} style={{ width: 44, height: 40, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable>
@@ -165,7 +169,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                 : dragging.target <= index && index < dragging.start ? stride : 0
               : 0;
             return <PickerCardSlot key={character.id} id={character.id} width={cardWidth} height={cardHeight} active={active} offset={active ? dragOffset : shift}>
-                {character.id === 'generated-illustrations' ? <HeroGeneratedCollectionCard images={generatedImages} compact width={cardWidth} height={cardHeight} ink={ink} paper={paper} onChoose={onChooseGenerated}
+                {character.id === 'generated-illustrations' || character.id === 'original-photos' ? <HeroGeneratedCollectionCard original={character.id === 'original-photos'} images={character.id === 'original-photos' ? originalImages : generatedImages} compact width={cardWidth} height={cardHeight} ink={ink} paper={paper} onChoose={onChooseGenerated} onChooseScene={id => { const owner = SELECTABLE_COMIC_CHARACTERS.find(item => item.scenes.some(scene => scene.id === id)); if (owner) close(() => onSelect({ ...owner, scenes: owner.scenes.filter(scene => scene.id === id) })); }}
                   delayLongPress={350}
                   onPressIn={() => { if (!drag.current) suppressPress.current = false; }}
                   onLongPress={event => {
@@ -195,15 +199,16 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                   }}
                   onPressOut={() => { setTimeout(() => { if (drag.current && !panActive.current) endDrag(); }, 0); }}
                   onPress={() => { if (suppressPress.current) return; tapHaptic('select'); close(() => { const chosen = SELECTABLE_COMIC_CHARACTERS.find(item => item.id === character.id); if (chosen) onSelect(chosen); }); }} style={cardStyle}>
+                  <PaperGrain opacity={0.85} />
                   <PickerPreview id={character.id} source={previews[character.id]} fallback={character.cover} width={cardWidth - 10} height={imageHeight} isDark={isDark} />
                   <View style={{ height: 38, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{nameFor(character.id, t(character.name))}</ThemedText></View>
-                  <PenFrame color={ink} straight />
+
                 </Pressable></>}
 
             </PickerCardSlot>;
           })}
         </ScrollView>
-        <PenFrame color={ink} />
+
       </Animated.View>
     </View>
   </AppModal>;

@@ -110,6 +110,18 @@ export async function initLocalStorageClient(): Promise<void> {
   nativeInitPromise = (async () => {
     try {
       await migrateLegacyStorageKeys();
+      // A terminated Drive restore must never leave half of a date applied.
+      const pendingDriveRestore = await AsyncStorage.getItem('pokit:drive-restore-pending');
+      if (pendingDriveRestore) {
+        const previous: Record<string, string | null> = JSON.parse(pendingDriveRestore);
+        for (const [key, value] of Object.entries(previous)) {
+          if (!key.startsWith('pokit:') || key.includes('auth') || key.includes('token')) throw new Error('Invalid restore journal');
+          if (value === null) await AsyncStorage.removeItem(key);
+          else if (typeof value === 'string') await AsyncStorage.setItem(key, value);
+          else throw new Error('Invalid restore journal value');
+        }
+        await AsyncStorage.removeItem('pokit:drive-restore-pending');
+      }
       const keys = await AsyncStorage.getAllKeys();
       if (keys.length > 0) {
         const rows = await AsyncStorage.multiGet(keys);

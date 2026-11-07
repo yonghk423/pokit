@@ -1,4 +1,6 @@
-import Svg, { Path } from 'react-native-svg';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { HeroDiaryHistoryIcon } from './HeroDiaryHistoryIcon';
+import { HeroGalleryIcon } from './HeroGalleryIcon';
 import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
@@ -38,6 +40,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { route: 'index', icon: require('../../../../assets/tab-icons/comic-portrait-v2.webp'), labelKey: 'tabs.comicDay' },
   { route: 'characters', labelKey: 'comicDay.gallery.title' },
+  { route: 'history', labelKey: 'comicDiary.history' },
   { route: 'fixed-routines', icon: require('../../../../assets/tab-icons/routine.webp'), labelKey: 'tabs.routines' },
   { route: 'puzzle-history', icon: require('../../../../assets/tab-icons/puzzle.webp'), labelKey: 'tabs.puzzle' },
   { route: 'pokit-story', icon: require('../../../../assets/tab-icons/story-pen.png'), labelKey: 'tabs.story' },
@@ -98,22 +101,26 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
     && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines')
     && (FEATURE_FLAGS.pokitStory || tab.route !== 'pokit-story'));
-  const slotCount = visibleTabs.length + 1;
-  const itemWidth = Math.min(64, (width - 100 - (slotCount - 1) * 2) / slotCount);
-  const pillWidth = slotCount * itemWidth + 12 + (slotCount - 1) * 2;
+  const showAdd = focusedRoute === 'index' && hasThumbnailCards;
+  const navigationSlotCount = visibleTabs.length + 1;
+  const slotCount = navigationSlotCount + (showAdd ? 1 : 0);
+  const itemWidth = Math.min(64, (width - 48 - 12 - (slotCount - 1) * 2) / slotCount);
+  // The first fragment contains both the diary and photo tabs.
+  const addAfterIndex = Math.max(0, Math.floor(navigationSlotCount / 2) - 2);
   const photoSelected = focusedRoute === 'index' && !!characterPicker?.photoActive;
 
   return (
     <View
       onLayout={handleBarLayout}
-      style={[styles.outerWrap, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }]}>
+      style={[styles.outerWrap, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : 'transparent' }]}>
       <View style={styles.shell}>
         <View
           style={[
             styles.container,
-            { backgroundColor: colors.containerBg },
+            { backgroundColor: colors.containerBg, borderWidth: 0.7, borderColor: isDark ? '#484C47' : '#FFFFFF' },
           ]}>
-          {visibleTabs.map((tab) => {
+          <PaperGrain opacity={0.24} />
+          {visibleTabs.map((tab, tabIndex) => {
             const isFocused =
               focusedRoute === tab.route ||
               (tab.route === 'day-plan' && focusedRoute === 'index');
@@ -127,8 +134,12 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityLabel={t(tab.labelKey)}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  if (tab.route === 'index' && isFocused && characterPicker) characterPicker.open();
-                  else navigation.navigate(tab.route);
+                  if (tab.route === 'index' && characterPicker) {
+                    // The camera lives inside index, so returning from another
+                    // route must also leave camera mode before showing the diary.
+                    characterPicker.open(!isFocused);
+                    if (!isFocused) navigation.navigate('index');
+                  } else navigation.navigate(tab.route);
                 }}
                 style={({ pressed }) => [
                   styles.tabItem,
@@ -136,7 +147,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   isFocused && !photoSelected && { backgroundColor: colors.activeBg },
                   pressed && { opacity: 0.8 },
                 ]}>
-                {tab.route === 'characters' ? <Svg width={26} height={26} viewBox="0 0 24 24" accessible={false}><Path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke={isDark ? '#EEECE6' : '#252A26'} strokeWidth={1.25} strokeLinejoin="round" /></Svg> : <Image source={tab.route === 'index' ? heroArtwork : tab.icon!} style={styles.icon} resizeMode="contain" />}
+                {tab.route === 'history' ? <HeroDiaryHistoryIcon ink={isDark ? '#EEECE6' : '#252A26'} /> : tab.route === 'characters' ? <HeroGalleryIcon ink={isDark ? '#EEECE6' : '#252A26'} selected={isFocused && !photoSelected} /> : <Image source={tab.route === 'index' ? heroArtwork : tab.icon!} style={styles.icon} resizeMode="contain" />}
               </Pressable>{tab.route === 'index' ? <>
                 <Pressable
                   testID="hero-ai-mode-tab"
@@ -153,12 +164,15 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   style={({ pressed }) => [styles.tabItem, { width: itemWidth }, photoSelected && { backgroundColor: colors.activeBg }, pressed && { opacity: 0.8 }]}>
                   <HeroPhotoEntryIcon ink={isDark ? '#EEECE6' : '#252A26'} size={34} selected={photoSelected} />
                 </Pressable>
-              </> : null}</Fragment>
+              </> : null}{showAdd && tabIndex === addAfterIndex ? <ServiceTutorialTarget steps={['comicStart']}>
+                <View testID="hero-add-center-tab" style={[styles.tabItem, { width: itemWidth }]}>
+                  <SketchPaperButton iconOnly strongFrame frameless softKey label={t('comicDay.add')} ink="#292E28" onPress={() => characterPicker?.openAdd()} hitSlop={3} />
+                </View>
+              </ServiceTutorialTarget> : null}</Fragment>
             );
           })}
         </View>
       </View>
-      {focusedRoute === 'index' && hasThumbnailCards ? <View testID="hero-add-beside-tabs" style={{ position: 'absolute', left: Math.min(width - 48, width / 2 + pillWidth / 2 + 8), top: 14 }}><ServiceTutorialTarget steps={['comicStart']}><View style={{ transform: [{ scale: 36 / 44 }] }}><SketchPaperButton iconOnly strongFrame frameless softKey label={t('comicDay.add')} ink={isDark ? '#F0EFE9' : '#292E28'} onPress={() => characterPicker?.openAdd()} hitSlop={3} /></View></ServiceTutorialTarget></View> : null}
     </View>
   );
 }
@@ -174,8 +188,8 @@ const styles = StyleSheet.create({
     borderRadius: DAY_PLAN_TAB_BAR_ROW_HEIGHT / 2,
     shadowColor: '#14161C',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
     elevation: 8,
   },
   container: {

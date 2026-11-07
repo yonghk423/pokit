@@ -8,10 +8,13 @@ import {
   useAppFontSizeScale,
   scaleTypeSize,
   type AppFontWeight,
+  type AppFontId,
 } from '@shared/lib/ui-font';
 import { useThemeColor } from '@shared/lib/hooks/use-theme-color';
 
 export type ThemedTextProps = TextProps & {
+  /** Optional record-specific font; undefined follows app settings. */
+  fontId?: AppFontId;
   lightColor?: string;
   darkColor?: string;
   type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link' | 'label';
@@ -50,14 +53,16 @@ function applyFontSizeScale(style: TextStyle, scale: number): TextStyle {
 
 export function ThemedText({
   style,
+  fontId: fontOverride,
   lightColor,
   darkColor,
   type = 'default',
   ...rest
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
-  const fontId = useEffectiveAppFontId();
-  const sizeScale = useAppFontSizeScale();
+  const appFontId = useEffectiveAppFontId();
+  const fontId = fontOverride ?? appFontId;
+  const sizeScale = useAppFontSizeScale(fontId);
   const singleFace = isSingleFaceAppFont(fontId);
 
   const userFlat = (StyleSheet.flatten(style) ?? {}) as TextStyle;

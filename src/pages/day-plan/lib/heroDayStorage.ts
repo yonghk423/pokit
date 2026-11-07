@@ -1,3 +1,4 @@
+import { isAppFontId, type AppFontId } from '@shared/lib/ui-font/appFontIds';
 import { DEFAULT_COMIC_CHARACTER_ID } from './heroCharacters';
 import { resolveHeroArtworkUri } from './heroArtworkUri';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -5,7 +6,7 @@ import { canonicalComicSceneId, type ComicSceneId } from './heroSceneImages';
 export type ComicDayScene = {
   id: string; title: string; image: ComicSceneId; artworkUri?: string; time: string; memo: string;
   todos: { id: string; text: string; completed: boolean }[];
-  paper: string; pen: string;
+  paper: string; pen: string; fontId?: AppFontId;
 };
 // Keep the original key for the existing character so no saved scenes are lost.
 const key = (date: string, characterId: string) => characterId === DEFAULT_COMIC_CHARACTER_ID ? `pokit:comic-day:${date}` : `pokit:comic-day:${characterId}:${date}`;
@@ -27,7 +28,7 @@ export function normalizeComicScenes(value: unknown): ComicDayScene[] {
       && scene.todos.every(todo => todo && typeof todo.id === 'string' && typeof todo.text === 'string' && typeof todo.completed === 'boolean');
     if (!ok) continue;
     seen.add(scene.id);
-    scenes.push({ ...scene, image, artworkUri: typeof scene.artworkUri === 'string' && scene.artworkUri.startsWith('file://') ? resolveHeroArtworkUri(scene.artworkUri) : undefined });
+    scenes.push({ ...scene, fontId: isAppFontId(scene.fontId) ? scene.fontId : undefined, image, artworkUri: typeof scene.artworkUri === 'string' && scene.artworkUri.startsWith('file://') ? resolveHeroArtworkUri(scene.artworkUri) : undefined });
   }
   return scenes;
 }

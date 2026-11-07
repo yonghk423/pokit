@@ -5,8 +5,8 @@ import { useSettledDeckLayout, type DeckSize } from './useSettledDeckLayout';
 
 const initial = { width: 390, height: 650 };
 const remember = jest.fn<void, [DeckSize]>();
-function Probe() {
-  const { size, updateSize } = useSettledDeckLayout(initial, remember);
+function Probe({ initialSize = initial }: { initialSize?: DeckSize }) {
+  const { size, updateSize } = useSettledDeckLayout(initialSize, remember);
   return <View onLayout={event => updateSize(event.nativeEvent.layout.width, event.nativeEvent.layout.height)}><Text>{`${size.width}:${size.height}`}</Text></View>;
 }
 let nextId = 0;
@@ -18,6 +18,19 @@ beforeEach(() => {
   jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(id => { if (id != null) frames.delete(id); });
 });
 afterEach(() => jest.restoreAllMocks());
+
+it('waits for its own stable measurement when a separate history stage opens', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<Probe initialSize={{ width: 0, height: 0 }} />); });
+  const visible = () => tree.root.findByType(Text).props.children;
+  expect(visible()).toBe('0:0');
+  act(() => tree.root.findByType(View).props.onLayout({ nativeEvent: { layout: { width: 390, height: 740 } } }));
+  frame();
+  expect(visible()).toBe('0:0');
+  frame();
+  expect(visible()).toBe('390:740');
+  act(() => tree.unmount());
+});
 
 it('keeps the last geometry through hidden and transient layouts when a tab returns', () => {
   let tree!: ReactTestRenderer;

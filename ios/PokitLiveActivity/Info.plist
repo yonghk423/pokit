@@ -25,8 +25,9 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Ownglyph_corncorn-Rg.ttf</string>
-		<string>Griun_Kimjungwon-Rg.ttf</string>
 		<string>HiMelody_400Regular.ttf</string>
+		<string>Cafe24Shiningstar-v2.0.otf</string>
+		<string>Cafe24Syongsyong-v2.0.otf</string>
 	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>

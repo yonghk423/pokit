@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
+import { loadCityPopFont } from '@app/index';
 import { SettingsInkFrame } from '../lib/settingsChrome';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Pressable, Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Platform, ScrollView, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -12,6 +14,8 @@ import {
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation, type I18nKey } from '@shared/lib/i18n';
 import {
+  DIARY_DATE_FONT_SIZE,
+  resolveDiaryEditorTypography,
   APP_FONT_IDS,
   APP_FONT_SIZE_IDS,
   isSingleFaceAppFont,
@@ -49,14 +53,19 @@ const FONT_OPTIONS: {
     descKey: 'settings.font.corncornDesc',
   },
   {
-    key: 'kimJungWon',
-    labelKey: 'settings.font.kimJungWon',
-    descKey: 'settings.font.kimJungWonDesc',
-  },
-  {
     key: 'hiMelody',
     labelKey: 'settings.font.hiMelody',
     descKey: 'settings.font.hiMelodyDesc',
+  },
+  {
+    key: 'cafe24ShiningStar',
+    labelKey: 'settings.font.cafe24ShiningStar',
+    descKey: 'settings.font.cafe24ShiningStarDesc',
+  },
+  {
+    key: 'cafe24Syongsyong',
+    labelKey: 'settings.font.cafe24Syongsyong',
+    descKey: 'settings.font.cafe24SyongsyongDesc',
   },
 ];
 
@@ -70,6 +79,10 @@ const SIZE_OPTIONS: { key: AppFontSizeId; labelKey: I18nKey }[] = [
 
 /** 설정 → 글씨 크기·글씨체 — 사용 설명서 목차와 같은 카드 결 */
 export function FontSettingsPage() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  useEffect(() => {
+    void loadCityPopFont('cafe24Syongsyong').then(() => setFontsLoaded(true));
+  }, []);
   const { t } = useTranslation();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
@@ -80,6 +93,8 @@ export function FontSettingsPage() {
   const sizeId = useAppFontStore((s) => s.sizeId);
   const setSizeId = useAppFontStore((s) => s.setSizeId);
   const sizeScale = useAppFontSizeScale();
+  const { fontScale } = useWindowDimensions();
+  const editorType = resolveDiaryEditorTypography(sizeScale, fontScale);
   /** 외곽선 없이 음영만 — 면은 불투명 */
   const cardFace = 'transparent';
   const selectedWash = isDark ? '#306163' : '#C8EBDD';
@@ -109,7 +124,7 @@ export function FontSettingsPage() {
         : Number(StatusBar.currentHeight) || 24;
 
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#282724' : '#F8F6F0' }]} darkColor="#282724" lightColor="#F8F6F0">
+    <ThemedView style={[styles.screen, { backgroundColor: isDark ? '#282724' : '#F7F6F4' }]} darkColor="#282724" lightColor="#F7F6F4">
       <View style={[styles.safe, { paddingTop: topInset, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.topBar}>
           <Pressable
@@ -241,13 +256,14 @@ export function FontSettingsPage() {
 
           {FONT_OPTIONS.filter((opt) => APP_FONT_IDS.includes(opt.key)).map((opt) => {
             const active = fontId === opt.key;
-            const sampleFamily = resolveAppFontFamily(opt.key, '700');
+            const previewReady = opt.key !== 'cafe24Syongsyong' || fontsLoaded;
+            const sampleFamily = previewReady ? resolveAppFontFamily(opt.key, '700') : undefined;
             const sampleWeight = isSingleFaceAppFont(opt.key) ? ('400' as const) : ('700' as const);
             const previewScale =
               resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(opt.key);
             return (
               <View
-                key={opt.key}
+                key={`${opt.key}-${previewReady ? 'loaded' : 'loading'}`}
                 style={[
                   styles.fontCardShell,
                   { marginRight: SOLID_SHADOW_OFFSET, marginBottom: SOLID_SHADOW_OFFSET },
@@ -271,7 +287,7 @@ export function FontSettingsPage() {
                   accessibilityState={{ selected: active }}
                   onPress={() => {
                     if (active) return;
-                    setFontId(opt.key);
+                    void loadCityPopFont(opt.key).then(() => setFontId(opt.key));
                     void Haptics.selectionAsync();
                   }}
                   style={({ pressed }) => [

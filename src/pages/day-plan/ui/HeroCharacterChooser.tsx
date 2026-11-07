@@ -74,6 +74,17 @@ function CastingCard({ character, chosen, width, height, ink, paper, reduced, ar
   </Animated.View>;
 }
 
+function PersonalPhotoCard({ chosen, width, height, ink, paper, onPress, onLongPress, onPressIn, onPressOut, delayLongPress }: {
+  chosen: boolean; width: number; height: number; ink: string; paper: string;
+} & Pick<PressableProps, 'onPress' | 'onLongPress' | 'onPressIn' | 'onPressOut' | 'delayLongPress'>) {
+  const { t } = useTranslation();
+  return <AnimatedPressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} accessibilityState={{ selected: chosen }} onPress={onPress} onLongPress={onLongPress} onPressIn={onPressIn} onPressOut={onPressOut} delayLongPress={delayLongPress} style={[s.personalCard, { width, height, backgroundColor: paper, zIndex: chosen ? 3 : 1, elevation: chosen ? 4 : 2 }]}>
+    <PaperGrain opacity={0.18} /><HeroPhotoInvitation ink={ink} size={Math.min(155, width * 0.88)} />
+    <ThemedText style={[s.personalLabel, { color: ink }]}>{t('comicDay.personal.title')}</ThemedText>
+    <SettingsPenFrame color={ink} />
+  </AnimatedPressable>;
+}
+
 
 function CharacterThumbnailRail({ character, artIndex, onChange, showPreviews, reduced, isDark }: {
   character: ComicCharacter; artIndex: number; onChange: (index: number) => void;
@@ -215,18 +226,14 @@ export function ComicCharacterChooser({ onStart, onClose, ink, muted, isDark, re
           </View> : null}
           <ServiceTutorialTarget steps={requireExplicitChoice && !selected ? ['comicCharacter'] : []} style={[s.spotlight, keyboardVisible && s.keyboardStage]}>
             <Animated.View testID="comic-character-casting" onLayout={({ nativeEvent: { layout } }) => { setStageSize(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height }); }} style={[s.stage, { transform: [{ translateY: exit.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) }, { scale: exit.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) }] }]}>
-              <HeroReorderableStyleRail storageKey={HERO_CHARACTER_ORDER_KEY} itemWidth={artworkWidth} gap={14} scrollTestID="comic-character-horizontal-list" contentContainerStyle={s.horizontalCards} style={{ height: artworkHeight + 44, flexGrow: 0, flexShrink: 0 }} scrollStyle={{ flex: 1 }}>
-              {[...COMIC_CHARACTERS.map(character => <CastingCard key={character.id} character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
-                  artIndex={artIndices[character.id] ?? 0} onPress={() => choose(character)} />), ...(generatedImages.length ? [<HeroGeneratedCollectionCard key="generated-illustrations" images={generatedImages} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} onChoose={onChooseGenerated} />] : [])]}
-              <>
-              {showPersonal ? <View style={{ width: artworkWidth, height: artworkHeight }}>
-              <AnimatedPressable testID="hero-personal-card" accessibilityRole="button" accessibilityLabel={t('comicDay.personal.title')} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} accessibilityState={{ selected: personalChosen }} style={[s.personalCard, { width: artworkWidth, height: artworkHeight, backgroundColor: cardPaper, zIndex: personalChosen ? 3 : 1, elevation: personalChosen ? 4 : 2 }]}>
-                <PaperGrain opacity={0.18} /><HeroPhotoInvitation ink={ink} size={Math.min(155, artworkWidth * 0.88)} />
-                <ThemedText style={[s.personalLabel, { color: ink }]}>{t('comicDay.personal.title')}</ThemedText>
-                <SettingsPenFrame color={ink} />
-              </AnimatedPressable>
-              </View> : null}
-              </>
+              <HeroReorderableStyleRail storageKey={HERO_CHARACTER_ORDER_KEY} leadingItemKey={showPersonal ? 'hero-personal-card' : undefined} itemWidth={artworkWidth} gap={14} scrollTestID="comic-character-horizontal-list" contentContainerStyle={s.horizontalCards} style={{ height: artworkHeight + 44, flexGrow: 0, flexShrink: 0 }} scrollStyle={{ flex: 1 }}>
+              {[
+                ...(showPersonal ? [<PersonalPhotoCard key="hero-personal-card" chosen={personalChosen} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} onPress={() => { Keyboard.dismiss(); tapHaptic('select'); setPersonalChosen(true); setPreviewCharacter(null); }} />] : []),
+                ...COMIC_CHARACTERS.map(character => <CastingCard key={character.id} character={character} chosen={!personalChosen && selected?.id === character.id} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} reduced={reduced}
+                  artIndex={artIndices[character.id] ?? 0} onPress={() => choose(character)} />),
+                ...(generatedImages.length ? [<HeroGeneratedCollectionCard key="generated-illustrations" images={generatedImages} onChooseScene={id => { const owner = COMIC_CHARACTERS.find(item => item.scenes.some(scene => scene.id === id)); if (owner) onStart({ ...owner, scenes: owner.scenes.filter(scene => scene.id === id) }); }} width={artworkWidth} height={artworkHeight} ink={ink} paper={cardPaper} onChoose={onChooseGenerated} />] : []),
+              ]}
+              <></>
               </HeroReorderableStyleRail>
               <View testID="comic-character-thumbnail-lane" style={s.thumbnailLane}>
                 {COMIC_CHARACTERS.filter(character => previewCharacter === character.id && !personalChosen).map(character => <CharacterThumbnailRail key={character.id} character={character} artIndex={artIndices[character.id] ?? 0} onChange={index => setArtIndices(current => ({ ...current, [character.id]: index }))} showPreviews reduced={reduced} isDark={isDark} />)}

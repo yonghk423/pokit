@@ -1,3 +1,4 @@
+import { resolveHeroArtworkUri } from './heroArtworkUri';
 import * as fs from 'expo-file-system/legacy';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import type { PendingHeroAiJob, HeroAiResult } from './heroAiClient';
@@ -35,7 +36,8 @@ function metadataFor(uri: string): Partial<HeroAiLibraryImage> {
 export async function loadHeroAiLibrary(): Promise<HeroAiLibraryImage[]> {
   if (!fs.documentDirectory) return [];
   const folder = `${fs.documentDirectory}hero-ai/`;
-  if (!(await fs.getInfoAsync(folder)).exists) return [];
+  const restored = (localStorageClient.getJson<{ images?: HeroAiLibraryImage[] }>('pokit:drive-gallery')?.images ?? []).filter(image => !deletedRestored(image.uri)).map(image => ({ ...image, uri: resolveHeroArtworkUri(image.uri) }));
+  if (!(await fs.getInfoAsync(folder)).exists) return restored;
   const deleted = new Set(localStorageClient.getJson<string[]>(deletedKey) ?? []);
   const names = (await fs.readDirectoryAsync(folder)).filter(name => /^hero-[a-zA-Z0-9-]+-\d+\.png$/.test(name) && !deleted.has(name));
   const entries = await Promise.all(names.map(async name => {
@@ -43,9 +45,12 @@ export async function loadHeroAiLibrary(): Promise<HeroAiLibraryImage[]> {
     const info = await fs.getInfoAsync(uri);
     return info.exists && !info.isDirectory && info.size > 0 ? { uri, modified: info.modificationTime } : null;
   }));
-  return entries.filter((item): item is { uri: string; modified: number } => item !== null)
+  const originals = entries.filter((item): item is { uri: string; modified: number } => item !== null)
     .sort((a, b) => b.modified - a.modified || b.uri.localeCompare(a.uri)).map(({ uri, modified }) => ({ uri, createdAt: modified * 1000, ...metadataFor(uri) }));
+  return [...originals, ...restored.filter(image => !originals.some(original => original.uri === image.uri))];
 }
+
+function deletedRestored(uri: string) { return (localStorageClient.getJson<string[]>(deletedKey) ?? []).includes(uri.split('/').pop() ?? ''); }
 
 const listeners = new Set<() => void>();
 export function subscribeHeroAiLibrary(listener: () => void) {

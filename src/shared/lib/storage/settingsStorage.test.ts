@@ -120,12 +120,12 @@ describe('settingsStorage', () => {
 
   it('persists app font id', () => {
     expect(loadAppFontId()).toBe('corncorn');
-    saveAppFontId('kimJungWon');
-    expect(loadAppFontId()).toBe('kimJungWon');
+    saveAppFontId('cafe24ShiningStar');
+    expect(loadAppFontId()).toBe('cafe24ShiningStar');
     saveAppFontId('hiMelody');
     expect(loadAppFontId()).toBe('hiMelody');
-    saveAppFontId('kimJungWon');
-    expect(loadAppFontId()).toBe('kimJungWon');
+    saveAppFontId('cafe24ShiningStar');
+    expect(loadAppFontId()).toBe('cafe24ShiningStar');
   });
 
   it('ignores invalid app font id', () => {
@@ -134,6 +134,8 @@ describe('settingsStorage', () => {
   });
 
   it('migrates retired font ids to corncorn', () => {
+    localStorageClient.setJson(StorageKeys.settings, { appFontId: 'kimJungWon' });
+    expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'gothicA1' });
     expect(loadAppFontId()).toBe('corncorn');
     localStorageClient.setJson(StorageKeys.settings, { appFontId: 'sebangGothic2' });

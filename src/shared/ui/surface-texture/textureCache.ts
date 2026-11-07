@@ -3,6 +3,7 @@ import { Image, type ImageRef } from 'expo-image';
 export const SURFACE_TEXTURE_SOURCES = {
   pigment: require('../../../../assets/color-textures/grain-overlay.webp'),
   paper: require('../../../../assets/color-textures/clean-paper.webp'),
+  wrinkled: require('../../../../assets/color-textures/wrinkled-paper-v1.jpg'),
 } as const;
 
 export type SurfaceTextureKind = keyof typeof SURFACE_TEXTURE_SOURCES;
@@ -13,7 +14,7 @@ export function getPreparedSurfaceTexture(kind: SurfaceTextureKind): ImageRef | 
   return decoded.get(kind) ?? SURFACE_TEXTURE_SOURCES[kind];
 }
 
-/** Retain the two decoded originals so every swatch can share them immediately. */
+/** Retain decoded originals so every swatch can share them immediately. */
 export function prepareSurfaceTextures(): Promise<void> {
   if (preparation) return preparation;
   preparation = Promise.all((Object.keys(SURFACE_TEXTURE_SOURCES) as SurfaceTextureKind[]).map(async (kind) => {

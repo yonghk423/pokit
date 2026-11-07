@@ -47,6 +47,7 @@ it('keeps card scale fixed across repeated moves and resets transforms after rel
       act(() => handlers.onPanResponderGrant?.({} as never, {} as never));
       act(() => handlers.onPanResponderMove?.({} as never, { moveX: 174 } as never));
       expect(StyleSheet.flatten(wrapper().props.style).transform.at(-1)).toEqual({ scale: 1 });
+      expect(StyleSheet.flatten(wrapper().props.style).transform[1]).toEqual({ translateY: 0 });
       act(() => (cancel ? handlers.onPanResponderTerminate : handlers.onPanResponderRelease)?.({} as never, {} as never));
       expect(StyleSheet.flatten(wrapper().props.style).transform).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }]);
     }

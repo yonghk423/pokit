@@ -1,7 +1,8 @@
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import type { ServiceStep } from '../../welcome-intro/model/serviceTutorial';
 import { MateBagIcon } from './MateBagIcon';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { HeroCardToolsInkContext } from '../model/heroCardToolsPortal';
 import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { AppModal } from '@shared/ui/app-modal';
 import Svg, { Path } from 'react-native-svg';
@@ -13,7 +14,8 @@ const SIZE = 40;
 const STEP = 40;
 
 function FilmStripIcon({ isDark }: { isDark: boolean }) {
-  const ink = isDark ? '#E8E9DF' : '#343B32';
+  const cardInk = useContext(HeroCardToolsInkContext);
+  const ink = cardInk ?? (isDark ? '#E8E9DF' : '#343B32');
   return <Svg pointerEvents="none" accessible={false} width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M4.2 2h15.6A2.2 2.2 0 0 1 22 4.2v15.6a2.2 2.2 0 0 1-2.2 2.2H4.2A2.2 2.2 0 0 1 2 19.8V4.2A2.2 2.2 0 0 1 4.2 2Z" />
     <Path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5" />

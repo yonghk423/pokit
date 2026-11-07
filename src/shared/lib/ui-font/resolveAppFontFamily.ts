@@ -3,18 +3,20 @@ import type { TextStyle } from 'react-native';
 import type { AppFontId, AppFontWeight } from './appFontIds';
 
 const HI_MELODY = 'HiMelody_400Regular';
-/** useFonts 키와 동일 — 그리운 김정원 Regular */
-const KIM_JUNG_WON = 'GriunKimjungwon_400Regular';
 /** useFonts 키와 동일 — 온글잎 콘콘체 Regular */
 const CORNCORN = 'OwnglyphCorncorn_400Regular';
+/** Cafe24 Shiningstar PostScript family name */
+const CAFE24_SHINING_STAR = 'Cafe24Shiningstar';
+const CAFE24_SYONGSYONG = 'Cafe24Syongsyong';
 
 /** 선택 폰트 + weight → fontFamily */
 export function resolveAppFontFamily(
   fontId: AppFontId,
   _weight: AppFontWeight = '400',
 ): string | undefined {
-  if (fontId === 'kimJungWon') return KIM_JUNG_WON;
   if (fontId === 'corncorn') return CORNCORN;
+  if (fontId === 'cafe24ShiningStar') return CAFE24_SHINING_STAR;
+  if (fontId === 'cafe24Syongsyong') return CAFE24_SYONGSYONG;
   return HI_MELODY;
 }
 

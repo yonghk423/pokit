@@ -1,8 +1,10 @@
+import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
+import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { DAY_PLAN_TOOLBAR_TOP_PADDING } from '../lib/dayPlanDeckMetrics';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useTranslation } from '@shared/lib/i18n';
@@ -65,6 +67,8 @@ type Props = {
 export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const { t } = useTranslation();
   const [composerKeyboardOpen, setComposerKeyboardOpen] = useState(false);
+  const cameraTabActive = !!useContext(HeroCharacterPickerActionContext)?.photoActive;
+  const hasWallpaper = useWallpaperStore(state => state.wallpaper !== 'default') && !cameraTabActive;
   const [centerActions, setCenterActions] = useState<ReactNode>(null);
   const [weatherActions, setWeatherActions] = useState<ReactNode>(null);
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
@@ -85,11 +89,12 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const isDayPlanTab = tabName ? tabName === 'day-plan' : inTabs
     ? segments.some((segment) => segment === 'day-plan')
     : headerActions != null;
+  const hideComicHeader = isComicTab && (composerKeyboardOpen || cameraTabActive);
   const isDark = useColorScheme() === 'dark';
   const c = palette(isDark);
   /** 카드 면과 같은 크림 — 상단 상태바·헤더가 흰 띠로 남지 않게 */
   const shellBg = shellOverride ?? (isDark ? c.containerLow : '#F7F6F4');
-  const shellPalette = { ...c, containerLow: shellBg, bg: shellBg, headerBg: shellBg };
+  const shellPalette = { ...c, containerLow: hasWallpaper || isComicTab && !isDark ? 'transparent' : shellBg, bg: shellBg, headerBg: shellBg };
   const { planMode, setPlanMode } = useDayPlanDraftStore(
     useShallow((s) => ({
       planMode: s.planMode,
@@ -151,8 +156,8 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
     <DayPlanHeaderActionsContext.Provider value={setHeaderActions}>
     <DayPlanWeatherActionsContext.Provider value={setWeatherActions}>
     <DayPlanHeaderCenterActionsContext.Provider value={setCenterActions}>
-      <View style={[styles.root, { backgroundColor: shellBg, paddingTop: insets.top }]}>
-        <View testID="day-plan-shell-header" style={[styles.stickyTopBar, isComicTab && composerKeyboardOpen && { display: 'none' }]} accessibilityElementsHidden={isComicTab && composerKeyboardOpen} importantForAccessibility={isComicTab && composerKeyboardOpen ? 'no-hide-descendants' : 'auto'}>
+      <View style={[styles.root, { backgroundColor: hasWallpaper || isComicTab && !isDark && !composerKeyboardOpen && !cameraTabActive ? 'transparent' : shellBg, paddingTop: insets.top }]}>
+        <View testID="day-plan-shell-header" style={[styles.stickyTopBar, hideComicHeader && { display: 'none' }]} accessibilityElementsHidden={hideComicHeader} importantForAccessibility={hideComicHeader ? 'no-hide-descendants' : 'auto'}>
           <PlanModeSwitch
             planMode={planMode}
             onSelectMode={handleSelectMode}
@@ -163,13 +168,13 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             fixedMiddle={isComicTab}
             center={isComicTab ? centerActions : undefined}
             trailingAlign={isComicTab ? 'start' : 'center'}
+            leading={<SettingsTopBarButton c={c} />}
             trailing={
               <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: comicHeaderHeight }] : styles.trailingRow}>
-                <View style={[styles.trailingRow, isComicTab && styles.comicHeaderButtons]}>
-                  <SettingsTopBarButton c={c} />
+                <View style={styles.trailingRow}>
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View>
-                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View accessible={false} style={{ height: 20 }} /><View style={styles.weatherControls}>{weatherActions}<View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
+                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View style={styles.weatherControls}>{weatherActions}<View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
               </View>
             }
           />
@@ -214,10 +219,10 @@ const styles = StyleSheet.create({
     maxWidth: 212,
     alignItems: 'flex-end',
     gap: 2,
-    marginTop: 2,
+    marginTop: 0,
   },
   todayDate: { fontSize: 13, lineHeight: 20, textAlign: 'right', flexShrink: 1 },
-  weatherControls: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%' },
+  weatherControls: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%' },
   closeButton: {
     width: 44,
     height: 44,

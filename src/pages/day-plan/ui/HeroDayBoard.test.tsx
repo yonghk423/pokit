@@ -399,3 +399,38 @@ it('keeps caption actions and edit-button geometry when settings takes focus', (
   expect(editSize()).toEqual(initialSize);
   act(() => tree.unmount());
 });
+
+it('shows date entries as polaroids and returns the chosen entry to the carousel', () => {
+  const onOpen = jest.fn();
+  const changeView = jest.fn();
+  let tree!: ReactTestRenderer;
+  const render = (open: boolean) => <ComicDayBoard historyOverview overviewOpen={open} onOverviewChange={changeView} syncMainState={false} presentationOverride="carousel" diaryTitle="2026.11.05" items={[{ key: 'day-one', label: 'First record', icon: '' }, { key: 'day-two', label: 'Second record', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onAdd={jest.fn()} />;
+  act(() => { tree = create(render(true)); });
+  try {
+    const grid = tree.root.findAllByProps({ testID: 'comic-card-grid-layout' })[0];
+    expect(grid.findAllByType(ComicSceneImage)).toHaveLength(2);
+    expect(tree.root.findAllByProps({ testID: 'history-toggle-date-grid' })).toHaveLength(0);
+    act(() => grid.findAll(node => node.props.accessibilityLabel === 'Second record' && typeof node.props.onPress === 'function')[0].props.onPress());
+    expect(changeView).toHaveBeenCalledWith(false);
+    expect(onOpen).not.toHaveBeenCalled();
+    act(() => tree.update(render(false)));
+    expect(tree.root.findByType(ComicSceneDeck).props.focusKey).toBe('day-two');
+    expect(tree.root.findAllByProps({ testID: 'comic-card-grid-layer' })[0].props.accessibilityElementsHidden).toBe(true);
+  } finally { act(() => tree.unmount()); }
+});
+
+it('keeps added photos in a single scatter surface even with a saved page layout', () => {
+  const previousMode = loadComicBoardMode();
+  saveComicBoardMode('page');
+  const items = Array.from({ length: 9 }, (_, index) => ({ key: `photo-${index}`, label: `Photo ${index}`, icon: '' }));
+  const render = (count: number) => <ComicDayBoard diaryTitle="Photos" overviewOpen items={items.slice(0, count)} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} />;
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(render(5)); });
+  try {
+    act(() => { tree.update(render(9)); jest.runAllTimers(); });
+    const grid = tree.root.findAllByProps({ testID: 'comic-card-grid-layout' })[0];
+    expect(grid.findAllByType(ComicSceneImage)).toHaveLength(9);
+    expect(grid.props.children).toHaveLength(9);
+    expect(tree.root.findAllByProps({ testID: 'comic-card-overview' })[0].props.removeClippedSubviews).toBe(false);
+  } finally { act(() => tree.unmount()); saveComicBoardMode(previousMode); }
+});

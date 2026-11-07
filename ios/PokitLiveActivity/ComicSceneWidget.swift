@@ -2,6 +2,17 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 import UIKit
+import CoreText
+
+private enum ComicWidgetFonts {
+  // Register in the extension process as well as declaring UIAppFonts.
+  static let register: Void = {
+    for filename in ["Ownglyph_corncorn-Rg.ttf", "HiMelody_400Regular.ttf", "Cafe24Shiningstar-v2.0.otf", "Cafe24Syongsyong-v2.0.otf"] {
+      guard let url = Bundle.main.url(forResource: filename, withExtension: nil) else { continue }
+      CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+    }
+  }()
+}
 
 private struct ComicSceneWidgetTodo: Decodable, Identifiable {
   let id: String
@@ -339,11 +350,13 @@ private enum ComicSceneWidgetCrop {
 @available(iOS 17.0, *)
 private struct ComicSceneWidgetEntryView: View {
   private func diaryFont(_ size: CGFloat) -> Font {
+    _ = ComicWidgetFonts.register
     let fontId = UserDefaults(suiteName: PokitAppGroup.identifier)?.string(forKey: PokitAppGroup.appFontIdKey) ?? "corncorn"
     let name: String
     switch fontId {
-    case "kimJungWon": name = "Griun_Kimjungwon-Rg"
     case "hiMelody": name = "HiMelody-Regular"
+    case "cafe24ShiningStar": name = "Cafe24Shiningstar OTF"
+    case "cafe24Syongsyong": name = "Cafe24SyongsyongOTF"
     default: name = "Ownglyph_corncorn-Rg"
     }
     return .custom(name, size: size, relativeTo: .body)

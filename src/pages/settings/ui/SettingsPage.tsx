@@ -1,3 +1,4 @@
+import { DriveBackupSection } from '@features/drive-backup/DriveBackupSection';
 import { resetServiceTutorialSession } from '../../welcome-intro/model/serviceTutorial';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { PRIVACY_POLICY_URL } from '@shared/config/privacyPolicy';
@@ -80,12 +81,13 @@ const POKIT_PRO_PREVIEW = false;
 /** 화면 테마(라이트/다크) 설정 — 출시 전까지 숨김 (`true`로 바꾸면 다시 표시) */
 const SHOW_APPEARANCE_SETTINGS = false;
 
-/** 설정 → 레이아웃 설정 — 다시 쓸 때까지 숨김 (`true`로 바꾸면 다시 표시) */
-const SHOW_LAYOUT_SETTINGS = false;
+/** 설정 → 카드 표시 방식 및 화면 구성 선택. */
+const SHOW_LAYOUT_SETTINGS = true;
 
 function fontLabelForId(fontId: AppFontId, locale: AppLocale): string {
-  if (fontId === 'kimJungWon') return t('settings.font.kimJungWon', locale);
   if (fontId === 'corncorn') return t('settings.font.corncorn', locale);
+  if (fontId === 'cafe24ShiningStar') return t('settings.font.cafe24ShiningStar', locale);
+  if (fontId === 'cafe24Syongsyong') return t('settings.font.cafe24Syongsyong', locale);
   return t('settings.font.hiMelody', locale);
 }
 
@@ -415,6 +417,8 @@ export function SettingsPage() {
             </SettingsSection>
           ) : null}
 
+          <DriveBackupSection isDark={isDark} />
+
           {FEATURE_FLAGS.dailyRhythmWindow || SHOW_LAYOUT_SETTINGS ? (
             <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
               {FEATURE_FLAGS.dailyRhythmWindow ? (
@@ -503,6 +507,27 @@ export function SettingsPage() {
               </Pressable>
             </SettingsSection>
           ) : null}
+
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+                <Pressable
+                  style={[chrome.item, { borderTopColor: p.border }]}
+                  onPress={tap(() => router.push('/wallpaper-settings'))}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.wallpaper.title', locale)}>
+                  <View style={chrome.itemLeft}>
+                    <SettingsRowIcon name="rectangle.stack" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                    <View style={chrome.itemTextWrap}>
+                      <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
+                        {t('settings.wallpaper.title', locale)}
+                      </ThemedText>
+                      <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
+                        {t('settings.wallpaper.desc', locale)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+                </Pressable>
+          </SettingsSection>
 
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <Pressable

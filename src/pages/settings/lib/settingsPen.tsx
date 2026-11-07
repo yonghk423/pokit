@@ -1,3 +1,4 @@
+import { BackChevron } from '@shared/ui/icon-symbol/BackChevron';
 import Svg, { Path } from 'react-native-svg';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 
@@ -82,12 +83,18 @@ const drawings: Record<string, Line[]> = {
     [[25.5, 11.5], [22.3, 5.6], [15.5, 3.5], [7.7, 6.8], [4.4, 14.1], [6.1, 23.2], [14, 27.8], [22.9, 25.4], [27.1, 18.8]],
     [[26, 4.8], [25.5, 11.5], [18.3, 11.2]],
   ],
+  'cloud.backup': [
+    [[10, 23], [7, 23.2], [3.4, 21], [2.4, 17.5], [3.8, 13.8], [7.4, 12.2], [8, 8.1], [11.6, 4.9], [16, 4.1], [20.1, 6.2], [22, 10.2], [26, 10.8], [29, 14.3], [29.2, 18.4], [27, 22], [23, 23]],
+    [[16, 28], [15.8, 14.1]],
+    [[10.7, 19.1], [15.8, 14.1], [21, 19]],
+  ],
   'chevron.right': [[[11.1, 5.6], [16, 10.5], [21.1, 16.2], [15.6, 21.6], [10.9, 26.2]]],
   'chevron.left': [[[21, 5.7], [15.8, 11], [10.9, 16], [16.1, 21.2], [21, 26.5]]],
 };
 
 /** Settings-specific nib drawings; never substitutes a shaded graphite illustration. */
 export function SettingsPenIcon({ name, size = 30, color }: { name: string; size?: number; color: string }) {
+  if (name === 'chevron.left') return <BackChevron color={color} />;
   const lines = drawings[name];
   if (!lines) return <HanddrawnControl name={name} size={size} color={color} />;
   return <Svg width={size} height={size} viewBox="0 0 32 32" accessible={false}>

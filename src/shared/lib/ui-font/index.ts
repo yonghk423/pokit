@@ -29,3 +29,5 @@ export {
   useAppFontSizeId,
 } from './appFontStore';
 export { appFontStyle, resolveAppFontFamily } from './resolveAppFontFamily';
+
+export { DIARY_DATE_FONT_SIZE, DIARY_BODY_FONT_SIZE, resolveDiaryEditorTypography } from './diaryTypography';

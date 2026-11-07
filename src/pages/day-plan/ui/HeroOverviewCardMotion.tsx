@@ -1,19 +1,19 @@
 import { useState, type ReactNode } from 'react';
 import { Animated, type ViewStyle } from 'react-native';
 import { DECK_OVERVIEW_MOTION } from '../lib/deckOverviewMotion';
-import { loopDeckIndex, overlayCardPose } from '../lib/overlayCardDeck';
+import { loopDeckIndex, paperPrintPose } from '../lib/overlayCardDeck';
 
 export type HeroDeckFrame = { active: number; width: number; height: number; top?: number };
 
 /** The same delayed position/scale/rotation interpolation used by the mate overview. */
-export function HeroOverviewCardMotion({ children, progress, index, count, source, stageWidth, sourceTop, parentTop, style, enabled }: {
+export function HeroOverviewCardMotion({ children, progress, index, count, source, stageWidth, sourceTop, parentTop, style, enabled, targetRotation = 0, targetZIndex, onMeasureHeight }: {
   children: ReactNode; progress: Animated.Value; index: number; count: number;
   source: HeroDeckFrame; stageWidth: number; sourceTop: number; parentTop: number;
-  style: ViewStyle; enabled: boolean;
+  style: ViewStyle; enabled: boolean; targetRotation?: number; targetZIndex?: number; onMeasureHeight?: (height: number) => void;
 }) {
   const [frame, setFrame] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const depth = loopDeckIndex(index - source.active, count);
-  const pose = overlayCardPose(Math.min(2, depth));
+  const pose = paperPrintPose(Math.min(2, depth));
   const delay = Math.min(DECK_OVERVIEW_MOTION.maxDelay, depth * DECK_OVERVIEW_MOTION.delayPerCard);
   const range = [delay, 1];
   const interpolate = (from: number, to: number) => progress.interpolate({ inputRange: range, outputRange: [from, to], extrapolate: 'clamp' });
@@ -24,10 +24,11 @@ export function HeroOverviewCardMotion({ children, progress, index, count, sourc
       { translateY: interpolate(sourceTop + source.height / 2 + pose.y - (parentTop + frame.y + frame.height / 2), 0) },
       { scaleX: interpolate(source.width * pose.scale / frame.width, 1) },
       { scaleY: interpolate(source.height * pose.scale / frame.height, 1) },
-      { rotate: progress.interpolate({ inputRange: range, outputRange: [`${pose.rotate}deg`, '0deg'], extrapolate: 'clamp' }) },
+      { rotate: progress.interpolate({ inputRange: range, outputRange: [`${pose.rotate}deg`, `${targetRotation}deg`], extrapolate: 'clamp' }) },
     ],
-  } : undefined;
+  } : { opacity: 1, transform: [{ rotate: `${targetRotation}deg` }] };
   return <Animated.View testID={`comic-overview-motion-${index}`} pointerEvents="box-none" onLayout={({ nativeEvent: { layout } }) => {
+    onMeasureHeight?.(layout.height);
     setFrame(previous => previous.x === layout.x && previous.y === layout.y && previous.width === layout.width && previous.height === layout.height ? previous : layout);
-  }} style={[style, { zIndex: count - depth }, motion]}>{children}</Animated.View>;
+  }} style={[style, { zIndex: targetZIndex ?? count - depth }, motion]}>{children}</Animated.View>;
 }

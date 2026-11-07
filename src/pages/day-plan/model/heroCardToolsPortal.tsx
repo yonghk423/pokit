@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, type Dispatch, type Rea
 type Entry = { owner: object; content: ReactNode } | null;
 export const HeroCardToolsRegisterContext = createContext<Dispatch<SetStateAction<Entry>> | null>(null);
 export const HeroCardToolsContentContext = createContext<ReactNode>(null);
+export const HeroCardToolsInkContext = createContext<string | undefined>(undefined);
 export function HeroCardToolsProvider({ children }: { children: ReactNode }) {
   const [entry, setEntry] = useState<Entry>(null);
   return <HeroCardToolsRegisterContext.Provider value={setEntry}><HeroCardToolsContentContext.Provider value={entry?.content ?? null}>{children}</HeroCardToolsContentContext.Provider></HeroCardToolsRegisterContext.Provider>;

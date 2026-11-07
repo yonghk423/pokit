@@ -1,3 +1,4 @@
+import { BackChevron } from '@shared/ui/icon-symbol';
 import { HeroSavedPhotos } from './HeroSavedPhotos';
 import { AppAlert } from '@shared/lib/app-alert';
 import { HeroPhotoPreview } from './HeroPhotoPreview';
@@ -133,7 +134,7 @@ export function HeroPersonalizationFlow({ onClose, onReuse, initialMode = 'face'
   return <View testID="hero-personalization-flow" onLayout={event => setLayoutHeight(event.nativeEvent.layout.height)} style={s.root} accessibilityViewIsModal>
     <PaperGrain opacity={0.2} />
     <View style={s.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={back} style={s.touch}><ThemedText style={s.back}>‹</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={back} style={s.touch}><BackChevron color="#202020" /></Pressable>
       <ThemedText style={s.title}>{step === 'source' ? (characterName?.trim() || t('comicDay.personal.title')) : t(mode === 'face' ? 'comicDay.personal.scenes' : 'comicDay.personal.photos')}</ThemedText>
       <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} disabled={busy} onPress={() => { tapHaptic(); onClose(); }} style={s.touch}><ThemedText style={s.close}>×</ThemedText></Pressable>
     </View>

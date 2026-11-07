@@ -2,35 +2,39 @@ import { forwardRef, useImperativeHandle, useLayoutEffect, useState, type ReactN
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, Easing, runOnJS, runOnUI, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
-import { loopDeckIndex, overlayCardPose } from '../lib/overlayCardDeck';
+import { loopDeckIndex, paperPrintPose } from '../lib/overlayCardDeck';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 export type HeroCardStackHandle = { turnTo: (index: number) => void };
 type Props = {
   pageKey?: (index: number) => string;
+  renderBack?: (index: number) => ReactNode;
   active: number; count: number; width: number; height: number; cardWidth: number; cardHeight: number; top: number; enabled: boolean;
   overviewGesture?: PanGesture;
   onCardHold?: (x: number, y: number) => void;
   swipeEnabled?: boolean;
   renderPage: (index: number, interactive: boolean, focused: boolean) => ReactNode; onChange: (index: number) => void;
 };
-function StackCard({ index, position, direction, width, cardWidth, cardHeight, top, children, interactive }: {
-  index: number; position: SharedValue<number>; direction: SharedValue<number>; width: number; cardWidth: number; cardHeight: number; top: number;
-  children: ReactNode; interactive: boolean;
+function StackCard({ index, count, position, direction, width, cardWidth, cardHeight, top, children, interactive, paperBack }: {
+  index: number; count: number; position: SharedValue<number>; direction: SharedValue<number>; width: number; cardWidth: number; cardHeight: number; top: number;
+  children: ReactNode; interactive: boolean; paperBack?: ReactNode;
 }) {
   const motion = useAnimatedStyle(() => {
-    const pose = overlayCardPose(index - position.get(), direction.get());
-    return { opacity: pose.opacity, zIndex: pose.zIndex, transform: [
+    const pose = paperPrintPose(index - position.get(), direction.get());
+    return { opacity: pose.opacity * Math.max(0, Math.min(1, count - (index - position.get()))), zIndex: pose.zIndex, transform: [
       { translateX: pose.x * cardWidth }, { translateY: pose.y }, { scale: pose.scale }, { rotate: `${pose.rotate}deg` },
     ] };
   });
+  const paperMask = useAnimatedStyle(() => ({ opacity: Math.max(0, Math.min(1, (index - position.get()) / 0.7)) }));
+  const hasPaperBack = !!paperBack;
+  const artworkVisibility = useAnimatedStyle(() => ({ opacity: hasPaperBack ? 1 - Math.max(0, Math.min(1, (index - position.get()) / 0.7)) : 1 }));
   return <Animated.View testID={`comic-stack-card-${index}`} pointerEvents={interactive ? 'auto' : 'none'} accessibilityElementsHidden={!interactive}
     importantForAccessibility={interactive ? 'auto' : 'no-hide-descendants'}
-    style={[{ position: 'absolute', left: (width - cardWidth) / 2, top, width: cardWidth, height: cardHeight }, motion]}>{children}</Animated.View>;
+    style={[{ position: 'absolute', left: (width - cardWidth) / 2, top, width: cardWidth, height: cardHeight }, motion]}><Animated.View style={[{ flex: 1 }, artworkVisibility]}>{children}</Animated.View>{paperBack ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, paperMask]}>{paperBack}</Animated.View> : null}</Animated.View>;
 }
 
 /** Intact live cards use the mate deck's pose; no snapshots, image slicing or decode gate. */
-export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ pageKey, active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, onCardHold, renderPage, onChange }, ref) {
+export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function HeroCardStack({ pageKey, renderBack, active, count, width, height, cardWidth, cardHeight, top, enabled, swipeEnabled = true, overviewGesture, onCardHold, renderPage, onChange }, ref) {
   const [window, setWindow] = useState(() => ({ count, cursor: active + count }));
   // A different modulus changes every virtual page. Derive the new window
   // immediately, including when the selected index itself has not changed.
@@ -133,8 +137,8 @@ export const HeroCardStack = forwardRef<HeroCardStackHandle, Props>(function Her
     )
     : movement;
   return <GestureDetector gesture={deckGesture}><View testID="comic-card-stack" collapsable={false} style={[s.root, { width, height }]}>
-    {indices.map(index => <StackCard key={pageKey ? `${pageKey(loopDeckIndex(index, count))}:${count > 1 ? Math.floor(index / count) : 1}` : index} index={index} position={position} direction={direction} width={width} cardWidth={cardWidth} cardHeight={cardHeight} top={top}
-      interactive={enabled && index === base}>{renderPage(loopDeckIndex(index, count), enabled && index === base, index === base)}</StackCard>)}
+    {indices.map(index => <StackCard key={pageKey ? `${pageKey(loopDeckIndex(index, count))}:${count > 1 ? Math.floor(index / count) : 1}` : index} index={index} count={count} position={position} direction={direction} width={width} cardWidth={cardWidth} cardHeight={cardHeight} top={top}
+      paperBack={renderBack?.(loopDeckIndex(index, count))} interactive={enabled && index === base}>{renderPage(loopDeckIndex(index, count), enabled && index === base, index === base)}</StackCard>)}
   </View></GestureDetector>;
 });
-const s = StyleSheet.create({ root: { overflow: 'hidden' } });
+const s = StyleSheet.create({ root: { overflow: 'visible' } });

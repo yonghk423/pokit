@@ -6,7 +6,7 @@ import { useTranslation } from '@shared/lib/i18n';
 
 export function HeroStoryNotebook({ title, text, ink, autoFocus, onTitleChange, onTextChange, onFocus, onBlur }: {
   title: string; text: string; ink: string; autoFocus: boolean;
-  onTitleChange: (value: string) => void; onTextChange: (value: string) => void; onFocus: () => void; onBlur: () => void;
+  onTitleChange: (value: string) => void; onTextChange: (value: string) => void; onFocus: (field: 'title' | 'body') => void; onBlur: () => void;
 }) {
   const { t } = useTranslation();
   const appScale = useAppFontSizeScale();
@@ -32,7 +32,7 @@ export function HeroStoryNotebook({ title, text, ink, autoFocus, onTitleChange, 
     if (event.nativeEvent.layout.width > 0 && event.nativeEvent.layout.height > 0) setLayoutReady(true);
   }}>
     <ThemedTextInput testID="hero-inline-title" accessibilityLabel={t('comicDay.sceneTitle')} placeholder="Title" placeholderTextColor="#7D8176"
-      value={title} onChangeText={onTitleChange} onFocus={onFocus} onBlur={onBlur} maxLength={80} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => bodyRef.current?.focus()}
+      value={title} onChangeText={onTitleChange} onFocus={() => onFocus('title')} onBlur={onBlur} maxLength={80} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => bodyRef.current?.focus()}
       allowFontScaling={false} typographyScale={1} selectionColor={ink} style={[s.title, { color: ink, fontSize: titleSize, lineHeight: Math.ceil(titleSize * 1.55) }]} />
     <View testID="hero-inline-notebook-lines" style={s.body} onLayout={event => setHeight(event.nativeEvent.layout.height)}>
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
@@ -41,7 +41,7 @@ export function HeroStoryNotebook({ title, text, ink, autoFocus, onTitleChange, 
         </View>
       </View>
       <ThemedTextInput ref={bodyRef} testID="hero-inline-story" accessibilityLabel={t('comicDay.memo')} placeholder={t('comicDay.emptyDayPrompt')} placeholderTextColor="#7D8176" caretHidden={false} selectionColor={ink}
-        value={text} onChangeText={onTextChange} onFocus={onFocus} onBlur={onBlur} maxLength={4000} multiline scrollEnabled textAlignVertical="top"
+        value={text} onChangeText={onTextChange} onFocus={() => onFocus('body')} onBlur={onBlur} maxLength={4000} multiline scrollEnabled textAlignVertical="top"
         allowFontScaling={false} typographyScale={1} onScroll={event => setScrollY(Math.max(0, event.nativeEvent.contentOffset.y))}
         style={[StyleSheet.absoluteFill, s.input, { color: ink, fontSize, lineHeight }]} />
     </View>

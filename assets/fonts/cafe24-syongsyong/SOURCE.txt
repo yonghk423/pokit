@@ -1,0 +1,10 @@
+Cafe24 Syongsyong (카페24 숑숑)
+
+Official source: https://fonts.cafe24.com/
+Noonnu page: https://noonnu.cc/font_page/346
+Official package: Cafe24Syongsyong-v2.0.zip
+Copyright: Cafe24 Corp.
+
+Cafe24 permits software bundling and embedding, modification, and redistribution.
+The font file may not be sold by itself. The full SIL Open Font License 1.1 and
+Cafe24 license terms are included in Cafe24Syongsyong-LICENSE.txt.

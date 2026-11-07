@@ -67,10 +67,10 @@ export function getAppFontSizeScale(
   return resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(fontId);
 }
 
-export function useAppFontSizeScale(): number {
+export function useAppFontSizeScale(override?: AppFontId): number {
   const sizeId = useAppFontStore((s) => s.sizeId);
   const fontId = useAppFontStore((s) => s.fontId);
-  return resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(fontId);
+  return resolveAppFontSizeScale(sizeId) * resolveAppFontOpticalScale(override ?? fontId);
 }
 
 export function useAppFontSizeId(): AppFontSizeId {

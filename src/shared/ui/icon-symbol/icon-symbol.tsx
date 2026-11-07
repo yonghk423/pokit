@@ -1,3 +1,4 @@
+import { BackChevron } from './BackChevron';
 import { getPreparedIllustration } from './illustrationCache';
 import { controlIllustrationSources } from './controlIllustrationSources';
 import { Image } from 'expo-image';
@@ -21,6 +22,7 @@ export function IconSymbol({
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
+  if (name === 'chevron.left' || name === 'arrow.left' || name === 'arrow.backward') return <View style={style}><BackChevron color={color} /></View>;
   const illustrationAliases: Record<string, string> = { 'washer.fill': 'routine:laundry', washer: 'routine:laundry', 'bed.double.fill': 'routine:bed-making', 'bed.double': 'routine:bed-making' };
   const source = typeof name === 'string' ? (controlIllustrationSources[name] ?? routineIllustrationSources[illustrationAliases[name] ?? name]) : undefined;
   if (source) {

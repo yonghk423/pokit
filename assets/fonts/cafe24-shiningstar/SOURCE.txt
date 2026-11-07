@@ -1,0 +1,16 @@
+Cafe24 Shining Star (카페24 빛나는별)
+
+Official source: https://fonts.cafe24.com/
+Noonnu page: https://noonnu.cc/font_page/343
+Official package: Cafe24Shiningstar-v2.0.zip
+Copyright: (c) 2019 Cafe24. All rights reserved.
+Trademark: Cafe24 Shiningstar is a trademark of Cafe24.
+
+Cafe24's license permits commercial use, software bundling, embedding in programs,
+modification, and redistribution. The font file itself may not be sold separately.
+Modified font files must remain under the SIL Open Font License (OFL).
+Cafe24 may use works made with its fonts for promotion; users may contact Cafe24
+if they do not wish to allow such promotional use.
+
+The original Cafe24 license document is included as License-Shiningstar.pdf in this
+source folder. The human-readable LICENSE.txt is included in the Android and iOS app bundles.

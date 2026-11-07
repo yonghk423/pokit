@@ -83,7 +83,7 @@ export function HeroPhotoSource({ variant = 'standard', mode, uri, onChange, sel
     </Pressable>}
     {variant !== 'strip' ? <View style={s.actions}>
       {[false, true].map(camera => <Pressable key={String(camera)} accessibilityRole="button" accessibilityLabel={t(camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')} disabled={busy || selectionLimit <= 0} accessibilityState={{ disabled: busy || selectionLimit <= 0 }} onPress={() => choose(camera)} style={[variant === 'toolbar' ? s.toolbarAction : s.action, (busy || selectionLimit <= 0) && { opacity: 0.45 }]}>
-        {variant === 'toolbar' ? <Svg pointerEvents="none" width={44} height={44} viewBox="0 0 44 44" style={StyleSheet.absoluteFill}><Path d="M22 2C11 1.5 2 11 2 22S11 42 22 42s20-9 20-20S33 2 22 2Z" fill="none" stroke="#343933" strokeWidth={.9} /></Svg> : <PenFrame color="#252822" straight={actionsOnly} />}{busy && openingCamera === camera ? <ActivityIndicator size="small" color="#53594F" /> : <HeroPhotoIcon colored={variant === 'toolbar' || colorfulActions} soft={colorfulActions} camera={camera} portrait={variant === 'toolbar' || colorfulActions} size={variant === 'toolbar' ? 29 : 25} />}{variant !== 'toolbar' ? <ThemedText numberOfLines={1} adjustsFontSizeToFit style={[s.label, onOpenSaved && s.actionLabel]}>{t(busy && openingCamera === camera ? 'comicDay.photo.opening' : camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')}</ThemedText> : null}
+        {variant === 'toolbar' ? <Svg pointerEvents="none" width={44} height={44} viewBox="0 0 44 44" style={StyleSheet.absoluteFill}><Path d="M22 2C11 1.5 2 11 2 22S11 42 22 42s20-9 20-20S33 2 22 2Z" fill="none" stroke="#343933" strokeWidth={.9} /></Svg> : <PenFrame color="#252822" straight={actionsOnly} />}{busy && openingCamera === camera ? <ActivityIndicator size="small" color="#53594F" /> : <HeroPhotoIcon colored={variant === 'toolbar' || colorfulActions} soft={colorfulActions} camera={camera} portrait={variant === 'toolbar' || colorfulActions} size={variant === 'toolbar' ? 29 : 25} />}{variant !== 'toolbar' ? <ThemedText numberOfLines={2} style={[s.label, s.actionText]}>{t(busy && openingCamera === camera ? 'comicDay.photo.opening' : camera ? 'comicDay.photo.camera' : 'comicDay.photo.choose')}</ThemedText> : null}
       </Pressable>)}
       {onOpenSaved ? <Pressable testID="hero-saved-open" accessibilityRole="button" accessibilityLabel={t('comicDay.saved.title')} onPress={() => { tapHaptic(); onOpenSaved(); }} style={s.action}>
         <PenFrame color="#252822" />
@@ -92,7 +92,7 @@ export function HeroPhotoSource({ variant = 'standard', mode, uri, onChange, sel
               <Path d="m8.1 11 12.8-.5.4 11.7-12.8.5Z M8.9 21.7l4-5.4 3.2 3.1 2.5-3.6 2.5 5.6M12.2 13.6c0-2-2.8-1.9-2.7.1.1 1.7 2.8 1.7 2.7-.1Z" fill="none" stroke="#252822" strokeWidth={0.85} strokeLinecap="round" strokeLinejoin="round" />
               <Path d="m10.2 25.2 9.3-.4M29 9.3l.4 16.6M7.7 29.8l13.8-.5" fill="none" stroke="#252822" strokeWidth={0.55} strokeLinecap="round" />
             </Svg>
-        <ThemedText numberOfLines={1} adjustsFontSizeToFit style={[s.label, s.actionLabel]}>{t('comicDay.saved.title')}</ThemedText>
+        <ThemedText numberOfLines={2} style={[s.label, s.actionText]}>{t('comicDay.saved.title')}</ThemedText>
       </Pressable> : null}
     </View> : null}
     {variant === 'standard' && !face && !actionsOnly && !compactPreview ? <ThemedText style={s.hint}>{t('comicDay.photo.photoCaption')}</ThemedText> : null}
@@ -103,8 +103,8 @@ const s = StyleSheet.create({
   root: { gap: 16, padding: 20 }, compact: { gap: 10, paddingHorizontal: 18, paddingVertical: 12 },
   faceRow: { flexDirection: 'row', alignItems: 'center', gap: 14 }, avatar: { width: 64, height: 64, borderRadius: 32, overflow: 'hidden', borderWidth: 0.8, borderColor: '#92928D', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F6F1' },
   label: { color: '#252822', fontSize: 15, lineHeight: 22 }, hint: { color: '#73746E', fontSize: 13, lineHeight: 20 },
-  actionLabel: { fontSize: 12, lineHeight: 18, flexShrink: 1 },
-  actions: { flexDirection: 'row', gap: 8 }, action: { flex: 1, flexBasis: 0, minWidth: 0, height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 5, paddingVertical: 8 },
+  actionText: { fontSize: 15, lineHeight: 22, textAlign: 'center', alignSelf: 'stretch' },
+  actions: { flexDirection: 'row', gap: 8 }, action: { flex: 1, flexBasis: 0, minWidth: 0, minHeight: 84, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 10 },
   previewInset: { position: 'absolute', top: 12, bottom: 12, left: 12, right: 12, overflow: 'hidden' },
   previewRow: { flex: 1, minHeight: 0, flexDirection: 'row', alignItems: 'stretch', gap: 8, overflow: 'hidden' },
   previewPhoto: { flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' },

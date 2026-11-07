@@ -8,7 +8,7 @@ jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.require
 jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').Modal }));
 jest.mock('@shared/ui/paper-grain', () => ({ PaperGrain: () => null }));
 jest.mock('@shared/ui/handdrawn-frame', () => ({ HanddrawnFrame: () => null }));
-jest.mock('@shared/lib/ui-font', () => ({ useAppFontSizeScale: () => 1, scaleTypeSize: (size: number) => size }));
+jest.mock('@shared/lib/ui-font', () => ({ ...jest.requireActual('@shared/lib/ui-font/diaryTypography'), useAppFontSizeScale: () => 1, scaleTypeSize: (size: number) => size }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('@shared/lib/haptics/tapHaptic', () => ({ tapHaptic: jest.fn() }));
 
@@ -130,4 +130,49 @@ it('opens the same editor from the empty-day prompt as from the pencil', () => {
   expect(onSave).not.toHaveBeenCalled();
   expect(tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDay.sceneTitle')!.props.value).toBe('');
   act(() => tree.unmount());
+});
+
+it('keeps color controls removed while previewing and saving font changes', async () => {
+  const onSave = jest.fn();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCardCaption title="My day" memo="Memo" number={1} paper="#F5E8CF" fontId="hiMelody" ink="#202020" muted="#777777" onSave={onSave} />); });
+  const press = (id: string) => tree.root.findAll(node => node.props.testID === id && typeof node.props.onPress === 'function')[0].props.onPress();
+  const action = (label: string) => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function').at(-1)!;
+  const title = () => tree.root.findAllByType(ThemedTextInput).find(node => node.props.accessibilityLabel === 'comicDay.sceneTitle')!;
+  await act(async () => press('hero-card-edit'));
+  expect(tree.root.findAllByProps({ testID: 'hero-card-paper-trigger' })).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-card-pen-trigger' })).toHaveLength(0);
+  await act(async () => press('hero-card-font-trigger'));
+  await act(async () => press('hero-card-font-cafe24ShiningStar'));
+  expect(title().props.fontId).toBe('cafe24ShiningStar');
+  expect(tree.root.findAllByProps({ testID: 'hero-card-font-underline-cafe24ShiningStar' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-card-font-underline-hiMelody' })).toHaveLength(0);
+  expect(onSave).not.toHaveBeenCalled();
+  await act(async () => action('common.cancel').props.onPress());
+  await act(async () => press('hero-card-edit'));
+  expect(title().props.fontId).toBe('hiMelody');
+  await act(async () => press('hero-card-font-trigger'));
+  await act(async () => press('hero-card-font-cafe24ShiningStar'));
+  await act(async () => action('common.save').props.onPress());
+  expect(onSave).toHaveBeenLastCalledWith({ title: 'My day', memo: 'Memo', fontId: 'cafe24ShiningStar' });
+  await act(async () => press('hero-card-edit'));
+  expect(tree.root.findAllByProps({ testID: 'hero-card-paper-trigger' })).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'hero-card-pen-trigger' })).toHaveLength(0);
+  await act(async () => press('hero-card-font-trigger'));
+  await act(async () => press('hero-card-font-default'));
+  await act(async () => action('common.save').props.onPress());
+  expect(onSave).toHaveBeenLastCalledWith({ title: 'My day', memo: 'Memo', fontId: undefined });
+  await act(async () => tree.unmount());
+});
+
+it('opens writing from the whole non-photo area without showing card action icons', async () => {
+  const onSave = jest.fn(), onOpen = jest.fn(); let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCardCaption tapToEdit title="오늘" memo="기록" number={1} ink="#222" muted="#777" onSave={onSave} onOpen={onOpen} />); });
+  try {
+    expect(tree.root.findAllByProps({ testID: 'hero-card-edit' })).toHaveLength(0);
+    act(() => tree.root.findAllByProps({ testID: 'hero-card-caption-write' })[0].props.onPress());
+    expect(tree.root.findAllByProps({ testID: 'hero-card-editor' }).length).toBeGreaterThan(0);
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
 });

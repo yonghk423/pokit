@@ -48,6 +48,7 @@ type Props = {
   description?: string | null;
   /** 상단 행 오른쪽(문의 등) — 좌측 모드 버튼과 동일 베이스라인 */
   trailing?: ReactNode;
+  leading?: ReactNode;
   middle?: ReactNode;
   center?: ReactNode;
   fixedMiddle?: boolean;
@@ -63,6 +64,7 @@ export function PlanModeSwitch({
   c,
   description,
   trailing,
+  leading,
   middle,
   center,
   fixedMiddle = false,
@@ -120,6 +122,7 @@ export function PlanModeSwitch({
             { backgroundColor: c.containerLow, borderBottomColor: c.border },
             trailing ? styles.rowWithTrailing : null,
           ]}>
+          {leading && !fixedMiddle ? <View testID="day-plan-header-leading" style={{ alignSelf: 'flex-start' }}>{leading}</View> : null}
           {showModeButtons ? <View style={styles.leftButtonGroup}>
             {visibleModes.map((btn) => {
               const active =
@@ -151,7 +154,7 @@ export function PlanModeSwitch({
               );
             })}
           </View> : null}
-          {fixedMiddle ? <View style={styles.fixedMiddle}>{middle}</View> : middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
+          {fixedMiddle ? <View style={[styles.fixedMiddle, { flexDirection: 'row' }]}>{leading ? <View testID="day-plan-header-leading">{leading}</View> : null}<View style={{ flex: 1, minWidth: 0 }}>{middle}</View></View> : middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
           {fixedMiddle ? <View testID="day-plan-header-center-actions" style={styles.fixedCenter}>{center}</View> : null}
           {trailing ? <View style={[styles.trailing, trailingAlign === 'start' && styles.trailingStart, fixedMiddle && styles.fixedTrailing]}>{trailing}</View> : null}
         </View>
