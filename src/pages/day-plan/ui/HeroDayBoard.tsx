@@ -1,3 +1,5 @@
+import { HeroDraggablePrint } from './HeroDraggablePrint';
+import { loadPrintPositions, savePrintPosition } from '../lib/heroPrintPositions';
 import { HeroScaledPrint } from './HeroScaledPrint';
 import { polaroidScatter } from '../lib/polaroidScatter';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
@@ -156,11 +158,20 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     .onEnd((event, success) => { if (success && holdStartedAtTopRef.current && event.translationY > 64) closeGrid(); });
   const gridHoldFeedback = Gesture.LongPress().enabled(cardsFirst && gridOpen && !deleteMode)
     .minDuration(350).maxDistance(14).runOnJS(true).onStart(() => tapHaptic());
-  const gridGesture = Gesture.Simultaneous(Gesture.Native(), gridDismiss, gridHoldFeedback);
+  const gridNative = Gesture.Native();
+  const gridGesture = Gesture.Simultaneous(gridNative, gridDismiss, gridHoldFeedback);
   const { width: windowWidth } = useWindowDimensions();
   const [boardWidth, setBoardWidth] = useState(() => lastBoardWidth || Math.max(1, windowWidth - 32));
   const [scatterHeights, setScatterHeights] = useState<Record<string, number>>({});
+  const [printPositions, setPrintPositions] = useState(loadPrintPositions);
+  const [draggingPrint, setDraggingPrint] = useState<string | null>(null);
   const scatter = polaroidScatter(boardWidth, items.map(item => item.key), scatterHeights);
+  const anchors = scatter.frames;
+  scatter.frames = scatter.frames.map((frame, index) => {
+    const saved = printPositions[items[index].key];
+    return saved ? { ...frame, left: Math.max(4, Math.min(boardWidth - frame.width - 4, saved.x * boardWidth)), top: Math.max(8, saved.y * boardWidth), rotation: saved.rotation ?? frame.rotation, zIndex: 100 + saved.order } : frame;
+  });
+  scatter.height = Math.max(scatter.height, ...scatter.frames.map(frame => frame.top + frame.height + 36));
   const [sourceFrame, setSourceFrame] = useState<HeroDeckFrame>({ active: 0, width: Math.max(1, windowWidth - 24), height: 320 });
   const activeKey = items[sourceFrame.active]?.key;
   useEffect(() => { if (activeKey) onActiveSceneChange?.(activeKey); }, [activeKey, onActiveSceneChange]);
@@ -193,9 +204,10 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
       const scene = resolveComicScene(item.key, item.label, choices);
       const title = item.label.trim();
       const memo = item.memo?.trim();
-      return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={cardsFirst && !overviewSettled} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={gridTop} targetRotation={scatter.frames[index].rotation} targetZIndex={scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => previous[item.key] === height ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: scatter.frames[index].left, top: scatter.frames[index].top, width: scatter.frames[index].width }}>
+      return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={cardsFirst && !overviewSettled} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={gridTop} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => previous[item.key] === height ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
+        <HeroDraggablePrint anchorLeft={anchors[index].left} anchorTop={anchors[index].top} anchorRotation={anchors[index].rotation} onRotate={angle => setPrintPositions(savePrintPosition(item.key, scatter.frames[index].left / boardWidth, scatter.frames[index].top / boardWidth, angle))} rotation={scatter.frames[index].rotation} enabled={gridOpen && overviewSettled && !deleteMode} scrollGesture={gridNative} dismissGesture={gridDismiss} left={scatter.frames[index].left} top={scatter.frames[index].top} width={scatter.frames[index].width} boardWidth={boardWidth} bottom={scatter.height + 120} onActive={active => setDraggingPrint(active ? item.key : null)} onDrop={(x, y) => setPrintPositions(savePrintPosition(item.key, x / boardWidth, y / boardWidth))}>
         <HeroScaledPrint width={scatter.frames[index].width}>
-        <Pressable accessibilityRole="button" accessibilityLabel={title || memo || t('comicDay.showCards')} onPress={() => { tapHaptic(); openItem(item.key); }} onLongPress={onRemove ? () => { tapHaptic('warn'); onRemove(item.key); } : undefined} style={({ pressed }) => [s.polaroid, { opacity: pressed ? 0.75 : 1 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={title || memo || t('comicDay.showCards')} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => [s.polaroid, { opacity: pressed ? 0.75 : 1 }]}>
           <HeroPolaroidSurface />
           <HeroPrintStaple />
           <ComicSceneImage preserveFullImage showSkeletonOnMount contentFit="contain" backgroundColor="#EEEEEC" imageKey={`history-grid:${item.artworkUri ?? scene.id}`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
@@ -205,6 +217,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
           </View>
         </Pressable>
         </HeroScaledPrint>
+        </HeroDraggablePrint>
       </HeroOverviewCardMotion>;
     }
     const layout = comicCardLayout(viewMode, index);

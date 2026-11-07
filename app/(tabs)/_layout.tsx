@@ -30,13 +30,14 @@ export default function TabLayout() {
       <TabWallpaper />
       <Tabs
         initialRouteName="index"
-        detachInactiveScreens
+        // Keep native scene visibility in sync with the custom camera/home tabs.
+        detachInactiveScreens={false}
         tabBar={(props) => <DayPlanCustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: 'transparent' },
           lazy: true,
-          freezeOnBlur: true,
+          freezeOnBlur: false,
           tabBarStyle: {
             backgroundColor: 'transparent',
             borderTopWidth: 0,

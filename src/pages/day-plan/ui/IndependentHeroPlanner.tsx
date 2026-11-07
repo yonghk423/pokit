@@ -65,6 +65,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   }, []);
   const [inlineTarget, setInlineTarget] = useState<{ diaryId?: string; sceneId?: string; image: ComicSceneId; text: HeroCardText; original?: boolean } | null>(null);
   const [photoEntryOpen, setPhotoEntryOpen] = useState(false);
+  const explicitEntry = useRef(false);
   const { t } = useTranslation();
   const [library, setLibrary] = useState(() => loadComicDiaryHome(props.date, number => t('comicDiary.defaultTitle', { number })));
   const [expiredTutorialDiaryId] = useState(() => {
@@ -76,7 +77,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     return target && targetDate && targetDate < props.date ? target.id : null;
   });
   const [recoveryJob, setRecoveryJob] = useState<PendingHeroAiJob | null>(null);
-  useEffect(() => { let active = true; void getPendingHeroAiJob().then(job => { if (active) setRecoveryJob(job); }).catch(() => undefined); return () => { active = false; }; }, []);
+  useEffect(() => { let active = true; void getPendingHeroAiJob().then(job => { if (active) { setRecoveryJob(job); if (job?.story && !explicitEntry.current) setPhotoEntryOpen(true); } }).catch(() => undefined); return () => { active = false; }; }, []);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -130,6 +131,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     Keyboard.dismiss();
   }, [props.date, t]);
   const openPhotoEntry = useCallback(() => {
+    explicitEntry.current = true;
     const scene = diary?.scenes.find(value => value.id === activeSceneRef.current) ?? diary?.scenes[0];
     if (!inlineTarget) {
       const koreanMockText = getDevelopmentStorageProfile() === 'ko'
@@ -146,6 +148,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     if (useServiceTutorial.getState().active) useServiceTutorial.getState().pause();
   }, [diary, inlineTarget]);
   const openSceneEntry = useCallback((restoreOnly = false) => {
+    explicitEntry.current = true;
     setAddingToId(diary?.id ?? null);
     // Switching tabs restores the board; only a second tap opens its chooser.
     setCharacterListOpen(value => restoreOnly || photoEntryOpen ? false : !value);
@@ -386,7 +389,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     saveComicNavigation(COMIC_CHARACTERS[0].id, 'board', next.activeId!);
     setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); setCreating(false);
   };
-  const photoEntryVisible = !!(inline && (photoEntryOpen || inlineRecovery));
+  const photoEntryVisible = !!(inline && photoEntryOpen);
   useLayoutEffect(() => { props.onPhotoEntryChange?.(photoEntryVisible); }, [props.onPhotoEntryChange, photoEntryVisible]);
   const hasThumbnailCards = showPlanner && !!diary?.scenes.length && !photoEntryVisible;
   useLayoutEffect(() => { useHeroTabArtwork.getState().setHasCards(hasThumbnailCards); }, [hasThumbnailCards]);
@@ -412,8 +415,8 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     {initialSceneCharacter ? <ComicScenePicker library={initialSceneCharacter.scenes} scenes={[]} onChange={() => undefined} onSelectScene={image => { const selected = initialSceneCharacter; setInitialSceneCharacter(null); create(selected, undefined, image); }} onClose={() => setInitialSceneCharacter(null)} /> : null}
     </View>
     </DayPlanTabFocusContext.Provider>
-    {inline ? <View testID="hero-inline-workspace" pointerEvents={photoEntryOpen || inlineRecovery ? 'auto' : 'none'} accessibilityElementsHidden={!photoEntryOpen && !inlineRecovery} style={[StyleSheet.absoluteFill, { display: photoEntryOpen || inlineRecovery ? 'flex' : 'none', backgroundColor: props.isDark ? '#262B28' : '#F7F6F4', paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }]}>
-      <HeroInlineComposer fullScreen visible={!!(photoEntryOpen || inlineRecovery)} key={inlineRecovery?.id ?? inline.sceneId ?? 'new'} sceneId={inline.image} {...inline.text} ink={inline.text.pen ?? props.ink} targetDiaryId={inline.diaryId} targetSceneId={inline.sceneId} initialMode={inlineTarget?.original || library.diaries.some(item => item.id === inline.diaryId && item.artworkCollection === 'original') ? 'original' : 'character'} recoveryJob={inlineRecovery} onApply={applyInline} onClose={() => { setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); }} />
+    {inline ? <View testID="hero-inline-workspace" pointerEvents={photoEntryVisible ? 'auto' : 'none'} accessibilityElementsHidden={!photoEntryVisible} style={[StyleSheet.absoluteFill, { display: photoEntryVisible ? 'flex' : 'none', backgroundColor: props.isDark ? '#262B28' : '#F7F6F4', paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }]}>
+      <HeroInlineComposer fullScreen visible={photoEntryVisible} key={inlineRecovery?.id ?? inline.sceneId ?? 'new'} sceneId={inline.image} {...inline.text} ink={inline.text.pen ?? props.ink} targetDiaryId={inline.diaryId} targetSceneId={inline.sceneId} initialMode={inlineTarget?.original || library.diaries.some(item => item.id === inline.diaryId && item.artworkCollection === 'original') ? 'original' : 'character'} recoveryJob={inlineRecovery} onApply={applyInline} onClose={() => { setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); }} />
     </View> : null}
     {recoveryJob && !recoveryJob.story ? <Modal visible onRequestClose={() => setRecoveryJob(null)}><View style={{ flex: 1, paddingTop: 40, paddingBottom: 24 }}><HeroPersonalizationFlow recoveryJob={recoveryJob} onClose={() => setRecoveryJob(null)} onApply={images => { const target = library.diaries.find(item => item.id === recoveryJob.targetDiaryId);
       if (target) {

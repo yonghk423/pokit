@@ -1,3 +1,4 @@
+import * as heroAiClient from '../lib/heroAiClient';
 import * as originalPhotoLibrary from '../lib/heroOriginalPhoto';
 import { saveHeroCardLayout, loadHeroCardLayout } from '../model/heroCardLayout';
 import { ComicSceneDeck } from './HeroSceneDeck';
@@ -36,10 +37,10 @@ jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string)
 jest.mock('react-native-gesture-handler', () => {
   const chain = () => {
     const gesture: Record<string, unknown> = {};
-    for (const name of ['enabled', 'activeOffsetY', 'failOffsetX', 'onEnd', 'onBegin', 'onStart', 'minDuration', 'maxDistance', 'activateAfterLongPress', 'runOnJS']) gesture[name] = (value: unknown) => { gesture[`${name}Value`] = value; return gesture; };
+    for (const name of ['minDistance', 'blocksExternalGesture', 'onUpdate', 'onFinalize', 'enabled', 'activeOffsetY', 'failOffsetX', 'onEnd', 'onBegin', 'onStart', 'minDuration', 'maxDistance', 'activateAfterLongPress', 'runOnJS']) gesture[name] = (value: unknown) => { gesture[`${name}Value`] = value; return gesture; };
     return gesture;
   };
-  return { ScrollView: jest.requireActual('react-native').ScrollView, GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Pan: chain, LongPress: chain, Native: chain, Simultaneous: (...gestures: unknown[]) => ({ gestures }) } };
+  return { ScrollView: jest.requireActual('react-native').ScrollView, GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Rotation: chain, Race: (...gestures: unknown[]) => ({ gestures }), Pan: chain, LongPress: chain, Native: chain, Simultaneous: (...gestures: unknown[]) => ({ gestures }) } };
 });
 jest.mock('react-native-reanimated', () => {
   const fade = { duration: () => fade, delay: () => fade, reduceMotion: () => fade, easing: () => fade };
@@ -1084,4 +1085,24 @@ it('switches the empty chooser between carousel and grid on repeated taps', () =
   expect(visible('hero-empty-character-rail')).toBe(true);
   expect(visible('hero-empty-character-grid')).toBe(false);
   act(() => tree.unmount());
+});
+
+it('lets the diary tab hide a recoverable AI workspace without discarding its job', async () => {
+  const pending = { id: 'recoverable-tab-job', story: { source: 'character', text: 'Draft', title: 'Title' }, scenes: ['01-wakeup'], createdAt: Date.now() };
+  const getPending = jest.spyOn(heroAiClient, 'getPendingHeroAiJob').mockResolvedValue(pending as never);
+  const resume = jest.spyOn(heroAiClient, 'resumeHeroAiJob').mockImplementation(() => new Promise(() => {}));
+  const ref = createRef<ComicDiaryHandle>();
+  const change = jest.fn();
+  let tree!: ReactTestRenderer;
+  try {
+    await act(async () => { tree = create(<IndependentComicPlanner ref={ref} onPhotoEntryChange={change} date="2026-10-21" ink="#222" muted="#888" isDark={false} />); });
+    expect(tree.root.findByType(HeroInlineComposer).props.visible).toBe(true);
+    act(() => ref.current!.openSceneEntry(true));
+    expect(tree.root.findByType(HeroInlineComposer).props.visible).toBe(false);
+    expect(change).toHaveBeenLastCalledWith(false);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-workspace' })[0].props.pointerEvents).toBe('none');
+    await act(async () => ref.current!.openPhotoEntry());
+    expect(tree.root.findByType(HeroInlineComposer).props.visible).toBe(true);
+    expect(tree.root.findByType(HeroInlineComposer).props.recoveryJob.id).toBe(pending.id);
+  } finally { if (tree) act(() => tree.unmount()); getPending.mockRestore(); resume.mockRestore(); }
 });
