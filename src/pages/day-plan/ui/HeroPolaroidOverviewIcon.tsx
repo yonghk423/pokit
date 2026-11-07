@@ -26,6 +26,10 @@ const photoWindows = [
 /** When the overview is open, the same photographs gather into a compact pile. */
 export function HeroPolaroidOverviewIcon({ size = 32, expanded = false }: { ink?: string; size?: number; expanded?: boolean }) {
   const id = useId().replace(/:/g, '');
+  // Rasterize at the largest displayed size; native transforms only shrink it.
+  const renderScale = 2.2;
+  const renderSize = size * renderScale;
+  const renderInset = (renderSize - size) / 2;
   const progress = useRef(new Animated.Value(expanded ? 1 : 0)).current;
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -46,13 +50,13 @@ export function HeroPolaroidOverviewIcon({ size = 32, expanded = false }: { ink?
       const y = index === 5 ? 318 : print.y;
       const photo = photoWindows[Math.min(index, 4)];
       const paperOutline = `M${print.points.split(' ').join(' L')} Z M${photo.points.split(' ').join(' L')} Z`;
-      return <Animated.View key={index} style={{ position: 'absolute', width: size, height: size, left: (x / 400 - 0.5) * size, top: (y / 400 - 0.5) * size, transform: [
+      return <Animated.View key={index} style={{ position: 'absolute', width: renderSize, height: renderSize, left: (x / 400 - 0.5) * size - renderInset, top: (y / 400 - 0.5) * size - renderInset, transform: [
       { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, (0.5 - x / 400) * size] }) },
       { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, (0.5 - y / 400) * size] }) },
       { rotate: progress.interpolate({ inputRange: [0, 1], outputRange: [index === 5 ? '-12deg' : '0deg', `${print.stacked - print.angle}deg`] }) },
-      { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) },
+      { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1 / renderScale, 1] }) },
     ] }}>
-      <Svg width={size} height={size} viewBox="0 0 400 400" accessible={false} style={{ overflow: 'visible' }}>
+      <Svg width={renderSize} height={renderSize} viewBox="0 0 400 400" accessible={false} style={{ overflow: 'visible' }}>
         <Defs><ClipPath id={`${id}-${index}`}><Path d={paperOutline} fillRule="evenodd" clipRule="evenodd" /></ClipPath><ClipPath id={`${id}-photo-${index}`}><Polygon points={photo.points} /></ClipPath></Defs>
         <G transform={`translate(${200 - print.x} ${200 - print.y})`}>
           <Image href={artwork} width={400} height={400} clipPath={`url(#${id}-${index})`} />

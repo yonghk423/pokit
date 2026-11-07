@@ -191,12 +191,12 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     animation.start(({ finished }) => { if (finished && !showCards) setOverviewSettled(true); });
     return () => animation.stop();
   }, [showCards, overviewProgress, focused]);
+  // Crossfade in place: deck-to-scatter transforms also amplify saved drag offsets.
   const deckVisibility = {
-    opacity: overviewProgress.interpolate({ inputRange: [0, 0.3, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }),
-    transform: [{ scale: overviewProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.975] }) }],
+    opacity: overviewProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' }),
   };
   const gridVisibility = {
-    opacity: overviewProgress.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }),
+    opacity: overviewProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
   };
 
   const renderCard = (item: BoardItem, index: number, panel?: ComicPanel, pageTop = 0) => {
@@ -204,7 +204,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
       const scene = resolveComicScene(item.key, item.label, choices);
       const title = item.label.trim();
       const memo = item.memo?.trim();
-      return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={cardsFirst && !overviewSettled} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={gridTop} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => previous[item.key] === height ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
+      return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={gridTop} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => previous[item.key] === height ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
         <HeroDraggablePrint anchorLeft={anchors[index].left} anchorTop={anchors[index].top} anchorRotation={anchors[index].rotation} onRotate={angle => setPrintPositions(savePrintPosition(item.key, scatter.frames[index].left / boardWidth, scatter.frames[index].top / boardWidth, angle))} rotation={scatter.frames[index].rotation} enabled={gridOpen && overviewSettled && !deleteMode} scrollGesture={gridNative} dismissGesture={gridDismiss} left={scatter.frames[index].left} top={scatter.frames[index].top} width={scatter.frames[index].width} boardWidth={boardWidth} bottom={scatter.height + 120} onActive={active => setDraggingPrint(active ? item.key : null)} onDrop={(x, y) => setPrintPositions(savePrintPosition(item.key, x / boardWidth, y / boardWidth))}>
         <HeroScaledPrint width={scatter.frames[index].width}>
         <Pressable accessibilityRole="button" accessibilityLabel={title || memo || t('comicDay.showCards')} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => [s.polaroid, { opacity: pressed ? 0.75 : 1 }]}>
@@ -228,7 +228,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     const captionHeight = memo ? 70 : 52;
     const time = item.startMinutes == null ? item.timeLabel : `${String(Math.floor(item.startMinutes / 60) % 24).padStart(2, '0')}:${String(item.startMinutes % 60).padStart(2, '0')}`;
     return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length}
-      enabled={cardsFirst && !overviewSettled} source={sourceFrame} stageWidth={stageWidth} sourceTop={(hideCharacterHeading ? 0 : 56) + (sourceFrame.top ?? 0)}
+      enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={(hideCharacterHeading ? 0 : 56) + (sourceFrame.top ?? 0)}
       parentTop={gridTop + pageTop} style={panel ? { position: 'absolute', left: panel.left, top: panel.top, width: panel.width, height: panel.height } : { width: layout.width }}>
       <View pointerEvents="box-none" style={[s.card, { backgroundColor: item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF'), borderColor: muted }, panel && { height: panel.height }, diagonal && { borderWidth: 0, backgroundColor: 'transparent', overflow: 'visible' }]}>
         {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} /></Svg> : null}

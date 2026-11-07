@@ -23,6 +23,7 @@ export function HeroDraggablePrint({ children, enabled, scrollGesture, dismissGe
   const angleValue = useAnimatedValue(rotation - base.rotation);
   const visual = useRef({ left, top, rotation, baseLeft: base.left, baseTop: base.top, baseRotation: base.rotation });
   const active = useRef<'pan' | 'rotation' | null>(null);
+  const rotationOrigin = useRef({ left, top, rotation });
   const committed = useRef(false);
   const pending = useRef<{ left: number; top: number; rotation: number } | null>(null);
   const delta = useRef({ x: 0, y: 0, angle: 0 });
@@ -53,22 +54,39 @@ export function HeroDraggablePrint({ children, enabled, scrollGesture, dismissGe
     active.current = null; onActive(false);
     Animated.timing(lifted, { toValue: 0, duration: 150, useNativeDriver: true }).start();
   };
-  const pan = Gesture.Pan().enabled(enabled).activateAfterLongPress(280).minDistance(3)
+  const pan = Gesture.Pan().enabled(enabled).activateAfterLongPress(220).minDistance(2)
     .blocksExternalGesture(scrollGesture, dismissGesture).runOnJS(true)
-    .onStart(() => start('pan'))
+    .onStart(() => { if (active.current !== 'rotation') start('pan'); })
     .onUpdate(event => {
+      if (active.current !== 'pan' || event.numberOfPointers > 1) return;
       delta.current.x = Math.max(-left + 4, Math.min(boardWidth - width - left - 4, event.translationX));
       delta.current.y = Math.max(-top + 8, Math.min(bottom - top, event.translationY));
       paint(left + delta.current.x, top + delta.current.y, rotation);
     })
-    .onEnd((_event, success) => { if (success) { committed.current = true; pending.current = { left: left + delta.current.x, top: top + delta.current.y, rotation }; onDrop(left + delta.current.x, top + delta.current.y); } })
+    .onEnd((_event, success) => { if (success && active.current === 'pan') { committed.current = true; pending.current = { left: left + delta.current.x, top: top + delta.current.y, rotation }; onDrop(left + delta.current.x, top + delta.current.y); } })
     .onFinalize(() => finish('pan'));
   const rotate = Gesture.Rotation().enabled(enabled && !!onRotate)
+    .shouldCancelWhenOutside(false)
     .blocksExternalGesture(scrollGesture, dismissGesture).runOnJS(true)
-    .onStart(() => start('rotation'))
-    .onUpdate(event => { delta.current.angle = event.rotation * 180 / Math.PI; paint(left, top, rotation + delta.current.angle); })
-    .onEnd((_event, success) => { if (success) { committed.current = true; pending.current = { left, top, rotation: rotation + delta.current.angle }; onRotate?.(rotation + delta.current.angle); } })
+    .onStart(() => {
+      // A second finger can join an already active drag without losing its position.
+      rotationOrigin.current = { ...visual.current };
+      start('rotation');
+    })
+    .onUpdate(event => {
+      const origin = rotationOrigin.current;
+      delta.current.angle = event.rotation * 180 / Math.PI;
+      paint(origin.left, origin.top, origin.rotation + delta.current.angle);
+    })
+    .onEnd((_event, success) => {
+      if (!success) return;
+      const origin = rotationOrigin.current;
+      committed.current = true;
+      pending.current = { left: origin.left, top: origin.top, rotation: origin.rotation + delta.current.angle };
+      onRotate?.(pending.current.rotation);
+      if (origin.left !== left || origin.top !== top) onDrop(origin.left, origin.top);
+    })
     .onFinalize(() => finish('rotation'));
-  const style = { transform: [{ translateX: x }, { translateY: y }, { rotate: angleValue.interpolate({ inputRange: [-360, 360], outputRange: ['-360deg', '360deg'] }) }, { scale: lifted.interpolate({ inputRange: [0, 1], outputRange: [1, 1.035] }) }] };
-  return <GestureDetector gesture={Gesture.Race(rotate, pan)}><Animated.View style={style}>{children}</Animated.View></GestureDetector>;
+  const style = { transform: [{ translateX: x }, { translateY: y }, { rotate: angleValue.interpolate({ inputRange: [-360, 360], outputRange: ['-360deg', '360deg'] }) }, { scale: lifted.interpolate({ inputRange: [0, 1], outputRange: [1, 1.065] }) }] };
+  return <GestureDetector gesture={Gesture.Simultaneous(rotate, pan)}><Animated.View collapsable={false} style={[{ padding: 18, margin: -18 }, style]}>{children}</Animated.View></GestureDetector>;
 }

@@ -168,13 +168,13 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             fixedMiddle={isComicTab}
             center={isComicTab ? centerActions : undefined}
             trailingAlign={isComicTab ? 'start' : 'center'}
-            leading={<SettingsTopBarButton c={c} />}
+            leading={<View style={styles.trailingRow}><SettingsTopBarButton c={c} />{isComicTab ? weatherActions : null}</View>}
             trailing={
               <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: comicHeaderHeight }] : styles.trailingRow}>
-                <View style={styles.trailingRow}>
+                {onClose ? <View style={[styles.trailingRow, isComicTab && styles.comicHeaderButtons]}>
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
-                </View>
-                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View style={styles.weatherControls}>{weatherActions}<View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
+                </View> : null}
+                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View style={styles.weatherControls}><View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
               </View>
             }
           />
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  comicHeaderButtons: { minHeight: 44 },
+  comicHeaderButtons: { minHeight: 44, width: '100%', justifyContent: 'flex-end' },
   comicTrailing: {
     alignItems: 'flex-end',
   },

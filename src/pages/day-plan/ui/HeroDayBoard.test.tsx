@@ -37,7 +37,7 @@ jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: () => null }));
 jest.mock('react-native-gesture-handler', () => {
   const chain = () => {
     const gesture: Record<string, unknown> = {};
-    for (const name of ['minDistance', 'blocksExternalGesture', 'onUpdate', 'onFinalize', 'enabled', 'activeOffsetY', 'failOffsetX', 'onEnd', 'onBegin', 'onStart', 'minDuration', 'maxDistance', 'activateAfterLongPress', 'runOnJS']) gesture[name] = (value: unknown) => { gesture[`${name}Value`] = value; return gesture; };
+    for (const name of ['manualActivation', 'shouldCancelWhenOutside', 'onTouchesDown', 'maxPointers', 'minDistance', 'blocksExternalGesture', 'onUpdate', 'onFinalize', 'enabled', 'activeOffsetY', 'failOffsetX', 'onEnd', 'onBegin', 'onStart', 'minDuration', 'maxDistance', 'activateAfterLongPress', 'runOnJS']) gesture[name] = (value: unknown) => { gesture[`${name}Value`] = value; return gesture; };
     return gesture;
   };
   return { ScrollView: jest.requireActual('react-native').ScrollView, GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Rotation: chain, Race: (...gestures: unknown[]) => ({ gestures }), Pan: chain, LongPress: chain, Native: chain, Simultaneous: (...gestures: unknown[]) => ({ gestures }) } };
