@@ -14,7 +14,13 @@ const sceneImages: Record<string, readonly ComicSceneId[]> = {
   'protagonist-2': ['p2-13-yoga-stretch', 'p2-25-pancake-flip', 'p2-08-late-study', 'p2-09-cafe-tablet', 'p2-10-rainy-crosswalk', 'p2-34-journaling', 'p2-38-seaside-camping', 'p2-11-city-photography', 'p2-22-seaside-cycling', 'p2-18-bakery-window', 'p2-23-making-bed', 'p2-30-meditation', 'p2-39-folding-laundry', 'p2-40-guitar', 'p2-49-library-reading'],
   'protagonist-3': ['p3-42-harbor-fishing', 'p3-22-pour-over-coffee', 'p3-25-library-study', 'p3-12-cafe-coffee-tray', 'p3-26-train-station', 'p3-17-street-photography', 'p3-30-woodland-camping', 'p3-11-riverside-cycling', 'p3-14-dog-walk', 'p3-18-bookstore-browse', 'p3-20-repot-houseplant', 'p3-15-cook-pasta', 'p3-35-painting-canvas', 'p3-41-fold-laundry', 'p3-49-rooftop-guitar'],
   'protagonist-5': ['p5-01-platform', 'p5-05-bakery', 'p5-34-bookshop', 'p5-34-bookshop', 'p5-08-bus-stop', 'p5-06-record-shop', 'p5-16-ferry-deck', 'p5-23-table-tennis', 'p5-10-swimming-pool', 'p5-04-museum', 'p5-03-laundromat', 'p5-40-home-kitchen', 'p5-02-pottery', 'p5-34-bookshop', 'p5-100-city-ferry-deck'],
-  'protagonist-6': ['p6-01-rush-hour-commute', 'p6-02-office-presentation', 'p6-03-spilled-coffee-report', 'p6-04-lunch-rooftop', 'p6-05-proud-promotion', 'p6-06-angry-email', 'p6-07-after-work-run', 'p6-08-missed-deadline', 'p6-21-couch-after-work', 'p6-22-window-tea', 'p6-23-laundry-day', 'p6-24-home-cooking', 'p6-25-lazy-morning', 'p6-27-houseplant-care', 'p6-28-movie-night'],
+  'protagonist-6': [
+    'p6-01-rush-hour-commute', 'p6-02-office-presentation', 'p6-03-spilled-coffee-report', 'p6-04-lunch-rooftop', 'p6-05-proud-promotion', 'p6-06-angry-email', 'p6-07-after-work-run', 'p6-08-missed-deadline', 'p6-09-boxing-bag', 'p6-10-basketball-shot',
+    'p6-11-swimming-laps', 'p6-12-cycling-hill', 'p6-13-yoga-balance', 'p6-14-tennis-serve', 'p6-15-soccer-dribble', 'p6-16-dance-practice', 'p6-17-climbing-wall', 'p6-18-jump-rope', 'p6-19-rain-run', 'p6-20-badminton-rally',
+    'p6-21-couch-after-work', 'p6-22-window-tea', 'p6-23-laundry-day', 'p6-24-home-cooking', 'p6-25-lazy-morning', 'p6-26-couch-nap', 'p6-27-houseplant-care', 'p6-28-movie-night', 'p6-29-bathroom-skincare', 'p6-30-cat-on-lap',
+    'p6-31-frustrated-phone-call', 'p6-32-sad-bus-stop', 'p6-33-exam-results-joy', 'p6-34-interview-nerves', 'p6-35-breakup-evening', 'p6-36-concert-happiness', 'p6-37-embarrassed-spill', 'p6-38-holiday-loneliness', 'p6-39-birthday-surprise', 'p6-40-relief-after-cry',
+    'p6-41-spring-blossom-bicycle', 'p6-42-spring-rain-puddle', 'p6-43-spring-garden-planting', 'p6-44-summer-beach-walk', 'p6-45-summer-hill-hike', 'p6-46-autumn-leaves', 'p6-47-autumn-market', 'p6-48-autumn-wind-commute', 'p6-49-winter-snow-play', 'p6-50-winter-bus-wait',
+  ],
 };
 
 export function getMockProtagonist(index: number) {

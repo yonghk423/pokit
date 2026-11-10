@@ -168,6 +168,11 @@ export function setDevelopmentStorageProfile(profile: DevelopmentStorageProfile 
   if (profile) localStorageClient.setItemRaw(DEV_PROFILE_KEY, profile);
   else localStorageClient.removeItem(DEV_PROFILE_KEY);
 }
+/** Remember an explicit request to leave development mock mode across reloads. */
+export function disableDevelopmentMockProfile(): void {
+  if (!__DEV__) return;
+  localStorageClient.setItemRaw(DEV_PROFILE_KEY, 'off');
+}
 
 export const localStorageClient = {
   /** Synchronous inventory of the already-hydrated cache (and browser storage). */

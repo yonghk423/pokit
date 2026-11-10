@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageStat
 import json, hashlib
 ROOT=Path(__file__).resolve().parents[1]
-SOURCE=ROOT/'assets/calendar-illustrations/upload-candidate-v6'
+SOURCE=Path('/Users/yonghee/Documents/Codex/yourday/calendar-illustrations/upload-candidate-v6')
 MEASURE=ROOT/'docs/design/photo-diary/calendar-v6-measurements.json'
 
 def ink(im, box):

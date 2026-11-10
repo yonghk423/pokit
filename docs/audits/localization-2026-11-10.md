@@ -1,0 +1,2436 @@
+# 번역 점검 — 2026-11-10
+
+app/와 src/의 TypeScript 소스 전체를 정적으로 검사했습니다. 테스트·주석은 제외했습니다. 아래 한국어 문자열 목록은 화면 문구 외에 오류·프롬프트·예시·한국어 전용 분기도 포함하는 검토 대상이며, 모두 화면에 노출된다는 뜻은 아닙니다. 실제 기기에서 네 언어 전체 화면을 순회한 결과는 아닙니다.
+
+- en: 누락 0, 빈 값 3, 한국어 포함 0, 치환자 불일치 1
+- ja: 누락 0, 빈 값 0, 한국어 포함 0, 치환자 불일치 1
+- zh-TW: 누락 0, 빈 값 0, 한국어 포함 0, 치환자 불일치 1
+
+## 확인 결과와 해석
+
+- 번체 누락 4개를 보완하고 일본어 글꼴 이름에 남은 한국어를 수정했습니다.
+- 영어의 빈 문자열 3개는 문장 연결용 힌트·단위 접미사입니다. 영어에서 생략하도록 기존 테스트가 보장하는 값도 있어 일괄 번역하지 않았습니다.
+- catalog.searchPlaceholderNamed의 object 치환자는 한국어 조사 전용입니다. 다른 언어에서 빠지는 것이 정상입니다.
+- 스토어: 팩 이름, 테마 제목·설명, 적용 실패·삭제·다운로드 안내에 직접 작성한 한국어가 있습니다.
+- Google Drive 백업: 제목·설명·연결·백업·복구 확인창과 처리 상태에 한국어가 있습니다.
+- Apple/Google 캘린더 연결: 일본어·번체에서도 영어로 표시되는 한국어/영어 이분기가 있습니다.
+- 일기 메모: 입력 안내와 접근성 이름에 한국어가 있습니다. 일정 표시에도 한국어/영어 이분기가 있습니다.
+- 폴라로이드: 보정 도구·필름 이름·날짜 선택·공유·다운로드·실패 안내 등에 한국어가 있습니다.
+- 이미지 생성 프롬프트, 글꼴 예시, 고정 영어 제품명과 사용자가 입력한 일정·글은 별도 검토가 필요합니다. 한국어 문자열 개수를 미번역 화면 수로 해석하면 안 됩니다.
+- 현재 숨겨진 AI 기능 및 과거 화면도 전체 검색에 포함했습니다. 실제 노출 경로는 추가 화면 점검이 필요합니다.
+
+## 한국어 문자열 검토 대상
+
+- app/(tabs)/calendar.tsx:51 — '${theme.title} 캘린더 적용'
+- app/(tabs)/calendar.tsx:60 — 적용하지 못했어요. 사진을 눌러 다시 시도해주세요.
+- app/(tabs)/calendar.tsx:98 — '삭제 실패'
+- app/(tabs)/calendar.tsx:98 — '달력 파일을 삭제하지 못했어요. 다시 시도해주세요.'
+- app/(tabs)/calendar.tsx:147 — '다이어리'
+- app/(tabs)/calendar.tsx:159 — '파란 집게'
+- app/(tabs)/calendar.tsx:159 — '검은 집게'
+- app/(tabs)/calendar.tsx:161 — '적용 중'
+- app/(tabs)/calendar.tsx:161 — '무료'
+- app/(tabs)/calendar.tsx:169 — "시티 애니메이션 받은 캘린더 보기"
+- app/(tabs)/calendar.tsx:174 — 시티 애니메이션
+- app/(tabs)/calendar.tsx:175 — '무료'
+- app/(tabs)/calendar.tsx:179 — '다운로드 중 ${packProgress}/${CITY_CALENDAR_THEMES.length}'
+- app/(tabs)/calendar.tsx:179 — '다운로드 완료 ${CITY_CALENDAR_THEMES.length}/${CITY_CALENDAR_THEMES.length} · 보기'
+- app/(tabs)/calendar.tsx:179 — '다운로드 다시 시도'
+- app/(tabs)/calendar.tsx:179 — '캘린더 ${CITY_CALENDAR_THEMES.length}종 다운로드'
+- app/(tabs)/calendar.tsx:181 — "다운로드한 캘린더 삭제"
+- app/(tabs)/calendar.tsx:183 — 다운로드가 완료될 때까지 앱을 종료하지 마세요.
+- app/(tabs)/calendar.tsx:185 — ‹ 시티 애니메이션 목록으로
+- src/application/development/mockCalendarData.ts:29 — '기다리는 시간도 내 하루'
+- src/application/development/mockCalendarData.ts:29 — '기차를 기다리며 잠깐 이어폰을 뺐다. 바쁘게 걷는 사람들 사이에서 나만 잠시 멈춘 기분이었다. 서둘러야 한다는 생각 대신, 오늘은 내 속도로 가도 괜찮다고 마음속으로 이야기했다.'
+- src/application/development/mockCalendarData.ts:30 — '갓 구운 빵 냄새'
+- src/application/development/mockCalendarData.ts:30 — '골목을 걷다가 따뜻한 빵 냄새에 발길을 멈췄다. 평소라면 그냥 지나쳤을 작은 빵집에서 내일 아침 먹을 빵을 골랐다. 특별한 일이 없어도 이렇게 기분이 좋아지는 순간이 있다는 걸 적어 두고 싶다.'
+- src/application/development/mockCalendarData.ts:31 — '책 사이에서 찾은 작은 쉼'
+- src/application/development/mockCalendarData.ts:31 — '서점에서 표지가 마음에 드는 책을 펼쳤다. 몇 줄 읽었을 뿐인데 종일 복잡했던 머릿속이 조금 조용해졌다. 다 읽겠다는 목표 없이, 오늘 마음에 남는 문장 하나만 챙겨 돌아왔다.'
+- src/application/development/mockCalendarData.ts:34 — '분주한 아침 속 나의 자리'
+- src/application/development/mockCalendarData.ts:34 — '출근길 지하철은 오늘도 사람들로 가득했다. 가방을 고쳐 메고 천천히 숨을 쉬었다. 정신없이 하루를 시작하는 대신, 오늘 꼭 챙기고 싶은 내 마음부터 한 번 들여다보기로 했다.'
+- src/application/development/mockCalendarData.ts:35 — '점심시간의 하늘'
+- src/application/development/mockCalendarData.ts:35 — '점심을 먹고 옥상에 올라갔다. 오전 내내 화면만 보다가 고개를 드니 생각보다 하늘이 넓었다. 일이 마음처럼 풀리지 않아 답답했지만, 바람을 쐬고 나니 오후를 다시 시작할 힘이 조금 생겼다.'
+- src/application/development/mockCalendarData.ts:36 — '오늘도 내 몫의 하루를 살았다'
+- src/application/development/mockCalendarData.ts:36 — '집에 돌아와 소파에 앉자 긴장이 한꺼번에 풀렸다. 끝내지 못한 일도 있지만 오늘 해낸 것부터 떠올려 봤다. 애쓴 나에게 따뜻한 저녁과 충분한 휴식을 주는 것으로 하루를 마무리하고 싶다.'
+- src/application/development/mockCalendarData.ts:41 — '천천히 시작한 아침'
+- src/application/development/mockCalendarData.ts:41 — '집중했던 오전'
+- src/application/development/mockCalendarData.ts:41 — '점심 뒤의 작은 쉼'
+- src/application/development/mockCalendarData.ts:41 — '오후에 만난 풍경'
+- src/application/development/mockCalendarData.ts:41 — '나를 위한 저녁'
+- src/application/development/mockCalendarData.ts:41 — '잠들기 전의 기록'
+- src/application/development/mockCopy.ts:12 — '서연'
+- src/application/development/mockCopy.ts:12 — '바쁜 하루에도 내 속도로'
+- src/application/development/mockCopy.ts:12 — '바람 따라 떠난 주말'
+- src/application/development/mockCopy.ts:12 — '집에서 보낸 느긋한 하루'
+- src/application/development/mockCopy.ts:14 — '조금 느긋한 아침'
+- src/application/development/mockCopy.ts:14 — '알람을 한 번 미뤘지만 휴대폰 대신 창문부터 열었다. 밤새 내린 비 냄새가 들어왔다. 오늘은 모든 일을 잘하려고 애쓰기보다 가장 중요한 세 가지만 끝내기로 했다.'
+- src/application/development/mockCopy.ts:14 — '물 한 잔 마시기'
+- src/application/development/mockCopy.ts:14 — '어깨와 허리 5분 스트레칭'
+- src/application/development/mockCopy.ts:14 — '오늘 꼭 할 일 세 가지 적기'
+- src/application/development/mockCopy.ts:15 — '냉장고 속 재료로 아침'
+- src/application/development/mockCopy.ts:15 — '남은 시금치와 달걀로 오믈렛을 만들었다. 빵이 살짝 탔지만 따뜻한 커피와 먹으니 괜찮았다. 내일은 서두르지 않도록 오늘 밤 식탁을 미리 정리해 둬야겠다.'
+- src/application/development/mockCopy.ts:15 — '달걀과 우유 장보기 목록에 추가'
+- src/application/development/mockCopy.ts:15 — '도시락 챙기기'
+- src/application/development/mockCopy.ts:16 — '작은 진전도 진전'
+- src/application/development/mockCopy.ts:16 — '오전에는 새 프로젝트의 첫 화면을 정리했다. 피드백을 받고 다시 고친 부분이 많았지만, 헷갈리던 흐름이 조금 선명해졌다. 오후 회의 전에는 수정 이유를 짧게 적어 공유할 예정이다.'
+- src/application/development/mockCopy.ts:16 — '첫 화면 수정안 공유하기'
+- src/application/development/mockCopy.ts:16 — '금요일 회의 자료 초안 완성'
+- src/application/development/mockCopy.ts:16 — '동료에게 접근성 점검 부탁하기'
+- src/application/development/mockCopy.ts:17 — '커피 한 잔의 여유'
+- src/application/development/mockCopy.ts:17 — '점심 뒤에 회사 근처 작은 카페에 들렀다. 창가 자리에서 책을 18쪽 읽었다. 해야 할 일이 떠올라도 잠깐은 메모만 해 두고, 이 시간만큼은 쉬는 데 쓰기로 했다.'
+- src/application/development/mockCopy.ts:17 — '읽고 싶은 문장 한 줄 기록'
+- src/application/development/mockCopy.ts:17 — '텀블러 씻어 두기'
+- src/application/development/mockCopy.ts:18 — '이어폰 없이 걷기'
+- src/application/development/mockCopy.ts:18 — '퇴근길에 한 정거장 먼저 내렸다. 같은 길인데 은행잎 색이 벌써 달라져 있었다. 걷고 나니 머릿속에서 맴돌던 회의 내용도 조금 가라앉았다.'
+- src/application/development/mockCopy.ts:18 — '공원 한 바퀴 걷기'
+- src/application/development/mockCopy.ts:18 — '엄마에게 안부 전화'
+- src/application/development/mockCopy.ts:19 — '오늘 하루를 정리하는 시간'
+- src/application/development/mockCopy.ts:19 — '완료하지 못한 일이 두 개 남았다. 예전 같으면 마음에 걸렸겠지만 오늘은 내일의 나에게 넘겨주기로 했다. 제때 밥을 먹고 산책을 한 것도 오늘의 성과다. 잠들기 전에는 화면을 조금 일찍 내려놓자.'
+- src/application/development/mockCopy.ts:19 — '내일 일정 확인하기'
+- src/application/development/mockCopy.ts:19 — '가방에 충전기 넣기'
+- src/application/development/mockCopy.ts:19 — '잠들기 30분 전 휴대폰 내려놓기'
+- src/application/development/mockCopy.ts:20 — '바람 소리로 채운 오후'
+- src/application/development/mockCopy.ts:20 — '텐트를 치는 데 생각보다 오래 걸렸다. 그래도 의자에 앉아 산을 바라보는 순간, 서두른 마음이 풀렸다. 저녁에는 간단히 수프를 데워 먹고 별이 보이면 조금 더 밖에 있어야겠다.'
+- src/application/development/mockCopy.ts:20 — '텐트 고정 끈 다시 확인'
+- src/application/development/mockCopy.ts:20 — '보온병에 따뜻한 물 담기'
+- src/application/development/mockCopy.ts:20 — '해 지기 전에 저녁 준비'
+- src/application/development/mockCopy.ts:21 — '사진보다 오래 남는 풍경'
+- src/application/development/mockCopy.ts:21 — '빛이 나뭇잎 사이로 들어오는 시간이 좋아 한참 멈춰 섰다. 사진은 많이 찍지 않았다. 마음에 든 세 장만 골라 집에 돌아가 작은 앨범으로 남겨야겠다.'
+- src/application/development/mockCopy.ts:21 — '사진 세 장 고르기'
+- src/application/development/mockCopy.ts:21 — '함께 온 친구에게 사진 보내기'
+- src/application/development/mockCopy.ts:22 — '바다 앞에서는 천천히'
+- src/application/development/mockCopy.ts:22 — '바닷가 작은 가게에서 늦은 점심을 먹었다. 특별한 계획 없이 방파제 끝까지 걸었다. 오랜만에 시간을 확인하지 않은 오후였다.'
+- src/application/development/mockCopy.ts:22 — '쓰레기 되가져오기'
+- src/application/development/mockCopy.ts:22 — '다음에 올 카페 위치 저장'
+- src/application/development/mockCopy.ts:23 — '뜻밖에 만난 책'
+- src/application/development/mockCopy.ts:23 — '돌아오는 길에 독립서점에 들렀다. 표지가 마음에 들어 펼친 에세이에서 지금 내게 필요한 문장을 만났다. 다음 주 독서 모임에서 이야기하고 싶어 책갈피를 끼워 두었다.'
+- src/application/development/mockCopy.ts:23 — '독서 모임 단체방에 책 소개'
+- src/application/development/mockCopy.ts:23 — '마음에 든 문장 42쪽 표시'
+- src/application/development/mockCopy.ts:24 — "이불을 정리하고 창문 열기"
+- src/application/development/mockCopy.ts:24 — "주말 아침에는 서두르지 않고 이불부터 정리했다. 창문을 열자 차가운 바람이 들어왔고, 책상에 쌓인 종이도 조금 치웠다. 작은 정리만으로도 방 안에서 보내는 시간이 한결 편안해졌다."
+- src/application/development/mockCopy.ts:24 — "이불 개기"
+- src/application/development/mockCopy.ts:24 — "창문 열고 10분 환기"
+- src/application/development/mockCopy.ts:24 — "책상 위 종이 정리"
+- src/application/development/mockCopy.ts:25 — "나를 위한 따뜻한 한 끼"
+- src/application/development/mockCopy.ts:25 — "냉장고에 남은 채소를 잘라 수프를 끓였다. 김이 올라오는 동안 좋아하는 그릇을 꺼내고 식탁을 닦았다. 급하게 먹는 대신 오늘은 한 숟가락씩 천천히 맛을 느끼며 점심을 먹었다."
+- src/application/development/mockCopy.ts:25 — "채소 씻어 두기"
+- src/application/development/mockCopy.ts:25 — "남은 수프 냉장 보관"
+- src/application/development/mockCopy.ts:26 — "창가에서 그린 작은 일러스트"
+- src/application/development/mockCopy.ts:26 — "창가에 놓인 화분을 보고 연필로 잎을 따라 그렸다. 모양이 조금 달라도 지우지 않고 그대로 두었다. 잘 그리는 것보다 잠깐이라도 손을 움직이고 주변을 관찰하는 시간이 필요했던 것 같다."
+- src/application/development/mockCopy.ts:26 — "스케치 한 장 완성"
+- src/application/development/mockCopy.ts:26 — "연필과 종이 정리"
+- src/application/development/mockCopy.ts:27 — "천천히 나를 돌보는 시간"
+- src/application/development/mockCopy.ts:27 — "따뜻한 물로 얼굴을 씻고 오랜만에 거울 앞에 조금 오래 앉았다. 마른 수건을 꺼내고 로션을 바르며 오늘 몸 상태를 살폈다. 할 일을 잠시 내려놓고 나를 챙기는 순서도 하루에 있어야겠다."
+- src/application/development/mockCopy.ts:27 — "수건 교체하기"
+- src/application/development/mockCopy.ts:27 — "잠들기 전 스트레칭"
+- src/application/development/mockCopy.ts:28 — "책을 덮고 잠깐 쉬기"
+- src/application/development/mockCopy.ts:28 — "점심 뒤 책을 읽다가 졸음이 와서 소파에 잠깐 누웠다. 알람을 짧게 맞추고 휴대폰은 손이 닿지 않는 곳에 두었다. 눈을 뜨니 머리가 맑아져서 남은 오후를 가볍게 시작할 수 있었다."
+- src/application/development/mockCopy.ts:28 — "20분 알람 맞추기"
+- src/application/development/mockCopy.ts:28 — "일어나서 물 한 잔 마시기"
+- src/application/development/mockCopy.ts:30 — '출근 전 작은 준비'
+- src/application/development/mockCopy.ts:30 — '이번 주 프로젝트'
+- src/application/development/mockCopy.ts:30 — '장을 보기 전에'
+- src/application/development/mockCopy.ts:30 — '놓치고 싶지 않은 메모'
+- src/application/development/mockCopy.ts:30 — '하루 30쪽 읽기'
+- src/application/development/mockCopy.ts:30 — '물 마시는 습관'
+- src/application/development/mockCopy.ts:30 — '아침 몸 상태'
+- src/application/development/mockCopy.ts:30 — '하루를 마무리하는 순서'
+- src/application/development/mockCopy.ts:31 — '급하게 나가지 않도록 15분 먼저 준비하기'
+- src/application/development/mockCopy.ts:31 — '첫 화면 개선 · 금요일 공유까지'
+- src/application/development/mockCopy.ts:31 — '냉장고를 확인하고 필요한 것만 사기'
+- src/application/development/mockCopy.ts:31 — '약속과 아이디어를 잠깐 맡겨 두는 곳'
+- src/application/development/mockCopy.ts:31 — '빨리 읽기보다 매일 조금씩'
+- src/application/development/mockCopy.ts:31 — '커피를 마신 뒤에는 물 한 잔'
+- src/application/development/mockCopy.ts:31 — '숫자 하나보다 일주일의 흐름 보기'
+- src/application/development/mockCopy.ts:31 — '내일의 나를 위해 조금만 정리하기'
+- src/application/development/mockCopy.ts:32 — '창문 열고 이불 정리'
+- src/application/development/mockCopy.ts:32 — '물 한 잔과 아침 식사'
+- src/application/development/mockCopy.ts:32 — '도시락·텀블러·충전기'
+- src/application/development/mockCopy.ts:32 — '우산 챙기기'
+- src/application/development/mockCopy.ts:32 — '사용자 피드백 세 가지 정리'
+- src/application/development/mockCopy.ts:32 — '첫 화면 와이어프레임 수정'
+- src/application/development/mockCopy.ts:32 — '긴 문장과 큰 글씨로 확인'
+- src/application/development/mockCopy.ts:32 — '팀에 수정안 공유'
+- src/application/development/mockCopy.ts:32 — '금요일 발표 자료 마무리'
+- src/application/development/mockCopy.ts:32 — '달걀 10개와 우유'
+- src/application/development/mockCopy.ts:32 — '샐러드 채소·방울토마토'
+- src/application/development/mockCopy.ts:32 — '플레인 요거트'
+- src/application/development/mockCopy.ts:32 — '주방용 수세미 교체'
+- src/application/development/mockCopy.ts:32 — '집에 있는 양파는 사지 않기'
+- src/application/development/mockCopy.ts:32 — '싱크대와 식탁 정리'
+- src/application/development/mockCopy.ts:32 — '내일 옷과 가방 준비'
+- src/application/development/mockCopy.ts:32 — '오늘 좋았던 일 한 줄'
+- src/application/development/mockCopy.ts:32 — '알람 맞추고 화면 내려놓기'
+- src/application/development/mockCopy.ts:33 — '목요일 15:00 치과 예약. 회의와 겹치지 않도록 오전에 한 번 더 확인하기.'
+- src/application/development/mockCopy.ts:33 — '독서 모임은 일요일 11시, 역 앞 카페. 각자 기억에 남는 문장 하나씩 준비.'
+- src/application/development/mockCopy.ts:33 — '프로젝트 소개 첫 문장은 기능 설명보다 사용자가 겪는 상황으로 시작해 보기.'
+- src/application/development/mockCopy.ts:33 — '캠핑 준비물: 랜턴 충전, 보온병, 여분 양말. 종이컵 대신 컵 챙기기.'
+- src/application/development/mockCopy.ts:92 — '서점에서 책 고르기'
+- src/application/development/mockCopy.ts:92 — '퇴근길에 서점에 들러 읽고 싶었던 책 세 권을 비교했다. 목차만 보고 고르지 않으려고 각 책의 첫 장을 조금씩 읽었다. 이번에는 짧게 나눠 읽을 수 있는 에세이 한 권을 골랐다. 당장 사지 않은 소설은 제목을 적어 두고, 집에 있는 책을 다 읽은 뒤 다시 만나기로 했다.'
+- src/application/development/mockCopy.ts:92 — '후보 세 권의 첫 장 읽어 보기'
+- src/application/development/mockCopy.ts:92 — '이번 달 책 예산 안에서 한 권 고르기'
+- src/application/development/mockCopy.ts:92 — '읽고 싶은 책 목록에 소설 추가하기'
+- src/application/development/mockData.ts:21 — '생각보다 분주한 아침이었다. 출근길에 잠시 숨을 고르고, 어려웠던 회의를 마친 뒤 점심에는 밖으로 나가 하늘을 바라봤다. 퇴근 후에는 짧게 달리고 집에 돌아와 조용한 저녁을 보냈다. 특별한 일은 없었지만 창문으로 들어오던 따뜻한 빛, 친구가 보내준 다정한 메시지, 그리고 마침내 천천히 쉬는 기분을 기억하고 싶다.'
+- src/application/development/mockData.ts:57 — '컬러'
+- src/application/development/mockData.ts:121 — '쪽'
+- src/application/development/mockData.ts:121 — '잔'
+- src/application/development/mockData.ts:125 — '아침 체중'
+- src/application/development/mockMenu.ts:32 — '목업 데이터 · 한국어'
+- src/application/development/mockMenu.ts:36 — '목업 수정 내용 초기화 · Reset mock edits'
+- src/application/development/mockMenu.ts:37 — '목업 종료 · 내 데이터로 돌아가기'
+- src/application/development/mockProtagonists.ts:5 — '주인공1'
+- src/application/development/mockProtagonists.ts:6 — '주인공2'
+- src/application/development/mockProtagonists.ts:7 — '주인공3'
+- src/application/development/mockProtagonists.ts:8 — '주인공5'
+- src/application/development/mockProtagonists.ts:9 — '주인공6'
+- src/entities/announcement/api/fetchAnnouncements.ts:69 — 'Supabase env가 비어 있어요.'
+- src/entities/day-plan/lib/blockIcons.ts:13 — '취침'
+- src/entities/day-plan/lib/blockIcons.ts:14 — '기상'
+- src/entities/day-plan/lib/blockIcons.ts:15 — '건강'
+- src/entities/day-plan/lib/blockIcons.ts:16 — '딥워크'
+- src/entities/day-plan/lib/blockIcons.ts:17 — '생산성'
+- src/entities/day-plan/lib/buildSpineTimelineModel.ts:183 — '하루 시작'
+- src/entities/day-plan/lib/buildSpineTimelineModel.ts:190 — '하루 마무리'
+- src/entities/day-plan/lib/counterUnits.ts:15 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:16 — '잔'
+- src/entities/day-plan/lib/counterUnits.ts:17 — '세트'
+- src/entities/day-plan/lib/counterUnits.ts:18 — '페이지'
+- src/entities/day-plan/lib/counterUnits.ts:19 — '개'
+- src/entities/day-plan/lib/counterUnits.ts:20 — '알'
+- src/entities/day-plan/lib/counterUnits.ts:21 — '바퀴'
+- src/entities/day-plan/lib/counterUnits.ts:22 — '직접 입력'
+- src/entities/day-plan/lib/counterUnits.ts:39 — '푸쉬업'
+- src/entities/day-plan/lib/counterUnits.ts:47 — '책읽기'
+- src/entities/day-plan/lib/counterUnits.ts:55 — '영양제'
+- src/entities/day-plan/lib/counterUnits.ts:63 — '스트레칭'
+- src/entities/day-plan/lib/counterUnits.ts:71 — '산책'
+- src/entities/day-plan/lib/counterUnits.ts:113 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:115 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:128 — '목표를 달성했어요!'
+- src/entities/day-plan/lib/counterUnits.ts:129 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:130 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:130 — '${remaining}번 더 하면 목표예요'
+- src/entities/day-plan/lib/counterUnits.ts:131 — '${remaining}${unit} 더 하면 목표예요'
+- src/entities/day-plan/lib/counterUnits.ts:139 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:140 — '회'
+- src/entities/day-plan/lib/counterUnits.ts:140 — '${current}/${goal}회'
+- src/entities/day-plan/lib/customCatalogGroup.ts:13 — '건강 루틴'
+- src/entities/day-plan/lib/customCatalogGroup.ts:14 — '생산성을 높이는 도구'
+- src/entities/day-plan/lib/customCatalogGroup.ts:19 — '수분·체중·복약·스트레칭 등 몸 관리 항목을 오늘에 맞게 골라 담아요.'
+- src/entities/day-plan/lib/customCatalogGroup.ts:21 — '책읽기·공부·정리·글쓰기·딥워크·일기 등 집중에 쓸 항목을 골라 담아요. 직접 만든 루틴은 아래에서 계속 추가할 수 있어요.'
+- src/entities/day-plan/lib/customFlowCategoryKey.ts:19 — '오늘의 주인공'
+- src/entities/day-plan/lib/customFlowDisplayLabel.ts:13 — '루틴'
+- src/entities/day-plan/lib/customFlowDisplayLabel.ts:29 — '포킷 빠르게 둘러보기'
+- src/entities/day-plan/lib/customFlowDisplayLabel.ts:40 — '운동하기'
+- src/entities/day-plan/lib/customFlowTemplate.ts:65 — '할 일 체크'
+- src/entities/day-plan/lib/customFlowTemplate.ts:66 — '금지 체크'
+- src/entities/day-plan/lib/customFlowTemplate.ts:67 — '값 기록'
+- src/entities/day-plan/lib/customFlowTemplate.ts:68 — '영양 챙기기'
+- src/entities/day-plan/lib/customFlowTemplate.ts:69 — '체중 관리'
+- src/entities/day-plan/lib/customFlowTemplate.ts:70 — '오늘 했/안 했'
+- src/entities/day-plan/lib/customFlowTemplate.ts:71 — '횟수 채우기'
+- src/entities/day-plan/lib/customFlowTemplate.ts:72 — '집중 시간'
+- src/entities/day-plan/lib/customFlowTemplate.ts:73 — '한 줄 기록'
+- src/entities/day-plan/lib/customFlowTemplate.ts:74 — '간단한 메모'
+- src/entities/day-plan/lib/customFlowTemplate.ts:75 — '시간 알림'
+- src/entities/day-plan/lib/customFlowTemplate.ts:80 — '할 일을 하나씩 체크해요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:81 — '하지 않은 것을 체크해요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:82 — '숫자·값을 꾸준히 기록해요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:83 — '영양을 챙겨요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:84 — '체중 목표를 기록해요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:85 — '했는지만 간단히 남겨요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:86 — '목표 횟수를 채워요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:87 — '정해진 시간 동안 집중해요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:88 — '짧은 메모를 남겨요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:89 — '장보기·약속·할 일을 짧게 남겨요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:90 — '알림 시간에 맞춰 완료해요'
+- src/entities/day-plan/lib/customFlowTemplate.ts:95 — '할 일 목록을 만들고, 세션에서 하나씩 체크해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:96 — '하지 말아야 할 습관을 목록으로 두고, 오늘 지켰는지 체크해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:97 — '체중·혈압처럼 숫자를 기록하고 추이·목표를 확인해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:98 — '영양을 챙기고 세션에서 기록해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:99 — '현재·목표 체중과 주간 감량 목표를 두고 날짜별로 기록해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:100 — '오늘 했는지만 남기고 연속 기록을 쌓아요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:101 — '횟수를 세고 하루 목표까지 채워요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:102 — '정해 둔 시간 동안 집중 타이머로 진행해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:103 — '질문에 답하고 기분과 함께 짧게 남겨요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:104 — '세션에서 할 일·약속·쇼핑 목록을 짧게 적고 저장해요.'
+- src/entities/day-plan/lib/customFlowTemplate.ts:105 — '정해 둔 시간마다 완료 여부를 체크해요.'
+- src/entities/day-plan/lib/customFlowTemplateConfigs.ts:215 — '회'
+- src/entities/day-plan/lib/customFlowTemplateConfigs.ts:268 — '회'
+- src/entities/day-plan/lib/customFlowTemplateConfigs.ts:698 — '회'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:252 — '최고'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:252 — '좋음'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:252 — '보통'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:252 — '별로'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:252 — '힘듦'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:373 — '지금'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:374 — '${minutes}분 후'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:378 — '약 ${h}시간 ${m}분 후'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:378 — '약 ${h}시간 후'
+- src/entities/day-plan/lib/customFlowTemplateRuntime.ts:380 — '내일 ${time}'
+- src/entities/day-plan/lib/dayPlanFlowBlock.ts:30 — '새 일정'
+- src/entities/day-plan/lib/dayPlanFlowBlock.ts:30 — '사용자'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:50 — '러닝'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:51 — '업무'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:51 — '작업'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:51 — '몰입'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:51 — '스터디'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:51 — '노트'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:52 — '독서'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:52 — '책읽기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:53 — '공부'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:53 — '공부·학습'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:54 — '스트레칭하기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:54 — '스트레칭'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:55 — '허리펴기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:56 — '거북목 바르게하기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:57 — '명상'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:58 — '요가'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:59 — '하루·주간 정리'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:59 — '하루 정리'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:59 — '주간 정리'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:60 — '글쓰기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:61 — '일기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:62 — '언어 학습'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:63 — '회고·점검'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:63 — '회고'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:64 — '창작·아이디어'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:64 — '창작'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:65 — '메일·소통 정리'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:65 — '메일 정리'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:67 — '휴식'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:68 — '사용자'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:69 — '사용쟈'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:70 — '맞춤 플로우'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:71 — '맞춤 루틴'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:72 — '카테고리 만들기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:73 — '루틴 만들기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:74 — '플로우 직접 설정'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:75 — '루틴 직접 설정'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:76 — '플로우'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:77 — '루틴'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:78 — '오늘의 주인공'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:79 — '오늘의 주인공 만들기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:80 — '오늘의 주인공 직접 설정'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:81 — '헬스'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:82 — '운동'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:83 — '피트니스'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:84 — '기타'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:88 — '단식'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:88 — '체중관리'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:89 — '건강을 위한 섭취'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:89 — '영양 챙기기'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:90 — '수분'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:90 — '수분섭취'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:91 — '약 복용'
+- src/entities/day-plan/lib/dayPlanRuntimeTime.ts:92 — '피트티스'
+- src/entities/day-plan/lib/formatSpineGapCoaching.ts:8 — '${duration} 활용하기, 할일이 다가와요.'
+- src/entities/day-plan/lib/formatSpineGapCoaching.ts:9 — '${duration} 집중할 시간이 있어요.'
+- src/entities/day-plan/lib/formatSpineGapCoaching.ts:11 — '${duration} 동안 여유롭게 보내보아요!'
+- src/entities/day-plan/lib/goalCategorySessionConfig.ts:501 — '오늘의 주인공 직접 설정'
+- src/entities/day-plan/lib/healthIntakeDetailConfig.ts:18 — '영양 챙기기'
+- src/entities/day-plan/lib/healthIntakeDetailConfig.ts:20 — '건강을 위한 섭취'
+- src/entities/day-plan/lib/measurementUnits.ts:22 — '시간'
+- src/entities/day-plan/lib/measurementUnits.ts:23 — '분'
+- src/entities/day-plan/lib/measurementUnits.ts:27 — '걸음'
+- src/entities/day-plan/lib/measurementUnits.ts:31 — '직접 입력'
+- src/entities/day-plan/lib/measurementUnits.ts:32 — '없음'
+- src/entities/day-plan/lib/measurementUnits.ts:45 — '체중'
+- src/entities/day-plan/lib/measurementUnits.ts:46 — '혈압'
+- src/entities/day-plan/lib/measurementUnits.ts:47 — '수면'
+- src/entities/day-plan/lib/measurementUnits.ts:48 — '걸음 수'
+- src/entities/day-plan/lib/measurementUnits.ts:49 — '물 섭취'
+- src/entities/day-plan/lib/measurementUnits.ts:50 — '심박수'
+- src/entities/day-plan/lib/measurementUnits.ts:51 — '체지방'
+- src/entities/day-plan/lib/measurementUnits.ts:52 — '키'
+- src/entities/day-plan/lib/measurementUnits.ts:53 — '섭취 칼로리'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:5 — '영양 챙기기'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:6 — '수분 섭취'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:7 — '체중 관리'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:8 — '책읽기'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:9 — '노트'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:10 — '오늘의 주인공 직접 설정'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:25 — '루틴 직접 설정'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:26 — '독서'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:27 — '건강을 위한 섭취'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:27 — '약 복용'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:28 — '체중관리'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:28 — '체중조절'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:28 — '체중 조절'
+- src/entities/day-plan/lib/priorityCatalogPickerLabels.ts:28 — '단식'
+- src/entities/day-plan/lib/priorityCrossLayoutRoutines.ts:58 — '목록'
+- src/entities/day-plan/lib/priorityCrossLayoutRoutines.ts:59 — '시간대별'
+- src/entities/day-plan/lib/priorityCrossLayoutRoutines.ts:60 — '타임라인'
+- src/entities/day-plan/lib/readingBookCatalog.ts:57 — '알라딘에서 보기'
+- src/entities/day-plan/lib/readingBookCatalog.ts:58 — 'Open Library에서 보기'
+- src/entities/day-plan/lib/readingBookCatalog.ts:63 — '알라딘'
+- src/entities/day-plan/lib/readingBookShareText.ts:17 — '읽고 싶은'
+- src/entities/day-plan/lib/readingBookShareText.ts:18 — '읽는 중'
+- src/entities/day-plan/lib/readingBookShareText.ts:19 — '완료'
+- src/entities/day-plan/lib/readingBookShareText.ts:34 — '${resolved.title} 읽기 완료 📚'
+- src/entities/day-plan/lib/readingBookShareText.ts:37 — '저자: ${author}'
+- src/entities/day-plan/lib/readingBookShareText.ts:39 — '상태: ${STATUS_LABEL_KO[status]}'
+- src/entities/day-plan/lib/readingBookShareText.ts:41 — '오늘 목표: ${resolved.startPage}P → ${resolved.targetPage}P (${pagesRead}쪽)'
+- src/entities/day-plan/lib/readingBookShareText.ts:45 — '전체: ${totalPages}쪽 · 진행 ${progressPct}%'
+- src/entities/day-plan/lib/readingBookShareText.ts:49 — '메모: ${memo}'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:123 — '어린왕자 (소프트커버 에디션) - 개정판'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:135 — '앙투안 드 생텍쥐페리 (지은이), 전성자 (옮긴이)'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:215 — '읽고 싶은'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:215 — '완료'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:215 — '읽는 중'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:297 — '도서'
+- src/entities/day-plan/lib/readingLiveActivityConfig.ts:319 — '제목 없음'
+- src/entities/day-plan/lib/reminderSchedule.ts:24 — '약·영양제'
+- src/entities/day-plan/lib/reminderSchedule.ts:26 — '아침 영양제'
+- src/entities/day-plan/lib/reminderSchedule.ts:27 — '저녁 영양제'
+- src/entities/day-plan/lib/reminderSchedule.ts:32 — '물 마시기'
+- src/entities/day-plan/lib/reminderSchedule.ts:34 — '물 한 잔'
+- src/entities/day-plan/lib/reminderSchedule.ts:35 — '물 한 잔'
+- src/entities/day-plan/lib/reminderSchedule.ts:36 — '물 한 잔'
+- src/entities/day-plan/lib/reminderSchedule.ts:41 — '식사 알림'
+- src/entities/day-plan/lib/reminderSchedule.ts:43 — '아침 식사'
+- src/entities/day-plan/lib/reminderSchedule.ts:44 — '점심 식사'
+- src/entities/day-plan/lib/reminderSchedule.ts:45 — '저녁 식사'
+- src/entities/day-plan/lib/reminderSchedule.ts:50 — '공부 알림'
+- src/entities/day-plan/lib/reminderSchedule.ts:52 — '오전 공부'
+- src/entities/day-plan/lib/reminderSchedule.ts:53 — '오후 복습'
+- src/entities/day-plan/lib/resolveCatalogGroupDisplayLabel.ts:24 — '일상 루틴'
+- src/entities/day-plan/lib/resolveCatalogGroupDisplayLabel.ts:25 — '금지 루틴'
+- src/entities/day-plan/lib/resolveCatalogGroupDisplayLabel.ts:27 — '데일리 고정 루틴'
+- src/entities/day-plan/lib/resolveCatalogGroupDisplayLabel.ts:28 — '매일 만나는 오늘의 주인공'
+- src/entities/day-plan/lib/resolveCatalogGroupDisplayLabel.ts:33 — '주말 고정 루틴'
+- src/entities/day-plan/lib/resolveCatalogGroupDisplayLabel.ts:34 — '주말의 오늘의 주인공'
+- src/entities/day-plan/lib/templateDemoCopy.ts:22 — '체험'
+- src/entities/day-plan/lib/templateDemoCopy.ts:23 — '체중'
+- src/entities/day-plan/lib/templateDemoCopy.ts:24 — '종합비타민'
+- src/entities/day-plan/lib/templateDemoCopy.ts:25 — '푸쉬업'
+- src/entities/day-plan/lib/templateDemoCopy.ts:26 — '오늘 기분은?'
+- src/entities/day-plan/lib/templateDemoCopy.ts:28 — '어제는 괜찮았어요'
+- src/entities/day-plan/lib/templateDemoCopy.ts:28 — '보통'
+- src/entities/day-plan/lib/templateDemoCopy.ts:29 — '운동하고 기분 좋음'
+- src/entities/day-plan/lib/templateDemoCopy.ts:29 — '좋음'
+- src/entities/day-plan/lib/templateDemoCopy.ts:31 — '출근 전 가방에 충전기·이어폰 챙기기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:33 — '장보기: 계란·우유·샐러드 재료'
+- src/entities/day-plan/lib/templateDemoCopy.ts:34 — '병원 예약 — 목요일 오후 3시'
+- src/entities/day-plan/lib/templateDemoCopy.ts:35 — '책 30쪽까지 읽기 (챕터 4)'
+- src/entities/day-plan/lib/templateDemoCopy.ts:36 — '팀 회고: 다음 주 스프린트 목표 정리'
+- src/entities/day-plan/lib/templateDemoCopy.ts:37 — '세탁·빨래 개기 끝'
+- src/entities/day-plan/lib/templateDemoCopy.ts:39 — '아침 영양제'
+- src/entities/day-plan/lib/templateDemoCopy.ts:39 — '물 한 잔'
+- src/entities/day-plan/lib/templateDemoCopy.ts:39 — '저녁 약'
+- src/entities/day-plan/lib/templateDemoCopy.ts:40 — '방해 금지 모드 켜기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:41 — '물 한 잔 마시기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:41 — '5분 스트레칭'
+- src/entities/day-plan/lib/templateDemoCopy.ts:41 — '창문 열고 환기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:42 — '밤늦게 폰 보기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:42 — '과자·야식 먹기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:42 — 'SNS 무한 스크롤'
+- src/entities/day-plan/lib/templateDemoCopy.ts:44 — '□ 물 마시기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:44 — '□ 스트레칭'
+- src/entities/day-plan/lib/templateDemoCopy.ts:45 — '✓ 밤늦게 폰 보기'
+- src/entities/day-plan/lib/templateDemoCopy.ts:45 — '□ 과자·야식'
+- src/entities/day-plan/lib/templateDemoCopy.ts:46 — '체중·혈압·수면 등'
+- src/entities/day-plan/lib/templateDemoCopy.ts:46 — '단위·목표 설정'
+- src/entities/day-plan/lib/templateDemoCopy.ts:47 — '아침·점심·저녁 중 필요한 슬롯'
+- src/entities/day-plan/lib/templateDemoCopy.ts:47 — '복용 시간 설정'
+- src/entities/day-plan/lib/templateDemoCopy.ts:48 — '현재·목표 체중'
+- src/entities/day-plan/lib/templateDemoCopy.ts:48 — '주간 감량 목표'
+- src/entities/day-plan/lib/templateDemoCopy.ts:49 — '오늘 완료 ✓'
+- src/entities/day-plan/lib/templateDemoCopy.ts:49 — '연속 5일'
+- src/entities/day-plan/lib/templateDemoCopy.ts:50 — '이름·목표 설정'
+- src/entities/day-plan/lib/templateDemoCopy.ts:50 — '+1 / 추이'
+- src/entities/day-plan/lib/templateDemoCopy.ts:51 — '25분 집중'
+- src/entities/day-plan/lib/templateDemoCopy.ts:51 — '남은 12분'
+- src/entities/day-plan/lib/templateDemoCopy.ts:52 — '오늘 기분: 좋음'
+- src/entities/day-plan/lib/templateDemoCopy.ts:52 — '한 줄 메모'
+- src/entities/day-plan/lib/templateDemoCopy.ts:53 — '장보기·예약·할 일'
+- src/entities/day-plan/lib/templateDemoCopy.ts:53 — '짧게 남기고 저장'
+- src/entities/day-plan/lib/templateDemoCopy.ts:54 — '약·물·식사 알림'
+- src/entities/day-plan/lib/templateDemoCopy.ts:54 — '시간별 문구 설정'
+- src/entities/day-plan/lib/workStudyDocument.ts:44 — '빨강'
+- src/entities/day-plan/lib/workStudyDocument.ts:45 — '주황'
+- src/entities/day-plan/lib/workStudyDocument.ts:46 — '갈색'
+- src/entities/day-plan/lib/workStudyDocument.ts:47 — '초록'
+- src/entities/day-plan/lib/workStudyDocument.ts:48 — '파랑'
+- src/entities/day-plan/lib/workStudyDocument.ts:49 — '보라'
+- src/entities/day-plan/lib/workStudyDocument.ts:50 — '회색'
+- src/entities/day-plan/lib/workStudyDocument.ts:109 — '작게'
+- src/entities/day-plan/lib/workStudyDocument.ts:110 — '보통'
+- src/entities/day-plan/lib/workStudyDocument.ts:111 — '크게'
+- src/entities/day-plan/lib/workStudyDocument.ts:112 — '최대'
+- src/entities/day-plan/lib/workStudyDocument.ts:324 — '${parseInt(m[1]!, 10)}년 ${parseInt(m[2]!, 10)}월 ${parseInt(m[3]!, 10)}일'
+- src/entities/day-plan/lib/workStudyDocument.ts:574 — '[이미지] ${caption}'
+- src/entities/day-plan/lib/workStudyDocument.ts:575 — '[이미지]'
+- src/entities/day-plan/lib/workStudyPlan.ts:12 — '문제 풀이'
+- src/entities/day-plan/lib/workStudyPlan.ts:12 — '복습'
+- src/entities/day-plan/lib/workStudyPlan.ts:12 — '예습'
+- src/entities/day-plan/lib/workStudyPlan.ts:12 — '정리 노트'
+- src/entities/day-plan/lib/workStudyPlan.ts:15 — '뽀모도로'
+- src/entities/day-plan/lib/workStudyPlan.ts:15 — '자유 스터디'
+- src/entities/day-plan/lib/workStudyPlan.ts:22 — '노트'
+- src/entities/day-plan/lib/workStudyPlan.ts:26 — '과목: ${config.subject.trim()}'
+- src/entities/day-plan/lib/workStudyPlan.ts:29 — '모드: ${workStudyModeLabelKo(config.studyMode)}'
+- src/entities/day-plan/lib/workStudyPlan.ts:31 — '집중 ${config.planMin}분 · 휴식 ${config.breakMin}분'
+- src/entities/day-plan/lib/workStudyPlan.ts:33 — '목표 ${config.planMin}분${config.doneMin > 0 ? ' · 기록 ${config.doneMin}분' : ''}'
+- src/entities/day-plan/lib/workStudyPlan.ts:33 — ' · 기록 ${config.doneMin}분'
+- src/entities/day-plan/lib/workStudyPlan.ts:39 — '노트'
+- src/entities/day-plan/lib/workStudyPlan.ts:42 — '할 일'
+- src/entities/day-plan/lib/workStudyPlan.ts:44 — '할 일'
+- src/entities/day-plan/lib/workStudyPlan.ts:46 — '[완료]'
+- src/entities/day-plan/lib/workStudyPlan.ts:61 — '시간표'
+- src/entities/day-plan/lib/workStudyPlan.ts:68 — '요약'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '월'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '화'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '수'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '목'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '금'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '토'
+- src/entities/day-plan/lib/workStudySchedule.ts:7 — '일'
+- src/entities/day-plan/lib/workStudySchedule.ts:62 — '${monthStart.getFullYear()}년 ${monthStart.getMonth() + 1}월'
+- src/entities/day-plan/lib/workStudySchedule.ts:70 — '${mo}월 ${d}일'
+- src/entities/day-plan/model/fixedFlowSetsStore.ts:323 — '세트'
+- src/entities/day-plan/model/fixedFlowSetsStore.ts:973 — '오늘의 주인공 세트'
+- src/features/aladin-book-search/lib/searchAladinBooks.ts:111 — '도서 정보를 불러오지 못했어요.'
+- src/features/aladin-book-search/lib/searchAladinBooks.ts:123 — '알라딘 API 키가 설정되지 않았어요.'
+- src/features/aladin-book-search/lib/searchAladinBooks.ts:136 — '도서 정보를 불러오지 못했어요.'
+- src/features/aladin-book-search/lib/searchAladinBooks.ts:144 — '도서 정보 형식을 해석하지 못했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:128 — '담기 오늘의 주인공에 형광펜 중요도 표시(색 마커)를 추가했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:129 — '시작·마무리·오늘의 주인공 시간 설정을 설정 탭과 같은 스타일로 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:130 — '글씨체별 크기 차이를 보정하고, 화면 UI를 시티팝 톤으로 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:133 — '오늘의 주인공 빠르게 둘러보기에 눌러볼 버튼 아이콘 안내를 넣었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:134 — '체크리스트를 눌러보라는 유도 문구와 애니메이션을 추가했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:135 — '오늘의 주인공·오늘의 주인공 세트 탭 전환이 더 부드럽게 느껴지도록 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:136 — '사용 설명서를 포스트잇 오늘의 주인공 화면에 맞게 업데이트했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:139 — '글씨 크기·글씨체 설정 화면을 더 보기 쉽게 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:140 — '노트에서 빈 줄에 엔터를 쳐도 아래로 새 줄이 생기도록 고쳤어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:143 — '오늘의 주인공·히스토리 화면에 시티팝 분위기 일러스트를 곁들였어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:144 — '오늘 탭에 매일 바뀌는 한 줄 응원과 복사·공유를 넣었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:145 — '스플래시·탭 이미지 로딩을 다듬어 화면 전환이 더 부드러워졌어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:148 — '기기 언어에 맞춰 한국어·영어·일본어로 앱 화면이 표시돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:149 — '내장 오늘의 주인공·묶음·사용 설명서 문구도 선택한 언어에 맞게 보여요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:150 — '영어·일본어 환경에서 한글이 섞여 보이던 부분을 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:153 — '투두 리스트를 오늘 탭 헤더(목록 아이콘 옆)로 옮겼어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:154 — '투두 화면에서도 날짜·집중 구간 헤더가 그대로 유지돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:155 — '시간대 보기는 기능 추가 전까지 UI에서 잠시 숨겨 두었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:156 — '사용 설명서를 변경된 화면에 맞게 업데이트했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:159 — '노트에서 사진을 추가하고 크기를 조절할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:160 — '노트 편집에서 줄 맨 앞 엔터·맨 위·맨 아래 새 줄 추가를 개선했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:161 — '타임라인 보기는 점검 중이라 잠시 숨겨 두었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:162 — '사용 설명서를 현재 화면에 맞게 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:165 — 'App Store에 한국어가 지원 언어로 표시되도록 앱 언어 설정을 추가했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:168 — '타임라인 일정 수정에서 불필요한「할 일」입력을 제거했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:169 — '시간·삭제 버튼을 앱 Retro Flat 스타일에 맞게 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:172 — '오늘의 주인공 세트에서 바꾼 시간대(예: 밤)가 오늘 화면에 바로 반영되도록 고쳤어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:173 — '고정·오늘의 주인공 세트에서 끈 항목이 오늘 일정에 남지 않도록 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:174 — '타임라인 일정 수정 시 시간 입력이 저장에 더 안정적으로 반영돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:177 — '시작·마무리 시간에「오늘 돌아보기 알림」을 추가했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:178 — '정해진 시각에 오늘 진행 상황을 돌아보라고 알려 드려요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:181 — '미완료 일정 알림이 지정한 시각에 더 안정적으로 울리도록 고쳤어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:182 — '목록·시간대·타임라인 모드별 미완료 개수도 알림에 함께 보여요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:185 — '앱이 더 안정적으로 시작되도록 구독 연동을 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:188 — '구독 연동을 앱스토어용 설정에 맞게 안정화했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:191 — '적용하기를 누르기 전에는 고정 오늘의 주인공이 시간대 화면에 들어가지 않아요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:192 — '예전에 잘못 남아 있던 시간대 오늘의 주인공도 정리되도록 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:193 — '설정 화면을 더 깔끔하게 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:196 — '같은 오늘의 주인공을 오늘 일정에 여러 번 담을 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:197 — '이미 추가된 오늘의 주인공도 추가 목록에서 빠짐없이 보여요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:198 — '노트 체크리스트 정렬·크기와 완료 표시를 더 쓰기 쉽게 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:201 — '하루가 지나면 지난 오늘의 주인공은 사라지고, 고정 오늘의 주인공 완료 체크도 자동으로 풀려요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:202 — '하루 마무리·자정 시각을 AM/PM과 날짜로 더 명확히 보여요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:203 — '오늘의 주인공 설정·노트 편집 등 오늘 일정을 더 편하게 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:206 — '같은 시각에 알림이 여러 번 울리던 문제를 고쳤어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:207 — '적용하지 않은 오늘의 주인공의 시간 알림이 울리지 않도록 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:208 — '오늘의 주인공 묶음 목록과 만들기·설정 버튼 스타일을 더 읽기 쉽게 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:211 — '알림·횟수·할 일·메모·값 기록 오늘의 주인공 템플릿 UI를 통일된 스타일로 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:212 — '오늘의 주인공 소개 이미지가 더 빠르게 뜨고, 사진 선택 확인이 기기에서도 잘 보여요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:213 — '히스토리의 잘못된 시간·날짜 표시를 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:216 — '타임라인에서 당일·다음 날·오전/오후 시간 설정이 더 정확하게 저장돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:217 — '오늘의 주인공 소개와 사용 설명서를 실제 화면에 맞게 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:218 — '목록 모드와 오늘의 주인공 화면의 버튼·안내 문구를 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:221 — '노트에서 엔터·지우기·한글 입력이 더 안정적으로 동작해요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:222 — '번호 목록을 지울 때 글자가 되살아나던 문제를 고쳤어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:223 — '주말 고정 오늘의 주인공 알림이 해당 요일에만 울리도록 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:226 — '타임라인에서 일정을 열어 오늘의 주인공 설정을 바로 수정할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:227 — '시간대 모드에서 상세설정 후에도 연결한 오늘의 주인공이 유지돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:228 — '타임라인에서 완료 체크를 바로 할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:231 — '보기 전환 후에도 설정한 오늘의 주인공 시간이 유지돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:232 — '타임라인·고정 오늘의 주인공 아이콘·할일 표시를 더 정확하게 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:233 — '독서 페이지 입력과 안내 문구를 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:236 — '시간 입력을 숫자로 바로 입력할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:237 — '오늘의 주인공·묶음을 더 쉽게 만들고, 지난 일정도 완료할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:238 — '스플래시 화면을 새롭게 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:241 — '도서 영문 검색을 지원해요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:242 — '노트 편집과 메모 공유 경험을 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:243 — '앱 안정성과 사용 경험을 개선했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:246 — '목록·시간대·타임라인마다 고정 오늘의 주인공을 따로 적용할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:247 — '모드를 바꿔도 다른 보기의 고정 오늘의 주인공 적용이 덮어씌워지지 않아요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:248 — '앱 안정성과 사용 경험을 개선했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:251 — '고정 오늘의 주인공을 타임라인 모드에 적용하면 오늘 탭에 바로 반영돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:252 — '앱·알림 아이콘을 최신 디자인으로 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:253 — '메모 편집 화면의 제목 정렬과 입력 경험을 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:256 — '오늘의 주인공·오늘의 주인공 세트 탭 구성을 정리하고 기본 오늘의 주인공은 삭제할 수 없게 했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:257 — '오늘 일정 타임라인에서 현재 진행 중인 블록을 더 잘 볼 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:258 — '내 서재에서 목록 검색과 최신순·오래된순 정렬을 쓸 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:261 — '홈 화면 위젯에 담기 목록 아이콘이 앱과 같게 표시돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:262 — '위젯 완료 색상을 앱 브랜드 컬러에 맞췄어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:263 — '새 오늘의 주인공 만들기에서 키보드가 올라와도 다음 버튼이 가려지지 않아요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:266 — '투두 리스트를 상단 모드에서 바로 열 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:267 — '노트·오늘의 주인공 중요도·타임라인 UI를 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:270 — '오늘의 주인공 아이콘·색상이 목표 상세 설정에 올바르게 표시돼요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:271 — '오늘 일정에서 오늘의 주인공을 완전히 종료할 수 있어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:272 — '노트·투두 리스트 등 화면 사용성을 다듬었어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:275 — 'City Pop 미니멀 스타일로 화면 디자인을 새롭게 정리했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:276 — '플랫·직각 UI와 새 타이포그래피로 가독성을 높였어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:277 — '잠금화면 메모 입력 글자 크기를 조정했어요.'
+- src/features/app-update-notice/lib/releaseNotes.ts:279 — '앱 안정성과 사용 경험을 개선했어요.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:13 — 'Apple · Google 캘린더 연결'
+- src/features/apple-calendar/AppleCalendarSection.tsx:14 — '일정과 오늘의 기록을 함께 봐요'
+- src/features/apple-calendar/AppleCalendarSection.tsx:60 — '캘린더 연결이 해제되어 있어요.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:62 — '캘린더 다시 연결'
+- src/features/apple-calendar/AppleCalendarSection.tsx:65 — '아이폰 설정 열기'
+- src/features/apple-calendar/AppleCalendarSection.tsx:66 — '불러오는 중…'
+- src/features/apple-calendar/AppleCalendarSection.tsx:66 — '${ids.length}개 캘린더 표시 중'
+- src/features/apple-calendar/AppleCalendarSection.tsx:67 — '아이폰에 등록된 Apple·Google 캘린더를 선택해주세요. 체크한 캘린더의 일정을 함께 표시해요.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:69 — '목록 새로고침'
+- src/features/apple-calendar/AppleCalendarSection.tsx:70 — '앱 접근 권한 확인'
+- src/features/apple-calendar/AppleCalendarSection.tsx:72 — '연결된 캘린더가 없어요.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:82 — '이번 달 일정 확인 중…'
+- src/features/apple-calendar/AppleCalendarSection.tsx:82 — '이번 달 일정 수 확인 불가'
+- src/features/apple-calendar/AppleCalendarSection.tsx:82 — '이번 달 ${monthEvents.filter(event => event.calendarId === calendar.id).length}개'
+- src/features/apple-calendar/AppleCalendarSection.tsx:86 — '모두 선택 해제'
+- src/features/apple-calendar/AppleCalendarSection.tsx:90 — '캘린더 연결 해제'
+- src/features/apple-calendar/AppleCalendarSection.tsx:91 — '앱에서 일정 조회와 표시를 중단해요. 접근 권한도 끄려면 아이폰 설정에서 변경해주세요.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:93 — '아이폰에서 접근 권한 끄기'
+- src/features/apple-calendar/appleCalendar.ts:39 — '아이폰 설정에서 캘린더 전체 접근을 허용해주세요.'
+- src/features/apple-calendar/appleCalendar.ts:40 — '선택한 캘린더를 아이폰에서 찾을 수 없어요. 설정에서 목록을 새로고침하고 다시 선택해주세요.'
+- src/features/apple-calendar/appleCalendar.ts:41 — '캘린더 연결을 사용하려면 앱 업데이트가 필요해요.'
+- src/features/apple-calendar/appleCalendar.ts:42 — '캘린더를 불러오지 못했어요. 다시 시도해주세요.'
+- src/features/apple-calendar/calendarDisplayTitle.ts:5 — '${ko ? '이름 미지정 캘린더' : 'Unnamed calendar'} · ${value.slice(-4).toUpperCase()}'
+- src/features/apple-calendar/calendarDisplayTitle.ts:5 — '이름 미지정 캘린더'
+- src/features/apple-calendar/calendarDisplayTitle.ts:7 — '이름 미지정 캘린더'
+- src/features/apple-calendar/calendarSourceLabel.ts:3 — 'Google 캘린더'
+- src/features/apple-calendar/calendarSourceLabel.ts:4 — 'Apple 캘린더'
+- src/features/apple-calendar/calendarSourceLabel.ts:5 — 'Apple 캘린더 (iPhone 저장)'
+- src/features/apple-calendar/calendarSourceLabel.ts:6 — 'Outlook 캘린더'
+- src/features/apple-calendar/calendarSourceLabel.ts:7 — '연결된 캘린더'
+- src/features/drive-backup/DriveBackupSection.tsx:20 — '연결 확인 중'
+- src/features/drive-backup/DriveBackupSection.tsx:36 — '백업 및 복구'
+- src/features/drive-backup/DriveBackupSection.tsx:36 — '작업을 완료하지 못했어요. 다시 시도해 주세요.'
+- src/features/drive-backup/DriveBackupSection.tsx:45 — 백업 및 복구
+- src/features/drive-backup/DriveBackupSection.tsx:46 — '날짜별 기록과 이미지 원본을 내 Google Drive에 보관해요'
+- src/features/drive-backup/DriveBackupSection.tsx:52 — 나의 이야기, 직접 추가한 이벤트, 업로드한 사진 원본과 사진에 저장한 글을 날짜별로 백업해요. 글꼴 등 앱 설정은 제외하며, 내 Google Drive의 앱 전용 공간에 보관해요.
+- src/features/drive-backup/DriveBackupSection.tsx:53 — 'Google Drive 연결하기'
+- src/features/drive-backup/DriveBackupSection.tsx:53 — 'Google 연결 중'
+- src/features/drive-backup/DriveBackupSection.tsx:54 — '백업 목록 새로고침'
+- src/features/drive-backup/DriveBackupSection.tsx:54 — '목록 불러오는 중'
+- src/features/drive-backup/DriveBackupSection.tsx:55 — 'Google Drive 연결 해제'
+- src/features/drive-backup/DriveBackupSection.tsx:55 — '연결 해제'
+- src/features/drive-backup/DriveBackupSection.tsx:55 — 'Drive에 저장한 백업은 유지돼요.'
+- src/features/drive-backup/DriveBackupSection.tsx:55 — '취소'
+- src/features/drive-backup/DriveBackupSection.tsx:55 — '연결 해제'
+- src/features/drive-backup/DriveBackupSection.tsx:55 — '연결 해제 중'
+- src/features/drive-backup/DriveBackupSection.tsx:56 — 새로고침을 눌러 저장된 백업을 확인하세요.
+- src/features/drive-backup/DriveBackupSection.tsx:57 — 년
+- src/features/drive-backup/DriveBackupSection.tsx:57 — 월
+- src/features/drive-backup/DriveBackupSection.tsx:60 — '이 날짜 백업하기'
+- src/features/drive-backup/DriveBackupSection.tsx:60 — '백업 준비 중'
+- src/features/drive-backup/DriveBackupSection.tsx:60 — '백업 완료'
+- src/features/drive-backup/DriveBackupSection.tsx:60 — '${date}의 기록과 이미지 원본을 Google Drive에 저장했어요.'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '복구 · ${new Date(b.createdTime).toLocaleString()}'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '${date} 복구'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '이 날짜의 기록을 선택한 백업으로 교체해요. 다른 날짜의 기록은 유지돼요.'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '취소'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '복구하기'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '백업 확인 중'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '복구 완료'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '${date}의 기록과 이미지를 가져왔어요.'
+- src/features/drive-backup/DriveBackupSection.tsx:61 — '확인'
+- src/features/drive-backup/DriveBackupSection.tsx:63 — 백업할 날짜별 기록이 없어요.
+- src/features/drive-backup/dateData.ts:13 — '올바른 날짜를 선택해 주세요.'
+- src/features/drive-backup/dateData.ts:36 — '백업 데이터가 손상됐어요.'
+- src/features/drive-backup/dateData.ts:39 — '다른 날짜의 기록과 ID가 겹쳐요.'
+- src/features/drive-backup/dateData.ts:52 — '지원하지 않는 백업 데이터예요.'
+- src/features/drive-backup/dateData.ts:54 — '백업 날짜가 일치하지 않아요.'
+- src/features/drive-backup/dateData.ts:56 — '이미지 목록이 손상됐어요.'
+- src/features/drive-backup/dateData.ts:59 — '잘못된 날짜별 기록이에요.'
+- src/features/drive-backup/dateData.ts:66 — '다른 날짜의 일기와 ID가 겹쳐요.'
+- src/features/drive-backup/dateData.ts:79 — '다른 날짜의 퍼즐과 ID가 겹쳐요.'
+- src/features/drive-backup/dependencies.ts:37 — '루틴 연결 정보가 손상됐어요.'
+- src/features/drive-backup/dependencies.ts:40 — '잘못된 루틴 그룹이에요.'
+- src/features/drive-backup/dependencies.ts:45 — '잘못된 사용자 루틴이에요.'
+- src/features/drive-backup/drive.ts:13 — 'Google Drive 백업은 iPhone과 Android 앱에서 사용할 수 있어요.'
+- src/features/drive-backup/drive.ts:21 — 'Google Drive 연결 모듈을 포함해 앱을 다시 빌드해 주세요.'
+- src/features/drive-backup/drive.ts:24 — 'Google Drive 연결을 위한 iOS OAuth 설정이 필요해요.'
+- src/features/drive-backup/drive.ts:28 — 'Google Drive 연결을 취소했어요.'
+- src/features/drive-backup/drive.ts:31 — '백업을 위해 Google Drive 접근을 허용해 주세요.'
+- src/features/drive-backup/drive.ts:45 — '먼저 Google Drive를 연결해 주세요.'
+- src/features/drive-backup/drive.ts:54 — 'Drive 접근 권한 또는 저장 용량을 확인해 주세요.'
+- src/features/drive-backup/drive.ts:54 — 'Google Drive 요청에 실패했어요 (${response.status}). 다시 시도해 주세요.'
+- src/features/drive-backup/drive.ts:56 — 'Google 계정을 다시 연결해 주세요.'
+- src/features/drive-backup/drive.ts:86 — '이미지 저장 중 ${assets.length + 1}/${uris.size}'
+- src/features/drive-backup/drive.ts:88 — '원본 이미지 파일이 없어 백업을 완료할 수 없어요.'
+- src/features/drive-backup/drive.ts:92 — '이미지를 Drive에 저장하지 못했어요. 다시 시도해 주세요.'
+- src/features/drive-backup/drive.ts:94 — '이미지 저장 크기가 일치하지 않아요.'
+- src/features/drive-backup/drive.ts:99 — '백업 마무리 중'
+- src/features/drive-backup/drive.ts:107 — '지원하지 않거나 손상된 백업이에요.'
+- src/features/drive-backup/drive.ts:109 — '기기 저장소를 사용할 수 없어요.'
+- src/features/drive-backup/drive.ts:115 — '잘못된 이미지 정보예요.'
+- src/features/drive-backup/drive.ts:116 — '이미지 가져오는 중 ${refs.size + 1}/${manifest.assets.length}'
+- src/features/drive-backup/drive.ts:120 — '이미지 다운로드가 완료되지 않았어요. 다시 시도해 주세요.'
+- src/features/drive-backup/drive.ts:124 — '백업 이미지가 누락됐어요.'
+- src/features/drive-backup/drive.ts:125 — '백업에 원본 이미지가 누락됐어요.'
+- src/features/drive-backup/drive.ts:137 — '날짜별 기록 복구 중'
+- src/features/drive-backup/drive.ts:148 — '기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:41 — '사용쟈'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:41 — '사용자'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:79 — '오늘의 주인공'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:84 — '완료 ${completedCount}개 · 건너뜀 ${skippedCount}개 · 남은 ${remainingCount}개'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:87 — '오늘 남은 오늘의 주인공이 없어요'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:88 — '남은 오늘의 주인공: ${topRemainingTitlesStr}${extra > 0 ? ' 외 ${extra}개' : ''}'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:88 — ' 외 ${extra}개'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:142 — '오늘의 주인공'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:157 — '오늘의 주인공'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:168 — '오늘의 주인공 목록'
+- src/features/live-activity-sync/lib/buildLiveActivityPayloadForBlock.ts:169 — '${checklistRows.length}개'
+- src/features/open-library-book-search/lib/searchOpenLibraryBooks.ts:95 — '도서 정보를 불러오지 못했어요.'
+- src/features/open-library-book-search/lib/searchOpenLibraryBooks.ts:100 — '도서 정보 형식을 해석하지 못했어요.'
+- src/features/subscriptions/lib/restorePurchases.ts:17 — '구매 복원에 실패했어요.'
+- src/features/subscriptions/model/subscriptionStore.ts:43 — '구독 정보를 불러오지 못했어요.'
+- src/features/subscriptions/model/subscriptionStore.ts:72 — '구독 정보를 불러오지 못했어요.'
+- src/pages/day-plan/lib/buildCalendarMonthGrid.ts:33 — '${monthStart.getFullYear()}년 ${monthStart.getMonth() + 1}월'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '월'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '화'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '수'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '목'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '금'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '토'
+- src/pages/day-plan/lib/buildHorizonWeekDays.ts:3 — '일'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:173 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:173 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:191 — '${mo}월 ${d}일'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:200 — '${mo}월 ${d}일'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:222 — '${a.y}년 ${a.mo}월 ${a.d}일 ~ ${b.y}년 ${b.mo}월 ${b.d}일'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:225 — '${a.mo}월 ${a.d}일 ~ ${b.mo}월 ${b.d}일'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:227 — '${a.mo}월 ${a.d}일 ~ ${b.d}일'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:267 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:267 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:273 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:275 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:291 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:292 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:295 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:301 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:339 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:339 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:339 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:347 — '오후'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:350 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:353 — '오전'
+- src/pages/day-plan/lib/dayPlanEditorShared.ts:358 — '오전'
+- src/pages/day-plan/lib/formatHorizonPeriod.ts:8 — '${month}월 ${weekIndex}주차'
+- src/pages/day-plan/lib/formatHorizonPeriod.ts:12 — '${year}년 ${month}월'
+- src/pages/day-plan/lib/formatHorizonPeriod.ts:17 — '${month}월'
+- src/pages/day-plan/lib/heroPremiumPack.ts:7 — '햇살 아래 버스 정류장'
+- src/pages/day-plan/lib/heroPremiumPack.ts:8 — '책방에서 고르는 이야기'
+- src/pages/day-plan/lib/heroPremiumPack.ts:9 — '기차를 기다리는 오후'
+- src/pages/day-plan/lib/heroPremiumPack.ts:10 — '빨래를 정리하는 시간'
+- src/pages/day-plan/lib/heroPremiumPack.ts:11 — '카페에서 잠깐의 여유'
+- src/pages/day-plan/lib/heroPremiumPack.ts:12 — '비 오는 거리 산책'
+- src/pages/day-plan/lib/heroPremiumPack.ts:13 — '여름밤의 축제'
+- src/pages/day-plan/lib/heroPremiumPack.ts:14 — '꽃집 앞에서'
+- src/pages/day-plan/lib/heroPremiumPack.ts:15 — '노을빛 바닷가'
+- src/pages/day-plan/lib/heroPremiumPack.ts:17 — '일상의 한 장면'
+- src/pages/day-plan/lib/priorityCatalogSections.ts:35 — '직접 만든 묶음이에요. 아래에 두고 싶은 오늘의 주인공을 오른쪽 아래 + 버튼으로 추가할 수 있어요.'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:32 — '아침'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:33 — '점심'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:34 — '저녁'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:53 — '${label} · 목표 ${goalText} ${unitLabel}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:54 — '${label} · 목표 ${goalText}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:70 — '오늘 완료 · ${cfg.streakDays}일 연속'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:70 — '오늘 완료'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:72 — '습관 · ${cfg.streakDays}일 연속'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:72 — '습관 기록'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:76 — '횟수'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:79 — '회'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:79 — '${label} ${cfg.currentCount}/${cfg.goalCount}회'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:81 — '회'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:82 — '${label} · 목표 ${cfg.goalCount}회'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:83 — '${label} · 목표 ${cfg.goalCount}${unit}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:87 — '집중 ${cfg.doneMin}/${cfg.planMin}분'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:88 — '목표 ${cfg.planMin}분'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:94 — '한 줄 기록'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:99 — '간단한 메모'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:107 — '${labels} · 전체 완료'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:122 — '아침 ${med.morningTime}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:123 — '점심 ${med.lunchTime}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:124 — '저녁 ${med.dinnerTime}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:129 — '섭취 ${drankL}L · 목표 ${goalL}L'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:135 — '${item}${med.takenCount}/${med.dosesPerDay}회 · ${line}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:145 — '목표 ${cfg.targetWeightKg.toFixed(1)}kg 달성'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:148 — '${current.toFixed(1)}kg · 목표까지 ${delta.toFixed(1)}kg'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:151 — '주간 ${cfg.weeklyLossTargetKg.toFixed(1)}kg 감량 목표'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:160 — '금지 ${total}개 · 지킴 ${kept}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:160 — '금지 ${total}개'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:170 — '할 일 ${total}개 · 완료 ${done}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:170 — '할 일 ${total}개'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:206 — '섭취 ${drankL}L · 목표 ${goalL}L'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:211 — '아침 ${cfg.morningTime}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:212 — '점심 ${cfg.lunchTime}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:213 — '저녁 ${cfg.dinnerTime}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:214 — '복용 슬롯 없음'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:221 — '${line} · ${last} 복용 · ${cfg.takenCount}/${cfg.dosesPerDay}회'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:233 — '뽀모도로 ${cfg.planMin}+${cfg.breakMin}분'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:235 — '${cfg.doneMin}/${cfg.planMin}분'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:237 — '목표 ${cfg.planMin}분'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:242 — '할 일 ${done}/${total}'
+- src/pages/day-plan/lib/priorityCategoryGoalHints.ts:245 — '시간표 ${cfg.timetableSlots.length}칸'
+- src/pages/day-plan/lib/routineTabLabels.ts:48 — '를'
+- src/pages/day-plan/lib/routineTabLabels.ts:48 — '을'
+- src/pages/day-plan/model/heroCalendarDesign.ts:5 — '계단을 내려가는 아침'
+- src/pages/day-plan/model/heroCalendarDesign.ts:5 — '출근 계단마다 놓인 오늘의 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:6 — '나의 발표'
+- src/pages/day-plan/model/heroCalendarDesign.ts:6 — '발표 보드에 차곡차곡 적는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:7 — '커피를 쏟은 아침'
+- src/pages/day-plan/model/heroCalendarDesign.ts:7 — '보고서 위에 다시 채워가는 하루'
+- src/pages/day-plan/model/heroCalendarDesign.ts:8 — '옥상의 점심'
+- src/pages/day-plan/model/heroCalendarDesign.ts:8 — '피크닉 매트에 담긴 한 달의 기록'
+- src/pages/day-plan/model/heroCalendarDesign.ts:9 — '축하받은 날'
+- src/pages/day-plan/model/heroCalendarDesign.ts:9 — '축하 게시판에 핀 날짜 카드'
+- src/pages/day-plan/model/heroCalendarDesign.ts:10 — '화난 메일'
+- src/pages/day-plan/model/heroCalendarDesign.ts:10 — '퇴근길 책상 위에 쌓이는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:11 — '퇴근 후 달리기'
+- src/pages/day-plan/model/heroCalendarDesign.ts:11 — '트랙을 따라 이어지는 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:12 — '마감의 밤'
+- src/pages/day-plan/model/heroCalendarDesign.ts:12 — '늦은 사무실의 유리 메모 보드'
+- src/pages/day-plan/model/heroCalendarDesign.ts:13 — '샌드백을 치며'
+- src/pages/day-plan/model/heroCalendarDesign.ts:13 — '체육관의 종이 기록판'
+- src/pages/day-plan/model/heroCalendarDesign.ts:14 — '농구 슛'
+- src/pages/day-plan/model/heroCalendarDesign.ts:14 — '코트 옆 전술 보드에 채우는 날들'
+- src/pages/day-plan/model/heroCalendarDesign.ts:15 — '수영 연습'
+- src/pages/day-plan/model/heroCalendarDesign.ts:15 — '수영장 타일 위에 새기는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:16 — '언덕 자전거'
+- src/pages/day-plan/model/heroCalendarDesign.ts:16 — '언덕길 표지석에 남기는 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:17 — '요가 균형'
+- src/pages/day-plan/model/heroCalendarDesign.ts:17 — '스튜디오 수납 칸에 담은 기록'
+- src/pages/day-plan/model/heroCalendarDesign.ts:18 — '테니스 서브'
+- src/pages/day-plan/model/heroCalendarDesign.ts:18 — '코트 라인을 따라 정리한 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:19 — '축구 드리블'
+- src/pages/day-plan/model/heroCalendarDesign.ts:19 — '경기장 전광판에 쌓이는 날들'
+- src/pages/day-plan/model/heroCalendarDesign.ts:20 — '춤 연습'
+- src/pages/day-plan/model/heroCalendarDesign.ts:20 — '연습실 조명으로 밝히는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:21 — '클라이밍'
+- src/pages/day-plan/model/heroCalendarDesign.ts:21 — '암벽 홀드 사이에 기록하는 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:22 — '줄넘기'
+- src/pages/day-plan/model/heroCalendarDesign.ts:22 — '체육관 바닥 타일의 달력'
+- src/pages/day-plan/model/heroCalendarDesign.ts:23 — '빗속 달리기'
+- src/pages/day-plan/model/heroCalendarDesign.ts:23 — '빗방울 맺힌 야간 트랙의 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:24 — '배드민턴'
+- src/pages/day-plan/model/heroCalendarDesign.ts:24 — '코트 옆 밝은 기록 보드'
+- src/pages/day-plan/model/heroCalendarDesign.ts:25 — '퇴근 후 휴식'
+- src/pages/day-plan/model/heroCalendarDesign.ts:25 — '포근한 쿠션에 새기는 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:26 — '창가의 차 한잔'
+- src/pages/day-plan/model/heroCalendarDesign.ts:26 — '창가 유리에 비치는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:27 — '빨래하는 날'
+- src/pages/day-plan/model/heroCalendarDesign.ts:27 — '세탁실 타일 칸에 적는 기록'
+- src/pages/day-plan/model/heroCalendarDesign.ts:28 — '저녁 준비'
+- src/pages/day-plan/model/heroCalendarDesign.ts:28 — '주방의 남색 타일 달력'
+- src/pages/day-plan/model/heroCalendarDesign.ts:29 — '느린 아침'
+- src/pages/day-plan/model/heroCalendarDesign.ts:29 — '침대 곁 이불 위에 놓인 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:30 — '소파 낮잠'
+- src/pages/day-plan/model/heroCalendarDesign.ts:30 — '접힌 담요의 포근한 달력'
+- src/pages/day-plan/model/heroCalendarDesign.ts:31 — '식물 돌보기'
+- src/pages/day-plan/model/heroCalendarDesign.ts:31 — '햇살 드는 화분 선반의 기록'
+- src/pages/day-plan/model/heroCalendarDesign.ts:32 — '영화 보는 밤'
+- src/pages/day-plan/model/heroCalendarDesign.ts:32 — '극장 전광판에 비추는 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:33 — '스킨케어 시간'
+- src/pages/day-plan/model/heroCalendarDesign.ts:33 — '욕실 거울 옆 타일 달력'
+- src/pages/day-plan/model/heroCalendarDesign.ts:34 — '고양이와 휴식'
+- src/pages/day-plan/model/heroCalendarDesign.ts:34 — '니트 담요의 부드러운 날짜 칸'
+- src/pages/day-plan/model/heroCalendarDesign.ts:35 — '답답한 전화'
+- src/pages/day-plan/model/heroCalendarDesign.ts:35 — '오래된 교환대에 쌓이는 날들'
+- src/pages/day-plan/model/heroCalendarDesign.ts:36 — '비 오는 정류장'
+- src/pages/day-plan/model/heroCalendarDesign.ts:36 — '젖은 유리 너머로 보는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:37 — '합격의 순간'
+- src/pages/day-plan/model/heroCalendarDesign.ts:37 — '칠판에 남기는 기쁜 날짜들'
+- src/pages/day-plan/model/heroCalendarDesign.ts:38 — '면접 전 긴장'
+- src/pages/day-plan/model/heroCalendarDesign.ts:38 — '차분한 금속 패널에 새기는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:39 — '이별의 저녁'
+- src/pages/day-plan/model/heroCalendarDesign.ts:39 — '편지지에 한 장씩 채우는 날'
+- src/pages/day-plan/model/heroCalendarDesign.ts:40 — '공연의 열기'
+- src/pages/day-plan/model/heroCalendarDesign.ts:40 — '빛나는 공연장 타일 달력'
+- src/pages/day-plan/model/heroCalendarDesign.ts:41 — '커피를 쏟은 날'
+- src/pages/day-plan/model/heroCalendarDesign.ts:41 — '카페 코스터마다 남기는 기록'
+- src/pages/day-plan/model/heroCalendarDesign.ts:42 — '여행지의 외로움'
+- src/pages/day-plan/model/heroCalendarDesign.ts:42 — '공항 안내판처럼 흐르는 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:43 — '생일 축하'
+- src/pages/day-plan/model/heroCalendarDesign.ts:43 — '색색의 선물 태그로 모은 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:44 — '울고 난 뒤의 안도'
+- src/pages/day-plan/model/heroCalendarDesign.ts:44 — '린넨 이불에 조용히 남기는 날'
+- src/pages/day-plan/model/heroCalendarDesign.ts:45 — '봄꽃 자전거'
+- src/pages/day-plan/model/heroCalendarDesign.ts:45 — '꽃잎이 놓인 돌길 위의 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:46 — '봄비 산책'
+- src/pages/day-plan/model/heroCalendarDesign.ts:46 — '빗물에 번지는 봄날의 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:47 — '봄날의 정원'
+- src/pages/day-plan/model/heroCalendarDesign.ts:47 — '모종 트레이에 자라나는 기록'
+- src/pages/day-plan/model/heroCalendarDesign.ts:48 — '여름 해변'
+- src/pages/day-plan/model/heroCalendarDesign.ts:48 — '해변 담요에 펼쳐 둔 달력'
+- src/pages/day-plan/model/heroCalendarDesign.ts:49 — '여름 언덕 산책'
+- src/pages/day-plan/model/heroCalendarDesign.ts:49 — '산책길 돌 표식에 담은 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:50 — '가을 낙엽 길'
+- src/pages/day-plan/model/heroCalendarDesign.ts:50 — '낙엽 아래 놓인 종이 날짜 칸'
+- src/pages/day-plan/model/heroCalendarDesign.ts:51 — '가을 시장'
+- src/pages/day-plan/model/heroCalendarDesign.ts:51 — '시장 바구니에 차곡차곡 담은 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:52 — '가을 버스 정류장'
+- src/pages/day-plan/model/heroCalendarDesign.ts:52 — '정류장 유리에 비친 가을 날짜'
+- src/pages/day-plan/model/heroCalendarDesign.ts:53 — '첫눈의 장난'
+- src/pages/day-plan/model/heroCalendarDesign.ts:53 — '눈 내린 길 위에 적는 한 달'
+- src/pages/day-plan/model/heroCalendarDesign.ts:54 — '겨울 정류장'
+- src/pages/day-plan/model/heroCalendarDesign.ts:54 — '목도리의 니트 칸마다 담은 기록'
+- src/pages/day-plan/ui/ComicDayPage.tsx:121 — "이전 날짜"
+- src/pages/day-plan/ui/ComicDayPage.tsx:123 — "다음 날짜"
+- src/pages/day-plan/ui/HeroAiHelpModal.tsx:10 — '이렇게 해봐요'
+- src/pages/day-plan/ui/HeroAiHelpModal.tsx:10 — 'AI 생성 사용 방법'
+- src/pages/day-plan/ui/HeroAiVideoGuide.tsx:26 — '설명 닫기'
+- src/pages/day-plan/ui/HeroAiVideoGuide.tsx:26 — '준비 중…'
+- src/pages/day-plan/ui/HeroAiVideoGuide.tsx:26 — '영상 재생'
+- src/pages/day-plan/ui/HeroAiVideoGuide.tsx:26 — '일시 정지'
+- src/pages/day-plan/ui/HeroAiVideoGuide.tsx:26 — '다시 보기'
+- src/pages/day-plan/ui/HeroAiVideoGuide.tsx:26 — '영상을 불러오지 못했어요. 다시 보기를 눌러주세요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '감정과 생각을 일러스트로'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '추억을 일러스트로'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '준비'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '일러스트 스타일'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '글쓰기'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '완성'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '사진 없이 시작하거나, +로 주인공 사진을 선택해요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '상단의 원형 스타일을 눌러 일러스트 스타일을 확인해요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — 'Title과 이야기를 적고, 만년필 생성 버튼을 눌러요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '완성된 카드에서 저장·공유·글 수정을 할 수 있어요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '상단 사진 아이콘이나 사각형 영역을 눌러 사진을 골라요. 카메라로 촬영해도 좋아요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '사진과 함께 남길 이야기를 적어요. 원본의 인물·구도를 유지하는 방향으로 일러스트 스타일을 바꿔요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '카페에서 책을 읽던 오후'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '선택 사항'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '원본 사진'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '완성 예시'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '자세한 사용 방법'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '모션 재생'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '모션 정지'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '다시 보기'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '다운로드'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '공유'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '글 수정'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '사진 앱에 이미지를 저장해요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '다른 앱으로 이미지를 보내요.'
+- src/pages/day-plan/ui/HeroAiVisualGuide.tsx:11 — '제목과 본문을 수정해요.'
+- src/pages/day-plan/ui/HeroBlueClipPreview.tsx:20 — '집게 이미지를 불러오지 못했어요'
+- src/pages/day-plan/ui/HeroBlueClipPreview.tsx:20 — '집게 이미지 불러오는 중'
+- src/pages/day-plan/ui/HeroCalendarApplyButton.tsx:6 — '적용 중…'
+- src/pages/day-plan/ui/HeroCalendarApplyButton.tsx:6 — '다시 적용하기'
+- src/pages/day-plan/ui/HeroCalendarApplyButton.tsx:6 — '적용 중 ✓'
+- src/pages/day-plan/ui/HeroCalendarApplyButton.tsx:6 — '이 캘린더 적용하기 →'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:16 — '주황 보드와 파란 클립의 달력'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:17 — '큰 월 제목과 여백이 있는 달력'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:18 — '한 장의 사진을 담은 달력'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:54 — '사진 추가'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:54 — '사진을 불러오지 못했어요. 다시 시도해주세요.'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:66 — "이전 달"
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:69 — "다음 달"
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:72 — '달력 사진 변경'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:72 — '달력 사진 추가'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:86 — '${key}${hasRecord ? ', 기록 있음' : ''}${eventDates.includes(key) ? ', 이벤트 또는 연동 일정 있음' : ''}'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:86 — ', 기록 있음'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:86 — ', 이벤트 또는 연동 일정 있음'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:114 — '${item.name}, 무료, ${item.description}'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:116 — '적용 중'
+- src/pages/day-plan/ui/HeroCalendarDesigns.tsx:116 — '무료'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:34 — 'Google 캘린더'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:35 — 'Apple 캘린더'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:105 — '내용 영역 펼치기 또는 접기'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:105 — '위로 끌면 펼쳐지고 아래로 끌면 접힙니다'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:111 — "하루의 메모"
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:112 — "오늘의 이야기를 남겨보세요"
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:122 — "캘린더 일정 새로고침"
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:122 — '일정 확인 중…'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:122 — '일정 새로고침'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:123 — '설정에서 캘린더를 연결해주세요.'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:127 — '이날의 일정이 없어요.'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:130 — '종일'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:137 — '이벤트 이름'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:137 — '이날의 이벤트를 남겨보세요'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:140 — '+ 시간 추가'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:141 — '시간 없이'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:143 — '이벤트 시간'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:145 — '기억하고 싶은 이벤트를 남겨보세요.'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:150 — '나의 이야기'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:150 — '캘린더'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:150 — '이벤트'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:153 — "키보드 내리기"
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:156 — '이벤트 저장'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:156 — '글쓰기 완료'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:157 — '저장'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:157 — '완료'
+- src/pages/day-plan/ui/HeroCharacterGalleryPage.tsx:120 — '시티팝 레트로'
+- src/pages/day-plan/ui/HeroCharacterGalleryPage.tsx:161 — '시티팝 레트로'
+- src/pages/day-plan/ui/HeroCharacterGalleryPage.tsx:186 — '사진 ${character.id === ORIGINAL_ID ? originalScenes.length : character.id === GENERATED_ID ? generatedScenes.length : character.scenes.length}장'
+- src/pages/day-plan/ui/HeroCharacterPickerOverlay.tsx:187 — "시티팝 레트로 선택"
+- src/pages/day-plan/ui/HeroCharacterPickerOverlay.tsx:190 — '시티팝 레트로'
+- src/pages/day-plan/ui/HeroCharacterPickerOverlay.tsx:235 — '시티팝 레트로'
+- src/pages/day-plan/ui/HeroCharacterPickerOverlay.tsx:237 — '${premiumSceneTitle(image.id)} 선택'
+- src/pages/day-plan/ui/HeroClipboardCalendar.tsx:27 — "이전 달"
+- src/pages/day-plan/ui/HeroClipboardCalendar.tsx:29 — "다음 달"
+- src/pages/day-plan/ui/HeroDayBoard.tsx:307 — "사진을 추가해주세요."
+- src/pages/day-plan/ui/HeroDayBoard.tsx:310 — '사진을\n추가해주세요.'
+- src/pages/day-plan/ui/HeroDayBoard.tsx:346 — "회전"
+- src/pages/day-plan/ui/HeroDayBoard.tsx:346 — 회전
+- src/pages/day-plan/ui/HeroDayBoard.tsx:347 — 닫기
+- src/pages/day-plan/ui/HeroDiaryCalendar.tsx:120 — '종일'
+- src/pages/day-plan/ui/HeroDiaryCalendar.tsx:121 — '제목 없는 일정'
+- src/pages/day-plan/ui/HeroDiaryCardSides.tsx:35 — '오늘의 이야기를 적어보세요.'
+- src/pages/day-plan/ui/HeroDiaryInfoModal.tsx:9 — '그날의 장면을 기록해요'
+- src/pages/day-plan/ui/HeroDiaryInfoModal.tsx:9 — '좋아하는 주인공을 선택하고, 좋아하는 장면과 함께 그날의 감정과 생각을 적어보세요. 멋진 하루가 될 거예요.'
+- src/pages/day-plan/ui/HeroDiaryInfoModal.tsx:9 — '오늘의 주인공 안내'
+- src/pages/day-plan/ui/HeroIllustrationCalendar.tsx:102 — "이전 달"
+- src/pages/day-plan/ui/HeroIllustrationCalendar.tsx:104 — "다음 달"
+- src/pages/day-plan/ui/HeroIllustrationCalendar.tsx:119 — '${key}${records.length ? ', 기록 있음' : ''}${events.has(key) ? ', 이벤트 또는 연동 일정 있음' : ''}'
+- src/pages/day-plan/ui/HeroIllustrationCalendar.tsx:119 — ', 기록 있음'
+- src/pages/day-plan/ui/HeroIllustrationCalendar.tsx:119 — ', 이벤트 또는 연동 일정 있음'
+- src/pages/day-plan/ui/HeroImageActions.tsx:116 — "폴라로이드 다운로드"
+- src/pages/day-plan/ui/HeroInlineComposer.tsx:466 — '키보드 내리기'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '오늘의 폴라로이드'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '사진 · 앞면'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '이야기 · 뒷면'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '사진 한 장 더하기'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '짧게 남기는 한마디'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '이 순간을 기억하며'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '오늘의 이야기를 적어보세요.'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '사진 앞에는 한마디, 뒤에는 나의 이야기.'
+- src/pages/day-plan/ui/HeroPhotoDiaryComposer.tsx:14 — '오늘의 한 장 저장'
+- src/pages/day-plan/ui/HeroPhotoImportPreview.tsx:17 — "사진 불러오는 중"
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:19 — "날짜 선택 닫기"
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:21 — 사진에 표시할 날짜
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:23 — "이전 달"
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:24 — 년
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:24 — 월
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:25 — "다음 달"
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '일'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '월'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '화'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '수'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '목'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '금'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:27 — '토'
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:38 — 오늘 날짜
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:39 — 날짜 표시 끄기
+- src/pages/day-plan/ui/HeroPolaroidDatePicker.tsx:40 — 닫기
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:84 — '필름 필터는 Pro 전용 기능이에요. 구독 상태를 확인하거나 기본 폴라로이드로 저장해주세요.'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:90 — '내보내기'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:90 — '구독 상태를 확인하지 못했어요. 잠시 후 다시 시도해주세요.'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:106 — "글쓰기"
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:107 — '오늘의 이야기를 적어보세요.'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:112 — "글쓰기"
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:114 — '오늘의 이야기를 적어보세요.'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:118 — "사진 삭제"
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:118 — 삭제
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:119 — '사진 보기'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:119 — '글 보기'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:120 — 회전
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:125 — 보정 실패 · 눌러서 다시 시도
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:128 — "공유"
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:129 — "사진 앱에 다운로드"
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:130 — '준비 중…'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:130 — 'Pro로 적용'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:130 — '현재 사진에 적용'
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:131 — "닫기"
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:131 — 닫기
+- src/pages/day-plan/ui/HeroPolaroidEditor.tsx:140 — 사진을 불러오지 못했어요. 닫은 뒤 다시 열어주세요.
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:3 — '원본'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:3 — '따뜻한 필름'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:4 — '빛바랜 기억'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:4 — '흑백 감성'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:5 — '푸른 공기'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:5 — '오래된 사진'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:6 — '파스텔'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:6 — '선명한 순간'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:7 — '로즈빛'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:7 — '시네마'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:8 — '크림톤'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:8 — '올리브'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:9 — '앰버'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:9 — '일회용 필름'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:10 — '블루 아워'
+- src/pages/day-plan/ui/HeroPolaroidEffects.tsx:10 — '강한 흑백'
+- src/pages/day-plan/ui/HeroPolaroidPreview.tsx:36 — '사진 보기'
+- src/pages/day-plan/ui/HeroPolaroidPreview.tsx:36 — '작성한 글 보기'
+- src/pages/day-plan/ui/HeroPolaroidPreview.tsx:57 — '오늘의 이야기를 적어보세요.'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:7 — '필름'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:8 — '밝기'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:9 — '대비'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:10 — '채도'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:11 — '하이라이트'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:12 — '그림자'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:13 — '색온도'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:14 — '페이드'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:15 — '그레인'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:32 — "모든 보정을 원본으로 되돌리기"
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:34 — 원본 복원
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:36 — "글 표시"
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:38 — 글 표시
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:39 — '켜짐'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:39 — '꺼짐'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:41 — "날짜 선택"
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:43 — 날짜 표시
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:44 — '켜짐'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:44 — '꺼짐'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:49 — '원본 유지'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:49 — '클래식 폴라로이드'
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:66 — "현재 조절 초기화"
+- src/pages/day-plan/ui/HeroPolaroidToolbox.tsx:66 — 초기화
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:8 — "시티팝 레트로 다운로드 삭제"
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:10 — '시티팝 레트로 다운로드 삭제'
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:10 — '다운로드한 시티팝 레트로을 기기에서 삭제할까요? 일기에 사용한 사진은 유지됩니다. Pro 구독 중에는 횟수 제한 없이 다시 다운로드할 수 있어요.'
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:11 — '취소'
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:12 — '삭제'
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:14 — '삭제 실패'
+- src/pages/day-plan/ui/HeroPremiumPackDeleteButton.tsx:14 — '잠시 후 다시 시도해주세요.'
+- src/pages/day-plan/ui/HeroScenePicker.tsx:120 — '시티팝 레트로'
+- src/pages/day-plan/ui/HeroScenePicker.tsx:122 — '시티팝 레트로'
+- src/pages/day-plan/ui/IndependentHeroPlanner.tsx:139 — '잠깐 숨을 고른 오후'
+- src/pages/day-plan/ui/IndependentHeroPlanner.tsx:139 — '해야 할 일을 잠시 멈추고 창가에 앉았다. 바쁘게 지나가던 마음이 조금 가라앉고, 내가 어떤 기분인지 돌아볼 수 있었다. 오늘의 작은 쉼도 오래 기억하고 싶다.'
+- src/pages/day-plan/ui/PriorityBasedPlanSection.tsx:1401 — '나의 첫 메이트'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '현재 날씨'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '닫기'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '날씨 새로고침'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '불러오는 중'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '체감온도'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '습도'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '풍속'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '돌풍'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '1시간 강수량'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '구름량'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '시정'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '기압'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '일출'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '일몰'
+- src/pages/day-plan/ui/WeatherSummary.tsx:67 — '없음'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '월'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '화'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '수'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '목'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '금'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '토'
+- src/pages/day-plan-statistics/lib/buildWeeklyFlowHistory.ts:46 — '일'
+- src/pages/day-plan-statistics/lib/historyPeriodRange.ts:23 — '${year}년 ${month}월'
+- src/pages/goal-detail-settings/ui/category/index.ts:39 — '노트'
+- src/pages/goal-detail-settings/ui/category/index.ts:45 — '책읽기'
+- src/pages/goal-detail-settings/ui/category/index.ts:51 — '체중 관리'
+- src/pages/goal-detail-settings/ui/category/index.ts:57 — '영양 챙기기'
+- src/pages/goal-detail-settings/ui/category/index.ts:63 — '수분섭취'
+- src/pages/goal-detail-settings/ui/category/index.ts:69 — '약 복용'
+- src/pages/goal-detail-settings/ui/category/index.ts:75 — '오늘의 주인공 직접 설정'
+- src/pages/goal-detail-settings/ui/category/index.ts:86 — '값 기록'
+- src/pages/goal-detail-settings/ui/category/index.ts:91 — '영양 챙기기'
+- src/pages/goal-detail-settings/ui/category/index.ts:96 — '체중 관리'
+- src/pages/goal-detail-settings/ui/category/index.ts:101 — '오늘 했/안 했'
+- src/pages/goal-detail-settings/ui/category/index.ts:106 — '횟수 채우기'
+- src/pages/goal-detail-settings/ui/category/index.ts:111 — '집중 시간'
+- src/pages/goal-detail-settings/ui/category/index.ts:116 — '한 줄 기록'
+- src/pages/goal-detail-settings/ui/category/index.ts:121 — '간단한 메모'
+- src/pages/goal-detail-settings/ui/category/index.ts:126 — '시간 알림'
+- src/pages/goal-detail-settings/ui/category/reading/ui/ReadingSettings.tsx:116 — '${month}월 ${day}일'
+- src/pages/settings/lib/openSupportMail.ts:13 — '받는 주소: ${SUPPORT_EMAIL}\n제목: ${subject}\n\n${body}'
+- src/pages/settings/lib/openSupportMail.ts:15 — '메일을 바로 열 수 없어요'
+- src/pages/settings/lib/openSupportMail.ts:16 — '기기에 메일 계정이 없거나, 시뮬레이터 환경일 수 있어요. 공유로 보내거나 주소를 복사해 주세요. 실제 기기에서 메일을 설정하면 시스템 메일 작성 화면이 열립니다.'
+- src/pages/settings/lib/openSupportMail.ts:19 — '공유하기'
+- src/pages/settings/lib/openSupportMail.ts:25 — '주소 복사'
+- src/pages/settings/lib/openSupportMail.ts:30 — '복사했어요'
+- src/pages/settings/lib/openSupportMail.ts:30 — '메일 앱에서 받는 사람란에 붙여넣기 해 주세요.'
+- src/pages/settings/lib/openSupportMail.ts:32 — '복사 실패'
+- src/pages/settings/lib/openSupportMail.ts:32 — '아래 주소를 직접 입력해 주세요.\n${SUPPORT_EMAIL}'
+- src/pages/settings/lib/openSupportMail.ts:36 — '닫기'
+- src/pages/settings/lib/supportMailContent.ts:12 — '[${brandText('settings.shareApp.shareTitle')} 고객센터]'
+- src/pages/settings/lib/supportMailContent.ts:41 — '문의 내용을 아래에 적어 주세요.'
+- src/pages/settings/lib/supportMailContent.ts:43 — '기기: ${deviceLine}'
+- src/pages/settings/lib/supportMailContent.ts:44 — 'OS 버전: ${osName} ${osVer}'
+- src/pages/settings/lib/supportMailContent.ts:45 — 'App 버전: ${appVer}'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:3 — '함께 해보기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:3 — '나중에'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:3 — '연습 공간 · 실제 기록에는 추가되지 않아요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:4 — '나만의 하루를 담는 두 가지 방법'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:4 — '어떤 것부터 함께 해볼까요?'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:5 — '먼저 시작해볼 튜토리얼을 선택해 주세요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:6 — '오늘의 메이트'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:6 — '오늘의 주인공'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:6 — '할 일과 루틴을 카드로 정리해요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:6 — '장면을 고르고 한 줄로 남겨요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:7 — '먼저 +를 눌러, 나를 위한 카드 하나를 만들어봐요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:7 — '이번에는 +를 눌러, 기억하고 싶은 장면을 담아봐요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:8 — '할 일 체크를 골라 가볍게 시작해요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:8 — '지금 마음에 드는 장면을 하나 골라주세요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:9 — '첫 카드가 생겼어요. 눌러서 펼쳐볼까요?'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:9 — '나만의 첫 장면이에요. 눌러서 이야기를 더해봐요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:10 — '오늘의 기분을 한 줄 적고, 저장을 눌러주세요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:10 — '이 순간에 남기고 싶은 마음을 한 줄 적어주세요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:11 — '이 장면에서 해보고 싶은 작은 일도 하나 적어봐요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:12 — '기록을 마쳤다면 옆의 동그라미를 눌러주세요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:13 — '할 일 체크'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:13 — '오늘의 기분'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:13 — '오늘의 기분 한 줄 남기기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:14 — '지금 내 마음은 어떤가요?'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:14 — '오늘은 천천히 시작하고 싶다.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:14 — '예: 깊게 숨 한 번 쉬기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:15 — '저장'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:15 — '할 일 추가'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:15 — '추가하기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:15 — '카드 열기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:16 — '좋아요, 직접 해냈어요!'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:16 — '첫 오늘의 메이트가 생겼어요. 잘했어요!'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:16 — '나만의 첫 장면을 만들고 열어봤어요. 잘했어요!'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:17 — '이제 오늘의 주인공도 함께 해봐요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:17 — '이제 오늘의 메이트도 함께 해봐요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:17 — '채워진 하루 살펴보기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:18 — '이렇게 채워갈 수 있어요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:18 — '카드를 옆으로 넘기며 나에게 어울리는 하루를 찾아봐요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:18 — '예시'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:19 — '오늘의 주인공은, 당신이에요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:19 — '작은 실천 하나, 남기고 싶은 순간 하나부터.\n앞으로의 하루도 우리 함께 채워가요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:20 — '나의 하루 시작하기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:20 — '앱 평가하기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:20 — '지금 시작하기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:20 — '함께한 첫 기록은 어땠나요? 의견을 남겨주셔도 좋아요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:21 — '산책'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:21 — '집중'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:21 — '나를 위한 시간'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:21 — '익숙한 길에서도 새로운 풍경을 만났다.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:21 — '오늘은 내 속도로 한 가지씩.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:21 — '잠깐 멈추니 마음에도 여유가 생겼다.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:22 — '물 한 잔'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:22 — '나를 챙기는 작은 시작'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:22 — '천천히 한 잔 마시기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:23 — '책 읽는 시간'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:23 — '마음에 남는 문장 하나를 적어두기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:23 — '읽고 싶은 만큼 읽기'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:24 — '튜토리얼'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:24 — '직접 추가하고 기록하며 함께 배워요'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:24 — '완료'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:25 — '튜토리얼을 종료할까요?'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:25 — '이 버튼은 지금 단계에 필요 없어요.'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:25 — '종료'
+- src/pages/welcome-intro/lib/tutorialCopy.ts:25 — '계속하기'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:56 — '첫 메이트, 완성했어요!'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:57 — '첫 장면을 담았어요!'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:59 — '직접 만들고 열어봤네요. 잘했어요.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:60 — '나만의 이야기를 시작했네요. 잘했어요.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:128 — '주인공의 하루를 채워가요'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:139 — '좋아요, 하나 해냈어요.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:142 — '오늘의 주인공도 만나볼까요?'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:143 — '이제 주인공 화면의 수납장 도구를 열어볼까요?'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:144 — '이제 나만의 하루를 채워가요.'
+- src/shared/config/aladin.ts:6 — '도서 DB 제공 : 알라딘 인터넷서점(www.aladin.co.kr)'
+- src/shared/config/openLibrary.ts:8 — '도서 DB 제공 : Open Library (openlibrary.org)'
+- src/shared/lib/activityIllustrations.ts:5 — "운동하기"
+- src/shared/lib/activityIllustrations.ts:6 — "공부하기"
+- src/shared/lib/activityIllustrations.ts:7 — "회의하기"
+- src/shared/lib/activityIllustrations.ts:8 — "빨래하기"
+- src/shared/lib/activityIllustrations.ts:9 — "업무 보기"
+- src/shared/lib/activityIllustrations.ts:10 — "독서하기"
+- src/shared/lib/activityIllustrations.ts:11 — "집에서 영화 보기"
+- src/shared/lib/activityIllustrations.ts:12 — "후드티와 둥근 안경으로 공부하기"
+- src/shared/lib/activityIllustrations.ts:13 — "커피와 아이패드"
+- src/shared/lib/activityIllustrations.ts:14 — "공원 산책"
+- src/shared/lib/activityIllustrations.ts:15 — "사진 촬영"
+- src/shared/lib/activityIllustrations.ts:16 — "웨이트 트레이닝"
+- src/shared/lib/activityIllustrations.ts:17 — "요가하기"
+- src/shared/lib/activityIllustrations.ts:18 — "헤드셋을 끼고 러닝"
+- src/shared/lib/activityIllustrations.ts:19 — "맛있는 음식 먹기"
+- src/shared/lib/activityIllustrations.ts:20 — "영화관에서 팝콘과 콜라"
+- src/shared/lib/activityIllustrations.ts:21 — "웹서핑"
+- src/shared/lib/activityIllustrations.ts:22 — "쇼핑하기"
+- src/shared/lib/activityIllustrations.ts:23 — "등산하기"
+- src/shared/lib/activityIllustrations.ts:24 — "수영하기"
+- src/shared/lib/activityIllustrations.ts:25 — "캐리어를 끌고 공항 가기"
+- src/shared/lib/activityIllustrations.ts:26 — "드라이브"
+- src/shared/lib/activityIllustrations.ts:27 — "아침 스트레칭"
+- src/shared/lib/activityIllustrations.ts:28 — "침대 정리"
+- src/shared/lib/activityIllustrations.ts:29 — "스킨케어"
+- src/shared/lib/activityIllustrations.ts:30 — "외출 준비하기"
+- src/shared/lib/activityIllustrations.ts:31 — "아침 식사 준비"
+- src/shared/lib/activityIllustrations.ts:32 — "저녁 요리하기"
+- src/shared/lib/activityIllustrations.ts:33 — "설거지"
+- src/shared/lib/activityIllustrations.ts:34 — "청소기 돌리기"
+- src/shared/lib/activityIllustrations.ts:35 — "옷장 정리"
+- src/shared/lib/activityIllustrations.ts:36 — "화초 물주기"
+- src/shared/lib/activityIllustrations.ts:37 — "장보기"
+- src/shared/lib/activityIllustrations.ts:38 — "지하철 이동"
+- src/shared/lib/activityIllustrations.ts:39 — "버스 타기"
+- src/shared/lib/activityIllustrations.ts:40 — "자전거 타기"
+- src/shared/lib/activityIllustrations.ts:41 — "일기 쓰기"
+- src/shared/lib/activityIllustrations.ts:42 — "음악 듣기"
+- src/shared/lib/activityIllustrations.ts:43 — "피아노 연습"
+- src/shared/lib/activityIllustrations.ts:44 — "친구와 영상통화"
+- src/shared/lib/activityIllustrations.ts:45 — "반려동물 산책"
+- src/shared/lib/activityIllustrations.ts:46 — "명상하기"
+- src/shared/lib/activityIllustrations.ts:47 — "일러스트 그리기"
+- src/shared/lib/activityIllustrations.ts:48 — "쿠키 굽기"
+- src/shared/lib/activityIllustrations.ts:49 — "친구와 보드게임"
+- src/shared/lib/activityIllustrations.ts:50 — "캠핑하기"
+- src/shared/lib/activityIllustrations.ts:51 — "빨래 개기"
+- src/shared/lib/activityIllustrations.ts:52 — "분리수거"
+- src/shared/lib/activityIllustrations.ts:53 — "기타 연습"
+- src/shared/lib/activityIllustrations.ts:54 — "낮잠"
+- src/shared/lib/bookSearch/resolveBookSearchProvider.ts:16 — '알라딘'
+- src/shared/lib/crashlytics/client.ts:39 — '이전 실행에서 네이티브 크래시 감지'
+- src/shared/lib/crashlytics/client.ts:62 — 'JS Fatal 예외'
+- src/shared/lib/crashlytics/client.ts:62 — 'JS Non-fatal 예외'
+- src/shared/lib/crashlytics/client.ts:94 — '기록된 에러 (${name})'
+- src/shared/lib/crashlytics/client.ts:94 — '기록된 에러'
+- src/shared/lib/customFlowIconSearchAliases.ts:7 — "가계부"
+- src/shared/lib/customFlowIconSearchAliases.ts:8 — "가방"
+- src/shared/lib/customFlowIconSearchAliases.ts:9 — "가습기"
+- src/shared/lib/customFlowIconSearchAliases.ts:10 — "가족"
+- src/shared/lib/customFlowIconSearchAliases.ts:12 — "홈"
+- src/shared/lib/customFlowIconSearchAliases.ts:14 — "친구"
+- src/shared/lib/customFlowIconSearchAliases.ts:17 — "배터리"
+- src/shared/lib/customFlowIconSearchAliases.ts:18 — "충전"
+- src/shared/lib/customFlowIconSearchAliases.ts:20 — "각도"
+- src/shared/lib/customFlowIconSearchAliases.ts:22 — "강아지"
+- src/shared/lib/customFlowIconSearchAliases.ts:24 — "개발"
+- src/shared/lib/customFlowIconSearchAliases.ts:26 — "거북"
+- src/shared/lib/customFlowIconSearchAliases.ts:28 — "건강"
+- src/shared/lib/customFlowIconSearchAliases.ts:29 — "건물"
+- src/shared/lib/customFlowIconSearchAliases.ts:31 — "걷기"
+- src/shared/lib/customFlowIconSearchAliases.ts:32 — "검색"
+- src/shared/lib/customFlowIconSearchAliases.ts:33 — "게임"
+- src/shared/lib/customFlowIconSearchAliases.ts:35 — "겹침"
+- src/shared/lib/customFlowIconSearchAliases.ts:36 — "경고"
+- src/shared/lib/customFlowIconSearchAliases.ts:37 — "경기장"
+- src/shared/lib/customFlowIconSearchAliases.ts:38 — "경로"
+- src/shared/lib/customFlowIconSearchAliases.ts:40 — "계단"
+- src/shared/lib/customFlowIconSearchAliases.ts:42 — "고강도"
+- src/shared/lib/customFlowIconSearchAliases.ts:43 — "고양이"
+- src/shared/lib/customFlowIconSearchAliases.ts:44 — "골프"
+- src/shared/lib/customFlowIconSearchAliases.ts:45 — "곰돌이"
+- src/shared/lib/customFlowIconSearchAliases.ts:46 — "공간음향"
+- src/shared/lib/customFlowIconSearchAliases.ts:48 — "공구"
+- src/shared/lib/customFlowIconSearchAliases.ts:49 — "도구"
+- src/shared/lib/customFlowIconSearchAliases.ts:50 — "망치"
+- src/shared/lib/customFlowIconSearchAliases.ts:51 — "드라이버"
+- src/shared/lib/customFlowIconSearchAliases.ts:52 — "공기"
+- src/shared/lib/customFlowIconSearchAliases.ts:53 — "공부"
+- src/shared/lib/customFlowIconSearchAliases.ts:54 — "공연"
+- src/shared/lib/customFlowIconSearchAliases.ts:56 — "광선"
+- src/shared/lib/customFlowIconSearchAliases.ts:59 — "구름"
+- src/shared/lib/customFlowIconSearchAliases.ts:60 — "그리기"
+- src/shared/lib/customFlowIconSearchAliases.ts:61 — "그림"
+- src/shared/lib/customFlowIconSearchAliases.ts:62 — "근력"
+- src/shared/lib/customFlowIconSearchAliases.ts:64 — "글"
+- src/shared/lib/customFlowIconSearchAliases.ts:65 — "글쓰기"
+- src/shared/lib/customFlowIconSearchAliases.ts:68 — "기름"
+- src/shared/lib/customFlowIconSearchAliases.ts:69 — "기차"
+- src/shared/lib/customFlowIconSearchAliases.ts:70 — "기타"
+- src/shared/lib/customFlowIconSearchAliases.ts:71 — "길"
+- src/shared/lib/customFlowIconSearchAliases.ts:72 — "깃발"
+- src/shared/lib/customFlowIconSearchAliases.ts:73 — "나무"
+- src/shared/lib/customFlowIconSearchAliases.ts:74 — "낙상"
+- src/shared/lib/customFlowIconSearchAliases.ts:75 — "낚시"
+- src/shared/lib/customFlowIconSearchAliases.ts:76 — "날씨"
+- src/shared/lib/customFlowIconSearchAliases.ts:77 — "낮잠"
+- src/shared/lib/customFlowIconSearchAliases.ts:78 — "냉장고"
+- src/shared/lib/customFlowIconSearchAliases.ts:79 — "넘어짐"
+- src/shared/lib/customFlowIconSearchAliases.ts:80 — "노트북"
+- src/shared/lib/customFlowIconSearchAliases.ts:81 — "농구"
+- src/shared/lib/customFlowIconSearchAliases.ts:82 — "뇌"
+- src/shared/lib/customFlowIconSearchAliases.ts:83 — "눈"
+- src/shared/lib/customFlowIconSearchAliases.ts:84 — "눈송이"
+- src/shared/lib/customFlowIconSearchAliases.ts:85 — "다이아"
+- src/shared/lib/customFlowIconSearchAliases.ts:86 — "닫기"
+- src/shared/lib/customFlowIconSearchAliases.ts:87 — "닫힘"
+- src/shared/lib/customFlowIconSearchAliases.ts:88 — "달"
+- src/shared/lib/customFlowIconSearchAliases.ts:89 — "달러"
+- src/shared/lib/customFlowIconSearchAliases.ts:90 — "달력"
+- src/shared/lib/customFlowIconSearchAliases.ts:91 — "달리기"
+- src/shared/lib/customFlowIconSearchAliases.ts:93 — "대중교통"
+- src/shared/lib/customFlowIconSearchAliases.ts:94 — "댄스"
+- src/shared/lib/customFlowIconSearchAliases.ts:95 — "더보기"
+- src/shared/lib/customFlowIconSearchAliases.ts:96 — "더위"
+- src/shared/lib/customFlowIconSearchAliases.ts:97 — "덤벨"
+- src/shared/lib/customFlowIconSearchAliases.ts:99 — "도움말"
+- src/shared/lib/customFlowIconSearchAliases.ts:100 — "도착"
+- src/shared/lib/customFlowIconSearchAliases.ts:102 — "책읽기"
+- src/shared/lib/customFlowIconSearchAliases.ts:103 — "독서"
+- src/shared/lib/customFlowIconSearchAliases.ts:104 — "돈"
+- src/shared/lib/customFlowIconSearchAliases.ts:105 — "동작"
+- src/shared/lib/customFlowIconSearchAliases.ts:107 — "등산"
+- src/shared/lib/customFlowIconSearchAliases.ts:109 — "라켓"
+- src/shared/lib/customFlowIconSearchAliases.ts:110 — "라켓볼"
+- src/shared/lib/customFlowIconSearchAliases.ts:111 — "라크로스"
+- src/shared/lib/customFlowIconSearchAliases.ts:113 — "러닝"
+- src/shared/lib/customFlowIconSearchAliases.ts:114 — "러닝머신"
+- src/shared/lib/customFlowIconSearchAliases.ts:115 — "럭비"
+- src/shared/lib/customFlowIconSearchAliases.ts:116 — "레슬링"
+- src/shared/lib/customFlowIconSearchAliases.ts:117 — "레이싱"
+- src/shared/lib/customFlowIconSearchAliases.ts:118 — "로잉"
+- src/shared/lib/customFlowIconSearchAliases.ts:119 — "롤러"
+- src/shared/lib/customFlowIconSearchAliases.ts:121 — "루블"
+- src/shared/lib/customFlowIconSearchAliases.ts:122 — "루틴"
+- src/shared/lib/customFlowIconSearchAliases.ts:123 — "루피"
+- src/shared/lib/customFlowIconSearchAliases.ts:125 — "리워드"
+- src/shared/lib/customFlowIconSearchAliases.ts:127 — "마이너스"
+- src/shared/lib/customFlowIconSearchAliases.ts:128 — "마이크"
+- src/shared/lib/customFlowIconSearchAliases.ts:129 — "마주보기"
+- src/shared/lib/customFlowIconSearchAliases.ts:130 — "막대"
+- src/shared/lib/customFlowIconSearchAliases.ts:131 — "말풍선"
+- src/shared/lib/customFlowIconSearchAliases.ts:132 — "맑음"
+- src/shared/lib/customFlowIconSearchAliases.ts:133 — "머그"
+- src/shared/lib/customFlowIconSearchAliases.ts:134 — "먼지"
+- src/shared/lib/customFlowIconSearchAliases.ts:135 — "메달"
+- src/shared/lib/customFlowIconSearchAliases.ts:136 — "메모"
+- src/shared/lib/customFlowIconSearchAliases.ts:137 — "메시지"
+- src/shared/lib/customFlowIconSearchAliases.ts:138 — "메일"
+- src/shared/lib/customFlowIconSearchAliases.ts:139 — "명상"
+- src/shared/lib/customFlowIconSearchAliases.ts:141 — "모래시계"
+- src/shared/lib/customFlowIconSearchAliases.ts:144 — "목록"
+- src/shared/lib/customFlowIconSearchAliases.ts:145 — "목표"
+- src/shared/lib/customFlowIconSearchAliases.ts:146 — "몸"
+- src/shared/lib/customFlowIconSearchAliases.ts:147 — "몸무게"
+- src/shared/lib/customFlowIconSearchAliases.ts:151 — "무술"
+- src/shared/lib/customFlowIconSearchAliases.ts:154 — "무지개"
+- src/shared/lib/customFlowIconSearchAliases.ts:155 — "문서"
+- src/shared/lib/customFlowIconSearchAliases.ts:156 — "문자"
+- src/shared/lib/customFlowIconSearchAliases.ts:158 — "물"
+- src/shared/lib/customFlowIconSearchAliases.ts:159 — "물고기"
+- src/shared/lib/customFlowIconSearchAliases.ts:160 — "물마시기"
+- src/shared/lib/customFlowIconSearchAliases.ts:161 — "물방울"
+- src/shared/lib/customFlowIconSearchAliases.ts:162 — "물병"
+- src/shared/lib/customFlowIconSearchAliases.ts:163 — "물주기"
+- src/shared/lib/customFlowIconSearchAliases.ts:164 — "미세먼지"
+- src/shared/lib/customFlowIconSearchAliases.ts:165 — "미식축구"
+- src/shared/lib/customFlowIconSearchAliases.ts:166 — "바"
+- src/shared/lib/customFlowIconSearchAliases.ts:167 — "바구니"
+- src/shared/lib/customFlowIconSearchAliases.ts:168 — "바람"
+- src/shared/lib/customFlowIconSearchAliases.ts:169 — "바레"
+- src/shared/lib/customFlowIconSearchAliases.ts:171 — "반려동물"
+- src/shared/lib/customFlowIconSearchAliases.ts:172 — "반복"
+- src/shared/lib/customFlowIconSearchAliases.ts:173 — "반짝"
+- src/shared/lib/customFlowIconSearchAliases.ts:174 — "발레"
+- src/shared/lib/customFlowIconSearchAliases.ts:175 — "발자국"
+- src/shared/lib/customFlowIconSearchAliases.ts:176 — "밤"
+- src/shared/lib/customFlowIconSearchAliases.ts:177 — "배구"
+- src/shared/lib/customFlowIconSearchAliases.ts:178 — "배드민턴"
+- src/shared/lib/customFlowIconSearchAliases.ts:179 — "버스"
+- src/shared/lib/customFlowIconSearchAliases.ts:180 — "번개"
+- src/shared/lib/customFlowIconSearchAliases.ts:181 — "별"
+- src/shared/lib/customFlowIconSearchAliases.ts:182 — "병원"
+- src/shared/lib/customFlowIconSearchAliases.ts:183 — "보상"
+- src/shared/lib/customFlowIconSearchAliases.ts:184 — "보안"
+- src/shared/lib/customFlowIconSearchAliases.ts:186 — "복근"
+- src/shared/lib/customFlowIconSearchAliases.ts:187 — "복싱"
+- src/shared/lib/customFlowIconSearchAliases.ts:189 — "볼링"
+- src/shared/lib/customFlowIconSearchAliases.ts:195 — "불"
+- src/shared/lib/customFlowIconSearchAliases.ts:196 — "붓"
+- src/shared/lib/customFlowIconSearchAliases.ts:197 — "뷰파인더"
+- src/shared/lib/customFlowIconSearchAliases.ts:198 — "비"
+- src/shared/lib/customFlowIconSearchAliases.ts:199 — "비전프로"
+- src/shared/lib/customFlowIconSearchAliases.ts:200 — "비트코인"
+- src/shared/lib/customFlowIconSearchAliases.ts:201 — "비행기"
+- src/shared/lib/customFlowIconSearchAliases.ts:204 — "빛"
+- src/shared/lib/customFlowIconSearchAliases.ts:205 — "빨래"
+- src/shared/lib/customFlowIconSearchAliases.ts:206 — "빼기"
+- src/shared/lib/customFlowIconSearchAliases.ts:207 — "사교댄스"
+- src/shared/lib/customFlowIconSearchAliases.ts:209 — "사냥"
+- src/shared/lib/customFlowIconSearchAliases.ts:210 — "사람"
+- src/shared/lib/customFlowIconSearchAliases.ts:213 — "사진"
+- src/shared/lib/customFlowIconSearchAliases.ts:215 — "산"
+- src/shared/lib/customFlowIconSearchAliases.ts:218 — "산장"
+- src/shared/lib/customFlowIconSearchAliases.ts:220 — "삼각형"
+- src/shared/lib/customFlowIconSearchAliases.ts:222 — "상자"
+- src/shared/lib/customFlowIconSearchAliases.ts:223 — "새"
+- src/shared/lib/customFlowIconSearchAliases.ts:224 — "새로고침"
+- src/shared/lib/customFlowIconSearchAliases.ts:225 — "생각"
+- src/shared/lib/customFlowIconSearchAliases.ts:226 — "샤워"
+- src/shared/lib/customFlowIconSearchAliases.ts:227 — "서기"
+- src/shared/lib/customFlowIconSearchAliases.ts:228 — "서류"
+- src/shared/lib/customFlowIconSearchAliases.ts:230 — "서류가방"
+- src/shared/lib/customFlowIconSearchAliases.ts:231 — "서비스"
+- src/shared/lib/customFlowIconSearchAliases.ts:232 — "서핑"
+- src/shared/lib/customFlowIconSearchAliases.ts:233 — "선"
+- src/shared/lib/customFlowIconSearchAliases.ts:235 — "선물"
+- src/shared/lib/customFlowIconSearchAliases.ts:237 — "설거지"
+- src/shared/lib/customFlowIconSearchAliases.ts:238 — "설정"
+- src/shared/lib/customFlowIconSearchAliases.ts:243 — "세계"
+- src/shared/lib/customFlowIconSearchAliases.ts:244 — "세탁"
+- src/shared/lib/customFlowIconSearchAliases.ts:245 — "세탁기"
+- src/shared/lib/customFlowIconSearchAliases.ts:247 — "셔터"
+- src/shared/lib/customFlowIconSearchAliases.ts:248 — "소파"
+- src/shared/lib/customFlowIconSearchAliases.ts:249 — "소프트볼"
+- src/shared/lib/customFlowIconSearchAliases.ts:250 — "손"
+- src/shared/lib/customFlowIconSearchAliases.ts:251 — "손들기"
+- src/shared/lib/customFlowIconSearchAliases.ts:252 — "손바닥"
+- src/shared/lib/customFlowIconSearchAliases.ts:253 — "손잡기"
+- src/shared/lib/customFlowIconSearchAliases.ts:254 — "손흔들기"
+- src/shared/lib/customFlowIconSearchAliases.ts:255 — "쇼핑"
+- src/shared/lib/customFlowIconSearchAliases.ts:258 — "수구"
+- src/shared/lib/customFlowIconSearchAliases.ts:260 — "수리"
+- src/shared/lib/customFlowIconSearchAliases.ts:261 — "작업"
+- src/shared/lib/customFlowIconSearchAliases.ts:262 — "수면"
+- src/shared/lib/customFlowIconSearchAliases.ts:264 — "수액"
+- src/shared/lib/customFlowIconSearchAliases.ts:265 — "수영"
+- src/shared/lib/customFlowIconSearchAliases.ts:269 — "숙소"
+- src/shared/lib/customFlowIconSearchAliases.ts:270 — "순서"
+- src/shared/lib/customFlowIconSearchAliases.ts:274 — "스노보드"
+- src/shared/lib/customFlowIconSearchAliases.ts:275 — "스케이트"
+- src/shared/lib/customFlowIconSearchAliases.ts:276 — "스케이트보드"
+- src/shared/lib/customFlowIconSearchAliases.ts:277 — "스쿼시"
+- src/shared/lib/customFlowIconSearchAliases.ts:278 — "스키"
+- src/shared/lib/customFlowIconSearchAliases.ts:279 — "스택"
+- src/shared/lib/customFlowIconSearchAliases.ts:280 — "스테레오"
+- src/shared/lib/customFlowIconSearchAliases.ts:281 — "스텝퍼"
+- src/shared/lib/customFlowIconSearchAliases.ts:282 — "스트레칭"
+- src/shared/lib/customFlowIconSearchAliases.ts:283 — "스포츠"
+- src/shared/lib/customFlowIconSearchAliases.ts:284 — "스프링클러"
+- src/shared/lib/customFlowIconSearchAliases.ts:285 — "스피커"
+- src/shared/lib/customFlowIconSearchAliases.ts:286 — "습도"
+- src/shared/lib/customFlowIconSearchAliases.ts:287 — "승마"
+- src/shared/lib/customFlowIconSearchAliases.ts:288 — "시계"
+- src/shared/lib/customFlowIconSearchAliases.ts:290 — "시퀀스"
+- src/shared/lib/customFlowIconSearchAliases.ts:291 — "식사"
+- src/shared/lib/customFlowIconSearchAliases.ts:293 — "신문"
+- src/shared/lib/customFlowIconSearchAliases.ts:295 — "신체"
+- src/shared/lib/customFlowIconSearchAliases.ts:296 — "신호"
+- src/shared/lib/customFlowIconSearchAliases.ts:298 — "실내"
+- src/shared/lib/customFlowIconSearchAliases.ts:299 — "실안개"
+- src/shared/lib/customFlowIconSearchAliases.ts:301 — "싫어요"
+- src/shared/lib/customFlowIconSearchAliases.ts:302 — "심전도"
+- src/shared/lib/customFlowIconSearchAliases.ts:303 — "쓰레기"
+- src/shared/lib/customFlowIconSearchAliases.ts:304 — "쓰레기통"
+- src/shared/lib/customFlowIconSearchAliases.ts:305 — "아이"
+- src/shared/lib/customFlowIconSearchAliases.ts:306 — "아이디어"
+- src/shared/lib/customFlowIconSearchAliases.ts:307 — "아이스"
+- src/shared/lib/customFlowIconSearchAliases.ts:308 — "아이클라우드"
+- src/shared/lib/customFlowIconSearchAliases.ts:309 — "안개"
+- src/shared/lib/customFlowIconSearchAliases.ts:310 — "안전벨트"
+- src/shared/lib/customFlowIconSearchAliases.ts:311 — "앉기"
+- src/shared/lib/customFlowIconSearchAliases.ts:312 — "알람"
+- src/shared/lib/customFlowIconSearchAliases.ts:313 — "알림"
+- src/shared/lib/customFlowIconSearchAliases.ts:314 — "알약"
+- src/shared/lib/customFlowIconSearchAliases.ts:315 — "암호화폐"
+- src/shared/lib/customFlowIconSearchAliases.ts:316 — "액자"
+- src/shared/lib/customFlowIconSearchAliases.ts:318 — "야구"
+- src/shared/lib/customFlowIconSearchAliases.ts:320 — "야외"
+- src/shared/lib/customFlowIconSearchAliases.ts:321 — "약"
+- src/shared/lib/customFlowIconSearchAliases.ts:322 — "양궁"
+- src/shared/lib/customFlowIconSearchAliases.ts:324 — "언어"
+- src/shared/lib/customFlowIconSearchAliases.ts:325 — "얼음"
+- src/shared/lib/customFlowIconSearchAliases.ts:326 — "에어백"
+- src/shared/lib/customFlowIconSearchAliases.ts:327 — "에어플레이"
+- src/shared/lib/customFlowIconSearchAliases.ts:328 — "엔"
+- src/shared/lib/customFlowIconSearchAliases.ts:330 — "엔화"
+- src/shared/lib/customFlowIconSearchAliases.ts:331 — "여행"
+- src/shared/lib/customFlowIconSearchAliases.ts:332 — "여행가방"
+- src/shared/lib/customFlowIconSearchAliases.ts:333 — "연결"
+- src/shared/lib/customFlowIconSearchAliases.ts:334 — "연극"
+- src/shared/lib/customFlowIconSearchAliases.ts:336 — "연필"
+- src/shared/lib/customFlowIconSearchAliases.ts:338 — "열"
+- src/shared/lib/customFlowIconSearchAliases.ts:339 — "열림"
+- src/shared/lib/customFlowIconSearchAliases.ts:340 — "열쇠"
+- src/shared/lib/customFlowIconSearchAliases.ts:342 — "영상"
+- src/shared/lib/customFlowIconSearchAliases.ts:343 — "영화"
+- src/shared/lib/customFlowIconSearchAliases.ts:345 — "예술"
+- src/shared/lib/customFlowIconSearchAliases.ts:346 — "오븐"
+- src/shared/lib/customFlowIconSearchAliases.ts:348 — "온도"
+- src/shared/lib/customFlowIconSearchAliases.ts:349 — "온도계"
+- src/shared/lib/customFlowIconSearchAliases.ts:350 — "옷"
+- src/shared/lib/customFlowIconSearchAliases.ts:351 — "와이드"
+- src/shared/lib/customFlowIconSearchAliases.ts:352 — "와이파이"
+- src/shared/lib/customFlowIconSearchAliases.ts:353 — "와인"
+- src/shared/lib/customFlowIconSearchAliases.ts:354 — "완료"
+- src/shared/lib/customFlowIconSearchAliases.ts:355 — "요가"
+- src/shared/lib/customFlowIconSearchAliases.ts:356 — "요리"
+- src/shared/lib/customFlowIconSearchAliases.ts:357 — "요트"
+- src/shared/lib/customFlowIconSearchAliases.ts:359 — "우박"
+- src/shared/lib/customFlowIconSearchAliases.ts:360 — "우산"
+- src/shared/lib/customFlowIconSearchAliases.ts:362 — "운동"
+- src/shared/lib/customFlowIconSearchAliases.ts:364 — "운동복"
+- src/shared/lib/customFlowIconSearchAliases.ts:365 — "운동장"
+- src/shared/lib/customFlowIconSearchAliases.ts:366 — "운전"
+- src/shared/lib/customFlowIconSearchAliases.ts:368 — "움직임"
+- src/shared/lib/customFlowIconSearchAliases.ts:369 — "워치"
+- src/shared/lib/customFlowIconSearchAliases.ts:370 — "원"
+- src/shared/lib/customFlowIconSearchAliases.ts:371 — "원반"
+- src/shared/lib/customFlowIconSearchAliases.ts:372 — "원화"
+- src/shared/lib/customFlowIconSearchAliases.ts:374 — "웨이트"
+- src/shared/lib/customFlowIconSearchAliases.ts:375 — "웹"
+- src/shared/lib/customFlowIconSearchAliases.ts:376 — "위안"
+- src/shared/lib/customFlowIconSearchAliases.ts:377 — "위안화"
+- src/shared/lib/customFlowIconSearchAliases.ts:378 — "위치"
+- src/shared/lib/customFlowIconSearchAliases.ts:379 — "윈드실드"
+- src/shared/lib/customFlowIconSearchAliases.ts:380 — "유로"
+- src/shared/lib/customFlowIconSearchAliases.ts:381 — "유리"
+- src/shared/lib/customFlowIconSearchAliases.ts:382 — "유산소"
+- src/shared/lib/customFlowIconSearchAliases.ts:384 — "육각형"
+- src/shared/lib/customFlowIconSearchAliases.ts:386 — "육상"
+- src/shared/lib/customFlowIconSearchAliases.ts:387 — "은행"
+- src/shared/lib/customFlowIconSearchAliases.ts:390 — "음식"
+- src/shared/lib/customFlowIconSearchAliases.ts:391 — "음악"
+- src/shared/lib/customFlowIconSearchAliases.ts:392 — "음표"
+- src/shared/lib/customFlowIconSearchAliases.ts:394 — "응급"
+- src/shared/lib/customFlowIconSearchAliases.ts:395 — "의료"
+- src/shared/lib/customFlowIconSearchAliases.ts:396 — "이산화탄소"
+- src/shared/lib/customFlowIconSearchAliases.ts:398 — "이슬비"
+- src/shared/lib/customFlowIconSearchAliases.ts:400 — "인물"
+- src/shared/lib/customFlowIconSearchAliases.ts:403 — "인용"
+- src/shared/lib/customFlowIconSearchAliases.ts:405 — "인터넷"
+- src/shared/lib/customFlowIconSearchAliases.ts:406 — "인터벌"
+- src/shared/lib/customFlowIconSearchAliases.ts:407 — "인형"
+- src/shared/lib/customFlowIconSearchAliases.ts:408 — "일기"
+- src/shared/lib/customFlowIconSearchAliases.ts:409 — "일립티컬"
+- src/shared/lib/customFlowIconSearchAliases.ts:410 — "일시정지"
+- src/shared/lib/customFlowIconSearchAliases.ts:412 — "일출"
+- src/shared/lib/customFlowIconSearchAliases.ts:413 — "잎"
+- src/shared/lib/customFlowIconSearchAliases.ts:414 — "자"
+- src/shared/lib/customFlowIconSearchAliases.ts:416 — "자동"
+- src/shared/lib/customFlowIconSearchAliases.ts:418 — "자동차"
+- src/shared/lib/customFlowIconSearchAliases.ts:419 — "자르기"
+- src/shared/lib/customFlowIconSearchAliases.ts:420 — "자막"
+- src/shared/lib/customFlowIconSearchAliases.ts:422 — "자전거"
+- src/shared/lib/customFlowIconSearchAliases.ts:423 — "잠"
+- src/shared/lib/customFlowIconSearchAliases.ts:424 — "잠금"
+- src/shared/lib/customFlowIconSearchAliases.ts:425 — "장바구니"
+- src/shared/lib/customFlowIconSearchAliases.ts:426 — "장보기"
+- src/shared/lib/customFlowIconSearchAliases.ts:428 — "재생"
+- src/shared/lib/customFlowIconSearchAliases.ts:432 — "전파"
+- src/shared/lib/customFlowIconSearchAliases.ts:433 — "전화"
+- src/shared/lib/customFlowIconSearchAliases.ts:436 — "점"
+- src/shared/lib/customFlowIconSearchAliases.ts:437 — "점선"
+- src/shared/lib/customFlowIconSearchAliases.ts:439 — "점자"
+- src/shared/lib/customFlowIconSearchAliases.ts:444 — "정리"
+- src/shared/lib/customFlowIconSearchAliases.ts:445 — "정보"
+- src/shared/lib/customFlowIconSearchAliases.ts:447 — "정장"
+- src/shared/lib/customFlowIconSearchAliases.ts:449 — "조깅"
+- src/shared/lib/customFlowIconSearchAliases.ts:450 — "조리개"
+- src/shared/lib/customFlowIconSearchAliases.ts:451 — "조명"
+- src/shared/lib/customFlowIconSearchAliases.ts:452 — "졸업"
+- src/shared/lib/customFlowIconSearchAliases.ts:454 — "좋아요"
+- src/shared/lib/customFlowIconSearchAliases.ts:458 — "주유소"
+- src/shared/lib/customFlowIconSearchAliases.ts:459 — "주의"
+- src/shared/lib/customFlowIconSearchAliases.ts:461 — "줄넘기"
+- src/shared/lib/customFlowIconSearchAliases.ts:463 — "지갑"
+- src/shared/lib/customFlowIconSearchAliases.ts:464 — "지구"
+- src/shared/lib/customFlowIconSearchAliases.ts:466 — "지도"
+- src/shared/lib/customFlowIconSearchAliases.ts:467 — "지평선"
+- src/shared/lib/customFlowIconSearchAliases.ts:469 — "지폐"
+- src/shared/lib/customFlowIconSearchAliases.ts:471 — "지하철"
+- src/shared/lib/customFlowIconSearchAliases.ts:472 — "진눈깨비"
+- src/shared/lib/customFlowIconSearchAliases.ts:473 — "진동"
+- src/shared/lib/customFlowIconSearchAliases.ts:474 — "질문"
+- src/shared/lib/customFlowIconSearchAliases.ts:475 — "집"
+- src/shared/lib/customFlowIconSearchAliases.ts:476 — "집중"
+- src/shared/lib/customFlowIconSearchAliases.ts:478 — "차"
+- src/shared/lib/customFlowIconSearchAliases.ts:480 — "차트"
+- src/shared/lib/customFlowIconSearchAliases.ts:481 — "착륙"
+- src/shared/lib/customFlowIconSearchAliases.ts:483 — "책"
+- src/shared/lib/customFlowIconSearchAliases.ts:484 — "청진기"
+- src/shared/lib/customFlowIconSearchAliases.ts:485 — "체육관"
+- src/shared/lib/customFlowIconSearchAliases.ts:486 — "체조"
+- src/shared/lib/customFlowIconSearchAliases.ts:487 — "체중"
+- src/shared/lib/customFlowIconSearchAliases.ts:488 — "체중계"
+- src/shared/lib/customFlowIconSearchAliases.ts:489 — "체크"
+- src/shared/lib/customFlowIconSearchAliases.ts:490 — "체크무늬"
+- src/shared/lib/customFlowIconSearchAliases.ts:491 — "초인종"
+- src/shared/lib/customFlowIconSearchAliases.ts:492 — "촬영"
+- src/shared/lib/customFlowIconSearchAliases.ts:493 — "추가"
+- src/shared/lib/customFlowIconSearchAliases.ts:495 — "축구"
+- src/shared/lib/customFlowIconSearchAliases.ts:496 — "축하"
+- src/shared/lib/customFlowIconSearchAliases.ts:497 — "출근"
+- src/shared/lib/customFlowIconSearchAliases.ts:498 — "출발"
+- src/shared/lib/customFlowIconSearchAliases.ts:499 — "출입"
+- src/shared/lib/customFlowIconSearchAliases.ts:501 — "춤"
+- src/shared/lib/customFlowIconSearchAliases.ts:502 — "취미"
+- src/shared/lib/customFlowIconSearchAliases.ts:503 — "취소"
+- src/shared/lib/customFlowIconSearchAliases.ts:504 — "취침"
+- src/shared/lib/customFlowIconSearchAliases.ts:506 — "측광"
+- src/shared/lib/customFlowIconSearchAliases.ts:508 — "측정"
+- src/shared/lib/customFlowIconSearchAliases.ts:509 — "침대"
+- src/shared/lib/customFlowIconSearchAliases.ts:510 — "카드"
+- src/shared/lib/customFlowIconSearchAliases.ts:511 — "카메라"
+- src/shared/lib/customFlowIconSearchAliases.ts:512 — "칼"
+- src/shared/lib/customFlowIconSearchAliases.ts:513 — "칼럼"
+- src/shared/lib/customFlowIconSearchAliases.ts:514 — "커피"
+- src/shared/lib/customFlowIconSearchAliases.ts:515 — "컬링"
+- src/shared/lib/customFlowIconSearchAliases.ts:516 — "컴퓨터"
+- src/shared/lib/customFlowIconSearchAliases.ts:517 — "컵"
+- src/shared/lib/customFlowIconSearchAliases.ts:518 — "코딩"
+- src/shared/lib/customFlowIconSearchAliases.ts:519 — "코어"
+- src/shared/lib/customFlowIconSearchAliases.ts:520 — "쿨다운"
+- src/shared/lib/customFlowIconSearchAliases.ts:521 — "쿨쿨"
+- src/shared/lib/customFlowIconSearchAliases.ts:522 — "크라운"
+- src/shared/lib/customFlowIconSearchAliases.ts:523 — "크로스핏"
+- src/shared/lib/customFlowIconSearchAliases.ts:524 — "크롭"
+- src/shared/lib/customFlowIconSearchAliases.ts:525 — "크리켓"
+- src/shared/lib/customFlowIconSearchAliases.ts:526 — "클라우드"
+- src/shared/lib/customFlowIconSearchAliases.ts:527 — "클라이밍"
+- src/shared/lib/customFlowIconSearchAliases.ts:528 — "클립보드"
+- src/shared/lib/customFlowIconSearchAliases.ts:529 — "키보드"
+- src/shared/lib/customFlowIconSearchAliases.ts:530 — "킥복싱"
+- src/shared/lib/customFlowIconSearchAliases.ts:532 — "타원"
+- src/shared/lib/customFlowIconSearchAliases.ts:533 — "타이머"
+- src/shared/lib/customFlowIconSearchAliases.ts:534 — "타이트"
+- src/shared/lib/customFlowIconSearchAliases.ts:535 — "탁구"
+- src/shared/lib/customFlowIconSearchAliases.ts:537 — "태극권"
+- src/shared/lib/customFlowIconSearchAliases.ts:540 — "탭"
+- src/shared/lib/customFlowIconSearchAliases.ts:541 — "터널"
+- src/shared/lib/customFlowIconSearchAliases.ts:542 — "터치"
+- src/shared/lib/customFlowIconSearchAliases.ts:543 — "테니스"
+- src/shared/lib/customFlowIconSearchAliases.ts:544 — "텍스트"
+- src/shared/lib/customFlowIconSearchAliases.ts:545 — "텔레비전"
+- src/shared/lib/customFlowIconSearchAliases.ts:547 — "트랙"
+- src/shared/lib/customFlowIconSearchAliases.ts:548 — "트럭"
+- src/shared/lib/customFlowIconSearchAliases.ts:549 — "트레이"
+- src/shared/lib/customFlowIconSearchAliases.ts:550 — "트레이닝"
+- src/shared/lib/customFlowIconSearchAliases.ts:551 — "티비"
+- src/shared/lib/customFlowIconSearchAliases.ts:552 — "티켓"
+- src/shared/lib/customFlowIconSearchAliases.ts:553 — "팁"
+- src/shared/lib/customFlowIconSearchAliases.ts:554 — "팁주기"
+- src/shared/lib/customFlowIconSearchAliases.ts:556 — "파도"
+- src/shared/lib/customFlowIconSearchAliases.ts:557 — "파운드"
+- src/shared/lib/customFlowIconSearchAliases.ts:558 — "파이프"
+- src/shared/lib/customFlowIconSearchAliases.ts:559 — "파일"
+- src/shared/lib/customFlowIconSearchAliases.ts:560 — "파티"
+- src/shared/lib/customFlowIconSearchAliases.ts:561 — "파형"
+- src/shared/lib/customFlowIconSearchAliases.ts:563 — "팔레트"
+- src/shared/lib/customFlowIconSearchAliases.ts:564 — "패스"
+- src/shared/lib/customFlowIconSearchAliases.ts:565 — "팬"
+- src/shared/lib/customFlowIconSearchAliases.ts:566 — "퍼센트"
+- src/shared/lib/customFlowIconSearchAliases.ts:567 — "페이지"
+- src/shared/lib/customFlowIconSearchAliases.ts:568 — "펜싱"
+- src/shared/lib/customFlowIconSearchAliases.ts:569 — "편지"
+- src/shared/lib/customFlowIconSearchAliases.ts:570 — "폐"
+- src/shared/lib/customFlowIconSearchAliases.ts:573 — "포인트"
+- src/shared/lib/customFlowIconSearchAliases.ts:574 — "폭우"
+- src/shared/lib/customFlowIconSearchAliases.ts:575 — "폭죽"
+- src/shared/lib/customFlowIconSearchAliases.ts:576 — "폴더"
+- src/shared/lib/customFlowIconSearchAliases.ts:577 — "풋볼"
+- src/shared/lib/customFlowIconSearchAliases.ts:579 — "풍선"
+- src/shared/lib/customFlowIconSearchAliases.ts:581 — "플러스"
+- src/shared/lib/customFlowIconSearchAliases.ts:582 — "피클볼"
+- src/shared/lib/customFlowIconSearchAliases.ts:583 — "피트니스"
+- src/shared/lib/customFlowIconSearchAliases.ts:584 — "핀치"
+- src/shared/lib/customFlowIconSearchAliases.ts:586 — "필기"
+- src/shared/lib/customFlowIconSearchAliases.ts:587 — "필드"
+- src/shared/lib/customFlowIconSearchAliases.ts:588 — "필라테스"
+- src/shared/lib/customFlowIconSearchAliases.ts:589 — "하이킹"
+- src/shared/lib/customFlowIconSearchAliases.ts:590 — "하키"
+- src/shared/lib/customFlowIconSearchAliases.ts:591 — "하트"
+- src/shared/lib/customFlowIconSearchAliases.ts:592 — "할인"
+- src/shared/lib/customFlowIconSearchAliases.ts:593 — "할일"
+- src/shared/lib/customFlowIconSearchAliases.ts:594 — "해"
+- src/shared/lib/customFlowIconSearchAliases.ts:595 — "해변"
+- src/shared/lib/customFlowIconSearchAliases.ts:596 — "핸드볼"
+- src/shared/lib/customFlowIconSearchAliases.ts:597 — "햅틱"
+- src/shared/lib/customFlowIconSearchAliases.ts:599 — "헤드폰"
+- src/shared/lib/customFlowIconSearchAliases.ts:600 — "헬스"
+- src/shared/lib/customFlowIconSearchAliases.ts:601 — "헬스장"
+- src/shared/lib/customFlowIconSearchAliases.ts:602 — "호주식축구"
+- src/shared/lib/customFlowIconSearchAliases.ts:603 — "혼합"
+- src/shared/lib/customFlowIconSearchAliases.ts:606 — "환풍"
+- src/shared/lib/customFlowIconSearchAliases.ts:607 — "회사"
+- src/shared/lib/customFlowIconSearchAliases.ts:608 — "훈련"
+- src/shared/lib/customFlowIconSearchAliases.ts:609 — "휴식"
+- src/shared/lib/customFlowIconSearchAliases.ts:610 — "휴지통"
+- src/shared/lib/customFlowIconSearchAliases.ts:611 — "흉상"
+- src/shared/lib/daily-quote/dailyQuotes.ts:20 — '오늘 천천히 가도 괜찮아요. 멈추지만 않으면 돼요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:27 — '먼 길도 괜찮아요. 지금 한 걸음이면 시작이에요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:34 — '반복하는 일이 곧 당신이에요. 오늘의 작은 습관이 내일의 당신을 만들어요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:41 — '앞서가고 싶다면, 일단 시작해요. 아주 작아도 괜찮아요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:48 — '그려 둔 삶을 향해, 오늘만 조금 더 자신 있게 걸어가요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:55 — '잘했다고 끝이 아니고, 실패했다고 끝난 것도 아니에요. 계속하는 마음이 중요해요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:62 — '지금 있는 곳에서, 가진 걸로, 오늘 할 수 있는 것만 해봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:69 — '새 날이 왔어요. 오늘도 새 힘을 조금만 더 가져와요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:76 — '해내기 전엔 늘 불가능해 보여요. 그러니 다음 작은 한 걸음만 가요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:83 — '내일은 오늘 당신이 선택한 일로 만들어져요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:90 — '뛸 수 없으면 걸어도 돼요. 걸을 수 없으면 기어서라도, 앞으로만 가요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:97 — '사랑하는 일에서 좋은 결과가 자라요. 오늘도 그 마음을 지켜봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:104 — '잘 말하는 것보다, 오늘 잘 하는 쪽이 더 나아요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:111 — '미래를 맞히려고만 하지 말아요. 오늘 일부를 직접 만들어 봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:118 — '제일 어려운 건 시작이에요. 시작하면 이미 한 걸음 앞선 거예요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:125 — '어떤 사람이 되어야 할지 고민만 하지 말아요. 오늘 그 사람으로 나타나 봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:132 — '시간이 부족한 게 아니에요. 너무 많이 흘려보내고 있을 뿐이에요. 오늘 조금만 지켜 봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:139 — '넘어지지 않는 게 자랑이 아니에요. 넘어질 때마다 일어서는 당신이 멋져요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:146 — '페달을 계속 밟아 봐요. 균형은 멈춰 있을 때가 아니라 움직일 때 잡혀요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:153 — '나중에 보면, 한 일보다 시도하지 않은 일이 더 아쉬울 거예요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:160 — '오늘을 올해 중 가장 좋은 날 중 하나로 대해 봐요. 그렇게 만들 수 있어요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:167 — '또 실패했다고 끝이 아니에요. 그게 더 나아지는 과정일 수 있어요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:174 — '안 됐다고 실패한 게 아니에요. 안 되는 방법을 하나 더 배운 거예요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:181 — '시작한다는 말보다, 지금 작은 일 하나만 해봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:188 — '시작하지 않은 길만 영원히 불가능해요. 오늘 첫 걸음만 내디뎌 봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:195 — '편안함은 쉬워요. 그래도 당신이 더 할 수 있는 걸 가리지 않게 조심해요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:202 — '목표는 마음을 움직이고, 시스템은 당신을 데려가요. 오늘 작은 오늘의 주인공 하나만 단단히 해봐요.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:209 — '용기와 편안함을 둘 다 꽉 잡을 수는 없어요. 오늘 용기 있는 한 걸음만 골라 봐요.'
+- src/shared/lib/formatDurationMinKo.ts:4 — '0분'
+- src/shared/lib/formatDurationMinKo.ts:8 — '${h}시간'
+- src/shared/lib/formatDurationMinKo.ts:9 — '${h}시간 ${r}분'
+- src/shared/lib/formatDurationMinKo.ts:11 — '${m}분'
+- src/shared/lib/i18n/lib/formatLocale.ts:46 — '${mo}월 ${d}일'
+- src/shared/lib/i18n/lib/formatLocale.ts:71 — '${mo}월'
+- src/shared/lib/i18n/lib/formatLocale.ts:71 — '${d}일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '일요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '월요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '화요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '수요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '목요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '금요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:92 — '토요일'
+- src/shared/lib/i18n/lib/formatLocale.ts:93 — '${long[date.getDay()]}, ${mo}월 ${d}일'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '일'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '월'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '화'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '수'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '목'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '금'
+- src/shared/lib/i18n/lib/formatLocale.ts:109 — '토'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '일'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '월'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '화'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '수'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '목'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '금'
+- src/shared/lib/i18n/lib/formatLocale.ts:125 — '토'
+- src/shared/lib/routineIllustrationCatalog.ts:7 — '운동'
+- src/shared/lib/routineIllustrationCatalog.ts:7 — '운동 헬스 산책 달리기 dumbbell workout fitness walk run 筋トレ 散歩'
+- src/shared/lib/routineIllustrationCatalog.ts:8 — '책읽기'
+- src/shared/lib/routineIllustrationCatalog.ts:8 — '책읽기 독서 공부 책 book study learning 勉強 本'
+- src/shared/lib/routineIllustrationCatalog.ts:9 — '물 마시기'
+- src/shared/lib/routineIllustrationCatalog.ts:9 — '물 수분 water drink hydration 水'
+- src/shared/lib/routineIllustrationCatalog.ts:10 — '식사'
+- src/shared/lib/routineIllustrationCatalog.ts:10 — '식사 요리 아침 점심 저녁 food cooking breakfast 食事 料理'
+- src/shared/lib/routineIllustrationCatalog.ts:11 — '수면'
+- src/shared/lib/routineIllustrationCatalog.ts:11 — '수면 휴식 잠 sleep rest bedtime 休憩'
+- src/shared/lib/routineIllustrationCatalog.ts:12 — '약·영양제'
+- src/shared/lib/routineIllustrationCatalog.ts:12 — '약 영양제 건강 medicine pill supplement health 薬 健康'
+- src/shared/lib/routineIllustrationCatalog.ts:13 — '업무'
+- src/shared/lib/routineIllustrationCatalog.ts:13 — '업무 일 코딩 laptop work coding computer 仕事 パソコン'
+- src/shared/lib/routineIllustrationCatalog.ts:14 — '청소'
+- src/shared/lib/routineIllustrationCatalog.ts:14 — '청소 집 정리 broom cleaning home tidy 掃除 家事'
+- src/shared/lib/routineIllustrationCatalog.ts:15 — '음악'
+- src/shared/lib/routineIllustrationCatalog.ts:15 — '음악 감상 headphones music listen 音楽'
+- src/shared/lib/routineIllustrationCatalog.ts:16 — '기록'
+- src/shared/lib/routineIllustrationCatalog.ts:16 — '기록 일기 노트 journal diary notebook pen write 日記 ノート'
+- src/shared/lib/routineIllustrationCatalog.ts:17 — "달리기"
+- src/shared/lib/routineIllustrationCatalog.ts:17 — "달리기 Running ランニング running"
+- src/shared/lib/routineIllustrationCatalog.ts:18 — "자전거"
+- src/shared/lib/routineIllustrationCatalog.ts:18 — "자전거 Cycling サイクリング cycling"
+- src/shared/lib/routineIllustrationCatalog.ts:19 — "요가"
+- src/shared/lib/routineIllustrationCatalog.ts:19 — "요가 Yoga ヨガ yoga"
+- src/shared/lib/routineIllustrationCatalog.ts:20 — "수영"
+- src/shared/lib/routineIllustrationCatalog.ts:20 — "수영 Swimming 水泳 swimming"
+- src/shared/lib/routineIllustrationCatalog.ts:21 — "스트레칭"
+- src/shared/lib/routineIllustrationCatalog.ts:21 — "스트레칭 Stretching ストレッチ stretching"
+- src/shared/lib/routineIllustrationCatalog.ts:22 — "줄넘기"
+- src/shared/lib/routineIllustrationCatalog.ts:22 — "줄넘기 Jump rope 縄跳び jump rope"
+- src/shared/lib/routineIllustrationCatalog.ts:23 — "테니스"
+- src/shared/lib/routineIllustrationCatalog.ts:23 — "테니스 Tennis テニス tennis"
+- src/shared/lib/routineIllustrationCatalog.ts:24 — "농구"
+- src/shared/lib/routineIllustrationCatalog.ts:24 — "농구 Basketball バスケットボール basketball"
+- src/shared/lib/routineIllustrationCatalog.ts:25 — "축구"
+- src/shared/lib/routineIllustrationCatalog.ts:25 — "축구 Football サッカー football"
+- src/shared/lib/routineIllustrationCatalog.ts:26 — "등산"
+- src/shared/lib/routineIllustrationCatalog.ts:26 — "등산 Hiking 登山 hiking"
+- src/shared/lib/routineIllustrationCatalog.ts:27 — "복싱"
+- src/shared/lib/routineIllustrationCatalog.ts:27 — "복싱 Boxing ボクシング boxing"
+- src/shared/lib/routineIllustrationCatalog.ts:28 — "필라테스"
+- src/shared/lib/routineIllustrationCatalog.ts:28 — "필라테스 Pilates ピラティス pilates"
+- src/shared/lib/routineIllustrationCatalog.ts:29 — "양치"
+- src/shared/lib/routineIllustrationCatalog.ts:29 — "양치 Brush teeth 歯磨き toothbrush"
+- src/shared/lib/routineIllustrationCatalog.ts:30 — "피부 관리"
+- src/shared/lib/routineIllustrationCatalog.ts:30 — "피부 관리 Skincare スキンケア skincare"
+- src/shared/lib/routineIllustrationCatalog.ts:31 — "샤워"
+- src/shared/lib/routineIllustrationCatalog.ts:31 — "샤워 Shower シャワー shower"
+- src/shared/lib/routineIllustrationCatalog.ts:32 — "손 씻기"
+- src/shared/lib/routineIllustrationCatalog.ts:32 — "손 씻기 Wash hands 手洗い handwashing"
+- src/shared/lib/routineIllustrationCatalog.ts:33 — "건강 검진"
+- src/shared/lib/routineIllustrationCatalog.ts:33 — "건강 검진 Health checkup 健康診断 checkup"
+- src/shared/lib/routineIllustrationCatalog.ts:34 — "체중 기록"
+- src/shared/lib/routineIllustrationCatalog.ts:34 — "체중 기록 Weight tracking 体重記録 weight"
+- src/shared/lib/routineIllustrationCatalog.ts:35 — "혈압 측정"
+- src/shared/lib/routineIllustrationCatalog.ts:35 — "혈압 측정 Blood pressure 血圧測定 blood pressure"
+- src/shared/lib/routineIllustrationCatalog.ts:36 — "비타민"
+- src/shared/lib/routineIllustrationCatalog.ts:36 — "비타민 Vitamins ビタミン vitamins"
+- src/shared/lib/routineIllustrationCatalog.ts:37 — "눈 휴식"
+- src/shared/lib/routineIllustrationCatalog.ts:37 — "눈 휴식 Eye rest 目の休息 eye rest"
+- src/shared/lib/routineIllustrationCatalog.ts:38 — "선크림"
+- src/shared/lib/routineIllustrationCatalog.ts:38 — "선크림 Sunscreen 日焼け止め sunscreen"
+- src/shared/lib/routineIllustrationCatalog.ts:39 — "공부"
+- src/shared/lib/routineIllustrationCatalog.ts:39 — "공부 Study 勉強 pencil"
+- src/shared/lib/routineIllustrationCatalog.ts:40 — "외국어 공부"
+- src/shared/lib/routineIllustrationCatalog.ts:40 — "외국어 공부 Language study 語学学習 language"
+- src/shared/lib/routineIllustrationCatalog.ts:41 — "강의 듣기"
+- src/shared/lib/routineIllustrationCatalog.ts:41 — "강의 듣기 Lecture 講義 lecture"
+- src/shared/lib/routineIllustrationCatalog.ts:42 — "시험 준비"
+- src/shared/lib/routineIllustrationCatalog.ts:42 — "시험 준비 Exam preparation 試験勉強 exam"
+- src/shared/lib/routineIllustrationCatalog.ts:43 — "계획 세우기"
+- src/shared/lib/routineIllustrationCatalog.ts:43 — "계획 세우기 Planning 計画 planning"
+- src/shared/lib/routineIllustrationCatalog.ts:44 — "집중"
+- src/shared/lib/routineIllustrationCatalog.ts:44 — "집중 Focus 集中 focus"
+- src/shared/lib/routineIllustrationCatalog.ts:45 — "개발"
+- src/shared/lib/routineIllustrationCatalog.ts:45 — "개발 Coding プログラミング coding"
+- src/shared/lib/routineIllustrationCatalog.ts:46 — "이메일"
+- src/shared/lib/routineIllustrationCatalog.ts:46 — "이메일 Email メール email"
+- src/shared/lib/routineIllustrationCatalog.ts:47 — "자료 조사"
+- src/shared/lib/routineIllustrationCatalog.ts:47 — "자료 조사 Research 調査 research"
+- src/shared/lib/routineIllustrationCatalog.ts:48 — "재무 공부"
+- src/shared/lib/routineIllustrationCatalog.ts:48 — "재무 공부 Finance study 金融学習 finance"
+- src/shared/lib/routineIllustrationCatalog.ts:49 — "커피"
+- src/shared/lib/routineIllustrationCatalog.ts:49 — "커피 Coffee コーヒー coffee"
+- src/shared/lib/routineIllustrationCatalog.ts:50 — "차 마시기"
+- src/shared/lib/routineIllustrationCatalog.ts:50 — "차 마시기 Tea お茶 tea"
+- src/shared/lib/routineIllustrationCatalog.ts:51 — "아침 식사"
+- src/shared/lib/routineIllustrationCatalog.ts:51 — "아침 식사 Breakfast 朝食 breakfast"
+- src/shared/lib/routineIllustrationCatalog.ts:52 — "채소 먹기"
+- src/shared/lib/routineIllustrationCatalog.ts:52 — "채소 먹기 Salad サラダ salad"
+- src/shared/lib/routineIllustrationCatalog.ts:53 — "과일 먹기"
+- src/shared/lib/routineIllustrationCatalog.ts:53 — "과일 먹기 Fruit 果物 fruit"
+- src/shared/lib/routineIllustrationCatalog.ts:54 — "요리"
+- src/shared/lib/routineIllustrationCatalog.ts:54 — "요리 Cooking 料理 cooking"
+- src/shared/lib/routineIllustrationCatalog.ts:55 — "베이킹"
+- src/shared/lib/routineIllustrationCatalog.ts:55 — "베이킹 Baking お菓子作り baking"
+- src/shared/lib/routineIllustrationCatalog.ts:56 — "도시락"
+- src/shared/lib/routineIllustrationCatalog.ts:56 — "도시락 Lunchbox お弁当 lunchbox"
+- src/shared/lib/routineIllustrationCatalog.ts:57 — "빨래"
+- src/shared/lib/routineIllustrationCatalog.ts:57 — "빨래 Laundry 洗濯 laundry"
+- src/shared/lib/routineIllustrationCatalog.ts:58 — "설거지"
+- src/shared/lib/routineIllustrationCatalog.ts:58 — "설거지 Wash dishes 皿洗い dishes"
+- src/shared/lib/routineIllustrationCatalog.ts:59 — "청소기"
+- src/shared/lib/routineIllustrationCatalog.ts:59 — "청소기 Vacuuming 掃除機 vacuum"
+- src/shared/lib/routineIllustrationCatalog.ts:60 — "이불 정리"
+- src/shared/lib/routineIllustrationCatalog.ts:60 — "이불 정리 Make bed ベッドメイク bed making"
+- src/shared/lib/routineIllustrationCatalog.ts:61 — "정리 정돈"
+- src/shared/lib/routineIllustrationCatalog.ts:61 — "정리 정돈 Organizing 片付け organizing"
+- src/shared/lib/routineIllustrationCatalog.ts:62 — "분리수거"
+- src/shared/lib/routineIllustrationCatalog.ts:62 — "분리수거 Recycling リサイクル recycling"
+- src/shared/lib/routineIllustrationCatalog.ts:63 — "장보기"
+- src/shared/lib/routineIllustrationCatalog.ts:63 — "장보기 Grocery shopping 買い物 shopping"
+- src/shared/lib/routineIllustrationCatalog.ts:64 — "가계부"
+- src/shared/lib/routineIllustrationCatalog.ts:64 — "가계부 Budget 家計簿 budget"
+- src/shared/lib/routineIllustrationCatalog.ts:65 — "수리"
+- src/shared/lib/routineIllustrationCatalog.ts:65 — "수리 Repair 修理 repair"
+- src/shared/lib/routineIllustrationCatalog.ts:66 — "바느질"
+- src/shared/lib/routineIllustrationCatalog.ts:66 — "바느질 Sewing 裁縫 sewing"
+- src/shared/lib/routineIllustrationCatalog.ts:67 — "측정"
+- src/shared/lib/routineIllustrationCatalog.ts:67 — "측정 Measuring 計測 measuring"
+- src/shared/lib/routineIllustrationCatalog.ts:68 — "집 꾸미기"
+- src/shared/lib/routineIllustrationCatalog.ts:68 — "집 꾸미기 Home decorating 模様替え painting room"
+- src/shared/lib/routineIllustrationCatalog.ts:69 — "명상"
+- src/shared/lib/routineIllustrationCatalog.ts:69 — "명상 Meditation 瞑想 meditation"
+- src/shared/lib/routineIllustrationCatalog.ts:70 — "호흡"
+- src/shared/lib/routineIllustrationCatalog.ts:70 — "호흡 Breathing 深呼吸 breathing"
+- src/shared/lib/routineIllustrationCatalog.ts:71 — "목욕"
+- src/shared/lib/routineIllustrationCatalog.ts:71 — "목욕 Bath 入浴 bath"
+- src/shared/lib/routineIllustrationCatalog.ts:72 — "낮잠"
+- src/shared/lib/routineIllustrationCatalog.ts:72 — "낮잠 Nap 昼寝 nap"
+- src/shared/lib/routineIllustrationCatalog.ts:73 — "향초"
+- src/shared/lib/routineIllustrationCatalog.ts:73 — "향초 Candle キャンドル candle"
+- src/shared/lib/routineIllustrationCatalog.ts:74 — "디지털 휴식"
+- src/shared/lib/routineIllustrationCatalog.ts:74 — "디지털 휴식 Digital break デジタル休憩 offline"
+- src/shared/lib/routineIllustrationCatalog.ts:75 — "사진 촬영"
+- src/shared/lib/routineIllustrationCatalog.ts:75 — "사진 촬영 Photography 写真撮影 camera"
+- src/shared/lib/routineIllustrationCatalog.ts:76 — "일러스트 그리기"
+- src/shared/lib/routineIllustrationCatalog.ts:76 — "그림 그리기 Drawing お絵描き drawing"
+- src/shared/lib/routineIllustrationCatalog.ts:77 — "수채화"
+- src/shared/lib/routineIllustrationCatalog.ts:77 — "수채화 Watercolor 水彩画 watercolor"
+- src/shared/lib/routineIllustrationCatalog.ts:78 — "기타"
+- src/shared/lib/routineIllustrationCatalog.ts:78 — "기타 Guitar ギター guitar"
+- src/shared/lib/routineIllustrationCatalog.ts:79 — "피아노"
+- src/shared/lib/routineIllustrationCatalog.ts:79 — "피아노 Piano ピアノ piano"
+- src/shared/lib/routineIllustrationCatalog.ts:80 — "만들기"
+- src/shared/lib/routineIllustrationCatalog.ts:80 — "만들기 Crafts 工作 crafts"
+- src/shared/lib/routineIllustrationCatalog.ts:81 — "뜨개질"
+- src/shared/lib/routineIllustrationCatalog.ts:81 — "뜨개질 Knitting 編み物 knitting"
+- src/shared/lib/routineIllustrationCatalog.ts:82 — "영화 감상"
+- src/shared/lib/routineIllustrationCatalog.ts:82 — "영화 감상 Movies 映画鑑賞 film"
+- src/shared/lib/routineIllustrationCatalog.ts:83 — "게임"
+- src/shared/lib/routineIllustrationCatalog.ts:83 — "게임 Gaming ゲーム game"
+- src/shared/lib/routineIllustrationCatalog.ts:84 — "사진 콜라주"
+- src/shared/lib/routineIllustrationCatalog.ts:84 — "사진 콜라주 Photo collage 写真コラージュ collage"
+- src/shared/lib/routineIllustrationCatalog.ts:85 — "여행"
+- src/shared/lib/routineIllustrationCatalog.ts:85 — "여행 Travel 旅行 travel"
+- src/shared/lib/routineIllustrationCatalog.ts:86 — "해외여행"
+- src/shared/lib/routineIllustrationCatalog.ts:86 — "해외여행 International travel 海外旅行 passport"
+- src/shared/lib/routineIllustrationCatalog.ts:87 — "버스"
+- src/shared/lib/routineIllustrationCatalog.ts:87 — "버스 Bus バス bus"
+- src/shared/lib/routineIllustrationCatalog.ts:88 — "기차"
+- src/shared/lib/routineIllustrationCatalog.ts:88 — "기차 Train 電車 train"
+- src/shared/lib/routineIllustrationCatalog.ts:89 — "운전"
+- src/shared/lib/routineIllustrationCatalog.ts:89 — "운전 Driving 運転 car"
+- src/shared/lib/routineIllustrationCatalog.ts:90 — "산책"
+- src/shared/lib/routineIllustrationCatalog.ts:90 — "산책 Walking 散歩 walking"
+- src/shared/lib/routineIllustrationCatalog.ts:91 — "길 찾기"
+- src/shared/lib/routineIllustrationCatalog.ts:91 — "길 찾기 Navigation 道案内 map"
+- src/shared/lib/routineIllustrationCatalog.ts:92 — "캠핑"
+- src/shared/lib/routineIllustrationCatalog.ts:92 — "캠핑 Camping キャンプ camping"
+- src/shared/lib/routineIllustrationCatalog.ts:93 — "식물 돌보기"
+- src/shared/lib/routineIllustrationCatalog.ts:93 — "식물 돌보기 Plant care 植物の世話 plant"
+- src/shared/lib/routineIllustrationCatalog.ts:94 — "물 주기"
+- src/shared/lib/routineIllustrationCatalog.ts:94 — "물 주기 Water plants 水やり watering"
+- src/shared/lib/routineIllustrationCatalog.ts:95 — "원예"
+- src/shared/lib/routineIllustrationCatalog.ts:95 — "원예 Gardening 園芸 gardening"
+- src/shared/lib/routineIllustrationCatalog.ts:96 — "햇볕 쬐기"
+- src/shared/lib/routineIllustrationCatalog.ts:96 — "햇볕 쬐기 Sunshine 日光浴 sunshine"
+- src/shared/lib/routineIllustrationCatalog.ts:97 — "꽃꽂이"
+- src/shared/lib/routineIllustrationCatalog.ts:97 — "꽃꽂이 Flowers 生け花 flower"
+- src/shared/lib/routineIllustrationCatalog.ts:98 — "반려동물 돌보기"
+- src/shared/lib/routineIllustrationCatalog.ts:98 — "반려동물 돌보기 Pet care ペットの世話 pet care"
+- src/shared/lib/routineIllustrationCatalog.ts:99 — "자연 관찰"
+- src/shared/lib/routineIllustrationCatalog.ts:99 — "자연 관찰 Birdwatching バードウォッチング birdwatching"
+- src/shared/lib/routineIllustrationCatalog.ts:100 — "바다"
+- src/shared/lib/routineIllustrationCatalog.ts:100 — "바다 Beach 海 beach"
+- src/shared/lib/routineIllustrationCatalog.ts:101 — "가족에게 전화"
+- src/shared/lib/routineIllustrationCatalog.ts:101 — "가족에게 전화 Call family 家族に電話 call"
+- src/shared/lib/routineIllustrationCatalog.ts:102 — "편지 쓰기"
+- src/shared/lib/routineIllustrationCatalog.ts:102 — "편지 쓰기 Write a letter 手紙を書く letter"
+- src/shared/lib/routineIllustrationCatalog.ts:103 — "선물"
+- src/shared/lib/routineIllustrationCatalog.ts:103 — "선물 Gift 贈り物 gift"
+- src/shared/lib/routineIllustrationCatalog.ts:104 — "봉사"
+- src/shared/lib/routineIllustrationCatalog.ts:104 — "봉사 Volunteering ボランティア volunteer"
+- src/shared/lib/routineIllustrationCatalog.ts:105 — "약속"
+- src/shared/lib/routineIllustrationCatalog.ts:105 — "약속 Meetup 待ち合わせ meeting"
+- src/shared/lib/routineIllustrationCatalog.ts:106 — "기념일"
+- src/shared/lib/routineIllustrationCatalog.ts:106 — "기념일 Anniversary 記念日 anniversary"
+- src/shared/lib/routineIllustrationCatalog.ts:107 — '금지'
+- src/shared/lib/routineIllustrationCatalog.ts:107 — '금지 절제 나쁜 습관 abstain avoid stop bad habits 禁止 我慢'
+- src/shared/lib/routineIllustrationsAdditional.ts:4 — "배드민턴"
+- src/shared/lib/routineIllustrationsAdditional.ts:4 — "badminton racket 배드민턴 Badminton バドミントン"
+- src/shared/lib/routineIllustrationsAdditional.ts:5 — "배구"
+- src/shared/lib/routineIllustrationsAdditional.ts:5 — "volleyball 배구 Volleyball バレーボール"
+- src/shared/lib/routineIllustrationsAdditional.ts:6 — "야구"
+- src/shared/lib/routineIllustrationsAdditional.ts:6 — "baseball glove 야구 Baseball 野球"
+- src/shared/lib/routineIllustrationsAdditional.ts:7 — "골프"
+- src/shared/lib/routineIllustrationsAdditional.ts:7 — "golf club 골프 Golf ゴルフ"
+- src/shared/lib/routineIllustrationsAdditional.ts:8 — "스케이트보드"
+- src/shared/lib/routineIllustrationsAdditional.ts:8 — "skateboard 스케이트보드 Skateboarding スケートボード"
+- src/shared/lib/routineIllustrationsAdditional.ts:9 — "롤러스케이트"
+- src/shared/lib/routineIllustrationsAdditional.ts:9 — "roller skates 롤러스케이트 Roller skating ローラースケート"
+- src/shared/lib/routineIllustrationsAdditional.ts:10 — "스키"
+- src/shared/lib/routineIllustrationsAdditional.ts:10 — "skiing 스키 Skiing スキー"
+- src/shared/lib/routineIllustrationsAdditional.ts:11 — "서핑"
+- src/shared/lib/routineIllustrationsAdditional.ts:11 — "surfboard 서핑 Surfing サーフィン"
+- src/shared/lib/routineIllustrationsAdditional.ts:12 — "클라이밍"
+- src/shared/lib/routineIllustrationsAdditional.ts:12 — "climbing rope 클라이밍 Climbing クライミング"
+- src/shared/lib/routineIllustrationsAdditional.ts:13 — "조정"
+- src/shared/lib/routineIllustrationsAdditional.ts:13 — "rowing paddle 조정 Rowing ボート"
+- src/shared/lib/routineIllustrationsAdditional.ts:14 — "발레"
+- src/shared/lib/routineIllustrationsAdditional.ts:14 — "ballet shoes 발레 Ballet バレエ"
+- src/shared/lib/routineIllustrationsAdditional.ts:15 — "스텝 운동"
+- src/shared/lib/routineIllustrationsAdditional.ts:15 — "step platform 스텝 운동 Step exercise ステップ運動"
+- src/shared/lib/routineIllustrationsAdditional.ts:16 — "케틀벨"
+- src/shared/lib/routineIllustrationsAdditional.ts:16 — "kettlebell 케틀벨 Kettlebell ケトルベル"
+- src/shared/lib/routineIllustrationsAdditional.ts:17 — "실내 자전거"
+- src/shared/lib/routineIllustrationsAdditional.ts:17 — "exercise bike 실내 자전거 Stationary bike エアロバイク"
+- src/shared/lib/routineIllustrationsAdditional.ts:18 — "폼롤러"
+- src/shared/lib/routineIllustrationsAdditional.ts:18 — "foam roller 폼롤러 Foam rolling フォームローラー"
+- src/shared/lib/routineIllustrationsAdditional.ts:19 — "턱걸이"
+- src/shared/lib/routineIllustrationsAdditional.ts:19 — "pull up bar 턱걸이 Pull-ups 懸垂"
+- src/shared/lib/routineIllustrationsAdditional.ts:20 — "로잉 머신"
+- src/shared/lib/routineIllustrationsAdditional.ts:20 — "rowing machine 로잉 머신 Rowing machine ローイングマシン"
+- src/shared/lib/routineIllustrationsAdditional.ts:21 — "샌드백"
+- src/shared/lib/routineIllustrationsAdditional.ts:21 — "punching bag 샌드백 Punching bag サンドバッグ"
+- src/shared/lib/routineIllustrationsAdditional.ts:22 — "민첩성 훈련"
+- src/shared/lib/routineIllustrationsAdditional.ts:22 — "training cones 민첩성 훈련 Agility training アジリティトレーニング"
+- src/shared/lib/routineIllustrationsAdditional.ts:23 — "운동 기록"
+- src/shared/lib/routineIllustrationsAdditional.ts:23 — "stopwatch 운동 기록 Stopwatch ストップウォッチ"
+- src/shared/lib/routineIllustrationsAdditional.ts:24 — "치실"
+- src/shared/lib/routineIllustrationsAdditional.ts:24 — "dental floss 치실 Dental floss デンタルフロス"
+- src/shared/lib/routineIllustrationsAdditional.ts:25 — "구강청결제"
+- src/shared/lib/routineIllustrationsAdditional.ts:25 — "mouthwash 구강청결제 Mouthwash マウスウォッシュ"
+- src/shared/lib/routineIllustrationsAdditional.ts:26 — "칫솔꽂이"
+- src/shared/lib/routineIllustrationsAdditional.ts:26 — "toothbrush cup 칫솔꽂이 Toothbrush cup 歯ブラシスタンド"
+- src/shared/lib/routineIllustrationsAdditional.ts:27 — "머리빗"
+- src/shared/lib/routineIllustrationsAdditional.ts:27 — "hairbrush 머리빗 Hairbrush ヘアブラシ"
+- src/shared/lib/routineIllustrationsAdditional.ts:28 — "빗"
+- src/shared/lib/routineIllustrationsAdditional.ts:28 — "comb 빗 Comb くし"
+- src/shared/lib/routineIllustrationsAdditional.ts:29 — "드라이기"
+- src/shared/lib/routineIllustrationsAdditional.ts:29 — "hair dryer 드라이기 Hair dryer ドライヤー"
+- src/shared/lib/routineIllustrationsAdditional.ts:30 — "핸드크림"
+- src/shared/lib/routineIllustrationsAdditional.ts:30 — "hand lotion 핸드크림 Hand lotion ハンドクリーム"
+- src/shared/lib/routineIllustrationsAdditional.ts:31 — "마스크팩"
+- src/shared/lib/routineIllustrationsAdditional.ts:31 — "face mask 마스크팩 Face mask フェイスマスク"
+- src/shared/lib/routineIllustrationsAdditional.ts:32 — "체온계"
+- src/shared/lib/routineIllustrationsAdditional.ts:32 — "thermometer 체온계 Thermometer 体温計"
+- src/shared/lib/routineIllustrationsAdditional.ts:33 — "청진기"
+- src/shared/lib/routineIllustrationsAdditional.ts:33 — "stethoscope 청진기 Stethoscope 聴診器"
+- src/shared/lib/routineIllustrationsAdditional.ts:34 — "붕대"
+- src/shared/lib/routineIllustrationsAdditional.ts:34 — "bandage roll 붕대 Bandage 包帯"
+- src/shared/lib/routineIllustrationsAdditional.ts:35 — "구급상자"
+- src/shared/lib/routineIllustrationsAdditional.ts:35 — "first aid kit 구급상자 First aid kit 救急箱"
+- src/shared/lib/routineIllustrationsAdditional.ts:36 — "안약"
+- src/shared/lib/routineIllustrationsAdditional.ts:36 — "eye drops 안약 Eye drops 目薬"
+- src/shared/lib/routineIllustrationsAdditional.ts:37 — "흡입기"
+- src/shared/lib/routineIllustrationsAdditional.ts:37 — "inhaler 흡입기 Inhaler 吸入器"
+- src/shared/lib/routineIllustrationsAdditional.ts:38 — "찜질팩"
+- src/shared/lib/routineIllustrationsAdditional.ts:38 — "ice pack 찜질팩 Ice pack アイスパック"
+- src/shared/lib/routineIllustrationsAdditional.ts:39 — "온수 찜질주머니"
+- src/shared/lib/routineIllustrationsAdditional.ts:39 — "hot water bottle 온수 찜질주머니 Hot-water bottle 湯たんぽ"
+- src/shared/lib/routineIllustrationsAdditional.ts:40 — "수면 안대"
+- src/shared/lib/routineIllustrationsAdditional.ts:40 — "sleep mask 수면 안대 Sleep mask アイマスク"
+- src/shared/lib/routineIllustrationsAdditional.ts:41 — "귀마개"
+- src/shared/lib/routineIllustrationsAdditional.ts:41 — "earplugs 귀마개 Earplugs 耳栓"
+- src/shared/lib/routineIllustrationsAdditional.ts:42 — "베개"
+- src/shared/lib/routineIllustrationsAdditional.ts:42 — "pillow 베개 Pillow 枕"
+- src/shared/lib/routineIllustrationsAdditional.ts:43 — "알람시계"
+- src/shared/lib/routineIllustrationsAdditional.ts:43 — "alarm clock 알람시계 Alarm clock 目覚まし時計"
+- src/shared/lib/routineIllustrationsAdditional.ts:44 — "컴퓨터 마우스"
+- src/shared/lib/routineIllustrationsAdditional.ts:44 — "computer mouse 컴퓨터 마우스 Computer mouse コンピューターマウス"
+- src/shared/lib/routineIllustrationsAdditional.ts:45 — "키보드"
+- src/shared/lib/routineIllustrationsAdditional.ts:45 — "keyboard 키보드 Keyboard キーボード"
+- src/shared/lib/routineIllustrationsAdditional.ts:46 — "모니터"
+- src/shared/lib/routineIllustrationsAdditional.ts:46 — "monitor 모니터 Monitor モニター"
+- src/shared/lib/routineIllustrationsAdditional.ts:47 — "태블릿과 펜"
+- src/shared/lib/routineIllustrationsAdditional.ts:47 — "tablet stylus 태블릿과 펜 Tablet and stylus タブレットとペン"
+- src/shared/lib/routineIllustrationsAdditional.ts:48 — "프린터"
+- src/shared/lib/routineIllustrationsAdditional.ts:48 — "printer 프린터 Printer プリンター"
+- src/shared/lib/routineIllustrationsAdditional.ts:49 — "책상 조명"
+- src/shared/lib/routineIllustrationsAdditional.ts:49 — "desk lamp 책상 조명 Desk lamp デスクライト"
+- src/shared/lib/routineIllustrationsAdditional.ts:50 — "클립"
+- src/shared/lib/routineIllustrationsAdditional.ts:50 — "paperclip 클립 Paperclip クリップ"
+- src/shared/lib/routineIllustrationsAdditional.ts:51 — "연필깎이"
+- src/shared/lib/routineIllustrationsAdditional.ts:51 — "pencil sharpener 연필깎이 Pencil sharpener 鉛筆削り"
+- src/shared/lib/routineIllustrationsAdditional.ts:52 — "자"
+- src/shared/lib/routineIllustrationsAdditional.ts:52 — "ruler 자 Ruler 定規"
+- src/shared/lib/routineIllustrationsAdditional.ts:53 — "가위"
+- src/shared/lib/routineIllustrationsAdditional.ts:53 — "scissors 가위 Scissors はさみ"
+- src/shared/lib/routineIllustrationsAdditional.ts:54 — "스테이플러"
+- src/shared/lib/routineIllustrationsAdditional.ts:54 — "stapler 스테이플러 Stapler ホッチキス"
+- src/shared/lib/routineIllustrationsAdditional.ts:55 — "바인더"
+- src/shared/lib/routineIllustrationsAdditional.ts:55 — "binder 바인더 Binder バインダー"
+- src/shared/lib/routineIllustrationsAdditional.ts:56 — "탁상 달력"
+- src/shared/lib/routineIllustrationsAdditional.ts:56 — "desk calendar 탁상 달력 Desk calendar 卓上カレンダー"
+- src/shared/lib/routineIllustrationsAdditional.ts:57 — "메모지"
+- src/shared/lib/routineIllustrationsAdditional.ts:57 — "sticky notes 메모지 Sticky notes 付箋"
+- src/shared/lib/routineIllustrationsAdditional.ts:58 — "서류 폴더"
+- src/shared/lib/routineIllustrationsAdditional.ts:58 — "document folder 서류 폴더 Document folder 書類フォルダー"
+- src/shared/lib/routineIllustrationsAdditional.ts:59 — "계산기"
+- src/shared/lib/routineIllustrationsAdditional.ts:59 — "calculator 계산기 Calculator 電卓"
+- src/shared/lib/routineIllustrationsAdditional.ts:60 — "펜꽂이"
+- src/shared/lib/routineIllustrationsAdditional.ts:60 — "pen cup 펜꽂이 Pen cup ペン立て"
+- src/shared/lib/routineIllustrationsAdditional.ts:61 — "백팩"
+- src/shared/lib/routineIllustrationsAdditional.ts:61 — "backpack 백팩 Backpack バックパック"
+- src/shared/lib/routineIllustrationsAdditional.ts:62 — "출입증"
+- src/shared/lib/routineIllustrationsAdditional.ts:62 — "id card 출입증 ID card 社員証"
+- src/shared/lib/routineIllustrationsAdditional.ts:63 — "USB 메모리"
+- src/shared/lib/routineIllustrationsAdditional.ts:63 — "usb drive USB 메모리 USB drive USBメモリ"
+- src/shared/lib/routineIllustrationsAdditional.ts:64 — "밥그릇"
+- src/shared/lib/routineIllustrationsAdditional.ts:64 — "rice bowl 밥그릇 Rice bowl ご飯茶碗"
+- src/shared/lib/routineIllustrationsAdditional.ts:65 — "국수"
+- src/shared/lib/routineIllustrationsAdditional.ts:65 — "noodle soup 국수 Noodle soup 麺料理"
+- src/shared/lib/routineIllustrationsAdditional.ts:66 — "샌드위치"
+- src/shared/lib/routineIllustrationsAdditional.ts:66 — "sandwich 샌드위치 Sandwich サンドイッチ"
+- src/shared/lib/routineIllustrationsAdditional.ts:67 — "토스트"
+- src/shared/lib/routineIllustrationsAdditional.ts:67 — "toast 토스트 Toast トースト"
+- src/shared/lib/routineIllustrationsAdditional.ts:68 — "크루아상"
+- src/shared/lib/routineIllustrationsAdditional.ts:68 — "croissant 크루아상 Croissant クロワッサン"
+- src/shared/lib/routineIllustrationsAdditional.ts:69 — "팬케이크"
+- src/shared/lib/routineIllustrationsAdditional.ts:69 — "pancakes 팬케이크 Pancakes パンケーキ"
+- src/shared/lib/routineIllustrationsAdditional.ts:70 — "달걀 프라이"
+- src/shared/lib/routineIllustrationsAdditional.ts:70 — "fried egg 달걀 프라이 Fried egg 目玉焼き"
+- src/shared/lib/routineIllustrationsAdditional.ts:71 — "우유"
+- src/shared/lib/routineIllustrationsAdditional.ts:71 — "milk carton 우유 Milk carton 牛乳パック"
+- src/shared/lib/routineIllustrationsAdditional.ts:72 — "주스"
+- src/shared/lib/routineIllustrationsAdditional.ts:72 — "juice glass 주스 Juice ジュース"
+- src/shared/lib/routineIllustrationsAdditional.ts:73 — "보온병"
+- src/shared/lib/routineIllustrationsAdditional.ts:73 — "thermos 보온병 Thermos 水筒"
+- src/shared/lib/routineIllustrationsAdditional.ts:74 — "물병"
+- src/shared/lib/routineIllustrationsAdditional.ts:74 — "water bottle 물병 Water bottle 水筒"
+- src/shared/lib/routineIllustrationsAdditional.ts:75 — "머그컵"
+- src/shared/lib/routineIllustrationsAdditional.ts:75 — "mug 머그컵 Mug マグカップ"
+- src/shared/lib/routineIllustrationsAdditional.ts:76 — "주전자"
+- src/shared/lib/routineIllustrationsAdditional.ts:76 — "teapot 주전자 Teapot ティーポット"
+- src/shared/lib/routineIllustrationsAdditional.ts:77 — "도마"
+- src/shared/lib/routineIllustrationsAdditional.ts:77 — "cutting board 도마 Cutting board まな板"
+- src/shared/lib/routineIllustrationsAdditional.ts:78 — "프라이팬"
+- src/shared/lib/routineIllustrationsAdditional.ts:78 — "frying pan 프라이팬 Frying pan フライパン"
+- src/shared/lib/routineIllustrationsAdditional.ts:79 — "오븐 장갑"
+- src/shared/lib/routineIllustrationsAdditional.ts:79 — "oven mitt 오븐 장갑 Oven mitt ミトン"
+- src/shared/lib/routineIllustrationsAdditional.ts:80 — "거품기"
+- src/shared/lib/routineIllustrationsAdditional.ts:80 — "whisk 거품기 Whisk 泡立て器"
+- src/shared/lib/routineIllustrationsAdditional.ts:81 — "뒤집개"
+- src/shared/lib/routineIllustrationsAdditional.ts:81 — "spatula 뒤집개 Spatula フライ返し"
+- src/shared/lib/routineIllustrationsAdditional.ts:82 — "밀대"
+- src/shared/lib/routineIllustrationsAdditional.ts:82 — "rolling pin 밀대 Rolling pin めん棒"
+- src/shared/lib/routineIllustrationsAdditional.ts:83 — "계량컵"
+- src/shared/lib/routineIllustrationsAdditional.ts:83 — "measuring cup 계량컵 Measuring cup 計量カップ"
+- src/shared/lib/routineIllustrationsAdditional.ts:84 — "열쇠"
+- src/shared/lib/routineIllustrationsAdditional.ts:84 — "keys 열쇠 Keys 鍵"
+- src/shared/lib/routineIllustrationsAdditional.ts:85 — "지갑"
+- src/shared/lib/routineIllustrationsAdditional.ts:85 — "wallet 지갑 Wallet 財布"
+- src/shared/lib/routineIllustrationsAdditional.ts:86 — "숄더백"
+- src/shared/lib/routineIllustrationsAdditional.ts:86 — "shoulder bag 숄더백 Shoulder bag ショルダーバッグ"
+- src/shared/lib/routineIllustrationsAdditional.ts:87 — "우산"
+- src/shared/lib/routineIllustrationsAdditional.ts:87 — "umbrella 우산 Umbrella 傘"
+- src/shared/lib/routineIllustrationsAdditional.ts:88 — "옷걸이"
+- src/shared/lib/routineIllustrationsAdditional.ts:88 — "hanger 옷걸이 Clothes hanger ハンガー"
+- src/shared/lib/routineIllustrationsAdditional.ts:89 — "빨래 바구니"
+- src/shared/lib/routineIllustrationsAdditional.ts:89 — "laundry basket 빨래 바구니 Laundry basket 洗濯かご"
+- src/shared/lib/routineIllustrationsAdditional.ts:90 — "다리미"
+- src/shared/lib/routineIllustrationsAdditional.ts:90 — "iron 다리미 Iron アイロン"
+- src/shared/lib/routineIllustrationsAdditional.ts:91 — "분무기"
+- src/shared/lib/routineIllustrationsAdditional.ts:91 — "spray bottle 분무기 Spray bottle スプレーボトル"
+- src/shared/lib/routineIllustrationsAdditional.ts:92 — "스펀지"
+- src/shared/lib/routineIllustrationsAdditional.ts:92 — "sponge 스펀지 Sponge スポンジ"
+- src/shared/lib/routineIllustrationsAdditional.ts:93 — "쓰레받기"
+- src/shared/lib/routineIllustrationsAdditional.ts:93 — "dustpan 쓰레받기 Dustpan ちりとり"
+- src/shared/lib/routineIllustrationsAdditional.ts:94 — "손빗자루"
+- src/shared/lib/routineIllustrationsAdditional.ts:94 — "hand broom 손빗자루 Hand broom ミニほうき"
+- src/shared/lib/routineIllustrationsAdditional.ts:95 — "망치"
+- src/shared/lib/routineIllustrationsAdditional.ts:95 — "hammer 망치 Hammer ハンマー"
+- src/shared/lib/routineIllustrationsAdditional.ts:96 — "드라이버"
+- src/shared/lib/routineIllustrationsAdditional.ts:96 — "screwdriver 드라이버 Screwdriver ドライバー"
+- src/shared/lib/routineIllustrationsAdditional.ts:97 — "몽키스패너"
+- src/shared/lib/routineIllustrationsAdditional.ts:97 — "adjustable wrench 몽키스패너 Adjustable wrench モンキーレンチ"
+- src/shared/lib/routineIllustrationsAdditional.ts:98 — "전동 드릴"
+- src/shared/lib/routineIllustrationsAdditional.ts:98 — "power drill 전동 드릴 Power drill 電動ドリル"
+- src/shared/lib/routineIllustrationsAdditional.ts:99 — "공구함"
+- src/shared/lib/routineIllustrationsAdditional.ts:99 — "toolbox 공구함 Toolbox 工具箱"
+- src/shared/lib/routineIllustrationsAdditional.ts:100 — "물감 팔레트"
+- src/shared/lib/routineIllustrationsAdditional.ts:100 — "paint palette 물감 팔레트 Paint palette 絵の具パレット"
+- src/shared/lib/routineIllustrationsAdditional.ts:101 — "풀"
+- src/shared/lib/routineIllustrationsAdditional.ts:101 — "glue bottle 풀 Glue bottle 接着剤"
+- src/shared/lib/routineIllustrationsAdditional.ts:102 — "실타래"
+- src/shared/lib/routineIllustrationsAdditional.ts:102 — "yarn ball 실타래 Ball of yarn 毛糸玉"
+- src/shared/lib/routineIllustrationsAdditional.ts:103 — "코바늘"
+- src/shared/lib/routineIllustrationsAdditional.ts:103 — "crochet hook 코바늘 Crochet hook かぎ針"
+- src/shared/lib/routineIllustrationsAdditional.ts:104 — "피자"
+- src/shared/lib/routineIllustrationsAdditional.ts:104 — "pizza slice 피자 Pizza ピザ"
+- src/shared/lib/routineIllustrationsAdditional.ts:105 — "햄버거"
+- src/shared/lib/routineIllustrationsAdditional.ts:105 — "hamburger 햄버거 Hamburger ハンバーガー"
+- src/shared/lib/routineIllustrationsAdditional.ts:106 — "핫도그"
+- src/shared/lib/routineIllustrationsAdditional.ts:106 — "hot dog 핫도그 Hot dog ホットドッグ"
+- src/shared/lib/routineIllustrationsAdditional.ts:107 — "타코"
+- src/shared/lib/routineIllustrationsAdditional.ts:107 — "taco 타코 Taco タコス"
+- src/shared/lib/routineIllustrationsAdditional.ts:108 — "초밥"
+- src/shared/lib/routineIllustrationsAdditional.ts:108 — "sushi 초밥 Sushi 寿司"
+- src/shared/lib/routineIllustrationsAdditional.ts:109 — "주먹밥"
+- src/shared/lib/routineIllustrationsAdditional.ts:109 — "onigiri rice ball 주먹밥 Rice ball おにぎり"
+- src/shared/lib/routineIllustrationsAdditional.ts:110 — "만두"
+- src/shared/lib/routineIllustrationsAdditional.ts:110 — "gyoza dumplings 만두 Dumplings 餃子"
+- src/shared/lib/routineIllustrationsAdditional.ts:111 — "카레라이스"
+- src/shared/lib/routineIllustrationsAdditional.ts:111 — "curry rice 카레라이스 Curry rice カレーライス"
+- src/shared/lib/routineIllustrationsAdditional.ts:112 — "스파게티"
+- src/shared/lib/routineIllustrationsAdditional.ts:112 — "spaghetti 스파게티 Spaghetti スパゲッティ"
+- src/shared/lib/routineIllustrationsAdditional.ts:113 — "스테이크"
+- src/shared/lib/routineIllustrationsAdditional.ts:113 — "steak 스테이크 Steak ステーキ"
+- src/shared/lib/routineIllustrationsAdditional.ts:114 — "치킨"
+- src/shared/lib/routineIllustrationsAdditional.ts:114 — "fried chicken 치킨 Fried chicken フライドチキン"
+- src/shared/lib/routineIllustrationsAdditional.ts:115 — "생선구이"
+- src/shared/lib/routineIllustrationsAdditional.ts:115 — "grilled fish 생선구이 Grilled fish 焼き魚"
+- src/shared/lib/routineIllustrationsAdditional.ts:116 — "비빔밥"
+- src/shared/lib/routineIllustrationsAdditional.ts:116 — "bibimbap 비빔밥 Bibimbap ビビンバ"
+- src/shared/lib/routineIllustrationsAdditional.ts:117 — "김밥"
+- src/shared/lib/routineIllustrationsAdditional.ts:117 — "gimbap kimbap 김밥 Gimbap キンパ"
+- src/shared/lib/routineIllustrationsAdditional.ts:118 — "떡볶이"
+- src/shared/lib/routineIllustrationsAdditional.ts:118 — "tteokbokki 떡볶이 Tteokbokki トッポッキ"
+- src/shared/lib/routineIllustrationsAdditional.ts:119 — "김치찌개"
+- src/shared/lib/routineIllustrationsAdditional.ts:119 — "kimchi stew 김치찌개 Kimchi stew キムチチゲ"
+- src/shared/lib/routineIllustrationsAdditional.ts:120 — "아이스크림"
+- src/shared/lib/routineIllustrationsAdditional.ts:120 — "ice cream 아이스크림 Ice cream アイスクリーム"
+- src/shared/lib/routineIllustrationsAdditional.ts:121 — "도넛"
+- src/shared/lib/routineIllustrationsAdditional.ts:121 — "donut doughnut 도넛 Donut ドーナツ"
+- src/shared/lib/routineIllustrationsAdditional.ts:122 — "케이크"
+- src/shared/lib/routineIllustrationsAdditional.ts:122 — "cake slice 케이크 Cake ケーキ"
+- src/shared/lib/routineIllustrationsAdditional.ts:123 — "쿠키"
+- src/shared/lib/routineIllustrationsAdditional.ts:123 — "cookie 쿠키 Cookie クッキー"
+- src/shared/lib/storage/defaultFixedFlowSets.ts:29 — '예시 세트'
+- src/shared/lib/storage/defaultFixedFlowSets.ts:30 — '기본 세트'
+- src/shared/lib/storage/defaultFixedFlowSets.ts:42 — '건강 루틴 예시'
+- src/shared/lib/storage/defaultFixedFlowSets.ts:43 — '집중 루틴 예시'
+- src/shared/lib/storage/defaultFixedFlowSets.ts:146 — '데일리 고정 루틴'
+- src/shared/lib/storage/defaultFixedFlowSets.ts:153 — '주말 고정 루틴'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:87 — '루틴 탭 둘러보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:88 — '나만의 루틴 만들기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:89 — '히스토리 확인하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:90 — '오늘 루틴 확인하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:91 — '책읽기 열어보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:92 — '잠금화면 메모 써보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:93 — '노트 적어보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:94 — '설정에서 레이아웃 바꿔보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:97 — '오늘의 주인공 빠르게 둘러보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:99 — '항목을 눌러 버튼을 가리키는 안내를 보고, 「눌러보기」로 바로 이동해요. 하루 안에 한 번에 끝내도 돼요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:118 — '밤늦게 폰 보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:119 — '과자·야식 먹기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:120 — 'SNS 무한 스크롤'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:121 — '충동 구매하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:122 — '늦잠 자기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:134 — '오늘의 주인공 사용해보기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:153 — '주말 러닝'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:156 — '주말에 가볍게 뛰며 몸을 움직여요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:158 — '주말 러닝'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:163 — '금지'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:166 — '오늘 하지 말아야 할 것들을 지켰는지 확인해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:173 — '스트레칭'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:177 — '몸을 풀고 가볍게 늘려 줘요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:179 — '스트레칭'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:184 — '이불정리'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:187 — '아침에 이불을 정리해 하루를 가볍게 시작해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:192 — '빨래하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:195 — '쌓인 빨래를 돌리거나 개어 정리해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:200 — '세수하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:203 — '하루를 시작·마무리할 때 깨끗이 씻어요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:208 — '쇼핑하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:211 — '장보기·필요한 물건을 사러 나가요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:216 — '청소하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:219 — '방·거실 등 생활 공간을 간단히 정리해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:221 — '청소하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:226 — '분리수거'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:229 — '재활용·분리수거를 챙겨요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:231 — '분리수거'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:236 — '집중하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:239 — '방해 없이 한 가지에 깊게 몰입해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:241 — '집중하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:246 — '간헐적 단식'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:249 — '정해 둔 식사 시간 창을 지키며 단식해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:254 — '자세 바르게하기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:257 — '정해 둔 시간마다 앉거나 서 있는 자세를 점검해요.'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:259 — '드로잉 연습'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:260 — '기타 연주'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:261 — '사진 촬영'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:262 — '요리 실험'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:263 — '등산·트레킹'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:264 — '가족 통화'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:265 — '친구 만남'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:266 — '부모님 안부'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:267 — '커뮤니티 참여'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:268 — '연인·배우자 시간'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:269 — '감사 일기'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:270 — '오늘의 다짐'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:271 — '낮잠·파워냅'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:272 — '음악 감상'
+- src/shared/lib/storage/defaultPriorityCatalog.ts:273 — '디지털 디톡스'
+- src/shared/lib/storage/ensureDefaultPriorityCatalog.ts:215 — '일상 루틴'
+- src/shared/lib/storage/ensureDefaultPriorityCatalog.ts:576 — '기본 금지 루틴'
+- src/shared/lib/storage/ensureDefaultPriorityCatalog.ts:579 — '금지'
+- src/shared/lib/storage/ensureDefaultPriorityCatalog.ts:584 — '운동하기'
+- src/shared/lib/storage/ensureDefaultPriorityCatalog.ts:585 — '운동하기'
+- src/shared/lib/storage/ensureDefaultPriorityCatalog.ts:650 — '루틴'
+- src/shared/lib/storage/fixedFlowSetsStorage.ts:318 — '데일리 고정 루틴'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:9 — '일'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:10 — '월'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:11 — '화'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:12 — '수'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:13 — '목'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:14 — '금'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:15 — '토'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:75 — '요일 없음'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:76 — '평일'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:77 — '주말'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:78 — '매일'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:86 — '요일을 하나 이상 선택해 주세요.'
+- src/shared/lib/storage/fixedFlowWeekdays.ts:90 — '${dayText} 오늘 탭에 자동으로 추가돼요.'
+- src/shared/lib/storage/horizonGoalBlocks.ts:30 — '제목1'
+- src/shared/lib/storage/horizonGoalBlocks.ts:31 — '제목2'
+- src/shared/lib/storage/horizonGoalBlocks.ts:32 — '제목3'
+- src/shared/lib/storage/horizonGoalBlocks.ts:33 — '리스트'
+- src/shared/lib/storage/horizonGoalBlocks.ts:34 — '번호 리스트'
+- src/shared/lib/storage/horizonGoalBlocks.ts:35 — '체크리스트'
+- src/shared/lib/storage/horizonGoalBlocks.ts:36 — '본문'
+- src/shared/lib/storage/systemCatalogGroupMetaStorage.ts:10 — '건강 루틴'
+- src/shared/lib/storage/systemCatalogGroupMetaStorage.ts:11 — '생산성을 높이는 도구'
+- src/shared/lib/storage/systemCatalogGroupMetaStorage.ts:16 — '수분·체중·복약·스트레칭 등 몸 관리 항목을 오늘에 맞게 골라 담아요.'
+- src/shared/lib/storage/systemCatalogGroupMetaStorage.ts:18 — '책읽기·공부·정리·글쓰기·딥워크·일기 등 집중에 쓸 항목을 골라 담아요. 직접 만든 루틴은 아래에서 계속 추가할 수 있어요.'
+- src/shared/lib/support/openSupportMail.ts:13 — '받는 주소: ${SUPPORT_EMAIL}\n제목: ${subject}\n\n${body}'
+- src/shared/lib/support/openSupportMail.ts:15 — '메일을 바로 열 수 없어요'
+- src/shared/lib/support/openSupportMail.ts:16 — '기기에 메일 계정이 없거나, 시뮬레이터 환경일 수 있어요. 공유로 보내거나 주소를 복사해 주세요. 실제 기기에서 메일을 설정하면 시스템 메일 작성 화면이 열립니다.'
+- src/shared/lib/support/openSupportMail.ts:19 — '공유하기'
+- src/shared/lib/support/openSupportMail.ts:25 — '주소 복사'
+- src/shared/lib/support/openSupportMail.ts:30 — '복사했어요'
+- src/shared/lib/support/openSupportMail.ts:30 — '메일 앱에서 받는 사람란에 붙여넣기 해 주세요.'
+- src/shared/lib/support/openSupportMail.ts:32 — '복사 실패'
+- src/shared/lib/support/openSupportMail.ts:32 — '아래 주소를 직접 입력해 주세요.\n${SUPPORT_EMAIL}'
+- src/shared/lib/support/openSupportMail.ts:36 — '닫기'
+- src/shared/lib/support/supportMailContent.ts:12 — '[${brandText('settings.shareApp.shareTitle')} 고객센터]'
+- src/shared/lib/support/supportMailContent.ts:42 — '문의 내용을 아래에 적어 주세요.'
+- src/shared/lib/support/supportMailContent.ts:44 — '기기: ${deviceLine}'
+- src/shared/lib/support/supportMailContent.ts:45 — 'OS 버전: ${osName} ${osVer}'
+- src/shared/lib/support/supportMailContent.ts:46 — 'App 버전: ${appVer}'
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:300 — '${text}${text.endsWith('\n') || text.length === 0 ? '' : '\n'}[표]'
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:302 — '${text}${text.endsWith('\n') || text.length === 0 ? '' : '\n'}[이미지]'
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:461 — '[표]'
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:462 — '[이미지]'
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:462 — '[이미지] '
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:516 — '[표]'
+- src/widgets/study-note-document/lib/studyNoteCanvasToolbar.ts:518 — '[이미지]'
+
+## 한국어 / 기타 언어 이분기
+
+- app/(tabs)/calendar.tsx:147 — locale === 'ko' ? '다이어리' : 'Diary'
+- app/(tabs)/calendar.tsx:159 — locale === 'ko' ? '파란 집게' : 'Blue Clip'
+- app/(tabs)/calendar.tsx:159 — locale === 'ko' ? '검은 집게' : 'Black Clip'
+- app/(tabs)/calendar.tsx:161 — locale === 'ko' ? '적용 중' : 'Applied'
+- app/(tabs)/calendar.tsx:161 — locale === 'ko' ? '무료' : 'Free'
+- app/(tabs)/calendar.tsx:175 — locale === 'ko' ? '무료' : 'Free'
+- src/application/development/mockCalendarData.ts:52 — locale === 'ko' ? Array.from({ length: today }, (_, index) => index + 1) : [...new Set([1, 3, 5, 7, 9, 12, 13, 16, 18, 20, 23, 26, today - 1, today])].filter(day => day > 0 && day <= today).sort((a, b) => a - b)
+- src/application/development/mockCalendarData.ts:59 — locale === 'ko' ? Array.from({ length: Number(previous.slice(8)) }, (_, index) => ({ day: '${previous.slice(0, 7)}-${String(index + 1).padStart(2, '0')}', count: index + 1 === Number(previous.slice(8)) ? 3 : index % 3 + 1 })) : [{ day: previous, coun
+- src/application/development/mockCalendarData.ts:69 — locale === 'ko' ? koreanCharacterStories[character.id] : undefined
+- src/features/apple-calendar/AppleCalendarSection.tsx:13 — ko ? 'Apple · Google 캘린더 연결' : 'Apple · Google Calendar'
+- src/features/apple-calendar/AppleCalendarSection.tsx:14 — ko ? '일정과 오늘의 기록을 함께 봐요' : 'See your plans alongside your diary'
+- src/features/apple-calendar/AppleCalendarSection.tsx:60 — ko ? '캘린더 연결이 해제되어 있어요.' : 'Calendar connection is off.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:62 — ko ? '캘린더 다시 연결' : 'Reconnect calendars'
+- src/features/apple-calendar/AppleCalendarSection.tsx:65 — ko ? '아이폰 설정 열기' : 'Open iPhone Settings'
+- src/features/apple-calendar/AppleCalendarSection.tsx:66 — ko ? '불러오는 중…' : 'Loading…'
+- src/features/apple-calendar/AppleCalendarSection.tsx:66 — ko ? '${ids.length}개 캘린더 표시 중' : '${ids.length} calendars selected'
+- src/features/apple-calendar/AppleCalendarSection.tsx:67 — ko ? '아이폰에 등록된 Apple·Google 캘린더를 선택해주세요. 체크한 캘린더의 일정을 함께 표시해요.' : 'Choose Apple and Google calendars registered on your iPhone. Events from all selected calendars appear together.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:69 — ko ? '목록 새로고침' : 'Refresh calendars'
+- src/features/apple-calendar/AppleCalendarSection.tsx:70 — ko ? '앱 접근 권한 확인' : 'Check app permissions'
+- src/features/apple-calendar/AppleCalendarSection.tsx:72 — ko ? '연결된 캘린더가 없어요.' : 'No calendars available.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:82 — ko ? '이번 달 일정 확인 중…' : 'Checking this month…'
+- src/features/apple-calendar/AppleCalendarSection.tsx:82 — ko ? '이번 달 일정 수 확인 불가' : 'Event count unavailable'
+- src/features/apple-calendar/AppleCalendarSection.tsx:82 — ko ? '이번 달 ${monthEvents.filter(event => event.calendarId === calendar.id).length}개' : '${monthEvents.filter(event => event.calendarId === calendar.id).length} events this month'
+- src/features/apple-calendar/AppleCalendarSection.tsx:86 — ko ? '모두 선택 해제' : 'Deselect all'
+- src/features/apple-calendar/AppleCalendarSection.tsx:90 — ko ? '캘린더 연결 해제' : 'Disconnect calendars'
+- src/features/apple-calendar/AppleCalendarSection.tsx:91 — ko ? '앱에서 일정 조회와 표시를 중단해요. 접근 권한도 끄려면 아이폰 설정에서 변경해주세요.' : 'Stops reading and showing events in this app. To revoke access, use iPhone Settings.'
+- src/features/apple-calendar/AppleCalendarSection.tsx:93 — ko ? '아이폰에서 접근 권한 끄기' : 'Manage permission in iPhone Settings'
+- src/features/apple-calendar/appleCalendar.ts:39 — ko ? '아이폰 설정에서 캘린더 전체 접근을 허용해주세요.' : 'Allow full calendar access in iPhone Settings.'
+- src/features/apple-calendar/appleCalendar.ts:40 — ko ? '선택한 캘린더를 아이폰에서 찾을 수 없어요. 설정에서 목록을 새로고침하고 다시 선택해주세요.' : 'Selected calendars are no longer available. Refresh and select them again in Settings.'
+- src/features/apple-calendar/appleCalendar.ts:41 — ko ? '캘린더 연결을 사용하려면 앱 업데이트가 필요해요.' : 'Update the app to connect your calendar.'
+- src/features/apple-calendar/appleCalendar.ts:42 — ko ? '캘린더를 불러오지 못했어요. 다시 시도해주세요.' : 'Could not load calendars. Please try again.'
+- src/features/apple-calendar/calendarDisplayTitle.ts:5 — ko ? '이름 미지정 캘린더' : 'Unnamed calendar'
+- src/features/apple-calendar/calendarDisplayTitle.ts:7 — ko ? '이름 미지정 캘린더' : 'Unnamed calendar'
+- src/features/apple-calendar/calendarSourceLabel.ts:3 — ko ? 'Google 캘린더' : 'Google Calendar'
+- src/features/apple-calendar/calendarSourceLabel.ts:4 — ko ? 'Apple 캘린더' : 'Apple Calendar'
+- src/features/apple-calendar/calendarSourceLabel.ts:5 — ko ? 'Apple 캘린더 (iPhone 저장)' : 'Apple Calendar (On My iPhone)'
+- src/features/apple-calendar/calendarSourceLabel.ts:6 — ko ? 'Outlook 캘린더' : 'Outlook Calendar'
+- src/features/apple-calendar/calendarSourceLabel.ts:7 — ko ? '연결된 캘린더' : 'Connected Calendar'
+- src/pages/announcements/ui/AnnouncementsPage.tsx:49 — locale === 'ko' ? 'ko-KR' : locale === 'ja' ? 'ja-JP' : 'en-US'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:34 — ko ? 'Google 캘린더' : 'Google Calendar'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:35 — ko ? 'Apple 캘린더' : 'Apple Calendar'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:105 — ko ? '내용 영역 펼치기 또는 접기' : 'Expand or collapse content'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:105 — ko ? '위로 끌면 펼쳐지고 아래로 끌면 접힙니다' : 'Drag up to expand, down to collapse'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:122 — ko ? '일정 확인 중…' : 'Checking events…'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:122 — ko ? '일정 새로고침' : 'Refresh events'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:123 — ko ? '설정에서 캘린더를 연결해주세요.' : 'Connect a calendar in Settings.'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:127 — ko ? '이날의 일정이 없어요.' : 'No events for this day.'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:130 — ko ? '종일' : 'All day'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:137 — ko ? '이벤트 이름' : 'Event name'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:137 — ko ? '이날의 이벤트를 남겨보세요' : 'Write an event for this day'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:140 — ko ? '+ 시간 추가' : '+ Add time'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:141 — ko ? '시간 없이' : 'No time'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:143 — ko ? '이벤트 시간' : 'Event time'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:145 — ko ? '기억하고 싶은 이벤트를 남겨보세요.' : 'Keep the events you want to remember.'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:150 — ko ? '나의 이야기' : 'My story'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:150 — ko ? '캘린더' : 'Calendar'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:150 — ko ? '이벤트' : 'Events'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:157 — ko ? '저장' : 'Save'
+- src/pages/day-plan/ui/HeroCanvasNote.tsx:157 — ko ? '완료' : 'Done'
+- src/pages/day-plan/ui/HeroDiaryCalendar.tsx:120 — locale === 'ko' ? '종일' : 'All day'
+- src/pages/day-plan/ui/HeroDiaryCalendar.tsx:121 — locale === 'ko' ? '제목 없는 일정' : 'Untitled event'
+- src/pages/day-plan/ui/PriorityBasedPlanSection.tsx:1401 — locale === 'ko' ? '나의 첫 메이트' : locale === 'ja' ? '最初のメイト' : locale === 'zh-TW' ? '我的第一個夥伴' : 'My first mate'
+- src/pages/pokit-story/config/pokitStoryUrl.ts:11 — locale === 'ko' ? 'ko' : locale === 'ja' ? 'ja' : 'en'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:56 — ko ? '첫 메이트, 완성했어요!' : ja ? '最初のカードができました！' : zh ? '第一個夥伴完成了！' : 'Your first mate is ready!'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:57 — ko ? '첫 장면을 담았어요!' : ja ? '最初の場面を残せました！' : zh ? '留下了第一個場景！' : 'Your first scene is here!'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:59 — ko ? '직접 만들고 열어봤네요. 잘했어요.' : ja ? '自分で作って開けました。よくできました。' : zh ? '你自己做好並打開了。做得好。' : 'You made it and opened it. Well done.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:60 — ko ? '나만의 이야기를 시작했네요. 잘했어요.' : ja ? '自分だけの物語が始まりました。よくできました。' : zh ? '你開始了自己的故事。做得好。' : 'You started your own story. Well done.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:128 — ko ? '주인공의 하루를 채워가요' : ja ? '主人公の一日をつくりましょう' : 'Make your character’s day your own'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:139 — ko ? '좋아요, 하나 해냈어요.' : ja ? 'いいですね、ひとつできました。' : 'You did it. One lovely start.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:142 — ko ? '오늘의 주인공도 만나볼까요?' : ja ? '今日の主人公も体験してみませんか？' : 'Shall we meet Today’s Protagonist, too?'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:143 — ko ? '이제 주인공 화면의 수납장 도구를 열어볼까요?' : ja ? '主人公画面の収納トレイを開いてみましょう。' : 'Now let’s open the tray tool on your character’s screen.'
+- src/pages/welcome-intro/ui/TutorialCompletion.tsx:144 — ko ? '이제 나만의 하루를 채워가요.' : ja ? '自分らしい一日をつくりましょう。' : 'Now, make the day your own.'
+- src/shared/lib/daily-quote/dailyQuotes.ts:237 — locale === 'ko' ? entry.ko : entry.en
+
+## 등록되지 않은 정적 번역 키
+

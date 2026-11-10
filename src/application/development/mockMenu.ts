@@ -1,7 +1,8 @@
 import { addDevelopmentCalendarMockData } from './mockCalendarData';
 import { DevSettings } from 'react-native';
-import { getDevelopmentStorageProfile, setDevelopmentStorageProfile, flushLocalStorageClientWrites, clearPokitLocalStorage, type DevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
-import { ensureDevelopmentMockData } from './mockData';
+import { disableDevelopmentMockProfile, getDevelopmentStorageProfile, setDevelopmentStorageProfile, flushLocalStorageClientWrites, clearPokitLocalStorage, type DevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
+import { clearObsoleteDevelopmentMockData, ensureDevelopmentMockData } from './mockData';
+import { prepareDevelopmentMockArtwork } from './mockArtwork';
 let registered = false;
 let switching = false;
 
@@ -10,11 +11,14 @@ async function switchProfile(profile: DevelopmentStorageProfile | null, reset = 
   switching = true;
   try {
     await flushLocalStorageClientWrites();
-    setDevelopmentStorageProfile(profile);
+    if (profile) setDevelopmentStorageProfile(profile);
+    else disableDevelopmentMockProfile();
     if (profile) {
       if (reset) await clearPokitLocalStorage();
+      await prepareDevelopmentMockArtwork();
+      await clearObsoleteDevelopmentMockData();
       ensureDevelopmentMockData(reset);
-      if (profile === 'ko') addDevelopmentCalendarMockData();
+      addDevelopmentCalendarMockData();
     }
     await flushLocalStorageClientWrites();
     DevSettings.reload();

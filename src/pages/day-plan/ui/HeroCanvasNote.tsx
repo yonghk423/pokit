@@ -20,7 +20,7 @@ import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 
 /** An independent canvas annotation; it never changes the photo layout bounds. */
 export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const diaryClip = useHeroDiaryClip();
   const insets = useSafeAreaInsets();
   const ko = locale === 'ko';
@@ -108,8 +108,8 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
         </> : null}
       <ThemedTextInput
         testID="hero-canvas-note"
-        accessibilityLabel="하루의 메모"
-        placeholder="오늘의 이야기를 남겨보세요"
+        accessibilityLabel={t('comicDay.memo')}
+        placeholder={t('comicDay.memoHint')}
         placeholderTextColor={`${ink}66`}
         value={text}
         multiline

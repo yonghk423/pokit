@@ -7,7 +7,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / 'docs/design/photo-diary/calendar-large-board-generation.json'
-DEST = ROOT / 'assets/calendar-illustrations/large-board-v3'
+DEST = Path('/Users/yonghee/Documents/Codex/yourday/calendar-illustrations/large-board-v3')
 
 def main():
     plan = json.loads(PLAN.read_text())

@@ -4,7 +4,7 @@ import { configureImageCache } from './imageCachePolicy';
 import { migrateHeroAiAuthSession } from '@shared/lib/supabase/heroAiSecureStorage';
 import { initializeHeroCardEditHint } from '@shared/lib/storage/heroCardEditHintStorage';
 import { initializeHeroCharacterNameHint } from '@shared/lib/storage/heroCharacterNameHintStorage';
-import { getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
+import { getDevelopmentStorageProfile, localStorageClient, setDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { loadComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useEffect, useState } from 'react';
@@ -116,11 +116,18 @@ export function useAppBootstrap() {
       }
 
       if (__DEV__) {
-        const { ensureDevelopmentMockData } = await import('./development/mockData');
+        if (!getDevelopmentStorageProfile() && localStorageClient.getItemRaw('pokit:dev-mock:profile') === null) {
+          setDevelopmentStorageProfile('en');
+        }
+        const { clearObsoleteDevelopmentMockData, ensureDevelopmentMockData } = await import('./development/mockData');
         const { registerDevelopmentMockMenu } = await import('./development/mockMenu');
         const profile = getDevelopmentStorageProfile();
-        if (profile) { useAppLocaleStore.getState().setLocale(profile); ensureDevelopmentMockData(); }
-        if (profile === 'ko') {
+        if (profile) {
+          await clearObsoleteDevelopmentMockData();
+          const { prepareDevelopmentMockArtwork } = await import('./development/mockArtwork');
+          await prepareDevelopmentMockArtwork();
+          useAppLocaleStore.getState().setLocale(profile);
+          ensureDevelopmentMockData();
           const { addDevelopmentCalendarMockData } = await import('./development/mockCalendarData');
           addDevelopmentCalendarMockData();
         }

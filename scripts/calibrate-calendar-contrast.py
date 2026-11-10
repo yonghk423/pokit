@@ -4,7 +4,7 @@ from PIL import Image, ImageStat
 import json
 
 root = Path(__file__).resolve().parents[1]
-asset_root = root / 'assets/calendar-illustrations/fullbleed-v2'
+asset_root = Path('/Users/yonghee/Documents/Codex/yourday/calendar-illustrations/fullbleed-v2')
 manifest = json.loads((asset_root / 'manifest.json').read_text())
 
 def luminance(rgb):

@@ -2967,5 +2967,9 @@
   "comicDay.photo.changeOriginal": "點擊照片以更換",
   "comicDay.photo.saveError": "無法儲存照片，請重試。",
   "comicDay.gallery.originalPhotos": "我的照片",
-  "comicDiary.history": "歷史紀錄"
+  "comicDiary.history": "歷史紀錄",
+  "comicDiary.monthEmpty": "還沒有日記紀錄。",
+  "settings.font.cafe24ShiningStar": "Cafe24 閃耀之星",
+  "settings.font.cafe24ShiningStarDesc": "纖細傾斜的書法手寫字體",
+  "settings.font.cafe24ShiningStarPreview": "Daylight · 我的一天"
 }

@@ -167,7 +167,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
       ? <ScrollView testID="illustration-calendar-gallery" contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 20, alignItems: 'center', gap: 20 }}>
           {!(packReady && packOpen) ? <View style={{ width: previewWidth }}>
             <Pressable disabled={!packReady || deletingPack} onPress={() => setPackOpen(true)} accessibilityRole="button" accessibilityLabel="시티 애니메이션 받은 캘린더 보기" style={{ borderRadius: 14, backgroundColor: '#FFFFFF', shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 }, elevation: 6 }}>
-              <Image source={require('../../assets/calendar-illustrations/city-animation/04-lunch-rooftop/background.webp')} resizeMode="cover" style={{ width: previewWidth, height: previewWidth * 1728 / 910, borderRadius: 14 }} />
+              {packReady ? <Image source={{ uri: illustrationCalendarBackgroundUri('04-lunch-rooftop') }} resizeMode="cover" style={{ width: previewWidth, height: previewWidth * 1728 / 910, borderRadius: 14 }} /> : <View style={{ width: previewWidth, height: previewWidth * 1728 / 910, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="calendar" size={72} color={ink} /></View>}
             </Pressable>
             <View style={{ padding: 16, gap: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

@@ -5,75 +5,50 @@ import type { ComicDayScene } from '@pages/day-plan/lib/heroDayStorage';
 import { COMIC_PAPER_COLORS, COMIC_PEN_COLORS } from '@pages/day-plan/lib/heroScenePalette';
 import { initialServiceProgress } from '@pages/welcome-intro/model/serviceTutorial';
 import type { AppLocale } from '@shared/lib/i18n';
-import { localStorageClient, getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
-import { saveGoalDetailCategoryConfig, appendGoalDetailCommittedCategoryKeys } from '@shared/lib/storage/goalDetailSettingsStorage';
-import { saveDayPlanDraft } from '@shared/lib/storage/dayPlanDraftStorage';
+import { clearPokitLocalStorage, localStorageClient, getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { StorageKeys } from '@shared/lib/storage/storageKeys';
-import { bookstoreSceneCopy, mockCopy } from './mockCopy';
+import { mockCopy } from './mockCopy';
 import { getMockProtagonist, getMockProtagonistName, getMockSceneImages } from './mockProtagonists';
+import { developmentArtworkUri } from './mockArtwork';
 
-export const MOCK_DATA_VERSION = 4;
+export const MOCK_DATA_VERSION = 7;
 const SEED_KEY = 'pokit:mock-data-version';
 const COLOR_STYLE_KEY = 'pokit:mock-color-style-version';
 const COLOR_STYLE_VERSION = JSON.stringify([2, COMIC_PAPER_COLORS, COMIC_PEN_COLORS]);
 const sceneTimes = ['07:10', '07:45', '09:20', '13:10', '18:30', '22:15', '14:00', '15:30', '12:40', '17:00', '08:10', '09:00', '13:00', '16:30', '17:20'];
-function bookstoreScene(locale: AppLocale): ComicDayScene {
-  const [title, memo, tasks] = bookstoreSceneCopy[locale];
-  return { id: `mock-scene:${locale}:bookstore-daily`, title, memo, image: '01-exercise', time: '19:10',
-    paper: '#FFFFFF', pen: '#252822', todos: tasks.map((text, i) => ({ id: `mock-bookstore-task:${i}`, text, completed: i === 0 })) };
-}
-/** Add new preview content without replacing diary edits or mate records. */
-function addBookstoreToExistingMock(locale: AppLocale): boolean {
-  const library = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY);
-  const dailyId = `mock-diary:${locale}:0`;
-  const daily = library?.diaries?.find(diary => diary.id === dailyId);
-  if (!library || !daily) return false;
-  const seed = bookstoreScene(locale);
-  const existingBookstore = daily.scenes.find(scene => scene.id === seed.id || scene.image === '01-exercise');
-  if (existingBookstore) {
-    // An earlier preview may have saved the artwork without the mock memo or todos.
-    // Fill only empty fields so any edits already made by the user stay intact.
-    const completedScene = {
-      ...existingBookstore,
-      title: existingBookstore.title.trim() ? existingBookstore.title : seed.title,
-      memo: existingBookstore.memo.trim() ? existingBookstore.memo : seed.memo,
-      todos: existingBookstore.todos.length ? existingBookstore.todos : seed.todos,
-    };
-    if (completedScene.title === existingBookstore.title
-      && completedScene.memo === existingBookstore.memo
-      && completedScene.todos === existingBookstore.todos) return false;
-    localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, {
-      ...library,
-      diaries: library.diaries.map(diary => diary.id === dailyId
-        ? { ...diary, scenes: diary.scenes.map(scene => scene.id === existingBookstore.id ? completedScene : scene) }
-        : diary),
-    });
-    return true;
-  }
-  const scenes = [...daily.scenes];
-  const eveningIndex = scenes.findIndex(scene => scene.time > '19:10');
-  scenes.splice(eveningIndex < 0 ? scenes.length : eveningIndex, 0, seed);
-  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { ...library, diaries: library.diaries.map(diary => diary.id === dailyId ? { ...diary, scenes } : diary) });
-  return true;
-}
+const canvasStories: Record<AppLocale, string> = {
+  en: 'The morning felt busier than I expected. I took a breath on the way to work, made it through a difficult meeting, and stepped outside for lunch to look at the sky. After work, I went for a short run and came home ready for a quiet evening. Nothing extraordinary happened, but there were small moments I want to remember: the warm light through the windows, a kind message from a friend, and the feeling of finally slowing down.',
+  ko: '생각보다 분주한 아침이었다. 출근길에 잠시 숨을 고르고, 어려웠던 회의를 마친 뒤 점심에는 밖으로 나가 하늘을 바라봤다. 퇴근 후에는 짧게 달리고 집에 돌아와 조용한 저녁을 보냈다. 특별한 일은 없었지만 창문으로 들어오던 따뜻한 빛, 친구가 보내준 다정한 메시지, 그리고 마침내 천천히 쉬는 기분을 기억하고 싶다.',
+  ja: '思っていたより慌ただしい朝だった。通勤中にひと息つき、少し大変な会議を終えてから、昼休みに外へ出て空を眺めた。仕事のあとに少し走って帰り、静かな夜を過ごした。特別なことはなかったけれど、窓から差し込むあたたかな光、友だちからのやさしいメッセージ、ようやくゆっくりできた気持ちを覚えておきたい。',
+  'zh-TW': '早晨比預想中更忙碌。通勤時先停下來深呼吸，完成一場不太容易的會議後，午休時走到戶外看看天空。下班後去慢跑了一小段，回家度過安靜的夜晚。今天沒有什麼大事，但我想記住窗邊溫暖的光、朋友傳來的貼心訊息，還有終於能慢下來的感覺。',
+};
 /** Pure builder: the same local dates and stable ids make previews reproducible. */
 export function buildMockDiaries(locale: AppLocale, date: string): ComicDiaryLibrary {
   const copy = mockCopy[locale];
   const groups = [[0, 6, 0], [6, 10, -2], [10, 15, -1]];
   const diaries = groups.map(([start, end, offset], index) => {
-    const character = getMockProtagonist(index);
+    const character = getMockProtagonist(4);
     const characterScenes = getMockSceneImages(character.id);
     const day = addDaysToLocalDateKey(date, offset);
     const timestamp = new Date(`${day}T12:00:00`).getTime();
-    const scenes: ComicDayScene[] = copy.scenes.slice(start, end).map(([title, memo, tasks], j) => ({
-      id: `mock-scene:${locale}:${start + j}`, title, memo, image: characterScenes[start + j], time: sceneTimes[start + j],
-      paper: '#FFFFFF', pen: '#252822',
-      todos: tasks.map((text, k) => ({ id: `mock-task:${start + j}:${k}`, text, completed: k === 0 || (j < 2 && k < 2) })),
-    }));
-    if (index === 0) scenes.splice(6, 0, bookstoreScene(locale));
-    return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: character.id, characterName: getMockProtagonistName(index, locale), scenes, createdAt: timestamp, updatedAt: timestamp };
+    const scenes: ComicDayScene[] = copy.scenes.slice(start, end).map(([title, memo], j) => {
+      const image = characterScenes[start + j];
+      return {
+        id: `mock-scene:${locale}:${start + j}`, title, memo, image, artworkUri: developmentArtworkUri(image), time: sceneTimes[start + j],
+        paper: '#FFFFFF', pen: '#252822',
+        todos: [],
+      };
+    });
+    return { id: `mock-diary:${locale}:${index}`, title: `${day.slice(5).replace('-', '/')} · ${copy.titles[index]}`, characterId: character.id, characterName: getMockProtagonistName(4, locale), scenes, createdAt: timestamp, updatedAt: timestamp };
   });
   return { version: 1, diaries, activeId: diaries[0].id, migratedLegacyKeys: [] };
+}
+
+/** Discard the previous mock app profile once when migrating to the photo diary fixtures. */
+export async function clearObsoleteDevelopmentMockData(): Promise<void> {
+  if (!__DEV__ || !getDevelopmentStorageProfile()) return;
+  const storedVersion = localStorageClient.getItemRaw(SEED_KEY);
+  if (storedVersion && !storedVersion.startsWith(`${MOCK_DATA_VERSION}:`)) await clearPokitLocalStorage();
 }
 
 /** The existing stories, with the same paper and ink choices offered by the editor. */
@@ -158,11 +133,12 @@ export function ensureDevelopmentMockData(force = false, date = getLocalDateKey(
   const locale = getDevelopmentStorageProfile();
   if (!locale) return false;
   const version = `${MOCK_DATA_VERSION}:${date}`;
+  // Repair missing home text even when the diary seed version is already current.
+  const storyKey = `pokit:canvas-note:${date}`;
+  if (!localStorageClient.getItemRaw(storyKey)?.trim()) localStorageClient.setItemRaw(storyKey, canvasStories[locale]);
   if (!force && localStorageClient.getItemRaw(SEED_KEY) === version) {
     const existing = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY);
-    if (Array.isArray(existing?.diaries) && existing.diaries.length > 0) return addBookstoreToExistingMock(locale);
-    // The seed marker can survive a deleted/empty library. Repair only the
-    // missing diary preview, preserving edits to mates and other mock records.
+    if (Array.isArray(existing?.diaries) && existing.diaries.length > 0) return false;
     const diaries = buildMockDiaries(locale, date);
     localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, diaries);
     localStorageClient.setJson('pokit:comic-navigation', { characterId: diaries.diaries[0].characterId, screen: 'board', diaryId: diaries.activeId });
@@ -171,14 +147,7 @@ export function ensureDevelopmentMockData(force = false, date = getLocalDateKey(
   const diaries = buildMockDiaries(locale, date);
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, diaries);
   localStorageClient.setJson('pokit:comic-navigation', { characterId: diaries.diaries[0].characterId, screen: 'board', diaryId: diaries.activeId });
-  const mates = buildMockMates(locale, date);
-  mates.forEach(mate => saveGoalDetailCategoryConfig(mate.id, mate.config));
-  appendGoalDetailCommittedCategoryKeys(mates.map(mate => mate.id));
-  localStorageClient.setJson(StorageKeys.customFlowCatalog, { items: mates.map(({ id, groupKey }) => ({ id, groupKey })) });
-  localStorageClient.setJson(StorageKeys.priorityCatalogFixedRoutines, { manualSelectionKeys: mates.map(mate => mate.id) });
-  const keys = mates.map(mate => mate.id);
-  saveDayPlanDraft({ dailyRolloverVersion: 1, planMode: 'priority', isFocusStarted: true, completedFocusCategoryKeys: [keys[0]], planCompletionDismissedKeys: [], priorityPlanDateKey: date, priorityPlanDateKeyEnd: date, priorityPlanExplicitMultiDay: false, priorityOvernightEndAuto: false, priorityStart: '00:00', priorityEnd: '23:59', priorityCategoryOrder: keys, quickMemoDraft: mockCopy[locale].notes[0][0], priorityMealSlotLayoutEnabled: false, prioritySpineLayoutEnabled: false });
-  localStorageClient.setJson(StorageKeys.routineStartTimes, { byCategoryKey: Object.fromEntries(keys.map((key, i) => [key, { startMinutes: [420, 540, 1080, 780, 810, 900, 430, 1320][i], endMinutes: [435, 600, 1110, 795, 840, 910, 440, 1350][i] }])) });
+  localStorageClient.setItemRaw(`pokit:canvas-note:${date}`, canvasStories[locale]);
   // Mock browsing starts in the actual app, without onboarding or review prompts.
   localStorageClient.setJson('pokit:service-tutorial-v2', { ...initialServiceProgress, completed: ['comic', 'rhythm'], step: 'finish', dismissed: true });
   localStorageClient.setJson('pokit:tutorial-media-v1', { introSeen: true, reviewRequested: true });

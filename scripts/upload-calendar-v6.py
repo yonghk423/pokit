@@ -9,7 +9,7 @@ import threading
 
 ROOT = Path(__file__).resolve().parent.parent
 CLI = '/Users/yonghee/.npm/_npx/aa8e5c70f9d8d161/node_modules/@supabase/cli-darwin-arm64/bin/supabase'
-SOURCE = ROOT / 'assets/calendar-illustrations/upload-candidate-v6'
+SOURCE = Path('/Users/yonghee/Documents/Codex/yourday/calendar-illustrations/upload-candidate-v6')
 BACKUP = ROOT / 'output/calendar-upload-backup-20261110'
 REPORT = ROOT / 'docs/ops/calendar-v6-upload-manifest.json'
 FLAGS = ['--remote=wvvtyaxsedpqiscogrwk', '--experimental', '--yes']

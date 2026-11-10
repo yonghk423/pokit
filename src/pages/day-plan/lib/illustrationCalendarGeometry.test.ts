@@ -3,11 +3,10 @@ import { CALENDAR_ARTWORK_SIZES, fitCalendarArtwork, calendarCellContents } from
 import { illustrationCellFrame, illustrationMonthCells } from '../ui/HeroIllustrationCalendar';
 jest.mock('./illustrationCalendarAssets', () => ({}));
 
-it('registers all 50 bundled calendar artworks explicitly', () => {
-  const fs = require('fs');
-  const folders = fs.readdirSync('assets/calendar-illustrations/city-animation').filter((name: string) => fs.existsSync(`assets/calendar-illustrations/city-animation/${name}/background.webp`));
-  expect(Object.keys(CALENDAR_ARTWORK_SIZES).sort()).toEqual(folders.sort());
-  expect(folders).toHaveLength(50);
+it('registers all 50 downloaded calendar artworks explicitly', () => {
+  const { CITY_CALENDAR_THEMES } = require('../model/heroCalendarDesign');
+  expect(Object.keys(CALENDAR_ARTWORK_SIZES).sort()).toEqual(CITY_CALENDAR_THEMES.map((theme: { themeId: string }) => theme.themeId).sort());
+  expect(Object.keys(CALENDAR_ARTWORK_SIZES)).toHaveLength(50);
 });
 it.each([[320,568,20,90],[375,667,20,90],[390,844,59,110],[430,932,59,110],[440,956,62,110]])('fills the screen while keeping all 50 calendar grids above the tab bar: %s × %s', (width,height,top,bottom) => {
   for (const [theme, [sw,sh]] of Object.entries(CALENDAR_ARTWORK_SIZES)) {

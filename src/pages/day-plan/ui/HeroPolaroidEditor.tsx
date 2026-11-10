@@ -1,3 +1,4 @@
+import { useTranslation } from '@shared/lib/i18n';
 import { POLAROID_PHOTO_WIDTH, getPolaroidPrintLayout } from '../lib/heroPolaroidFraming';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { HeroFilmDateStamp } from './HeroFilmDateStamp';
@@ -23,6 +24,7 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
   imageSize?: { width: number; height: number }; onDelete?: () => void; embedded?: boolean; onSaveText?: (text: HeroCardText) => void; uri?: string; source?: number; initial: PolaroidDraft; busy: boolean; children?: ReactNode;
   onExport: (action: 'save' | 'share' | 'download', draft: PolaroidDraft) => Promise<void>; onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState(initial);
   const [back, setBack] = useState(false);
   const [writing, setWriting] = useState(false);
@@ -81,13 +83,13 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
           if (result === 'cancelled') return;
           await useSubscriptionStore.getState().refreshCustomerInfo();
           if (!selectIsPro(useSubscriptionStore.getState())) {
-            Alert.alert('Daylight Pro', '필름 필터는 Pro 전용 기능이에요. 구독 상태를 확인하거나 기본 폴라로이드로 저장해주세요.');
+            Alert.alert('Daylight Pro', t('polaroid.editor.film_filters_require_pro_check_your_subscription_or_save_a_basic_polaroid'));
             return;
           }
         }
       }
       await onExport(action, { ...draft, paper: undefined, ...(needsProcessing ? { processedUri: rendered?.uri } : {}) });
-    } catch { Alert.alert('내보내기', '구독 상태를 확인하지 못했어요. 잠시 후 다시 시도해주세요.'); } finally { lock.current = false; setChecking(false); }
+    } catch { Alert.alert(t('polaroid.editor.export'), t('polaroid.editor.could_not_check_your_subscription_please_try_again')); } finally { lock.current = false; setChecking(false); }
   };
 
   const content = <>
@@ -103,32 +105,32 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
               {/* Keep one native image view alive so source updates retain the previous frame while decoding. */}
               <HeroPolaroidSurface />
               <View style={{ width: photoWidth, height: photoHeight }}><PreviewImage testID="polaroid-live-preview" source={previewUri ? { uri: previewUri } : source} contentFit={draft.photoFit ?? 'cover'} contentPosition="center" transition={0} cachePolicy="memory-disk" onError={() => { setImageFailed(true); }} useAppleWebpCodec={false} style={{ width: photoWidth, height: photoHeight, backgroundColor: paper }} />{draft.showDate !== false ? <View pointerEvents="none" style={{ position: 'absolute', width: photoWidth, height: photoHeight, left: 0, top: 0 }}><HeroFilmDateStamp testID="polaroid-preview-date" date={draft.date || formatHeroPolaroidDate()} /></View> : null}</View>
-              <Pressable testID="polaroid-caption-write" accessibilityRole="button" accessibilityLabel="글쓰기" onPress={edit} style={{ height: captionHeight, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 8, gap: 4 }}>
-                {draft.showText !== false ? <Text testID="polaroid-preview-title" numberOfLines={2} allowFontScaling={false} style={{ flexShrink: 1, fontFamily: resolveAppFontFamily(draft.fontId ?? globalFont), color: pen, fontSize: 22 }}>{draft.title.trim() || '오늘의 이야기를 적어보세요.'}</Text> : null}
+              <Pressable testID="polaroid-caption-write" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.write')} onPress={edit} style={{ height: captionHeight, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 8, gap: 4 }}>
+                {draft.showText !== false ? <Text testID="polaroid-preview-title" numberOfLines={2} allowFontScaling={false} style={{ flexShrink: 1, fontFamily: resolveAppFontFamily(draft.fontId ?? globalFont), color: pen, fontSize: 22 }}>{draft.title.trim() || t('polaroid.editor.tell_your_story_today')}</Text> : null}
               </Pressable>
             </Animated.View>
             <Animated.View pointerEvents={back ? 'auto' : 'none'} style={{ position: 'absolute', left: (360 * printScale - 360) / 2, top: (printHeight * printScale - printHeight) / 2, width: 360, height: printHeight, backfaceVisibility: 'hidden', transform: [{ scale: printScale }, { perspective: 1200 }, { rotateY: turn.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] }) }], padding: 24, backgroundColor: paper }}>
               <HeroPolaroidSurface />
-              <ScrollView><Pressable testID="polaroid-back-write" accessibilityRole="button" accessibilityLabel="글쓰기" onPress={edit} style={{ minHeight: printHeight - 48 }}>
+              <ScrollView><Pressable testID="polaroid-back-write" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.write')} onPress={edit} style={{ minHeight: printHeight - 48 }}>
                 <ThemedText fontId={draft.fontId} style={{ color: pen, fontSize: 24, marginBottom: 20 }}>{draft.title}</ThemedText>
-                <ThemedText fontId={draft.fontId} style={{ color: pen, fontSize: 18, lineHeight: 30 }}>{draft.memo || '오늘의 이야기를 적어보세요.'}</ThemedText>
+                <ThemedText fontId={draft.fontId} style={{ color: pen, fontSize: 18, lineHeight: 30 }}>{draft.memo || t('polaroid.editor.tell_your_story_today')}</ThemedText>
               </Pressable></ScrollView>
             </Animated.View>
             </View>
-            {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel="사진 삭제" disabled={busy || checking} onPress={onDelete} style={{ position: 'absolute', right: 64, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: pen, fontSize: 17 }}>삭제</ThemedText></Pressable> : null}
-            <Pressable testID="polaroid-flip" accessibilityRole="button" accessibilityLabel={back ? '사진 보기' : '글 보기'} onPress={flip} style={{ position: 'absolute', right: 16, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-      <ThemedText style={{ color: pen, fontSize: 17 }}>회전</ThemedText>
+            {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ position: 'absolute', right: 64, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
+            <Pressable testID="polaroid-flip" accessibilityRole="button" accessibilityLabel={back ? t('polaroid.editor.view_photo') : t('polaroid.editor.view_story')} onPress={flip} style={{ position: 'absolute', right: 16, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+      <ThemedText style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.flip')}</ThemedText>
             </Pressable>
           </View>
           </View>
         <HeroPolaroidToolbox photoFit={draft.photoFit ?? 'cover'} onChangePhotoFit={photoFit => patch({ photoFit })} showText={draft.showText !== false} onToggleText={toggleText} showDate={draft.showDate !== false} onToggleDate={toggleDate} effects={effects} onChange={patch} disabled={busy || checking} />
-        {processing && failedKey === effectKey ? <Pressable onPress={() => setFailedKey(undefined)} style={{ minHeight: 32, justifyContent: 'center' }}><ThemedText style={{ fontSize: 12, textAlign: 'center' }}>보정 실패 · 눌러서 다시 시도</ThemedText></Pressable> : null}
+        {processing && failedKey === effectKey ? <Pressable onPress={() => setFailedKey(undefined)} style={{ minHeight: 32, justifyContent: 'center' }}><ThemedText style={{ fontSize: 12, textAlign: 'center' }}>{t('polaroid.editor.adjustment_failed_tap_to_retry')}</ThemedText></Pressable> : null}
         {needsProcessing && failedKey !== effectKey ? <HeroPolaroidProcessor uri={uri} source={source} effects={effects} onResult={renderComplete} onError={renderFailed} /> : null}
         <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: Math.max(4, insets.bottom), flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#080808' }}>
-          <ExportButton icon="share" label="공유" disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('share'); }} testID="polaroid-editor-share" />
-          <ExportButton icon="download" label="사진 앱에 다운로드" disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('download'); }} testID="polaroid-editor-download" />
-          <ExportButton icon="save" label={checking || busy ? '준비 중…' : FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && !isPro && hasProPolaroidEffects(draft) ? 'Pro로 적용' : '현재 사진에 적용'} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('save'); }} testID="polaroid-editor-save" />
-          <Pressable accessibilityRole="button" accessibilityLabel="닫기" disabled={busy || checking} onPress={onClose} style={{ marginLeft: 'auto', minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: busy || checking ? 0.5 : 1 }}><ThemedText style={{ color: '#F3F2ED' }}>닫기</ThemedText></Pressable>
+          <ExportButton icon="share" label={t('polaroid.editor.share')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('share'); }} testID="polaroid-editor-share" />
+          <ExportButton icon="download" label={t('polaroid.editor.download_to_photos')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('download'); }} testID="polaroid-editor-download" />
+          <ExportButton icon="save" label={checking || busy ? t('polaroid.editor.preparing') : FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && !isPro && hasProPolaroidEffects(draft) ? t('polaroid.editor.apply_with_pro') : t('polaroid.editor.apply_to_photo')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('save'); }} testID="polaroid-editor-save" />
+          <Pressable accessibilityRole="button" accessibilityLabel={t('polaroid.editor.close')} disabled={busy || checking} onPress={onClose} style={{ marginLeft: 'auto', minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: busy || checking ? 0.5 : 1 }}><ThemedText style={{ color: '#F3F2ED' }}>{t('polaroid.editor.close')}</ThemedText></Pressable>
         </View>
         {writing ? <HeroCardEditor number={1} ink={pen} muted="#73796C" paper={draft.paper ?? paper} draft={textDraft} onChange={setTextDraft} onCancel={() => setWriting(false)} onSave={() => { if (!textDraft.title.trim()) return; const text = { ...textDraft, title: textDraft.title.trim(), memo: textDraft.memo.trim() }; patch(text); onSaveText?.(text); setWriting(false); }} /> : null}
         {datePickerOpen ? <HeroPolaroidDatePicker date={draft.date} showDate={draft.showDate !== false} onSelect={date => { patch({ date, showDate: true }); setDatePickerOpen(false); }} onHide={() => { patch({ showDate: false }); setDatePickerOpen(false); }} onClose={() => setDatePickerOpen(false)} /> : null}
@@ -137,7 +139,7 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
           <ProPreviewPage onBusyChange={setPaywallBusy} onClose={() => finishPaywall('cancelled')} onActivated={finishPaywall} />
         </AppModal> : null}
       </Animated.View>
-      {imageFailed ? <View style={{ position: 'absolute', top: insets.top + 52, left: 24, right: 24 }}><ThemedText style={{ color: '#934C3C', textAlign: 'center' }}>사진을 불러오지 못했어요. 닫은 뒤 다시 열어주세요.</ThemedText></View> : null}
+      {imageFailed ? <View style={{ position: 'absolute', top: insets.top + 52, left: 24, right: 24 }}><ThemedText style={{ color: '#934C3C', textAlign: 'center' }}>{t('polaroid.editor.could_not_load_the_photo_close_and_reopen_it')}</ThemedText></View> : null}
     </View>
   </>;
   return embedded ? content : <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!busy && !checking) onClose(); }}>{content}</AppModal>;

@@ -17,6 +17,9 @@ import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoac
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
+// Keep outfit artwork available while temporarily hiding the weather character.
+const SHOW_WEATHER_CHARACTER = false;
+
 const OPENWEATHER_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY?.trim();
 const CACHE_MS = 15 * 60 * 1000;
 const GPS_WATCH_MS = 12_000;
@@ -450,7 +453,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
                 <ThemedText style={[styles.modalTemperature, { color: ink }]}>{report.temperature}°{report.city ? ` · ${report.city}` : ''}</ThemedText>
                 {report.description ? <ThemedText style={[styles.modalDescription, { color: muted }]}>{report.description}</ThemedText> : null}
               </View>
-              <WeatherOutfit index={outfitIndex} size={56} />
+              {SHOW_WEATHER_CHARACTER ? <WeatherOutfit index={outfitIndex} size={56} /> : null}
             </View>
             <ScrollView style={styles.detailsScroll} contentContainerStyle={styles.detailsList} showsVerticalScrollIndicator={false}>
               {detailRows.map(([name, value]) => value === null ? null : (

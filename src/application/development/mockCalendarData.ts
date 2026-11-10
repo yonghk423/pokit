@@ -2,10 +2,10 @@ import { getLocalDateKey, addDaysToLocalDateKey } from '@entities/day-plan/lib/l
 import type { AppLocale } from '@shared/lib/i18n';
 import { localStorageClient, getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { COMIC_DIARY_STORAGE_KEY, type ComicDiary, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
-import { mockCopy, bookstoreSceneCopy } from './mockCopy';
+import { mockCopy } from './mockCopy';
 import { MOCK_PROTAGONISTS, getMockProtagonist, getMockProtagonistName, getMockSceneImages } from './mockProtagonists';
 import type { ComicDayScene } from '@pages/day-plan/lib/heroDayStorage';
-
+import { developmentArtworkUri } from './mockArtwork';
 const koreanCharacterStories: Record<string, Pick<ComicDayScene, 'image' | 'title' | 'memo'>[]> = {
   'protagonist-5': [
     { image: 'p5-01-platform', title: '기다리는 시간도 내 하루', memo: '기차를 기다리며 잠깐 이어폰을 뺐다. 바쁘게 걷는 사람들 사이에서 나만 잠시 멈춘 기분이었다. 서둘러야 한다는 생각 대신, 오늘은 내 속도로 가도 괜찮다고 마음속으로 이야기했다.' },
@@ -26,8 +26,8 @@ const labels: Record<AppLocale, string[]> = {
   'zh-TW': ['慢慢開始的早晨', '專注的上午', '午餐後的小歇', '午後遇見的風景', '留給自己的夜晚', '睡前的紀錄'],
 };
 const CALENDAR_MOCK_CHARACTER_VERSION_KEY = 'pokit:calendar-mock-character-version';
-const CALENDAR_MOCK_CHARACTER_VERSION = '4';
-/** Additive calendar fixtures: stable dated ids, dense days, sparse days and long diaries. */
+const CALENDAR_MOCK_CHARACTER_VERSION = '7';
+/** Stable dated photo diary fixtures with long entries and fullbleed artwork. */
 export function buildCalendarMockDiaries(locale: AppLocale, date: string): ComicDiary[] {
   const month = date.slice(0, 7);
   const today = Number(date.slice(8));
@@ -35,7 +35,7 @@ export function buildCalendarMockDiaries(locale: AppLocale, date: string): Comic
     ? Array.from({ length: today }, (_, index) => index + 1)
     : [...new Set([1, 3, 5, 7, 9, 12, 13, 16, 18, 20, 23, 26, today - 1, today])].filter(day => day > 0 && day <= today).sort((a, b) => a - b);
   const copy = mockCopy[locale];
-  const source = [...copy.scenes.slice(0, 10).map(scene => ({ copy: scene })), { copy: bookstoreSceneCopy[locale] }];
+  const source = copy.scenes.slice(0, 10).map(scene => ({ copy: scene }));
   // Korean previews include a completed month, even when today is the first.
   const previous = addDaysToLocalDateKey(`${month}-01`, -1);
   const previousDays = locale === 'ko'
@@ -44,9 +44,7 @@ export function buildCalendarMockDiaries(locale: AppLocale, date: string): Comic
   const plan = [...days.map(day => ({ day: `${month}-${String(day).padStart(2, '0')}`, count: day === 13 || day === today && locale === 'ko' ? 6 : day === today ? 4 : day % 3 + 1 })), ...previousDays];
   return plan.flatMap(({ day, count }, dayIndex) => Array.from({ length: count }, (_, entry) => {
     const id = `mock-calendar:${locale}:${day}:${entry}`;
-    const characterIndex = locale === 'ko'
-      ? (day === date ? entry : Number(day.slice(8)) - 1 + entry) % MOCK_PROTAGONISTS.length
-      : (dayIndex * 3 + entry) % MOCK_PROTAGONISTS.length;
+    const characterIndex = MOCK_PROTAGONISTS.findIndex(item => item.id === 'protagonist-6');
     const character = getMockProtagonist(characterIndex);
     const characterScenes = getMockSceneImages(character.id);
     const sizes = day.endsWith('-13') ? [3, 6, 12, 20, 5, 9] : [3, 7, 12, 20, 5, 9];
@@ -59,9 +57,11 @@ export function buildCalendarMockDiaries(locale: AppLocale, date: string): Comic
       createdAt: timestamp, updatedAt: timestamp,
       scenes: Array.from({ length: size }, (_, i) => {
         const item = source[(dayIndex * 3 + entry * 2 + i) % source.length];
-        const [title, memo, tasks] = item.copy;
+        const [title, memo] = item.copy;
         const minutes = 7 * 60 + Math.round(i * 15 * 60 / Math.max(size - 1, 1));
-        return { id: `${id}:scene:${i}`, title, memo, image: characterScenes[(dayIndex * 3 + entry * 2 + i) % characterScenes.length], ...characterStories?.[i], time: `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`, paper: '#FFFFFF', pen: '#252822', todos: tasks.map((text, j) => ({ id: `${id}:scene:${i}:todo:${j}`, text, completed: (entry + i + j) % 3 !== 0 })) };
+        const story = characterStories?.[i];
+        const image = story?.image ?? characterScenes[(dayIndex * 3 + entry * 2 + i) % characterScenes.length]!;
+        return { id: `${id}:scene:${i}`, title, memo, image, artworkUri: developmentArtworkUri(image), ...story, time: `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`, paper: '#FFFFFF', pen: '#252822', todos: [] };
       }),
     };
   }));
@@ -75,22 +75,31 @@ export function addDevelopmentCalendarMockData(date = getLocalDateKey()): boolea
   if (!Array.isArray(library?.diaries)) return false;
   const samples = buildCalendarMockDiaries(locale, date);
   const sampleById = new Map(samples.map(diary => [diary.id, diary]));
-  const upgrade = localStorageClient.getItemRaw(CALENDAR_MOCK_CHARACTER_VERSION_KEY) !== CALENDAR_MOCK_CHARACTER_VERSION;
+  const datasetVersion = `${CALENDAR_MOCK_CHARACTER_VERSION}:${date}`;
+  const upgrade = localStorageClient.getItemRaw(CALENDAR_MOCK_CHARACTER_VERSION_KEY) !== datasetVersion;
+  if (upgrade) {
+    // Replace only the old generated calendar fixtures. Real and hand-made diaries stay intact.
+    const diaries = [...library.diaries.filter(diary => !diary.id.startsWith('mock-calendar:')), ...samples];
+    localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { ...library, diaries });
+    localStorageClient.setItemRaw(CALENDAR_MOCK_CHARACTER_VERSION_KEY, datasetVersion);
+    return true;
+  }
   let updated = false;
   const diaries = library.diaries.map(diary => {
-    const sample = upgrade ? sampleById.get(diary.id) : undefined;
+    const sample = sampleById.get(diary.id);
     if (!sample) return diary;
     let scenesChanged = false;
     const scenes = diary.scenes.map(scene => {
       const sampleScene = sample.scenes.find(item => item.id === scene.id);
       if (!sampleScene) return scene;
       const image = scene.artworkUri ? scene.image : sampleScene.image;
+      const artworkUri = scene.artworkUri ?? sampleScene.artworkUri;
       const title = scene.title.trim() ? scene.title : sampleScene.title;
       const memo = scene.memo.trim() ? scene.memo : sampleScene.memo;
-      if (scene.image === image && scene.title === title && scene.memo === memo) return scene;
+      if (scene.image === image && scene.artworkUri === artworkUri && scene.title === title && scene.memo === memo) return scene;
       scenesChanged = true;
       updated = true;
-      return { ...scene, image, title, memo };
+      return { ...scene, image, artworkUri, title, memo };
     });
     const sceneIds = new Set(scenes.map(scene => scene.id));
     const missingScenes = sample.scenes.filter(scene => !sceneIds.has(scene.id));
@@ -102,6 +111,6 @@ export function addDevelopmentCalendarMockData(date = getLocalDateKey()): boolea
   const ids = new Set(library.diaries.map(diary => diary.id));
   const missing = samples.filter(diary => !ids.has(diary.id));
   if (updated || missing.length) localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { ...library, diaries: [...diaries, ...missing] });
-  localStorageClient.setItemRaw(CALENDAR_MOCK_CHARACTER_VERSION_KEY, CALENDAR_MOCK_CHARACTER_VERSION);
+  localStorageClient.setItemRaw(CALENDAR_MOCK_CHARACTER_VERSION_KEY, datasetVersion);
   return updated || missing.length > 0;
 }
