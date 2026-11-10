@@ -124,7 +124,7 @@ export function ComicDayPage() {
   </View>, [ink, selectedDate, calendarVisible, photoActive, movePhotoDate]);
   useLayoutEffect(() => { registerCenterActions?.(todayButton); return () => registerCenterActions?.(null); }, [registerCenterActions, todayButton, calendarVisible]);
   const leadingActions = useMemo(() => <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    {!photoActive && !calendarVisible ? <Pressable testID="comic-return-calendar" accessibilityRole="button" accessibilityLabel={t('comicCalendar.open')} onPress={() => { tapHaptic('select'); Keyboard.dismiss(); setCalendarBackdropVisible(true); setCalendarVisible(true); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+    {!photoActive && !calendarVisible ? <Pressable testID="comic-return-calendar" accessibilityRole="button" accessibilityLabel={t('comicCalendar.open')} onPress={() => { tapHaptic('select'); Keyboard.dismiss(); setCalendarBackdropVisible(true); setCalendarVisible(true); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: -8 }] }}>
       <HeroAppliedCalendarIcon month={calendarMonth} today={today} />
     </Pressable> : null}
   </View>, [photoActive, calendarVisible, t, ink, calendarMonth, todayKey]);

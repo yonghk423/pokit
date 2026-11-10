@@ -72,8 +72,8 @@ it('renders clipboard photos with a loading placeholder and preserves date taps'
   expect(tree.root.findAllByProps({ testID: 'calendar-photo-skeleton' }).length).toBeGreaterThan(0);
   act(() => tree.root.findAllByProps({ testID: 'clipboard-day-2026-11-09' })[0].props.onPress());
   expect(onSelectDate).toHaveBeenCalledWith('2026-11-09');
-  const image = tree.root.findAll(node => node.props.source?.uri === 'file:///saved.jpg' && !!node.props.onLoad)[0];
-  act(() => image.props.onLoad());
+  const image = tree.root.findAll(node => node.props.source?.uri === 'file:///saved.jpg' && !!node.props.onDisplay)[0];
+  act(() => image.props.onDisplay());
   expect(tree.root.findAllByProps({ testID: 'calendar-photo-skeleton' })).toHaveLength(0);
   act(() => tree.unmount());
 });

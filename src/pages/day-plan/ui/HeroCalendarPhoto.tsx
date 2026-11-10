@@ -1,21 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Image, StyleSheet, View } from 'react-native';
+import { memo, useCallback, useState } from 'react';
+import { Image } from 'expo-image';
+import { StyleSheet, View } from 'react-native';
 import { useCalendarWidgetImageReady } from '../model/calendarWidgetRenderReady';
 
-/** Fixed-size white placeholder stays in place until the photo has decoded. */
-export function HeroCalendarPhoto({ uri, contain = false }: { uri: string; contain?: boolean }) {
-  const [settled, setSettled] = useState('');
-  const opacity = useRef(new Animated.Value(0)).current;
+/** Keep decoded photos cached; returning to a tab must not replay a fade from white. */
+export const HeroCalendarPhoto = memo(function HeroCalendarPhoto({ uri, contain = false }: { uri: string; contain?: boolean }) {
+  const [displayedUri, setDisplayedUri] = useState('');
   const imageReady = useCalendarWidgetImageReady();
-  useEffect(() => {
-    opacity.setValue(0);
-    if (settled !== uri) return;
-    const animation = Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true });
-    animation.start(({ finished }) => { if (finished) imageReady?.(); });
-    return () => animation.stop();
-  }, [settled, uri, opacity, imageReady]);
+  const onDisplay = useCallback(() => {
+    setDisplayedUri(uri);
+    imageReady?.();
+  }, [uri, imageReady]);
   return <View style={{ flex: 1, width: '100%', height: '100%', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
-    <Animated.View style={[StyleSheet.absoluteFill, { opacity }]}><Image source={{ uri }} resizeMode={contain ? 'contain' : 'cover'} style={StyleSheet.absoluteFill} onLoad={() => { setSettled(uri); }} onError={() => { setSettled(uri); }} /></Animated.View>
-    {settled !== uri ? <View testID="calendar-photo-skeleton" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECECEC' }]}><View style={{ position: 'absolute', top: '25%', left: '15%', width: '70%', height: '50%', backgroundColor: '#F5F5F5' }} /></View> : null}
+    {displayedUri !== uri ? <View testID="calendar-photo-skeleton" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECECEC' }]}><View style={{ position: 'absolute', top: '25%', left: '15%', width: '70%', height: '50%', backgroundColor: '#F5F5F5' }} /></View> : null}
+    <Image source={{ uri }} contentFit={contain ? 'contain' : 'cover'} cachePolicy="memory-disk" transition={0} priority="high" recyclingKey={uri} style={StyleSheet.absoluteFill} onDisplay={onDisplay} />
   </View>;
-}
+});
