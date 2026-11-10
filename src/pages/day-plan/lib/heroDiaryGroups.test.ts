@@ -17,3 +17,14 @@ it('removes only matching display date prefixes without editing original titles'
   expect(groupedDiaryTitle({ ...item, title: '10/12 · Keep this date' })).toBe('10/12 · Keep this date');
   expect(groupedDiaryTitle({ ...item, title: 'Untouched' })).toBe('Untouched');
 });
+
+it('groups different days into monthly packets while keeping years and selected diary dates separate', () => {
+  const first = diary('first', 1, 8), last = diary('last', 31, 20);
+  const november = { ...diary('november', 1, 9), date: '2026-11-01' };
+  const previousYear = { ...diary('previous-year', 1, 9), date: '2025-10-01' };
+  const undated = { ...first, id: 'unknown', createdAt: 0 };
+  const groups = groupDiaryLibrary([last, november, previousYear, undated, first], 'month');
+  expect(groups.map(group => group.date)).toEqual(['2026-11', '2026-10', '2025-10', 'undated']);
+  expect(groups[1].diaries.map(item => item.id)).toEqual(['first', 'last']);
+  expect(november.date).toBe('2026-11-01');
+});

@@ -2,10 +2,10 @@ import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
-const HERO_SOURCE = require('../../../../assets/splash-artwork.png');
+const HERO_SOURCE = require('../../../../assets/splash-artwork.webp');
 const SHELF_ROWS = 7;
 
-/** Intro artwork with a paper skeleton that holds its frame until the large PNG decodes on device. */
+/** Intro artwork with a paper skeleton that holds its frame until the artwork decodes on device. */
 export function TutorialHeroImage({ width, height }: { width: number; height: number }) {
   const [loaded, setLoaded] = useState(false);
   const pulse = useRef(new Animated.Value(0.55)).current;

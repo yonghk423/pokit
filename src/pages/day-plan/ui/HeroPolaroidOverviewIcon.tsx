@@ -1,10 +1,8 @@
-import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
-import Svg, { ClipPath, Defs, G, Image, Path, Polygon } from 'react-native-svg';
+import Svg, { G, Polygon } from 'react-native-svg';
 
-const artwork = require('../../../../assets/control-illustrations/polaroid-overview-photo.webp');
-// Paper outlines in the photographic source; each print keeps its own pixels while moving.
+// Each print is drawn as a vector so the icon is ready without image decoding.
 const prints = [
   { points: '166.73,28.43 267.59,27 270.12,147.56 165.85,151.08', x: 217.57, y: 88.52, angle: -0.81, stacked: -9 },
   { points: '8,131.06 98.75,90.03 148.25,201.68 55.3,244.02', x: 77.58, y: 166.7, angle: -24.33, stacked: 7 },
@@ -13,8 +11,7 @@ const prints = [
   { points: '163.43,177.7 266.16,186.28 254.39,311.12 151.77,300.45', x: 208.94, y: 243.89, angle: 4.77, stacked: 0 },
 ];
 
-const sceneIds = ['05-work', 'p2-04-birthday-surprise', 'p3-14-dog-walk', 'p4-19-station-wait', 'p5-01-platform', 'p6-01-rush-hour-commute'] as const;
-// Keep the real paper edges and replace only the photographic windows.
+const pastelColors = ['#D8E5ED', '#F0D9CF', '#DCE5D3', '#E6DAEB', '#F0E4C6', '#D5E8E2'];
 const photoWindows = [
   { points: '173.77,35.03 261.32,34.26 262.64,123.58 174.10,124.13', transform: 'matrix(0.87558 -0.00770 0.00330 0.89098 173.76568 35.02979)' },
   { points: '14.05,135.68 94.35,99.93 130.87,180.56 50.57,217.63', transform: 'matrix(0.80298 -0.35749 0.36519 0.81948 14.04984 135.67717)' },
@@ -23,9 +20,8 @@ const photoWindows = [
   { points: '170.25,185.40 258.79,194.53 249.66,285.82 160.35,276.25', transform: 'matrix(0.88548 0.09130 -0.09900 0.90858 170.24577 185.39588)' },
 ];
 
-/** When the overview is open, the same photographs gather into a compact pile. */
+/** Pastel prints gather into a compact pile when the overview opens. */
 export function HeroPolaroidOverviewIcon({ size = 32, expanded = false }: { ink?: string; size?: number; expanded?: boolean }) {
-  const id = useId().replace(/:/g, '');
   // Rasterize at the largest displayed size; native transforms only shrink it.
   const renderScale = 2.2;
   const renderSize = size * renderScale;
@@ -49,7 +45,6 @@ export function HeroPolaroidOverviewIcon({ size = 32, expanded = false }: { ink?
       const x = index === 5 ? 325 : print.x;
       const y = index === 5 ? 318 : print.y;
       const photo = photoWindows[Math.min(index, 4)];
-      const paperOutline = `M${print.points.split(' ').join(' L')} Z M${photo.points.split(' ').join(' L')} Z`;
       return <Animated.View key={index} style={{ position: 'absolute', width: renderSize, height: renderSize, left: (x / 400 - 0.5) * size - renderInset, top: (y / 400 - 0.5) * size - renderInset, transform: [
       { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, (0.5 - x / 400) * size] }) },
       { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, (0.5 - y / 400) * size] }) },
@@ -57,12 +52,10 @@ export function HeroPolaroidOverviewIcon({ size = 32, expanded = false }: { ink?
       { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1 / renderScale, 1] }) },
     ] }}>
       <Svg width={renderSize} height={renderSize} viewBox="0 0 400 400" accessible={false} style={{ overflow: 'visible' }}>
-        <Defs><ClipPath id={`${id}-${index}`}><Path d={paperOutline} fillRule="evenodd" clipRule="evenodd" /></ClipPath><ClipPath id={`${id}-photo-${index}`}><Polygon points={photo.points} /></ClipPath></Defs>
         <G transform={`translate(${200 - print.x} ${200 - print.y})`}>
-          <Image href={artwork} width={400} height={400} clipPath={`url(#${id}-${index})`} />
-          <G clipPath={`url(#${id}-photo-${index})`}>
-            <Image href={COMIC_SCENE_THUMBNAILS[sceneIds[index]]} width={100} height={100} transform={photo.transform} preserveAspectRatio="xMidYMid slice" />
-          </G>
+          <Polygon points={print.points} transform="translate(2 3)" fill="#39362F" opacity={0.13} />
+          <Polygon points={print.points} fill="#FAF9F4" stroke="#D6D2C7" strokeWidth={1.2} />
+          <Polygon points={photo.points} fill={pastelColors[index]} />
         </G>
       </Svg>
     </Animated.View>; })}

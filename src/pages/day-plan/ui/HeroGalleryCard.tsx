@@ -1,3 +1,5 @@
+import { HeroPolaroidSurface } from './HeroPolaroidSurface';
+import { HeroPrintStaple } from './HeroPrintStaple';
 import { memo } from 'react';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -10,12 +12,13 @@ export const ComicGalleryCard = memo(function ComicGalleryCard({ id, label, widt
   id: ComicSceneId; label: string; width: number; columns: number; order: number; onToggle: (id: ComicSceneId) => void;
 }) {
   const source = COMIC_SCENE_THUMBNAILS[id];
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: order > 0 }} onPress={() => { tapHaptic('select'); onToggle(id); }} style={{ width }}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: order > 0 }} onPress={() => { tapHaptic('select'); onToggle(id); }} style={{ width, padding: 7, paddingTop: 13, backgroundColor: '#FFFEFA', shadowColor: '#403624', shadowOpacity: 0.16, shadowRadius: 3, shadowOffset: { width: 0, height: 3 }, elevation: 2 }}>
+    <HeroPolaroidSurface /><HeroPrintStaple />
     <View style={[s.photo, order > 0 && s.selected]}>
-      <ComicSceneImage fitToCard showSkeletonOnMount transitionDuration={120} backgroundColor="#FFFFFF" imageKey={`${id}:960`} source={source} fallbackSource={COMIC_SCENES.find(scene => scene.id === id)!.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
+      <ComicSceneImage preserveFullImage contentFit="contain" showSkeletonOnMount transitionDuration={120} backgroundColor="#FFFFFF" imageKey={`${id}:960`} source={source} fallbackSource={COMIC_SCENES.find(scene => scene.id === id)!.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
       {order > 0 ? <View style={s.check}><ThemedText style={{ color: '#171510', fontSize: 15 }}>{order}</ThemedText></View> : null}
     </View>
-    {columns < 3 ? <ThemedText numberOfLines={1} style={s.caption}>{label}</ThemedText> : null}
+    <View style={{ minHeight: columns === 3 ? 28 : 38, justifyContent: 'center' }}><ThemedText numberOfLines={1} style={[s.caption, { fontSize: columns === 3 ? 11 : 14 }]}>{label}</ThemedText></View>
   </Pressable>;
 });
 const s = StyleSheet.create({

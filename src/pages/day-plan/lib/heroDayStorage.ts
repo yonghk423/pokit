@@ -4,6 +4,7 @@ import { resolveHeroArtworkUri } from './heroArtworkUri';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { canonicalComicSceneId, type ComicSceneId } from './heroSceneImages';
 export type ComicDayScene = {
+  originalArtworkUri?: string; polaroidSettings?: import('../ui/HeroPolaroidEditor').PolaroidDraft;
   id: string; title: string; image: ComicSceneId; artworkUri?: string; time: string; memo: string;
   todos: { id: string; text: string; completed: boolean }[];
   paper: string; pen: string; fontId?: AppFontId;

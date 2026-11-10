@@ -1,3 +1,5 @@
+import { useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
+import { DayPlanCanvasContext } from '../model/dayPlanHeaderActions';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -65,10 +67,16 @@ type Props = {
  * 탭 전환 시 상단 점프를 막는다.
  */
 export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
+  const calendarDesign = useHeroCalendarDesign();
+  const illustrationSelected = calendarDesign === 'illustration' || calendarDesign.startsWith('city-animation-');
+  const calendarBackdrop = useCalendarBackdropVisible();
+  const immersiveIllustration = tabName === 'comic-day' && illustrationSelected && calendarBackdrop;
   const { t } = useTranslation();
+  const [canvasExpanded, setCanvasExpanded] = useState(false);
+  const [measuredHeaderHeight, setMeasuredHeaderHeight] = useState(0);
   const [composerKeyboardOpen, setComposerKeyboardOpen] = useState(false);
-  const cameraTabActive = !!useContext(HeroCharacterPickerActionContext)?.photoActive;
-  const hasWallpaper = useWallpaperStore(state => state.wallpaper !== 'default') && !cameraTabActive;
+  const cameraTabActive = !!useContext(HeroCharacterPickerActionContext)?.photoActive && tabName !== 'calendar';
+  const hasWallpaper = useWallpaperStore(state => !!state.wallpaper) && !cameraTabActive;
   const [centerActions, setCenterActions] = useState<ReactNode>(null);
   const [weatherActions, setWeatherActions] = useState<ReactNode>(null);
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
@@ -83,9 +91,12 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const weatherHeight = Math.max(28, Math.ceil(scaleTypeSize(22, appFontScale) * fontScale))
     + Math.ceil(scaleTypeSize(20, appFontScale) * fontScale) + 2;
   const characterHeight = Math.max(26, Math.ceil(scaleTypeSize(23, appFontScale) * fontScale));
-  const comicHeaderHeight = Math.max(44 + characterHeight, 46 + weatherHeight);
+  // Keep the weather summary visible with space reserved before its data arrives.
+  const showWeatherInfo = tabName !== 'calendar';
+  const comicHeaderHeight = showWeatherInfo ? Math.max(44 + characterHeight, 46 + weatherHeight) : 44;
   const inTabs = segments.some((segment) => segment === '(tabs)');
-  const isComicTab = tabName ? tabName === 'comic-day' : inTabs && segments.every(segment => segment === '(tabs)');
+  const isComicTab = tabName ? tabName === 'comic-day' || tabName === 'calendar' : inTabs && segments.every(segment => segment === '(tabs)');
+  const fullCanvasHeader = isComicTab && tabName !== 'calendar' && (!calendarBackdrop || illustrationSelected);
   const isDayPlanTab = tabName ? tabName === 'day-plan' : inTabs
     ? segments.some((segment) => segment === 'day-plan')
     : headerActions != null;
@@ -156,8 +167,9 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
     <DayPlanHeaderActionsContext.Provider value={setHeaderActions}>
     <DayPlanWeatherActionsContext.Provider value={setWeatherActions}>
     <DayPlanHeaderCenterActionsContext.Provider value={setCenterActions}>
-      <View style={[styles.root, { backgroundColor: hasWallpaper || isComicTab && !isDark && !composerKeyboardOpen && !cameraTabActive ? 'transparent' : shellBg, paddingTop: insets.top }]}>
-        <View testID="day-plan-shell-header" style={[styles.stickyTopBar, hideComicHeader && { display: 'none' }]} accessibilityElementsHidden={hideComicHeader} importantForAccessibility={hideComicHeader ? 'no-hide-descendants' : 'auto'}>
+      <View style={[styles.root, { backgroundColor: hasWallpaper || isComicTab && !isDark && !composerKeyboardOpen && !cameraTabActive ? 'transparent' : shellBg, paddingTop: fullCanvasHeader ? 0 : insets.top }]}>
+        {shellOverride === '#FAFAF6' && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { top: -insets.top, bottom: -200, backgroundColor: '#FAFAF6' }]} />}
+        <View pointerEvents="box-none" onLayout={({ nativeEvent: { layout } }) => { if (layout.height > 0) setMeasuredHeaderHeight(previous => previous === Math.round(layout.height) ? previous : Math.round(layout.height)); }} testID="day-plan-shell-header" style={[styles.stickyTopBar, shellOverride === '#FAFAF6' && { paddingTop: 0 }, fullCanvasHeader && { position: 'absolute', top: insets.top, left: 0, right: 0 }, hideComicHeader && { display: 'none' }]} accessibilityElementsHidden={hideComicHeader} importantForAccessibility={hideComicHeader ? 'no-hide-descendants' : 'auto'}>
           <PlanModeSwitch
             planMode={planMode}
             onSelectMode={handleSelectMode}
@@ -168,24 +180,25 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             fixedMiddle={isComicTab}
             center={isComicTab ? centerActions : undefined}
             trailingAlign={isComicTab ? 'start' : 'center'}
-            leading={<View style={styles.trailingRow}><SettingsTopBarButton c={c} />{isComicTab ? weatherActions : null}</View>}
+            leading={<View style={styles.trailingRow}><SettingsTopBarButton c={c} /></View>}
             trailing={
-              <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: comicHeaderHeight }] : styles.trailingRow}>
+              <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: shellOverride === '#FAFAF6' ? 44 : comicHeaderHeight }] : styles.trailingRow}>
+                {isComicTab ? weatherActions : null}
                 {onClose ? <View style={[styles.trailingRow, isComicTab && styles.comicHeaderButtons]}>
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View> : null}
-                {isComicTab ? <View testID="comic-header-weather-slot" style={[styles.comicWeather, { minHeight: weatherHeight }]}><View style={styles.weatherControls}><View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
+                {isComicTab ? <View testID="comic-header-weather-slot" accessibilityElementsHidden={!showWeatherInfo} importantForAccessibility={showWeatherInfo ? 'auto' : 'no-hide-descendants'} style={[styles.comicWeather, { minHeight: showWeatherInfo ? weatherHeight : 0, display: showWeatherInfo ? 'flex' : 'none' }]}><View style={styles.weatherControls}><View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
               </View>
             }
           />
         </View>
-        <View style={styles.body}>
-          {tabName === 'comic-day' || tabName === 'day-plan' ? (
+        <View style={[styles.body, immersiveIllustration && { paddingTop: 0 }]}><DayPlanCanvasContext.Provider value={{ setExpanded: setCanvasExpanded, headerHeight: measuredHeaderHeight }}>
+          {tabName === 'day-plan' ? (
             <InitialDeckSurface kind={isComicTab ? 'hero' : 'mate'} backgroundColor={shellBg} isDark={isDark}>
               {children}
             </InitialDeckSurface>
           ) : children}
-        </View>
+        </DayPlanCanvasContext.Provider></View>
       </View>
     </DayPlanHeaderCenterActionsContext.Provider>
     </DayPlanWeatherActionsContext.Provider>

@@ -1,4 +1,10 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import type { PolaroidDraft } from './HeroPolaroidEditor';
+import { HeroPhotoImportPreview, type ImportedHeroPhoto } from './HeroPhotoImportPreview';
+import { HeroPhotoDiaryComposer } from './HeroPhotoDiaryComposer';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
+import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
+import { ProPreviewPage } from '../../settings/ui/ProPreviewPage';
 import { getHeroGenerationAspectRatio } from '../lib/heroGenerationFrame';
 import { HeroReorderableStyleRail } from './HeroReorderableStyleRail';
 import { DayPlanShellBackgroundContext, DayPlanComposerKeyboardContext } from '../model/dayPlanHeaderActions';
@@ -20,8 +26,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { ComicSceneImage } from './HeroSceneImage';
-import { HeroPhotoSource, HeroPhotoIcon } from './HeroPhotoSource';
-import { HeroPhotoPreview } from './HeroPhotoPreview';
+import { HeroPhotoSource } from './HeroPhotoSource';
 import { SELECTABLE_COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -43,11 +48,19 @@ function PenCircle({ selected = false, color, size }: { selected?: boolean; colo
   </Svg>;
 }
 
-/** Text mode labels with the existing ink underline. Original artwork is kept below. */
+/** Soft oval selection fills in without changing the tab geometry. */
 function StoryModeIcon({ mode, ink, paper, selected }: { mode: 'character' | 'photo' | 'original'; ink: string; paper: string; selected: boolean }) {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
+  const selection = useAnimatedValue(selected ? 1 : 0);
+  useEffect(() => {
+    const animation = Animated.timing(selection, { toValue: selected ? 1 : 0, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [selected, selection]);
   const label = t(mode === 'character' ? 'comicDay.inline.fromText' : mode === 'photo' ? 'comicDay.inline.fromPhoto' : 'comicDay.inline.asIs');
   return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+    <Animated.View testID={`hero-mode-fill-${mode}`} style={{ position: 'absolute', left: 0, right: 0, top: 3, bottom: 3, borderRadius: 999, backgroundColor: isDark ? '#465043' : '#E1E7DC', opacity: selection, transform: [{ scaleX: selection.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }} />
 
     <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: ink, fontSize: 14, lineHeight: 22, textAlign: 'center', paddingHorizontal: 2 }}>{label}</ThemedText>
     {/* Original mode artwork — retained for a future icon variant.
@@ -108,8 +121,8 @@ function DrawingProgress({ elapsed, complete, submitted }: { elapsed: number; co
   </View>;
 }
 
-export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper, ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, initialMode = 'character', fullScreen = false, onApply, onClose }: {
-  fullScreen?: boolean; visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob; initialMode?: 'character' | 'photo' | 'original';
+export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper, ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, initialMode = 'character', initialOriginalPhoto, importedPhotoEmbedded = false, fullScreen = false, photoOnly = false, hideClose = false, onApply, onClose }: {
+  importedPhotoEmbedded?: boolean; initialOriginalPhoto?: ImportedHeroPhoto; hideClose?: boolean; photoOnly?: boolean; fullScreen?: boolean; visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob; initialMode?: 'character' | 'photo' | 'original';
   onApply: (text: HeroCardText, uri: string, jobId: string) => Promise<void>; onClose: () => void;
 }) {
   const { t, locale } = useTranslation();
@@ -131,10 +144,11 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     return () => { show.remove(); hide.remove(); };
   }, [visible]);
   useLayoutEffect(() => {
-    setComposerKeyboardOpen?.(visible);
+    setComposerKeyboardOpen?.(visible && keyboardTop !== null);
     return () => setComposerKeyboardOpen?.(false);
-  }, [visible, setComposerKeyboardOpen]);
+  }, [visible, keyboardTop, setComposerKeyboardOpen]);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const [stylesOpen, setStylesOpen] = useState(false);
   const [generationWidth, setGenerationWidth] = useState(320);
   const [styleId, setStyleId] = useState(() => {
@@ -146,7 +160,6 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   });
   const selectedStyle = SELECTABLE_COMIC_CHARACTERS.find(character => character.id === styleId) ?? SELECTABLE_COMIC_CHARACTERS[0];
   const styleSceneId = selectedStyle.id === 'protagonist-3' ? 'p3-14-dog-walk'
-    : selectedStyle.id === 'protagonist-4' ? 'p4-19-station-wait'
     : selectedStyle.id === 'protagonist-5' ? 'p5-01-platform'
     : selectedStyle.id === 'protagonist-6' ? 'p6-01-rush-hour-commute'
     : selectedStyle.scenes.some(scene => scene.id === sceneId) ? sceneId : selectedStyle.preview[0].id;
@@ -172,8 +185,6 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   }, [fullScreen, visible, mainBackground, setShellBackground]);
   const [mode, setMode] = useState<'character' | 'photo' | 'original'>(recoveryJob?.story?.source ?? initialMode);
   const modeFade = useAnimatedValue(1);
-  const underlineX = useAnimatedValue(0);
-  const [modeFrames, setModeFrames] = useState<Record<string, { x: number; width: number }>>({});
   const previousMode = useRef(mode);
   useLayoutEffect(() => {
     if (previousMode.current === mode) return;
@@ -184,19 +195,11 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     animation.start();
     return () => animation.stop();
   }, [mode, modeFade]);
-  useEffect(() => {
-    const frame = modeFrames[mode];
-    if (!frame) return;
-    const animation = Animated.timing(underlineX, { toValue: frame.x + (frame.width - 52) / 2, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true });
-    animation.start();
-    return () => animation.stop();
-  }, [mode, modeFrames, underlineX]);
-  const measureMode = (value: string, frame: { x: number; width: number }) => setModeFrames(current => current[value]?.x === frame.x && current[value]?.width === frame.width ? current : { ...current, [value]: { x: frame.x, width: frame.width } });
 
   const [draftTitle, setDraftTitle] = useState(recoveryJob?.story?.title ?? title);
   const [text, setText] = useState(recoveryJob?.story?.text ?? memo);
   const [photo, setPhoto] = useState<string | null>(null);
-  const [originalPhoto, setOriginalPhoto] = useState<{ uri: string; fileName?: string | null } | null>(null);
+  const [originalPhoto, setOriginalPhoto] = useState<ImportedHeroPhoto | null>(initialOriginalPhoto ?? null);
   const [facesLoading, setFacesLoading] = useState(true);
   const [faces, setFaces] = useState<HeroSavedFace[]>([]);
   const [face, setFace] = useState<string | null>(null);
@@ -220,6 +223,11 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   }, [paintPressed, feedback]);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const isPro = useSubscriptionStore(selectIsPro);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
+  const [quotaRevision, setQuotaRevision] = useState(0);
+  const closeUpgrade = () => { setUpgradeOpen(false); setQuotaRevision(value => value + 1); };
   const [submitted, setSubmitted] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const operation = useRef<AbortController | null>(null);
@@ -240,7 +248,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     refresh();
     const subscription = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
     return () => { current = false; subscription.remove(); };
-  }, [visible, busy]);
+  }, [visible, busy, quotaRevision]);
   const [elapsed, setElapsed] = useState(0);
   const [workspaceBottom, setWorkspaceBottom] = useState(0);
   const root = useRef<View>(null);
@@ -299,10 +307,10 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
       // Local photo selection does not call AI or reserve a generation job.
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const picker = require('expo-image-picker') as typeof import('expo-image-picker');
-      const result = await picker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, allowsEditing: false, allowsMultipleSelection: false });
+      const result = await picker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, allowsEditing: false, allowsMultipleSelection: false, presentationStyle: picker.UIImagePickerPresentationStyle.FULL_SCREEN });
       if (alive.current && !result.canceled && result.assets[0]?.uri) {
         const asset = result.assets[0];
-        setOriginalPhoto({ uri: asset.uri, fileName: asset.fileName });
+        setOriginalPhoto({ uri: asset.uri, fileName: asset.fileName, width: asset.width, height: asset.height });
       }
     } catch {
       if (alive.current) setError(t('comicDay.photo.pickError'));
@@ -311,14 +319,27 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
       if (alive.current) setImportingPhoto(false);
     }
   };
-  const saveOriginalPhoto = async () => {
+  const saveOriginalPhoto = async (draft?: PolaroidDraft) => {
     if (locked.current || job || !originalPhoto) return;
     locked.current = true; setImportingPhoto(true); setError(null); Keyboard.dismiss();
     try {
-      const uri = await saveHeroOriginalPhoto(originalPhoto.uri, originalPhoto.fileName);
+      let photoUri = originalPhoto.uri;
+      if (draft?.processedUri) {
+        const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
+        const processed = await manipulateAsync(draft.processedUri, [], { format: SaveFormat.JPEG, compress: 0.9 });
+        photoUri = processed.uri;
+      }
+      let uri: string;
+      try { uri = await saveHeroOriginalPhoto(photoUri, originalPhoto.fileName); }
+      finally {
+        if (photoUri !== originalPhoto.uri) {
+          const fs = await import('expo-file-system/legacy');
+          await fs.deleteAsync(photoUri, { idempotent: true }).catch(() => undefined);
+        }
+      }
       if (!alive.current) return;
-      await onApply({ title: draftTitle.trim(), memo: text.trim(), paper, pen: ink }, uri, '');
-      saveHeroOriginalPhotoMetadata({ uri, title: draftTitle.trim(), memo: text.trim(), createdAt: Date.now() });
+      await onApply({ title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), paper, pen: draft?.pen ?? ink, ...(draft?.fontId ? { fontId: draft.fontId } : {}) }, uri, '');
+      saveHeroOriginalPhotoMetadata({ uri, title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), createdAt: Date.now() });
     } catch {
       if (alive.current) setError(t('comicDay.photo.saveError'));
     } finally {
@@ -371,8 +392,10 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
   useEffect(() => { if (recoveryJob && !started.current) { started.current = true; void generate(); } }, [recoveryJob]); // eslint-disable-line react-hooks/exhaustive-deps
   const needsFirstFace = !facesLoading && faces.length === 0;
   const addFaceLabel = t(needsFirstFace ? 'comicDay.inline.addFirstFace' : 'comicDay.inline.addFace');
-  const needsFace = !job && mode === 'character' && !face && !facesLoading && !!(draftTitle.trim() || text.trim());
-  const canGenerate = !!job || !!(draftTitle.trim() || text.trim()) && (mode === 'character' ? !!face && !facesLoading : !!photo);
+  const needsFace = !job && mode === 'character' && !face && !facesLoading;
+  const missingFaceHint = draftTitle.trim() || text.trim() ? 'comicDay.inline.faceRequired' : 'comicDay.inline.textAndFaceRequired';
+  const canGenerate = !!job || remaining !== 0 && !!(draftTitle.trim() || text.trim()) && (mode === 'character' ? !!face && !facesLoading : !!photo);
+  if (initialOriginalPhoto && mode === 'original' && originalPhoto) return <HeroPhotoImportPreview embedded={importedPhotoEmbedded} photo={originalPhoto} title={draftTitle} memo={text} ink={uiInk} onTitleChange={setDraftTitle} onMemoChange={setText} onPick={() => { void chooseOriginalPhoto(); }} visible={visible} busy={importingPhoto} error={error} onSave={saveOriginalPhoto} onClose={onClose} />;
   return <View ref={root} collapsable={false} testID="hero-inline-composer" style={s.root} onLayout={() => root.current?.measureInWindow((_x, y, _width, height) => setWorkspaceBottom(y + height))}>
     {/* Measure the unpadded workspace in screen coordinates so collapsing the header
         cannot leave keyboard padding calculated from the previous header position. */}
@@ -386,29 +409,14 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
                       {facesLoading ? <View testID="hero-inline-faces-loading" accessibilityState={{ busy: true }} style={s.faceRailContent}>{[0, 1].map(index => <View key={index} style={[s.avatar, s.imagePlaceholder]} />)}</View> : null}
                       {faces.map((saved, index) => <Pressable key={saved.id} testID={`hero-inline-face-${index}`} accessibilityRole="button" accessibilityLabel={`${t('comicDay.inline.face')} ${index + 1}`} accessibilityState={{ selected: face === saved.uri }} onPress={() => { tapHaptic('select'); localStorageClient.setItemRaw(HERO_SELECTED_FACE_KEY, saved.id); setFace(saved.uri); setRegister(false); }} delayLongPress={500} onLongPress={() => { tapHaptic('select'); removeFace(saved); }} accessibilityActions={[{ name: 'delete', label: t('comicDay.inline.removeFace') }]} onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'delete') removeFace(saved); }} style={s.person}><View testID={`hero-inline-face-frame-${index}`} style={s.avatarFrame}><View style={s.avatar}><ComicSceneImage imageKey={`saved-face-avatar:${saved.uri}`} source={{ uri: saved.uri }} contentFit="cover" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={[s.clippedImage, s.avatar]} /></View>{face === saved.uri ? <View testID={`hero-inline-face-ring-${index}`} pointerEvents="none" style={s.chosen} /> : null}</View></Pressable>)}
                     </ScrollView> : null}
-                  </View> : <HeroPhotoSource variant="toolbar" mode="photo" uri={photo} onChange={setPhoto} actionsOnly selectionLimit={1} />}</View>
+                  </View> : null}</View>
           </> : <View style={{ flex: 1 }} />}
-          {!fullScreen ? <Pressable testID="hero-inline-close" accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || importingPhoto || cancelling || resultReady} onPress={() => { tapHaptic(); if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={uiInk} size={22} /></Pressable> : null}</Animated.View>
+          {!hideClose && (!fullScreen || photoOnly) ? <Pressable testID="hero-inline-close" accessibilityLabel={t('common.close')} accessibilityRole="button" disabled={savingFace || importingPhoto || cancelling || resultReady} onPress={() => { tapHaptic(); if (busy) confirmCancelGeneration(); else onClose(); }} style={s.icon}><HanddrawnControl name="xmark" color={uiInk} size={22} /></Pressable> : null}</Animated.View>
         <Animated.View style={{ flex: 1, minHeight: 0, opacity: modeFade }}>
-        {mode === 'original' ? <View testID="hero-original-photo-tab" style={{ flex: 1 }}>
-          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentContainerStyle={s.scrollContent}>
-            <Pressable testID="hero-original-photo-picker" accessibilityRole="button" accessibilityLabel={t(originalPhoto ? 'comicDay.photo.changeOriginal' : 'comicDay.photo.choose')} disabled={importingPhoto} onPress={() => { tapHaptic(); void chooseOriginalPhoto(); }} style={{ height: originalPhoto ? 180 : 128, alignItems: 'center', justifyContent: 'center', marginVertical: 8, padding: 8 }}>
-              <PenFrame color={uiInk} />
-              {originalPhoto ? <HeroPhotoPreview uri={originalPhoto.uri} resizeMode="contain" style={{ width: '100%', height: '100%' }} /> : <View style={{ alignItems: 'center', gap: 10 }}><HeroPhotoIcon size={48} colored /><ThemedText style={{ color: uiInk }}>{t('comicDay.photo.choose')}</ThemedText></View>}
-              {importingPhoto ? <ActivityIndicator color={uiInk} style={StyleSheet.absoluteFill} /> : null}
-            </Pressable>
-            {originalPhoto ? <ThemedText style={[s.hint, { color: uiInk }]}>{t('comicDay.photo.changeOriginal')}</ThemedText> : null}
-            <HeroStoryNotebook title={draftTitle} text={text} ink={ink} autoFocus={false} onTitleChange={setDraftTitle} onTextChange={setText} onFocus={field => { editing.current = field === 'body'; }} onBlur={() => { editing.current = false; }} />
-            {error ? <ThemedText accessibilityLiveRegion="polite" style={s.error}>{error}</ThemedText> : null}
-          </ScrollView>
-          <Pressable testID="hero-original-photo-save" accessibilityRole="button" accessibilityLabel={t('common.save')} accessibilityState={{ disabled: !originalPhoto || importingPhoto, busy: importingPhoto }} disabled={!originalPhoto || importingPhoto} onPress={() => { tapHaptic(); void saveOriginalPhoto(); }} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', marginVertical: 8, opacity: !originalPhoto || importingPhoto ? 0.4 : 1 }}>
-            <PenFrame color={uiInk} />
-            <ThemedText style={{ color: uiInk, fontSize: 17 }}>{t('common.save')}</ThemedText>
-          </Pressable>
-        </View> : <>
+        {mode === 'original' ? <HeroPhotoDiaryComposer uri={originalPhoto?.uri} title={draftTitle} memo={text} busy={importingPhoto} error={error} ink={uiInk} onPick={() => { tapHaptic(); void chooseOriginalPhoto(); }} onTitleChange={setDraftTitle} onMemoChange={setText} onSave={() => { tapHaptic(); void saveOriginalPhoto(); }} /> : <>
         {busy ? <Animated.View testID="hero-inline-progress-surface" style={[s.loading, StyleSheet.absoluteFill, { zIndex: 20, opacity: feedback }]}><DrawingProgress elapsed={elapsed} complete={resultReady} submitted={submitted} /><ThemedText testID="hero-inline-keep-app-open" accessibilityLiveRegion="polite" style={[s.hint, { color: GENERATION_PROGRESS_INK }]}>{t(submitted ? 'comicDay.inline.backgroundReady' : 'comicDay.inline.uploading')}</ThemedText><Pressable testID="hero-inline-cancel-generation" accessibilityRole="button" accessibilityLabel={t('comicDay.inline.cancelGeneration')} disabled={cancelling || resultReady} onPress={confirmCancelGeneration} style={s.cancelGeneration}><HanddrawnControl name="xmark" color={GENERATION_PROGRESS_INK} size={18} /><ThemedText style={[s.cancelText, { color: GENERATION_PROGRESS_INK }]}>{t(cancelling ? 'comicDay.inline.cancelling' : 'comicDay.inline.cancelGeneration')}</ThemedText></Pressable></Animated.View> : null}
         {!busy || paintPressed ? <Animated.View pointerEvents={busy ? 'none' : 'auto'} style={[{ flex: 1 }, busy && { opacity: feedback.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
-          <ScrollView testID="hero-inline-story-scroll" ref={scroll} style={s.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" onLayout={revealStory} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+          {mode === 'photo' ? <HeroPhotoDiaryComposer hideSave uri={photo ?? undefined} title={draftTitle} memo={text} busy={busy} error={error} ink={uiInk} onPick={() => { Keyboard.dismiss(); setStylesOpen(false); setPhotoPickerOpen(true); }} onTitleChange={setDraftTitle} onMemoChange={setText} onSave={() => {}} /> : <ScrollView testID="hero-inline-story-scroll" ref={scroll} style={s.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" onLayout={revealStory} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
             <View pointerEvents={job ? 'none' : 'auto'} style={s.content}>
 
               <View style={s.references}>
@@ -423,25 +431,26 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
               <Svg width={17} height={17} viewBox="0 0 24 24" accessible={false} style={{ marginTop: 1, flexShrink: 0 }}><Path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19ZM12 7v6m0 3v.5" fill="none" stroke="#934C3C" strokeWidth={1.5} strokeLinecap="round" /></Svg>
               <ThemedText accessibilityLiveRegion="polite" style={[s.error, { flex: 1 }]}>{error}</ThemedText>
             </View> : null}
-          </ScrollView>
+          </ScrollView>}
           <View style={s.generationArea}>
-          {needsFace ? <ThemedText testID="hero-inline-face-required" accessibilityLiveRegion="polite" style={{ color: uiInk, fontSize: 14, lineHeight: 21, textAlign: 'right', marginBottom: 6 }}>{t('comicDay.inline.faceRequired')}</ThemedText> : null}
-          <View testID="hero-inline-quota-slot" accessibilityState={{ busy: quotaLoading }} style={s.remainingSlot}>
+          {needsFace ? <ThemedText testID="hero-inline-face-required" accessibilityLiveRegion="polite" style={{ color: uiInk, fontSize: 14, lineHeight: 21, textAlign: 'right', marginBottom: 6 }}>{t(missingFaceHint)}</ThemedText> : null}
+          <View testID="hero-inline-quota-slot" accessibilityState={{ busy: quotaLoading }} style={[s.remainingSlot, FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proAiUpgrade && remaining === 0 && !quotaLoading && !isPro && s.upgradeSlot]}>
             <ThemedText testID="hero-inline-remaining" accessibilityLiveRegion="polite" accessibilityElementsHidden={quotaLoading} importantForAccessibility={quotaLoading ? 'no-hide-descendants' : 'auto'} numberOfLines={2} style={[s.remaining, { color: uiInk }, remaining === 0 && s.remainingExhausted, quotaLoading && { opacity: 0 }]}>{remaining == null ? '…' : remaining === 0 ? t('comicDay.ai.exhausted') : t(remaining >= 100000 ? 'comicDay.inline.unlimited' : 'comicDay.inline.remaining', { count: remaining })}</ThemedText>
             {quotaLoading ? <View testID="hero-inline-quota-skeleton" pointerEvents="none" accessible={false} style={s.remainingSkeleton} /> : null}
+            {FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proAiUpgrade && remaining === 0 && !quotaLoading && !isPro && !job ? <Pressable testID="hero-inline-upgrade" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); tapHaptic(); setStylesOpen(false); setUpgradeOpen(true); }} style={[s.upgradeButton, { backgroundColor: isDark ? '#394B40' : '#E4EBDD' }]}>
+              <ThemedText style={{ color: uiInk, fontSize: 13, lineHeight: 19, textAlign: 'center' }}>{t('comicDay.ai.upgrade')}</ThemedText>
+            </Pressable> : null}
           </View>
           <View testID="hero-inline-generation-row" onLayout={({ nativeEvent: { layout } }) => { if (layout.width > 0) setGenerationWidth(layout.width); }} style={s.generationRow}>
             <View testID="hero-inline-appearance-controls" pointerEvents={job ? 'none' : 'auto'} style={s.appearanceControls}>
                 <View testID="hero-inline-style-list" style={s.styles}>
                   <Pressable testID="hero-inline-style-toggle" accessibilityRole="button" accessibilityLabel={nameFor(selectedStyle.id, t(selectedStyle.name))} accessibilityState={{ selected: true, expanded: stylesOpen }} onPress={() => { tapHaptic('select'); setStylesOpen(open => !open); }} style={[s.styleItem, s.selectedStyleItem]}>
                     <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${selectedStyle.id}`} source={selectedStyle.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View></View>
-                                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.styleLabel, { alignSelf: 'stretch' }]}>{nameFor(selectedStyle.id, t(selectedStyle.name))}</ThemedText>
 </Pressable>
                   <Animated.View testID="hero-inline-style-options" pointerEvents={stylesOpen ? 'auto' : 'none'} accessibilityElementsHidden={!stylesOpen} importantForAccessibility={stylesOpen ? 'auto' : 'no-hide-descendants'} style={[s.styleOptions, { backgroundColor: fullScreen ? mainBackground : paper, width: Math.max(1, generationWidth - 56), opacity: styleReveal, transform: [{ translateY: styleReveal.interpolate({ inputRange: [0, 1], outputRange: [-5, 0] }) }] }]}>
                   <HeroReorderableStyleRail itemWidth={44}>
                   {SELECTABLE_COMIC_CHARACTERS.map(character => <Pressable key={character.id} testID={`hero-inline-style-${character.id}`} accessibilityRole="button" accessibilityLabel={nameFor(character.id, t(character.name))} accessibilityState={{ selected: styleId === character.id }} onPress={() => { tapHaptic('select'); localStorageClient.setItemRaw(HERO_SELECTED_STYLE_KEY, character.id); setStyleId(character.id); setStylesOpen(false); }} style={[s.styleItem, styleId === character.id && s.selectedStyleCard]}>
                     <View style={s.styleFrame}><View style={s.styleClip}><ComicSceneImage imageKey={`inline-style:${character.id}`} source={character.cover} contentFit="contain" showSkeletonOnMount transitionDuration={180} backgroundColor="#F1EEE6" style={s.styleImage} /></View></View>
-                    <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={s.styleLabel}>{nameFor(character.id, t(character.name))}</ThemedText>
                   </Pressable>)}
                   {null}
                   </HeroReorderableStyleRail>
@@ -454,9 +463,18 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
         </Animated.View> : null}
         </>}
         </Animated.View>
-        <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : '키보드 내리기'} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={uiInk} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} onLayout={event => measureMode(value, event.nativeEvent.layout)} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} disabled={importingPhoto} accessibilityState={{ selected: mode === value, disabled: importingPhoto }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={uiInk} paper={paper} selected={mode === value} /></Pressable>)}<Pressable testID="hero-inline-add-original-photo" onLayout={event => measureMode('original', event.nativeEvent.layout)} accessibilityRole="button" accessibilityLabel={t('comicDay.inline.asIs')} disabled={importingPhoto || savingFace || !!job} accessibilityState={{ disabled: importingPhoto || savingFace || !!job, busy: importingPhoto, selected: mode === 'original' }} onPress={() => { if (locked.current) return; tapHaptic('select'); setMode('original'); setError(null); setStylesOpen(false); setRegister(false); setHelpOpen(false); }} style={[s.tab, importingPhoto && { opacity: 0.45 }]}>{importingPhoto ? <ActivityIndicator color={uiInk} /> : <StoryModeIcon mode="original" ink={uiInk} paper={paper} selected={mode === 'original'} />}</Pressable>{modeFrames[mode] ? <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, bottom: 0, width: 52, height: 5, transform: [{ translateX: underlineX }] }}><Svg testID={`hero-mode-underline-${mode}`} width={52} height={5} viewBox="0 0 52 5" accessible={false}><Path d="M2 2.6Q15 1.7 27 2.4T50 1.9M5 3.8Q26 3 46 3.3" fill="none" stroke={uiInk} strokeWidth={1.1} strokeLinecap="round" /></Svg></Animated.View> : null}</View> : <View style={{ flex: 1 }} />}{mode !== 'original' ? <Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={uiInk} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable> : <View style={{ width: 32 }} />}</View>
+        <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : '키보드 내리기'} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={uiInk} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy && !photoOnly ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} disabled={importingPhoto} accessibilityState={{ selected: mode === value, disabled: importingPhoto }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={uiInk} paper={paper} selected={mode === value} /></Pressable>)}</View> : <View style={{ flex: 1 }} />}{mode !== 'original' ? <Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={uiInk} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable> : <View style={{ width: 32 }} />}</View>
       </View>
     </View>
+    {visible && photoPickerOpen ? <AppModal transparent animationType="fade" onRequestClose={() => setPhotoPickerOpen(false)}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: 'rgba(25,30,25,0.24)' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPhotoPickerOpen(false)} style={StyleSheet.absoluteFill} />
+        <View style={{ padding: 16, backgroundColor: paper }}>
+          <HeroPhotoSource mode="photo" uri={photo} actionsOnly selectionLimit={1} onChange={value => { setPhoto(value); setPhotoPickerOpen(false); }} />
+          <Pressable accessibilityRole="button" onPress={() => setPhotoPickerOpen(false)} style={{ padding: 12, alignItems: 'center' }}><ThemedText>{t('common.close')}</ThemedText></Pressable>
+        </View>
+      </View>
+    </AppModal> : null}
     {visible && register ? <AppModal transparent animationType="fade" onRequestClose={() => { if (!savingFace) setRegister(false); }}>
       <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: 'rgba(25,30,25,0.24)' }}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { if (!savingFace) setRegister(false); }} style={StyleSheet.absoluteFill} />
@@ -474,6 +492,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
       </View>
     </AppModal> : null}
     {helpOpen ? <HeroAiHelpModal onClose={() => setHelpOpen(false)} /> : null}
+    {upgradeOpen ? <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!upgradeBusy) closeUpgrade(); }}><ProPreviewPage onBusyChange={setUpgradeBusy} onClose={closeUpgrade} onActivated={closeUpgrade} /></AppModal> : null}
   </View>;
 }
 const s = StyleSheet.create({
@@ -491,6 +510,8 @@ const s = StyleSheet.create({
   bottomToolbar: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, marginTop: 8 },
   clippedImage: { overflow: 'hidden' },
   remainingSlot: { width: 120, alignSelf: 'flex-end', minHeight: 40, justifyContent: 'center', alignItems: 'center' },
+  upgradeSlot: { width: '100%', maxWidth: 280, gap: 6, paddingBottom: 6 },
+  upgradeButton: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch' },
   remainingSkeleton: { width: 64, height: 16, borderRadius: 6, backgroundColor: '#DDDCD5', opacity: 0.72 },
   remaining: { fontSize: 15, lineHeight: 20, textAlign: 'center', alignSelf: 'stretch' },
   remainingExhausted: { fontSize: 12, lineHeight: 15 },

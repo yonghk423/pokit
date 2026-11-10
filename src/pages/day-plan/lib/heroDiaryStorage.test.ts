@@ -67,3 +67,11 @@ it('removes discontinued puppy diaries, imported backups and preferences while p
   expect(localStorageClient.getJson('pokit:comic-navigation')).toBeNull();
   expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual(loaded);
 });
+
+it('persists the selected diary date through saving, editing and reloading', () => {
+  let library = createComicDiary(loadComicDiaryLibrary('2026-11-09', title), 'protagonist-1', 'Past day', undefined, '2026-10-02');
+  const id = library.activeId!;
+  library = updateComicDiary(library, id, { scenes: [newComicScene('My memory')] });
+  saveComicDiaryLibrary(library);
+  expect(loadComicDiaryLibrary('2026-11-09', title).diaries.find(item => item.id === id)?.date).toBe('2026-10-02');
+});

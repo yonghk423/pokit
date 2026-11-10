@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
@@ -5,6 +6,7 @@ import { getActiveProEntitlement, manageSubscription, restorePurchases, selectIs
 
 export type ProPlan = 'monthly' | 'yearly';
 async function refreshAfterManagement() {
+  if (!FEATURE_FLAGS.proSubscriptions) return;
   try {
     await Purchases.invalidateCustomerInfoCache();
   } catch {
@@ -28,6 +30,7 @@ export function useProSubscription() {
     return id === entitlement.productIdentifier && (!basePlan || basePlan === entitlement.productPlanIdentifier);
   }) ?? null;
   const load = useCallback(async () => {
+    if (!FEATURE_FLAGS.proSubscriptions) { setStatus('unavailable'); return; }
     if (lock.current) return;
     lock.current = true;
     try {
@@ -58,6 +61,7 @@ export function useProSubscription() {
   }, [load]);
 
   const transact = async (plan?: ProPlan): Promise<'active' | 'none' | 'cancelled' | 'error' | 'unavailable'> => {
+    if (!FEATURE_FLAGS.proSubscriptions) return 'unavailable';
     if (lock.current) return 'cancelled';
     // Existing subscribers change plans in the purchasing store, never through a second new purchase.
     if (plan && selectIsPro(useSubscriptionStore.getState())) return 'unavailable';
@@ -83,7 +87,7 @@ export function useProSubscription() {
     }
   };
   const manage = async () => {
-    if (lock.current) return 'unavailable' as const;
+    if (!FEATURE_FLAGS.proSubscriptions || lock.current) return 'unavailable' as const;
     lock.current = true;
     setBusy(true);
     try {

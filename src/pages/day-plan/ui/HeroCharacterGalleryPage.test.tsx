@@ -1,3 +1,4 @@
+jest.mock('../lib/heroPremiumPack', () => ({ PREMIUM_CHARACTER_ID: 'protagonist-7', premiumSceneTitle: () => '햇살 아래 버스 정류장', loadPremiumPack: jest.fn().mockResolvedValue([]), loadPremiumPackPreview: jest.fn().mockRejectedValue(new Error('offline')), downloadPremiumPack: jest.fn() }));
 import { loadHeroOriginalPhotoLibrary } from '../lib/heroOriginalPhoto';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Alert, FlatList } from 'react-native';
@@ -5,7 +6,6 @@ import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { loadComicCharacterName } from '../lib/heroCharacterName';
 import { deleteHeroAiLibraryImages, loadHeroAiLibrary, notifyHeroAiLibraryChanged } from '../lib/heroAiLibrary';
 import { COMIC_CHARACTERS } from '../lib/heroCharacters';
-import { HeroEmptyTodayChooser } from './HeroEmptyTodayChooser';
 import { HeroCharacterGalleryPage } from './HeroCharacterGalleryPage';
 import { HeroImageActions } from './HeroImageActions';
 
@@ -31,7 +31,7 @@ it('opens only the selected character artwork, previews an image, and returns to
   await act(async () => { tree = create(<HeroCharacterGalleryPage />); });
   const originalList = tree.root.findAllByType(FlatList)[0];
   const original = tree.root.findAllByType(FlatList).at(-1)!.props.data;
-  expect(original).toHaveLength(6);
+  expect(original).toHaveLength(7);
   expect(tree.root.findAllByProps({ testID: 'hero-gallery-character-personal' })).toHaveLength(0);
   act(() => tree.root.findAllByProps({ testID: 'hero-gallery-character-protagonist-1' })[0].props.onPress());
   expect(tree.root.findAllByType(FlatList)[0]).toBe(originalList);
@@ -41,7 +41,7 @@ it('opens only the selected character artwork, previews an image, and returns to
   expect(tree.root.findAllByProps({ testID: 'hero-gallery-preview-close' }).length).toBeGreaterThan(0);
   act(() => tree.root.findAllByProps({ testID: 'hero-gallery-preview-close' })[0].props.onPress());
   act(() => tree.root.findAllByProps({ testID: 'hero-gallery-back' })[0].props.onPress());
-  expect(tree.root.findAllByType(FlatList).at(-1)!.props.data.filter(Boolean)).toHaveLength(6);
+  expect(tree.root.findAllByType(FlatList).at(-1)!.props.data.filter(Boolean)).toHaveLength(7);
   act(() => tree.unmount());
 });
 it('updates the sixth character name immediately in its grid cell and detail header', async () => {
@@ -80,7 +80,7 @@ it('collects existing local generations and refreshes the open collection after 
   jest.mocked(loadHeroAiLibrary).mockResolvedValue([first]);
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<HeroCharacterGalleryPage />); });
-  expect(tree.root.findAllByType(FlatList).at(-1)!.props.data).toHaveLength(7);
+  expect(tree.root.findAllByType(FlatList).at(-1)!.props.data).toHaveLength(8);
   act(() => tree.root.findAllByProps({ testID: 'hero-gallery-character-generated-illustrations' })[0].props.onPress());
   expect(tree.root.findAllByType(FlatList).at(-1)!.props.data[0].source).toEqual(first);
   jest.mocked(loadHeroAiLibrary).mockResolvedValue([second, first]);
@@ -123,22 +123,7 @@ it('selects generated illustrations for deletion, supports cancel, and removes o
   alert.mockRestore();
 });
 
-it('shows the generated collection on the initial chooser and opens it without starting a diary', async () => {
-  jest.mocked(loadHeroAiLibrary).mockResolvedValue([{ uri: 'file:///Documents/hero-ai/hero-saved-0.png', title: '나의 하루', memo: '편안한 오후', createdAt: 123456 }]);
-  const start = jest.fn(), personalize = jest.fn(), choose = jest.fn();
-  let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroEmptyTodayChooser ink="#222" muted="#777" isDark={false} onStart={start} onPersonalize={personalize} onChooseGenerated={choose} />); });
-  const card = tree.root.findAllByProps({ testID: 'hero-empty-character-generated-illustrations' })[0];
-  await act(async () => card.props.onPress());
-  expect(tree.root.findAllByType(FlatList).at(-1)!.props.data[0].title).toBe('나의 하루');
-  expect(start).not.toHaveBeenCalled();
-  expect(personalize).not.toHaveBeenCalled();
-  expect(tree.root.findAllByType(HeroCharacterGalleryPage)).toHaveLength(0);
-  act(() => tree.root.findAllByProps({ testID: 'hero-generated-write-file:///Documents/hero-ai/hero-saved-0.png' })[0].props.onPress());
-  expect(choose).toHaveBeenCalledWith(expect.objectContaining({ uri: 'file:///Documents/hero-ai/hero-saved-0.png' }));
-  expect(tree.root.findAllByProps({ testID: 'hero-character-gallery' })).toHaveLength(0);
-  act(() => tree.unmount());
-});
+
 
 it('uses generated selection mode to choose artwork instead of opening its gallery detail', async () => {
   const image = { uri: 'file:///Documents/hero-ai/hero-select-0.png', title: '기존 제목', memo: '기존 글', createdAt: 1000 };
@@ -197,4 +182,17 @@ it('renames a single character image, persists it and does not open its preview'
     act(() => tree.root.findAllByProps({ testID: 'hero-gallery-character-protagonist-1' })[0].props.onPress());
     expect(tree.root.findAllByProps({ testID: `hero-gallery-scene-${scene.id}` })[0].props.accessibilityLabel).toBe('나의 아침 운동');
   } finally { act(() => tree.unmount()); localStorageClient.removeItem(storageKey); }
+});
+
+it('hides uninstalled packs without requesting previews or downloads', async () => {
+  const pack = require('../lib/heroPremiumPack');
+  pack.loadPremiumPackPreview.mockClear();
+  pack.downloadPremiumPack.mockClear();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCharacterGalleryPage />); });
+  try {
+    expect(tree.root.findAllByProps({ testID: 'hero-gallery-character-protagonist-7' })).toHaveLength(0);
+    expect(pack.loadPremiumPackPreview).not.toHaveBeenCalled();
+    expect(pack.downloadPremiumPack).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
 });

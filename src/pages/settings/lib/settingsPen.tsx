@@ -1,3 +1,4 @@
+import { TrashIcon } from '@shared/ui/icon-symbol/TrashIcon';
 import { BackChevron } from '@shared/ui/icon-symbol/BackChevron';
 import Svg, { Path } from 'react-native-svg';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
@@ -94,6 +95,7 @@ const drawings: Record<string, Line[]> = {
 
 /** Settings-specific nib drawings; never substitutes a shaded graphite illustration. */
 export function SettingsPenIcon({ name, size = 30, color }: { name: string; size?: number; color: string }) {
+  if (name === 'trash' || name.startsWith('trash.')) return <TrashIcon size={size} color={color} />;
   if (name === 'chevron.left') return <BackChevron color={color} />;
   const lines = drawings[name];
   if (!lines) return <HanddrawnControl name={name} size={size} color={color} />;

@@ -3,6 +3,7 @@ import type { ComicDiary } from './heroDiaryStorage';
 
 export type CalendarCover = { diaryId: string; sceneId: string };
 export function comicDiaryDate(diary: ComicDiary): string | null {
+  if (diary.date && /^\d{4}-\d{2}-\d{2}$/.test(diary.date)) return diary.date;
   // Dated imports retain their original day, independent of timezone or later edits.
   const legacy = /^legacy:.+:(\d{4}-\d{2}-\d{2})$/.exec(diary.id);
   if (legacy) return legacy[1];

@@ -1,13 +1,18 @@
 import { Image, StyleSheet, View } from 'react-native';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 /** Gently handled photographic stock, drawn behind the image and caption. */
-export function HeroPolaroidSurface() {
+export function HeroPolaroidSurface({ onReady, onError }: { onReady?: () => void; onError?: (error: unknown) => void } = {}) {
+  const loaded = useRef(new Set<string>());
+  const ready = (layer: string) => {
+    loaded.current.add(layer);
+    if (loaded.current.size === 2) onReady?.();
+  };
   const id = useId().replace(/:/g, '');
   return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: '#F1F0EC' }]}>
-    <Image source={require('../../../../assets/textures/polaroid-stock-v1.png')} resizeMode="cover" style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', opacity: 0.18 }} />
-    <Image source={require('../../../../assets/textures/polaroid-handled-v1.png')} resizeMode="stretch" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', opacity: 0.72 }]} />
+    <Image onLoad={() => ready('stock')} onError={onError} source={require('../../../../assets/textures/polaroid-stock-v1.png')} resizeMode="cover" style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', opacity: 0.18 }} />
+    <Image onLoad={() => ready('handled')} onError={onError} source={require('../../../../assets/textures/polaroid-handled-v1.png')} resizeMode="stretch" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', opacity: 0.72 }]} />
     <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
       <Defs><RadialGradient id={`${id}-light`} cx="15%" cy="0%" rx="95%" ry="110%"><Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.22} /><Stop offset="0.65" stopColor="#FFFFFF" stopOpacity={0} /><Stop offset="1" stopColor="#746F60" stopOpacity={0.055} /></RadialGradient><LinearGradient id={id} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.2} /><Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0} /><Stop offset="1" stopColor="#999994" stopOpacity={0.07} /></LinearGradient></Defs>
       <Rect width="100%" height="100%" fill={`url(#${id})`} />

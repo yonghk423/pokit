@@ -1,6 +1,6 @@
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { HeroCardCaption } from './HeroCardCaption';
 import { ComicSceneDeck } from './HeroSceneDeck';
-import { HeroCardStack } from './HeroCardStack';
 import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
 import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
@@ -181,29 +181,8 @@ it('copies layout coordinates before React processes queued state updates', () =
 });
 
 
-jest.mock('./HeroCardStack', () => {
-  const React = jest.requireActual('react');
-  const { View } = jest.requireActual('react-native');
-  const { GestureDetector } = jest.requireMock('react-native-gesture-handler');
-  return { HeroCardStack: React.forwardRef(function MockStack({ active, enabled, overviewGesture, width, cardWidth, renderPage, onChange }: { overviewGesture?: unknown; active: number; enabled: boolean; width: number; cardWidth: number; renderPage: (index: number, interactive: boolean, focused: boolean) => unknown; onChange: (index: number) => void }, ref: unknown) {
-    React.useImperativeHandle(ref, () => ({ turnTo: onChange }));
-    return <GestureDetector gesture={overviewGesture ?? {}}><View testID="comic-card-stack" width={width} cardWidth={cardWidth}>{renderPage(active, enabled, true)}</View></GestureDetector>;
-  }) };
-});
 
-it('gives the picture more vertical room without overlapping the thumbnail strip', () => {
-  let tree!: ReactTestRenderer;
-  act(() => { tree = create(<ComicSceneDeck items={[{ key: 'one', label: 'First' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} />, { createNodeMock: () => ({ scrollTo: jest.fn(), measure: jest.fn() }) }); });
-  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 650 } } }));
-  act(() => jest.advanceTimersByTime(50));
-  const stack = tree.root.findByType(HeroCardStack);
-  expect(stack.props.cardHeight).toBeGreaterThan(550);
-  expect(stack.props.top + stack.props.cardHeight).toBeLessThanOrEqual(650 - 8 - 44 - 8);
-  const { ComicSceneImage } = require('./HeroSceneImage');
-  const picture = tree.root.findAllByType(ComicSceneImage).find(node => typeof node.props.style.height === 'number')!;
-  expect(picture.props.style.height).toBeGreaterThan(450);
-  act(() => tree.unmount());
-});
+
 
 it('scales the main scene card up on iPad-sized stages', () => {
   const { ComicSceneDeck } = require('./HeroSceneDeck');
@@ -255,70 +234,7 @@ it.each([false, true])('hides the paused mate entrance with scenes present: %s',
   act(() => tree.unmount());
 });
 
-it('restores the selected front after detail and tab returns, rejecting detached stage sizes', () => {
-  let tree!: ReactTestRenderer;
-  let nativeHeight = 650;
-  const items = Array.from({ length: 8 }, (_, index) => ({ key: `scene-${index}`, label: `Scene ${index}` }));
-  const render = (focused: boolean, detailOpen = false) => <DayPlanTabFocusContext.Provider value={focused}><ComicSceneDeck items={items} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} detailOpen={detailOpen} /></DayPlanTabFocusContext.Provider>;
-  act(() => {
-    tree = create(render(true), { createNodeMock: () => ({ scrollTo: jest.fn(), measure: (complete: (x: number, y: number, width: number, height: number) => void) => complete(0, 0, 390, nativeHeight) }) });
-  });
-  act(() => jest.advanceTimersByTime(90));
-  const thumb = (label: string) => tree.root.findAll(node => node.props.accessibilityLabel === label && !!node.props.accessibilityState && typeof node.props.onPress === 'function')[0];
-  act(() => thumb('Scene 7').props.onPress());
-  const front = () => tree.root.findAllByType(View).find(node => node.props.collapsable === false && StyleSheet.flatten(node.props.style)?.width > 100)!;
-  act(() => tree.update(render(true, true)));
-  expect(StyleSheet.flatten(front().props.style).opacity).toBe(0);
-  act(() => tree.update(render(true, false)));
-  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 1 } } }));
-  act(() => jest.advanceTimersByTime(90));
-  expect(StyleSheet.flatten(front().props.style).opacity).toBe(1);
-  nativeHeight = 1;
-  act(() => tree.update(render(false)));
-  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 1 } } }));
-  nativeHeight = 650;
-  act(() => tree.update(render(true)));
-  act(() => jest.advanceTimersByTime(90));
-  expect(tree.root.findByType(HeroCardStack).props.height).toBeGreaterThan(500);
-  expect(StyleSheet.flatten(front().props.style).opacity).toBe(1);
-  expect(thumb('Scene 7').props.accessibilityState.selected).toBe(true);
-  act(() => tree.unmount());
-});
 
-it('scrolls overflowing thumbnail rows and keeps a short row still', () => {
-  let tree!: ReactTestRenderer;
-  const render = (count: number) => <ComicSceneDeck items={Array.from({ length: count }, (_, index) => ({ key: `thumb-${index}`, label: `Thumb ${index}` }))} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} />;
-  act(() => { tree = create(render(8), { createNodeMock: () => ({ scrollTo: jest.fn(), measure: (complete: (x: number, y: number, width: number, height: number) => void) => complete(0, 0, 390, 650) }) }); });
-  act(() => jest.advanceTimersByTime(90));
-  act(() => tree.root.findAllByProps({ testID: 'comic-scene-thumbs' })[0].props.onLayout({ nativeEvent: { layout: { width: 250 } } }));
-  const scroll = () => tree.root.findAllByProps({ testID: 'comic-scene-thumbs-scroll' })[0];
-  expect(scroll().props.scrollEnabled).toBe(true);
-  expect(scroll().props.disallowInterruption).toBe(true);
-  expect(StyleSheet.flatten(scroll().props.contentContainerStyle).justifyContent).toBe('flex-start');
-  act(() => tree.update(render(2)));
-  expect(scroll().props.scrollEnabled).toBe(false);
-  expect(StyleSheet.flatten(scroll().props.contentContainerStyle).justifyContent).toBe('center');
-  act(() => tree.unmount());
-});
-
-it('edits the active card in place and pauses deck gestures until saving', () => {
-  const onOpen = jest.fn();
-  const onEditCard = jest.fn();
-  let tree!: ReactTestRenderer;
-  act(() => { tree = create(<ComicSceneDeck items={[{ key: 'inline-one', label: '운동하기' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onEditCard={onEditCard} />); });
-  act(() => tree.root.findAllByProps({ testID: 'comic-scene-deck' })[0].props.onLayout({ nativeEvent: { layout: { width: 390, height: 650 } } }));
-  act(() => jest.advanceTimersByTime(50));
-  const caption = () => tree.root.findByType(HeroCardCaption);
-  expect(caption().props.onOpen).toBeUndefined();
-  act(() => caption().props.onEditingChange(true));
-  expect(tree.root.findByType(HeroCardStack).props.swipeEnabled).toBe(false);
-  expect(tree.root.findByType(HeroCardStack).props.enabled).toBe(true);
-  expect(onOpen).not.toHaveBeenCalled();
-  act(() => { caption().props.onSave({ title: '아침 운동', memo: '개운하다.' }); caption().props.onEditingChange(false); });
-  expect(onEditCard).toHaveBeenCalledWith('inline-one', { title: '아침 운동', memo: '개운하다.' });
-  expect(tree.root.findByType(HeroCardStack).props.swipeEnabled).toBe(true);
-  act(() => tree.unmount());
-});
 
 it('keeps the edit icon in the return-animation front so the title does not shift during handoff', () => {
   const onOpen = jest.fn();
@@ -347,21 +263,7 @@ it('keeps the edit icon in the return-animation front so the title does not shif
   act(() => { front.unmount(); tree.unmount(); });
 });
 
-it('waits for stationary release before offering deletion and suppresses detail taps after a hold', () => {
-  const onOpen = jest.fn(); const onRemove = jest.fn();
-  let tree!: ReactTestRenderer;
-  act(() => { tree = create(<ComicSceneDeck items={[{ key: 'delete-photo', label: 'Photo' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={onOpen} onRemove={onRemove} />); });
-  const photo = tree.root.findAll(node => node.props.accessibilityLabel === 'Photo' && typeof node.props.onLongPress === 'function')[0];
-  expect(photo.props.delayLongPress).toBe(500);
-  act(() => photo.props.onLongPress());
-  expect(onRemove).not.toHaveBeenCalled();
-  act(() => photo.props.onPress());
-  expect(onOpen).not.toHaveBeenCalled();
-  act(() => tree.root.findByType(HeroCardStack).props.onCardHold(160, 80));
-  expect(onRemove).toHaveBeenCalledWith('delete-photo');
-  expect(onOpen).not.toHaveBeenCalled();
-  act(() => tree.unmount());
-});
+
 
 it('animates an appended card into the stack without replaying on memo edits', () => {
   const timing = jest.spyOn(Animated, 'timing');
@@ -427,10 +329,39 @@ it('keeps added photos in a single scatter surface even with a saved page layout
   let tree!: ReactTestRenderer;
   act(() => { tree = create(render(5)); });
   try {
+    const deckLayer = tree.root.findAllByProps({ testID: 'comic-card-deck-layer' })[0];
+    const gridLayer = tree.root.findAllByProps({ testID: 'comic-card-grid-layer' })[0];
+    expect(deckLayer.props.style[1].opacity.__getValue()).toBe(0);
+    expect(gridLayer.props.style[1].opacity.__getValue()).toBe(1);
     act(() => { tree.update(render(9)); jest.runAllTimers(); });
     const grid = tree.root.findAllByProps({ testID: 'comic-card-grid-layout' })[0];
     expect(grid.findAllByType(ComicSceneImage)).toHaveLength(9);
     expect(grid.props.children).toHaveLength(9);
     expect(tree.root.findAllByProps({ testID: 'comic-card-overview' })[0].props.removeClippedSubviews).toBe(false);
   } finally { act(() => tree.unmount()); saveComicBoardMode(previousMode); }
+});
+
+it('opens photo addition from the camera resting on the main duvet overview', () => {
+  const addPhoto = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<SafeAreaInsetsContext.Provider value={{ top: 0, right: 0, bottom: 34, left: 0 }}><ComicDayBoard diaryTitle="오늘" overviewOpen items={[{ key: 'camera-photo', label: '사진', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} onAddPhoto={addPhoto} /></SafeAreaInsetsContext.Provider>); });
+  const camera = tree.root.findAllByProps({ testID: 'hero-duvet-camera' })[0];
+  const image = tree.root.findAllByProps({ testID: 'hero-duvet-camera-image' })[0];
+  expect(StyleSheet.flatten(image.props.style)).toEqual(expect.objectContaining({ width: '100%', height: '100%' }));
+  expect(image.props.resizeMode).toBe('contain');
+  expect(camera.props.accessibilityRole).toBe('button');
+  act(() => camera.props.onPress());
+  expect(addPhoto).toHaveBeenCalledTimes(1);
+  act(() => tree.unmount());
+});
+
+it('closes the horizontal carousel with X and hides X in the overview', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<SafeAreaInsetsContext.Provider value={{ top: 0, right: 0, bottom: 34, left: 0 }}><ComicDayBoard diaryTitle="Diary" items={[{ key: 'one', label: 'Photo', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} /></SafeAreaInsetsContext.Provider>); });
+  const close = () => tree.root.findAll(node => node.props.testID === 'comic-close-carousel' && typeof node.props.onPress === 'function');
+  expect(close()).toHaveLength(1);
+  act(() => close()[0].props.onPress());
+  expect(close()).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'comic-card-grid-layer' })[0].props.pointerEvents).toBe('auto');
+  act(() => tree.unmount());
 });

@@ -1,3 +1,5 @@
+import { useDeviceEvents } from '@features/apple-calendar/useDeviceEvents';
+import { eventsOnDay } from '@features/apple-calendar/calendarDates';
 import { BackChevron } from '@shared/ui/icon-symbol';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { penContour } from '@shared/ui/pen-frame';
@@ -20,8 +22,17 @@ import { ComicSceneImage } from './HeroSceneImage';
 
 const COVER_KEY = 'pokit:comic-calendar-covers:v1';
 export function HeroCalendarIcon({ ink, size = 24 }: { ink: string; size?: number }) {
-  return <Svg width={size} height={size} viewBox="0 0 28 28" accessible={false}>
-    <Path d="M5 6Q14 5.4 24 6L23.8 24 4.5 24.5 4.8 6M5 11L24 10.7M9 3L9 8M20 3L20 8M9 15L11 15M16 15L18 15M9 20L11 20M16 20L18 20" stroke={ink} strokeWidth={1.3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  return <Svg width={size} height={size} viewBox="0 0 40 40" accessible={false}>
+    {/* Layered paper edges, metal binding, and a folded lower corner. */}
+    <Path d="M7 10 35 8.8 36 35 8 36Z" fill="#B9B6AC" opacity={0.2} />
+    <Path d="M6 8.5 33.5 8 34 34 6.5 35Z" fill="#E5E2D8" stroke={ink} strokeWidth={0.7} strokeLinejoin="round" />
+    <Path d="M5.5 6.5Q19 5.8 33 6.5L32.8 29.5 28.5 33 5.8 33.5Z" fill="#FAF9F3" stroke={ink} strokeWidth={1.05} strokeLinejoin="round" />
+    <Path d="M6 7h26.5v7H6Z" fill="#DADFD4" />
+    <Path d="M6 14h26.5M28.5 33v-4l4.3.5" fill="none" stroke={ink} strokeWidth={0.65} strokeLinejoin="round" />
+    <Path d="M11 9V4.8q0-2.3 1.7-2.3t1.7 2.3V8M24 9V4.8q0-2.3 1.7-2.3t1.7 2.3V8" fill="none" stroke={ink} strokeWidth={1.15} strokeLinecap="round" />
+    <Path d="M9.5 18h2m4.5 0h2m4.5 0h2m-15 5h2m4.5 0h2m4.5 0h2m-15 5h2m4.5 0h2" fill="none" stroke={ink} strokeWidth={1.15} strokeLinecap="round" />
+    <Path d="M21 20.4q4-1.5 5.2 1.2 1 3-2.2 3.5-3.6.5-3-2.6" fill="none" stroke="#A56B53" strokeWidth={0.8} strokeLinecap="round" />
+    <Path d="m8 35 22-.5" stroke={ink} strokeWidth={0.45} opacity={0.4} />
   </Svg>;
 }
 /** A blank sheet with a gently curled corner: no diary on this date yet. */
@@ -64,6 +75,8 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
   const days = comicCalendarDays(month);
   const cell = gridWidth / 7;
   const rowHeight = Math.max(86, Math.ceil((cell - 12) * 1.2 + 44));
+  const linked = useDeviceEvents(month.getFullYear(), month.getMonth(), locale === 'ko');
+  const selectedEvents = eventsOnDay(linked.events, parseLocalDateKeyToDate(selected)!);
   const selectedDiaries = grouped.get(selected) ?? [];
   const selectedDate = parseLocalDateKeyToDate(selected)!;
   const move = (delta: number) => {
@@ -96,11 +109,17 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
             const chosen = selected === key;
             return <Pressable key={key} testID={`comic-calendar-day-${key}`} accessibilityRole="button" accessibilityLabel={`${key}, ${t('comicCalendar.diaryCount', { count: records.length })}`} accessibilityState={{ selected: chosen }} onPress={() => selectDate(key)} style={[s.day, { width: `${100 / 7}%`, height: rowHeight }]}>
               <View style={s.dateNumber}>{chosen ? <Svg width={30} height={28} viewBox="0 0 30 28" style={StyleSheet.absoluteFill} accessible={false}><Path d="M15 2C32 0 32 24 15 26C-2 28-3 4 15 2Z" fill="none" stroke={ink} strokeWidth={1} /></Svg> : null}<ThemedText style={{ color: key === today || chosen ? ink : muted, fontSize: 14, lineHeight: 22 }}>{day}</ThemedText></View>
+              {eventsOnDay(linked.events, new Date(month.getFullYear(), month.getMonth(), day)).length ? <View testID={`calendar-event-dot-${key}`} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ink, alignSelf: 'center', marginVertical: 2 }} /> : null}
               {cover ? <View style={{ alignItems: 'center' }}><HangingScene scene={cover.scene} width={Math.max(20, cell - 12)} stacked={records.reduce((sum, diary) => sum + diary.scenes.length, 0) > 1} angle={day % 2 ? -2 : 2} isDark={isDark} /></View> : null}
             </Pressable>;
           })}</View>
           <View style={s.detail}>
             <ThemedText accessibilityRole="header" style={[s.detailDate, { color: ink }]}>{selectedDate.toLocaleDateString(locale ?? 'ko', { month: 'long', day: 'numeric', weekday: 'long' })}</ThemedText>
+            {linked.error ? <ThemedText accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 13 }}>{linked.error}</ThemedText> : null}
+            {selectedEvents.map((event, index) => <View key={`${event.id}:${event.startDate}:${index}`} style={{ flexDirection: 'row', gap: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: muted }}>
+              <ThemedText style={{ color: muted, fontSize: 13, width: 56 }}>{event.allDay ? (locale === 'ko' ? '종일' : 'All day') : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+              <ThemedText style={{ color: ink, flex: 1, fontSize: 16 }}>{event.title || (locale === 'ko' ? '제목 없는 일정' : 'Untitled event')}</ThemedText>
+            </View>)}
             {!selectedDiaries.length ? <View style={s.empty} accessible accessibilityRole="image" accessibilityLabel={t('comicCalendar.empty')}><EmptyDiaryIcon ink={muted} /></View> : <ScrollView key={selected} ref={diaryScroll} testID="comic-calendar-diary-scroll" nestedScrollEnabled showsVerticalScrollIndicator={false} scrollEventThrottle={16} onScroll={({ nativeEvent }) => { diaryOffset.current = nativeEvent.contentOffset.y; setAtEnd(nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >= nativeEvent.contentSize.height - 4); }} style={{ maxHeight: diaryRowHeight }} contentContainerStyle={{ paddingBottom: 0 }}>
               {selectedDiaries.map((diary, diaryIndex) => <View key={diary.id} onLayout={diaryIndex === 0 ? event => { const height = Math.ceil(event.nativeEvent.layout.height); if (height > 0) setDiaryRowHeight(height); } : undefined}>
               <Pressable accessibilityRole="button" onPress={() => { tapHaptic(); onOpen(diary.id); }} style={s.diaryHeading}><ThemedText numberOfLines={1} style={{ flex: 1, color: ink, fontSize: 15 }}>{diary.title}</ThemedText><ThemedText style={{ color: muted }}>→</ThemedText></Pressable>

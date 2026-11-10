@@ -1,11 +1,12 @@
 import { comicDiaryDate } from './heroCalendar';
 import type { ComicDiary } from './heroDiaryStorage';
 export type DiaryDateGroup = { date: string; diaries: ComicDiary[] };
-/** Keep undated/empty old diaries visible; group by creation day, like the calendar. */
-export function groupDiaryLibrary(diaries: ComicDiary[]): DiaryDateGroup[] {
+/** Keep undated/empty diaries visible and preserve each diary’s original date. */
+export function groupDiaryLibrary(diaries: ComicDiary[], period: 'day' | 'month' = 'day'): DiaryDateGroup[] {
   const groups = new Map<string, ComicDiary[]>();
   for (const diary of diaries) {
-    const date = comicDiaryDate(diary) ?? 'undated';
+    const day = comicDiaryDate(diary);
+    const date = day ? period === 'month' ? day.slice(0, 7) : day : 'undated';
     groups.set(date, [...(groups.get(date) ?? []), diary]);
   }
   return [...groups].map(([date, items]) => ({ date, diaries: [...items].sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id)) }))

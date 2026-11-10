@@ -6,12 +6,12 @@ const key = 'pokit:hero-card-layout:v1';
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 export function loadHeroCardLayout(): HeroCardLayout {
-  return localStorageClient.getItemRaw(key) === 'carousel' ? 'carousel' : 'stack';
+  return 'carousel';
 }
 export function saveHeroCardLayout(layout: HeroCardLayout) {
-  localStorageClient.setItemRaw(key, layout);
+  localStorageClient.setItemRaw(key, 'carousel');
   listeners.forEach(listener => listener());
 }
 export function useHeroCardLayout() {
-  return useSyncExternalStore(subscribe, loadHeroCardLayout, () => 'stack' as const);
+  return useSyncExternalStore(subscribe, loadHeroCardLayout, () => 'carousel' as const);
 }

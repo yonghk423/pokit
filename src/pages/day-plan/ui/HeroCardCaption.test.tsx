@@ -176,3 +176,12 @@ it('opens writing from the whole non-photo area without showing card action icon
     expect(onSave).not.toHaveBeenCalled();
   } finally { act(() => tree.unmount()); }
 });
+
+it('keeps the front caption free of body text while retaining the story for editing', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCardCaption tapToEdit showMemo={false} title="오늘" memo="뒷면에만 남길 이야기" number={1} ink="#222" muted="#777" onSave={jest.fn()} />); });
+  expect(tree.root.findAllByProps({ testID: 'hero-card-memo' })).toHaveLength(0);
+  act(() => tree.root.findAllByProps({ testID: 'hero-card-caption-write' })[0].props.onPress());
+  expect(tree.root.findAll(node => node.props.value === '뒷면에만 남길 이야기').length).toBeGreaterThan(0);
+  act(() => tree.unmount());
+});

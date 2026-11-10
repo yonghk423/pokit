@@ -1,3 +1,4 @@
+import { cleanupDeletedHeroArtwork, clearLegacyHeroImageCache } from './heroArtworkCleanup';
 import * as fs from 'expo-file-system/legacy';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { notifyHeroAiLibraryChanged } from './heroAiLibrary';
@@ -24,23 +25,26 @@ export function saveHeroOriginalPhotoMetadata(image: OriginalPhotoEntry) {
   notifyHeroAiLibraryChanged();
 }
 
-/** Hide collection entries without deleting photos still used by diary cards. */
+/** Hide immediately and reclaim unreferenced originals, preserving existing diary cards. */
 export function deleteHeroOriginalPhotoLibraryImages(uris: readonly string[]) {
   const deleted = new Set(localStorageClient.getJson<string[]>(deletedKey) ?? []);
   uris.forEach(uri => { const name = uri.split('/').pop(); if (name) deleted.add(name); });
   localStorageClient.setJson(deletedKey, [...deleted]);
+  void cleanupDeletedHeroArtwork();
   notifyHeroAiLibraryChanged();
 }
 
 /** One collection backed by durable originals, including uploads predating the gallery. */
 export async function loadHeroOriginalPhotoLibrary(): Promise<OriginalPhotoEntry[]> {
   if (!fs.documentDirectory) return [];
+  void cleanupDeletedHeroArtwork();
+  void clearLegacyHeroImageCache();
   const folder = `${fs.documentDirectory}hero-photos/`;
-  if (!(await fs.getInfoAsync(folder)).exists) return [];
+  const folderExists = (await fs.getInfoAsync(folder)).exists;
   const deleted = new Set(localStorageClient.getJson<string[]>(deletedKey) ?? []);
-  const names = (await fs.readDirectoryAsync(folder)).filter(name => /^photo-[a-zA-Z0-9-]+\.(jpe?g|png|heic|heif|webp|gif|avif)$/i.test(name) && !deleted.has(name));
+  const names = (folderExists ? await fs.readDirectoryAsync(folder) : []).filter(name => /^photo-[a-zA-Z0-9-]+\.(jpe?g|png|heic|heif|webp|gif|avif)$/i.test(name) && !deleted.has(name));
   const diaries = localStorageClient.getJson<{ diaries?: { scenes?: { artworkUri?: string; title?: string; memo?: string }[] }[] }>('pokit:comic-diaries:v1');
-  const entries = await Promise.all(names.map(async name => {
+  const entries: (OriginalPhotoEntry | null)[] = await Promise.all(names.map(async name => {
     const uri = folder + name;
     const info = await fs.getInfoAsync(uri);
     if (!info.exists || info.isDirectory || info.size <= 0) return null;
@@ -49,5 +53,14 @@ export async function loadHeroOriginalPhotoLibrary(): Promise<OriginalPhotoEntry
     const existing = scenes.find(scene => scene.artworkUri?.split('/').pop() === name);
     return { uri, title: caption?.title ?? existing?.title, memo: caption?.memo ?? existing?.memo, createdAt: caption?.createdAt ?? info.modificationTime * 1000 };
   }));
+  const restored = localStorageClient.getJson<OriginalPhotoEntry[]>('pokit:drive-original-gallery:v1') ?? [];
+  for (const image of restored) {
+    if (deleted.has(image.uri.split('/').pop() ?? '')) continue;
+    const info = await fs.getInfoAsync(image.uri);
+    if (info.exists && !info.isDirectory && info.size > 0 && !entries.some(entry => entry?.uri === image.uri)) {
+      const caption = localStorageClient.getJson<Omit<OriginalPhotoEntry, 'uri'>>(captionKey(image.uri));
+      entries.push({ ...image, ...caption });
+    }
+  }
   return entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) || b.uri.localeCompare(a.uri));
 }

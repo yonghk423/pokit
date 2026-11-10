@@ -19,7 +19,7 @@ const COLOR_STYLE_VERSION = JSON.stringify([2, COMIC_PAPER_COLORS, COMIC_PEN_COL
 const sceneTimes = ['07:10', '07:45', '09:20', '13:10', '18:30', '22:15', '14:00', '15:30', '12:40', '17:00', '08:10', '09:00', '13:00', '16:30', '17:20'];
 function bookstoreScene(locale: AppLocale): ComicDayScene {
   const [title, memo, tasks] = bookstoreSceneCopy[locale];
-  return { id: `mock-scene:${locale}:bookstore-daily`, title, memo, image: '56-bookstore', time: '19:10',
+  return { id: `mock-scene:${locale}:bookstore-daily`, title, memo, image: '01-exercise', time: '19:10',
     paper: '#FFFFFF', pen: '#252822', todos: tasks.map((text, i) => ({ id: `mock-bookstore-task:${i}`, text, completed: i === 0 })) };
 }
 /** Add new preview content without replacing diary edits or mate records. */
@@ -29,7 +29,7 @@ function addBookstoreToExistingMock(locale: AppLocale): boolean {
   const daily = library?.diaries?.find(diary => diary.id === dailyId);
   if (!library || !daily) return false;
   const seed = bookstoreScene(locale);
-  const existingBookstore = daily.scenes.find(scene => scene.id === seed.id || scene.image === '56-bookstore');
+  const existingBookstore = daily.scenes.find(scene => scene.id === seed.id || scene.image === '01-exercise');
   if (existingBookstore) {
     // An earlier preview may have saved the artwork without the mock memo or todos.
     // Fill only empty fields so any edits already made by the user stay intact.

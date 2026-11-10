@@ -114,9 +114,9 @@ export function PlanModeSwitch({
   const showModeButtons = visibleModes.length > 1;
 
   return (
-    <View style={styles.root}>
-      <View style={styles.bleed}>
-        <View testID="day-plan-header-row"
+    <View pointerEvents="box-none" style={styles.root}>
+      <View pointerEvents="box-none" style={styles.bleed}>
+        <View pointerEvents="box-none" testID="day-plan-header-row"
           style={[
             styles.row,
             { backgroundColor: c.containerLow, borderBottomColor: c.border },
@@ -154,8 +154,8 @@ export function PlanModeSwitch({
               );
             })}
           </View> : null}
-          {fixedMiddle ? <View style={[styles.fixedMiddle, { flexDirection: 'row' }]}>{leading ? <View testID="day-plan-header-leading">{leading}</View> : null}<View style={{ flex: 1, minWidth: 0 }}>{middle}</View></View> : middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
-          {fixedMiddle ? <View testID="day-plan-header-center-actions" style={styles.fixedCenter}>{center}</View> : null}
+          {fixedMiddle ? <View pointerEvents="box-none" style={[styles.fixedMiddle, { flexDirection: 'row' }]}>{leading ? <View testID="day-plan-header-leading">{leading}</View> : null}<View pointerEvents="box-none" style={{ flex: 1, minWidth: 0 }}>{middle}</View></View> : middle ? <ScrollView testID="day-plan-header-layout-actions" horizontal showsHorizontalScrollIndicator={false} style={styles.middle} contentContainerStyle={styles.middleContent}>{middle}</ScrollView> : null}
+          {fixedMiddle ? <View pointerEvents="box-none" testID="day-plan-header-center-actions" style={styles.fixedCenter}>{center}</View> : null}
           {trailing ? <View style={[styles.trailing, trailingAlign === 'start' && styles.trailingStart, fixedMiddle && styles.fixedTrailing]}>{trailing}</View> : null}
         </View>
       </View>

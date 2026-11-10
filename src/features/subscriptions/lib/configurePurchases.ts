@@ -7,8 +7,8 @@ let configured = false;
 
 /** 앱 기동 시 1회. 웹·키 없음은 no-op. */
 export async function configurePurchases(): Promise<boolean> {
-  if (configured) return true;
   if (!REVENUECAT_ENABLED) return false;
+  if (configured) return true;
   if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
     return false;
   }
@@ -33,7 +33,7 @@ export async function configurePurchases(): Promise<boolean> {
 }
 
 export function isPurchasesConfigured(): boolean {
-  return configured;
+  return REVENUECAT_ENABLED && configured;
 }
 
 /** 테스트용 */

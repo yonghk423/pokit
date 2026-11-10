@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useLayoutEffect } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import Purchases from 'react-native-purchases';
@@ -23,6 +24,7 @@ function Harness() {
 }
 const monthly = { product: { identifier: 'monthly', priceString: '₩3,000' } };
 beforeEach(() => {
+  FEATURE_FLAGS.proSubscriptions = true;
   jest.clearAllMocks();
   mockState.isConfigured = true;
   mockState.customerInfo = null;
@@ -108,4 +110,13 @@ it('keeps Test Store management separate from real store changes', async () => {
   await mount();
   await act(async () => { expect(await hook.manage()).toBe('test_store'); });
   expect(mockState.refreshCustomerInfo).not.toHaveBeenCalled();
+});
+
+afterEach(() => { FEATURE_FLAGS.proSubscriptions = false; });
+it('does not load products or purchase while subscriptions are paused', async () => {
+  FEATURE_FLAGS.proSubscriptions = false;
+  await act(async () => { tree = create(<Harness />); });
+  expect(Purchases.getOfferings).not.toHaveBeenCalled();
+  expect(await hook.transact('monthly')).toBe('unavailable');
+  expect(Purchases.purchasePackage).not.toHaveBeenCalled();
 });

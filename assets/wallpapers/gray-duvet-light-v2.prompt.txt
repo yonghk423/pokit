@@ -1,0 +1,4 @@
+Tool: built-in image_gen, opaque reference edit.
+Source: gray-duvet-v1.jpg.
+Prompt: Edit only the exposure and gray color of this cotton duvet background. Make it substantially brighter, an airy near-white pearl/light gray cotton bedspread in bright diffuse daylight (main fabric approximately #E7E7E4, folds #CDCFCA, highlights #F5F5F0). Preserve exact soft broad wrinkles, fabric weave, top-down photograph and portrait framing. Lift shadows; low contrast but still visibly a soft cloth duvet. No paper, objects, text, vignette or borders. Entire image filled with light gray fabric. This replaces a too-dark gray app background.
+Delivery: 1600px long edge, JPEG quality 80.

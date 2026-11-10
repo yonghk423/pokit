@@ -77,6 +77,35 @@ class PokitWidgetSync: NSObject {
     }
   }
 
+  /// Copy the rendered calendar into App Group storage before releasing the JS temporary file.
+  @objc func syncCalendarWidgetImage(_ uri: String, month: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    comicImageQueue.async {
+      guard let source = self.resolveArtworkSourceURL(uri),
+            let image = UIImage(contentsOfFile: source.path),
+            let data = image.jpegData(compressionQuality: 0.92),
+            let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier),
+            let defaults = UserDefaults(suiteName: PokitAppGroup.identifier)
+      else { reject("calendar_image_unavailable", "Calendar render unavailable", nil); return }
+      do {
+        let filename = "calendar-current.jpg"
+        let target = container.appendingPathComponent(filename)
+        try data.write(to: target, options: .atomic)
+        defaults.set(filename, forKey: "pokit.calendar-widget.image")
+        defaults.set(month, forKey: "pokit.calendar-widget.month")
+        defaults.synchronize()
+        WidgetCenter.shared.reloadTimelines(ofKind: "PokitComicSceneWidget")
+        // Only the current widget handoff image is retained, never a render history.
+        defaults.removeObject(forKey: "pokit.calendar-widget.previous")
+        if let files = try? FileManager.default.contentsOfDirectory(at: container, includingPropertiesForKeys: nil) {
+          for file in files where file.lastPathComponent.hasPrefix("calendar-") && file.pathExtension == "jpg" && file.lastPathComponent != filename {
+            try? FileManager.default.removeItem(at: file)
+          }
+        }
+        resolve(nil)
+      } catch { reject("calendar_image_write", "Calendar render could not be saved", error) }
+    }
+  }
+
   private func comicArtworkDirectory() -> URL? {
     guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier)
     else { return nil }

@@ -5,7 +5,7 @@
 "widget.routine.intentDescription" = "홈 화면에 보여줄 할 일을 하나 고르세요. 위젯마다 다르게 고를 수 있어요.";
 "widget.routine.pick" = "할 일 고르기";
 
-"widget.comic.name" = "오늘의 주인공";
+"widget.comic.name" = "Daylight";
 "widget.comic.galleryDescription" = "오늘의 주인공에서 장면 하나를 골라 크게 보여 줘요.";
 "widget.comic.intentDescription" = "홈 화면에 보여줄 오늘의 주인공 장면을 고르세요.";
 "widget.comic.pick" = "장면 고르기";
@@ -24,7 +24,7 @@
 "widget.note.galleryDescription" = "노트 페이지를 위젯마다 골라 홈 화면에 고정해요.";
 "widget.note.intentDescription" = "홈 화면에 고정할 노트 페이지를 고르세요.";
 "widget.note.pick" = "노트 펼치기";
-"widget.note.openDescription" = "오늘의 주인공 노트 화면을 엽니다.";
+"widget.note.openDescription" = "Daylight 노트 화면을 엽니다.";
 "widget.note.emptyMessage" = "노트 위젯에 보여줄 메모가 없어요";
 
 "widget.today.name" = "오늘의 주인공";

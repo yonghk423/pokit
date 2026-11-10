@@ -1,3 +1,4 @@
+import { TrashIcon } from './TrashIcon';
 import { BackChevron } from './BackChevron';
 import { getPreparedIllustration } from './illustrationCache';
 import { controlIllustrationSources } from './controlIllustrationSources';
@@ -22,6 +23,7 @@ export function IconSymbol({
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
+  if (typeof name === 'string' && (name === 'trash' || name.startsWith('trash.') || name.startsWith('document.on.trash'))) return <View style={style}><TrashIcon size={size} color={color} /></View>;
   if (name === 'chevron.left' || name === 'arrow.left' || name === 'arrow.backward') return <View style={style}><BackChevron color={color} /></View>;
   const illustrationAliases: Record<string, string> = { 'washer.fill': 'routine:laundry', washer: 'routine:laundry', 'bed.double.fill': 'routine:bed-making', 'bed.double': 'routine:bed-making' };
   const source = typeof name === 'string' ? (controlIllustrationSources[name] ?? routineIllustrationSources[illustrationAliases[name] ?? name]) : undefined;

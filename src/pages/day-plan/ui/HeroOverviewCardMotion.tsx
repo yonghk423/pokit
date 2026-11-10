@@ -29,6 +29,7 @@ export function HeroOverviewCardMotion({ children, progress, index, count, sourc
   } : { opacity: 1, transform: [{ rotate: `${targetRotation}deg` }] };
   return <Animated.View testID={`comic-overview-motion-${index}`} pointerEvents="box-none" onLayout={({ nativeEvent: { layout } }) => {
     onMeasureHeight?.(layout.height);
+    if (!enabled) return;
     setFrame(previous => previous.x === layout.x && previous.y === layout.y && previous.width === layout.width && previous.height === layout.height ? previous : layout);
   }} style={[style, { zIndex: targetZIndex ?? count - depth }, motion]}>{children}</Animated.View>;
 }

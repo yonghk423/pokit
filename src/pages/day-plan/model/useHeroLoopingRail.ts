@@ -7,7 +7,7 @@ const SPEED = 18;
 const RESUME_DELAY = 1800;
 
 /** Imperative native scrolling keeps animation frames out of React rendering. */
-export function useHeroLoopingRail(span: number, ready: boolean, direction: 'left' | 'right' = 'right', autoScroll = true) {
+export function useHeroLoopingRail(span: number, ready: boolean, direction: 'left' | 'right' = 'right', autoScroll = true, looping = true) {
   const focused = useContext(DayPlanTabFocusContext);
   const [active, setActive] = useState(AppState.currentState === 'active');
   const [reduced, setReduced] = useState(true);
@@ -17,6 +17,7 @@ export function useHeroLoopingRail(span: number, ready: boolean, direction: 'lef
   const touching = useRef(false);
   const dragging = useRef(false);
   const pausedUntil = useRef(0);
+  const travel = useRef(direction === 'left' ? 1 : -1);
 
   useEffect(() => {
     let live = true;
@@ -31,9 +32,10 @@ export function useHeroLoopingRail(span: number, ready: boolean, direction: 'lef
 
   useEffect(() => {
     if (!ready) return;
-    position.current = span;
-    ref.current?.scrollTo({ x: span, y: 0, animated: false });
-  }, [span, ready]);
+    position.current = looping ? span : direction === 'left' ? 0 : span;
+    travel.current = direction === 'left' ? 1 : -1;
+    ref.current?.scrollTo({ x: position.current, y: 0, animated: false });
+  }, [span, ready, looping, direction]);
 
   const autoPlaying = autoScroll && ready && focused && active && !reduced && !screenReader;
   useEffect(() => {
@@ -44,14 +46,20 @@ export function useHeroLoopingRail(span: number, ready: boolean, direction: 'lef
       const elapsed = previous === undefined ? 0 : Math.min(timestamp - previous, 32);
       previous = timestamp;
       if (!touching.current && !dragging.current && Date.now() >= pausedUntil.current) {
-        position.current = wrapHeroRailOffset(position.current + (direction === 'left' ? 1 : -1) * SPEED * elapsed / 1000, span);
+        const next = position.current + travel.current * SPEED * elapsed / 1000;
+        if (looping) position.current = wrapHeroRailOffset(next, span);
+        else {
+          position.current = Math.max(0, Math.min(span, next));
+          if (next >= span) travel.current = -1;
+          else if (next <= 0) travel.current = 1;
+        }
         ref.current?.scrollTo({ x: position.current, y: 0, animated: false });
       }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [autoPlaying, span, direction]);
+  }, [autoPlaying, span, direction, looping]);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (touching.current || dragging.current || Date.now() < pausedUntil.current) position.current = event.nativeEvent.contentOffset.x;

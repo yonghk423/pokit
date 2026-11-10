@@ -91,18 +91,19 @@ export function visibleDeckProgress(progress: number, mountedWindow: number) {
 }
 
 /** Loose prints share a footprint; their corners fan above and beside the top sheet. */
-export function paperPrintPose(depth: number, direction = 1) {
+export function paperPrintPose(depth: number, _direction = 1) {
   'worklet';
-  const pose = overlayCardPose(depth, direction);
+  // Reverse turns retrace the same continuous path. Switching pose families
+  // near integer depths made the sheet jump just before it settled.
+  const pose = forwardCardPose(depth);
   const d = Math.max(0, Math.min(2, depth));
   const first = Math.min(1, d);
   const second = Math.max(0, d - 1);
-  const resting = Math.max(0, 1 - Math.abs(depth - Math.round(depth)) * 2);
   return {
     ...pose,
-    x: pose.x + (0.025 * first - 0.055 * second) * resting,
-    y: pose.y - (24 * first + 19 * second) * resting,
-    scale: pose.scale + (0.02 * first + 0.015 * second) * resting,
-    rotate: pose.rotate + (-8 * first + 10 * second) * resting,
+    x: pose.x + 0.025 * first - 0.055 * second,
+    y: pose.y - 24 * first - 19 * second,
+    scale: pose.scale + 0.02 * first + 0.015 * second,
+    rotate: pose.rotate - 8 * first + 10 * second,
   };
 }

@@ -1,3 +1,4 @@
+import { cleanupDeletedHeroArtwork, clearLegacyHeroImageCache } from './heroArtworkCleanup';
 import { resolveHeroArtworkUri } from './heroArtworkUri';
 import * as fs from 'expo-file-system/legacy';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -6,11 +7,12 @@ import type { PendingHeroAiJob, HeroAiResult } from './heroAiClient';
 export type HeroAiLibraryImage = HeroAiResult & { title?: string; memo?: string; createdAt?: number };
 const metadataKey = (uri: string) => `pokit:hero-ai-caption:${uri.split('/').pop()}`;
 const deletedKey = 'pokit:hero-ai-library-deleted:v1';
-/** Artwork can also belong to a diary. Remove it from the collection without breaking that diary. */
+/** Hide immediately, then reclaim the file when no diary or other saved record uses it. */
 export function deleteHeroAiLibraryImages(uris: readonly string[]) {
   const deleted = new Set(localStorageClient.getJson<string[]>(deletedKey) ?? []);
   uris.forEach(uri => { const filename = uri.split('/').pop(); if (filename) deleted.add(filename); });
   localStorageClient.setJson(deletedKey, [...deleted]);
+  void cleanupDeletedHeroArtwork();
   notifyHeroAiLibraryChanged();
 }
 export function saveHeroAiLibraryMetadata(uri: string, job: PendingHeroAiJob) {
@@ -35,6 +37,8 @@ function metadataFor(uri: string): Partial<HeroAiLibraryImage> {
  */
 export async function loadHeroAiLibrary(): Promise<HeroAiLibraryImage[]> {
   if (!fs.documentDirectory) return [];
+  void cleanupDeletedHeroArtwork();
+  void clearLegacyHeroImageCache();
   const folder = `${fs.documentDirectory}hero-ai/`;
   const restored = (localStorageClient.getJson<{ images?: HeroAiLibraryImage[] }>('pokit:drive-gallery')?.images ?? []).filter(image => !deletedRestored(image.uri)).map(image => ({ ...image, uri: resolveHeroArtworkUri(image.uri) }));
   if (!(await fs.getInfoAsync(folder)).exists) return restored;

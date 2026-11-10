@@ -6,7 +6,7 @@ import { useHeroLoopingRail } from './useHeroLoopingRail';
 import { wrapHeroRailOffset } from '../lib/heroLoopingRail';
 
 let result!: ReturnType<typeof useHeroLoopingRail>;
-function Probe({ direction = 'right' }: { direction?: 'left' | 'right' }) { const rail = useHeroLoopingRail(600, true, direction); useEffect(() => { result = rail; }); return null; }
+function Probe({ direction = 'right', looping = true }: { direction?: 'left' | 'right'; looping?: boolean }) { const rail = useHeroLoopingRail(600, true, direction, true, looping); useEffect(() => { result = rail; }); return null; }
 let tick: FrameRequestCallback;
 const originalAppState = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 beforeEach(() => {
@@ -77,5 +77,22 @@ it('moves left when the initial chooser requests the reverse direction', async (
   Object.assign(result.ref, { current: { scrollTo } });
   tick(0); tick(16);
   expect(scrollTo.mock.calls.at(-1)?.[0].x).toBeCloseTo(600.288);
+  act(() => tree.unmount());
+});
+
+it('reverses at the end of a single list without jumping to a duplicate copy', async () => {
+  let now = 10000;
+  jest.spyOn(Date, 'now').mockImplementation(() => now);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<Probe direction="left" looping={false} />); });
+  const scrollTo = jest.fn();
+  Object.assign(result.ref, { current: { scrollTo } });
+  result.onTouchStart();
+  result.onScroll({ nativeEvent: { contentOffset: { x: 599.9 } } } as Parameters<typeof result.onScroll>[0]);
+  result.onTouchEnd(); now += 2000;
+  tick(0); tick(16);
+  expect(scrollTo.mock.calls.at(-1)?.[0].x).toBe(600);
+  tick(32);
+  expect(scrollTo.mock.calls.at(-1)?.[0].x).toBeCloseTo(599.712);
   act(() => tree.unmount());
 });

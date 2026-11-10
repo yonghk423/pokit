@@ -41,3 +41,13 @@ it('loads older uploads with diary captions and keeps collection deletion indepe
   expect((await loadHeroOriginalPhotoLibrary()).map(image => image.uri)).toEqual([`file:///Documents/hero-photos/${name}`]);
   expect(localStorageClient.getJson('pokit:comic-diaries:v1')).toEqual({ diaries: [{ scenes: [{ artworkUri: `file:///old/Documents/hero-photos/${name}`, title: '이전 사진', memo: '기록' }] }] });
 });
+
+it('loads restored originals even without an import folder and keeps their editable captions', async () => {
+  jest.mocked(fs.getInfoAsync).mockImplementation(async uri => uri.endsWith('hero-photos/') ? { exists: false, uri, isDirectory: false } : { exists: true, uri, isDirectory: false, size: 100, modificationTime: 100 });
+  const image = { uri: 'file:///Documents/drive-backups/restored.jpg', title: 'Restored', memo: 'My photo story', createdAt: 200000 };
+  localStorageClient.setJson('pokit:drive-original-gallery:v1', [image]);
+  expect(await loadHeroOriginalPhotoLibrary()).toEqual([image]);
+  saveHeroOriginalPhotoMetadata({ ...image, memo: 'Edited after restore' });
+  expect((await loadHeroOriginalPhotoLibrary())[0].memo).toBe('Edited after restore');
+  localStorageClient.removeItem('pokit:drive-original-gallery:v1');
+});

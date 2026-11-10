@@ -35,9 +35,23 @@ it('renders monochrome film without color even with saturation and temperature a
   expect(hasProPolaroidEffects({ film: 'monochrome' })).toBe(true);
 });
 
-it.each(['cool', 'sepia', 'pastel', 'vivid', 'rose', 'cinema'])('%s film changes color while preserving alpha and deterministic output', film => {
+it.each(['cool', 'sepia', 'pastel', 'vivid', 'rose', 'cinema', 'cream', 'olive', 'amber', 'disposable', 'bluehour', 'noir'])('%s film changes color while preserving alpha and deterministic output', film => {
   const result = adjustPolaroidPixels(pixel(), { film });
   expect(result).not.toEqual(pixel());
   expect(result).toEqual(adjustPolaroidPixels(pixel(), { film }));
   expect([result[3], result[7]]).toEqual([255, 128]);
+});
+
+it('keeps the stronger black-and-white filter neutral with color adjustments', () => {
+  const result = adjustPolaroidPixels(pixel(), { film: 'noir', saturation: 100, temperature: 70 });
+  for (let i = 0; i < result.length; i += 4) {
+    expect(result[i]).toBe(result[i + 1]);
+    expect(result[i + 1]).toBe(result[i + 2]);
+  }
+});
+it('gives each film a distinct result over a color and luminance range', () => {
+  const { POLAROID_FILMS } = jest.requireActual('./HeroPolaroidEffects');
+  const ramp = new Uint8ClampedArray([20, 25, 45, 255, 80, 120, 180, 255, 180, 80, 50, 128, 235, 225, 200, 0]);
+  const signatures = POLAROID_FILMS.map(({ value }: { value: string }) => Array.from(adjustPolaroidPixels(ramp.slice(), { film: value })).join(','));
+  expect(new Set(signatures).size).toBe(POLAROID_FILMS.length);
 });

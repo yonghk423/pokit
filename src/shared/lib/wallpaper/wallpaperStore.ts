@@ -3,16 +3,19 @@ import { localStorageClient } from '../storage/localStorageClient';
 
 export type AppWallpaper = 'default' | 'linen';
 export const WALLPAPER_KEY = 'pokit:app-wallpaper:v1';
-export const LINEN_WALLPAPER = require('../../../../assets/wallpapers/ivory-linen-v1.png');
 export const useWallpaperStore = create<{
   wallpaper: AppWallpaper;
   setWallpaper: (wallpaper: AppWallpaper) => void;
   hydrate: () => void;
 }>((set) => ({
   wallpaper: 'default',
-  setWallpaper: (wallpaper) => {
-    localStorageClient.setItemRaw(WALLPAPER_KEY, wallpaper);
-    set({ wallpaper });
+  // Retain the compatibility API while migrating old installations to the default.
+  setWallpaper: () => {
+    localStorageClient.removeItem(WALLPAPER_KEY);
+    set({ wallpaper: 'default' });
   },
-  hydrate: () => set({ wallpaper: localStorageClient.getItemRaw(WALLPAPER_KEY) === 'linen' ? 'linen' : 'default' }),
+  hydrate: () => {
+    localStorageClient.removeItem(WALLPAPER_KEY);
+    set({ wallpaper: 'default' });
+  },
 }));

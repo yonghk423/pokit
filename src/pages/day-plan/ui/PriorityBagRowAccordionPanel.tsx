@@ -43,7 +43,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
-import { PokitWeekTourLayoutNudgeSheet } from './PokitWeekTourLayoutNudgeSheet';
 import { PokitWeekTourPuzzleNudgeSheet } from './PokitWeekTourPuzzleNudgeSheet';
 import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
 
@@ -208,7 +207,7 @@ export function PriorityBagRowAccordionPanel({
   const [revision, setRevision] = useState(0);
   const [tourTipStep, setTourTipStep] = useState<number | null>(null);
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
-  const [layoutNudgeVisible, setLayoutNudgeVisible] = useState(false);
+  const layoutNudgeVisible = false;
   const [puzzleNudgeVisible, setPuzzleNudgeVisible] = useState(false);
   const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
@@ -454,31 +453,13 @@ export function PriorityBagRowAccordionPanel({
     setTourTipStep(null);
     setTourTipTaskId(null);
     // 「닫기」「알겠어요」모두 여기로 옴 — 체크리스트 전부 완료 여부와 무관, 1회만
-    // 레이아웃 안내 → 퍼즐 안내 (이미 본 단계는 건너뜀)
-    if (!loadPokitWeekTourLayoutNudgeSeen()) {
-      setTimeout(() => setLayoutNudgeVisible(true), 280);
-    } else {
-      queuePuzzleNudgeSoon();
-    }
+    markPokitWeekTourLayoutNudgeSeen();
+    queuePuzzleNudgeSoon();
   }, [queuePuzzleNudgeSoon, tourTipStep]);
 
   const confirmTourTip = useCallback(() => {
     closeTourTip();
   }, [closeTourTip]);
-
-  const dismissLayoutNudge = useCallback(() => {
-    markPokitWeekTourLayoutNudgeSeen();
-    setLayoutNudgeVisible(false);
-    queuePuzzleNudgeSoon();
-  }, [queuePuzzleNudgeSoon]);
-
-  const openLayoutFromNudge = useCallback(() => {
-    markPokitWeekTourLayoutNudgeSeen();
-    setLayoutNudgeVisible(false);
-    clearPuzzleNudgeTimer();
-    // 복귀 후 useFocusEffect에서 퍼즐 안내를 띄운다.
-    router.push('/layout-settings');
-  }, [clearPuzzleNudgeTimer, router]);
 
   const dismissPuzzleNudge = useCallback(() => {
     markPokitWeekTourPuzzleNudgeSeen();
@@ -707,12 +688,6 @@ export function PriorityBagRowAccordionPanel({
           isDark={isDark}
           onClose={closeTourTip}
           onConfirm={confirmTourTip}
-        />
-        <PokitWeekTourLayoutNudgeSheet
-          visible={layoutNudgeVisible}
-          isDark={isDark}
-          onClose={dismissLayoutNudge}
-          onOpenLayout={openLayoutFromNudge}
         />
         <PokitWeekTourPuzzleNudgeSheet
           visible={FEATURE_FLAGS.puzzle && puzzleNudgeVisible}

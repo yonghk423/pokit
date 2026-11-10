@@ -1,3 +1,6 @@
+import { HeroPrintStaple } from './HeroPrintStaple';
+import { HeroPolaroidSurface } from './HeroPolaroidSurface';
+import { loadPremiumPack, premiumSceneTitle, PREMIUM_CHARACTER_ID } from '../lib/heroPremiumPack';
 import { BackChevron } from '@shared/ui/icon-symbol';
 import { ComicSceneImage } from './HeroSceneImage';
 import { useHeroGeneratedImages } from './useHeroGeneratedImages';
@@ -41,6 +44,12 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
   const nameFor = useComicCharacterNames();
   const generated = useHeroGeneratedImages();
   const originals = useHeroGeneratedImages(true);
+  const [premium, setPremium] = useState<HeroAiLibraryImage[]>([]);
+  useEffect(() => {
+    let live = true;
+    void loadPremiumPack().then(images => { if (live) setPremium(images.map(image => ({ uri: image.uri, title: premiumSceneTitle(image.id) }))); });
+    return () => { live = false; };
+  }, []);
   const chooseSaved = (image: HeroAiLibraryImage) => {
     if (onSelectArtwork) { onSelectArtwork(image); return; }
     onChange([...scenes, { ...newComicScene(''), image: image.sceneId ?? library[0]?.id ?? COMIC_SCENES[0].id, artworkUri: image.uri }]);
@@ -49,7 +58,7 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
   const [chosenCharacterId, setChosenCharacterId] = useState<string | null>(initialCollectionId ?? null);
   const selectedCharacterId = chosenCharacterId ?? SELECTABLE_COMIC_CHARACTERS.find(character => character.scenes.some(scene => scene.id === library[0]?.id))?.id;
   const visibleLibrary = chosenCharacterId ? SELECTABLE_COMIC_CHARACTERS.find(character => character.id === chosenCharacterId)?.scenes ?? library : library;
-  const savedImages = selectedCharacterId === 'generated-illustrations' ? generated : selectedCharacterId === 'original-photos' ? originals : null;
+  const savedImages = selectedCharacterId === 'generated-illustrations' ? generated : selectedCharacterId === 'original-photos' ? originals : selectedCharacterId === PREMIUM_CHARACTER_ID ? premium : null;
   const insets = useSafeAreaInsets();
   useEffect(() => {
     if (!embedded) return;
@@ -108,7 +117,11 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
               <ThemedText numberOfLines={1} adjustsFontSizeToFit style={s.characterLabel}>{label}</ThemedText>
             </Pressable>;
           })}
-          {([{ id: 'generated-illustrations', images: generated, label: 'comicDay.gallery.generated', testID: 'hero-generated-collection-card' }, { id: 'original-photos', images: originals, label: 'comicDay.gallery.originalPhotos', testID: 'hero-original-collection-card' }] as const).filter(collection => collection.images.length > 0).map(collection => {
+          {premium.length > 0 ? <Pressable testID="comic-scene-picker-premium" accessibilityRole="tab" accessibilityLabel={nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')} accessibilityState={{ selected: selectedCharacterId === PREMIUM_CHARACTER_ID }} onPress={() => { tapHaptic('select'); setChosenCharacterId(PREMIUM_CHARACTER_ID); }} style={[s.characterChoice, selectedCharacterId === PREMIUM_CHARACTER_ID && s.selectedCharacter]}>
+            <View style={s.characterPortrait}><ComicSceneImage source={{ uri: premium[0].uri }} imageKey={`scene-picker-premium:${premium[0].uri}`} contentFit="contain" backgroundColor="#F3F0E8" style={s.characterImage} /></View>
+            <ThemedText numberOfLines={1} adjustsFontSizeToFit style={s.characterLabel}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText>
+          </Pressable> : null}
+          {([{ id: 'generated-illustrations' , images: generated, label: 'comicDay.gallery.generated', testID: 'hero-generated-collection-card' }, { id: 'original-photos', images: originals, label: 'comicDay.gallery.originalPhotos', testID: 'hero-original-collection-card' }] as const).filter(collection => collection.images.length > 0).map(collection => {
             const selected = selectedCharacterId === collection.id;
             const label = nameFor(collection.id, t(collection.label));
             return <Pressable key={collection.id} testID={collection.testID} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); setChosenCharacterId(collection.id); }} style={[s.characterChoice, selected && s.selectedCharacter]}>
@@ -122,9 +135,10 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
       <View style={s.gallery} onLayout={event => setGridWidth(event.nativeEvent.layout.width)}>
         {savedImages ? <FlatList key={`${columns}:${selectedCharacterId}`} testID="comic-scene-picker-saved-grid" data={savedImages} numColumns={columns} initialNumToRender={Math.min(9, columns * 3)} maxToRenderPerBatch={columns * 2} windowSize={5} keyExtractor={item => item.uri} showsVerticalScrollIndicator={false} columnWrapperStyle={columns > 1 ? { gap: 8 } : undefined} contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
           ListEmptyComponent={<ThemedText style={s.empty}>{t('comicDay.noImages')}</ThemedText>}
-          renderItem={({ item }) => <Pressable testID={`comic-scene-picker-saved-${item.uri}`} accessibilityRole="button" accessibilityLabel={item.title || t(selectedCharacterId === 'original-photos' ? 'comicDay.gallery.originalPhotos' : 'comicDay.gallery.generated')} onPress={() => { tapHaptic('select'); chooseSaved(item); }} style={{ width: cardWidth, padding: 3 }}>
+          renderItem={({ item }) => <Pressable testID={`comic-scene-picker-saved-${item.uri}`} accessibilityRole="button" accessibilityLabel={item.title || t(selectedCharacterId === 'original-photos' ? 'comicDay.gallery.originalPhotos' : 'comicDay.gallery.generated')} onPress={() => { tapHaptic('select'); chooseSaved(item); }} style={{ width: cardWidth, padding: 7, paddingTop: 13, backgroundColor: '#FFFEFA', shadowColor: '#403624', shadowOpacity: 0.16, shadowRadius: 3, shadowOffset: { width: 0, height: 3 }, elevation: 2 }}>
+            <HeroPolaroidSurface /><HeroPrintStaple />
             <ComicSceneImage source={{ uri: item.uri }} imageKey={`scene-picker-saved:${item.uri}`} contentFit="contain" backgroundColor="#FFFFFF" style={{ width: '100%', aspectRatio: 3 / 4 }} />
-            {columns < 3 && item.title ? <ThemedText numberOfLines={1} style={s.savedCaption}>{item.title}</ThemedText> : null}
+            <View style={{ minHeight: columns === 3 ? 28 : 38, justifyContent: 'center' }}>{item.title ? <ThemedText numberOfLines={1} style={[s.savedCaption, { fontSize: columns === 3 ? 11 : 14 }]}>{item.title}</ThemedText> : null}</View>
           </Pressable>} /> :
         <FlatList key={`${columns}:${selectedCharacterId ?? 'custom'}`} data={visibleLibrary} extraData={orders} numColumns={columns} initialNumToRender={Math.min(9, columns * 3)} maxToRenderPerBatch={columns * 2} windowSize={5} updateCellsBatchingPeriod={40} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
           columnWrapperStyle={columns > 1 ? { gap: 8 } : undefined} contentContainerStyle={{ gap: 12, paddingBottom: 20 }}

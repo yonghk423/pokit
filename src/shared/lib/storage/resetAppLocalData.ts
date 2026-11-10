@@ -1,13 +1,11 @@
 import { clearDailyRhythmOnboardingCompleted } from './dailyMateOnboardingStorage';
 import { clearReadingBookstoreTapGuide } from './readingBookstoreTapGuideStorage';
 import { clearPokitLocalStorage, flushLocalStorageClientWrites, localStorageClient } from './localStorageClient';
-import { HERO_THUMBNAIL_STRIP_KEY } from './heroThumbnailStripStorage';
 import { initializeHeroCardEditHint } from './heroCardEditHintStorage';
 import { notifyHeroInfoHintReset } from './heroInfoHintStorage';
 
-/** AI 일러스트 보관함과 썸네일 표시 설정을 보존하고 앱 데이터를 초기화합니다. */
+/** AI 일러스트 보관함을 보존하고 앱 데이터를 초기화합니다. */
 export async function resetAppLocalData(): Promise<void> {
-  const thumbnailPreference = localStorageClient.getItemRaw(HERO_THUMBNAIL_STRIP_KEY);
   // Keep the independent AI collection, including captions and explicit deletions.
   const preserved = new Map<string, string>();
   for (const key of localStorageClient.listKeys()) {
@@ -29,7 +27,6 @@ export async function resetAppLocalData(): Promise<void> {
   }
   await clearPokitLocalStorage();
   for (const [key, value] of preserved) localStorageClient.setItemRaw(key, value);
-  if (thumbnailPreference !== null) localStorageClient.setItemRaw(HERO_THUMBNAIL_STRIP_KEY, thumbnailPreference);
   notifyHeroInfoHintReset();
   // clearPokitLocalStorage 이후에도 세션 래치가 남으면 온보딩이 다시 안 뜬다
   clearDailyRhythmOnboardingCompleted();

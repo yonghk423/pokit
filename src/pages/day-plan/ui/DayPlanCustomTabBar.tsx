@@ -1,10 +1,8 @@
+import { useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
+import { useIllustrationCalendarMode } from '../model/illustrationCalendarMode';
 import { PaperGrain } from '@shared/ui/paper-grain';
-import { HeroDiaryHistoryIcon } from './HeroDiaryHistoryIcon';
-import { HeroGalleryIcon } from './HeroGalleryIcon';
-import { SketchPaperButton } from '@shared/ui/sketch-paper-button';
-import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
+import { ThemedText } from '@shared/ui/themed-text';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
-import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import {
   BottomTabBarHeightCallbackContext,
@@ -38,19 +36,31 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { route: 'index', icon: require('../../../../assets/tab-icons/comic-portrait-v2.webp'), labelKey: 'tabs.comicDay' },
-  { route: 'characters', labelKey: 'comicDay.gallery.title' },
+  { route: 'index', labelKey: 'tabs.comicDay' },
   { route: 'history', labelKey: 'comicDiary.history' },
   { route: 'fixed-routines', icon: require('../../../../assets/tab-icons/routine.webp'), labelKey: 'tabs.routines' },
   { route: 'puzzle-history', icon: require('../../../../assets/tab-icons/puzzle.webp'), labelKey: 'tabs.puzzle' },
   { route: 'pokit-story', icon: require('../../../../assets/tab-icons/story-pen.png'), labelKey: 'tabs.story' },
+  { route: 'calendar', labelKey: 'tabs.calendar' },
 ];
 
+// Each illustration keeps the same controls, with colors drawn from its scene.
+const ILLUSTRATION_TAB_TONES = {
+  illustration: { surface: '#F2E4D0', active: '#E5B777', ink: '#5B4030', selected: '#4A2F1D', dark: '#352E27' },
+  'city-animation-01': { surface: '#DFE7EC', active: '#66869C', ink: '#344B5B', selected: '#FFFFFF', dark: '#253540' },
+  'city-animation-02': { surface: '#E6E9DC', active: '#788963', ink: '#3F5037', selected: '#FFFFFF', dark: '#2C3528' },
+  'city-animation-03': { surface: '#EFE0D7', active: '#A56D51', ink: '#624330', selected: '#FFFFFF', dark: '#3B2D27' },
+  'city-animation-04': { surface: '#DDECE8', active: '#527E78', ink: '#30554F', selected: '#FFFFFF', dark: '#233B37' },
+  'city-animation-05': { surface: '#F0DFDF', active: '#A65F6B', ink: '#683F48', selected: '#FFFFFF', dark: '#3D2931' },
+} as const;
+
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const calendarDesign = useHeroCalendarDesign();
+  const selectedIllustration = calendarDesign === 'illustration' || calendarDesign.startsWith('city-animation-');
+  const calendarBackdrop = useCalendarBackdropVisible();
+  const illustrationMode = useIllustrationCalendarMode();
   const { width } = useWindowDimensions();
   const characterPicker = useContext(HeroCharacterPickerActionContext);
-  const hasThumbnailCards = useHeroTabArtwork(state => state.hasCards);
-  const heroArtwork = useHeroTabArtwork(state => state.source);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const onTabBarHeightChange = useContext(BottomTabBarHeightCallbackContext);
@@ -65,7 +75,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     return Platform.OS === 'ios' ? IOS_HOME_INDICATOR_FALLBACK : 0;
   }, [insets.bottom]);
 
-  const estimatedHeight = DAY_PLAN_TAB_BAR_ROW_HEIGHT + safeBottom + 20;
+  const estimatedHeight = DAY_PLAN_TAB_BAR_ROW_HEIGHT + safeBottom + 8;
 
   useEffect(() => {
     onTabBarHeightChange?.(estimatedHeight);
@@ -89,30 +99,38 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     registerIsDayPlanFocused(isDayPlanFocused);
   }, [isDayPlanFocused, registerIsDayPlanFocused]);
 
-  const colors = useMemo(
-    () =>
-      isDark
-        ? { containerBg: '#262B28', activeBg: '#3A3A3C' }
-        : { containerBg: '#F7F6F4', activeBg: '#E6E3DE' },
-    [isDark],
-  );
+  const colors = useMemo(() => {
+    const tone = ILLUSTRATION_TAB_TONES[calendarDesign as keyof typeof ILLUSTRATION_TAB_TONES];
+    if (tone) return {
+      containerBg: isDark ? tone.dark : tone.surface,
+      activeBg: tone.active,
+      text: isDark ? tone.surface : tone.ink,
+      selectedText: tone.selected,
+      icon: isDark ? tone.surface : tone.ink,
+      selectedIcon: tone.selected,
+    };
+    return isDark
+      ? { containerBg: '#262B28', activeBg: '#3A3A3C', text: '#EEECE6', selectedText: '#EEECE6', icon: '#EEECE6', selectedIcon: '#EEECE6' }
+      : { containerBg: '#F7F6F4', activeBg: '#E6E3DE', text: '#252A26', selectedText: '#252A26', icon: '#252A26', selectedIcon: '#252A26' };
+  }, [isDark, calendarDesign]);
 
   const visibleTabs = TABS.filter(tab =>
     (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
     && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines')
     && (FEATURE_FLAGS.pokitStory || tab.route !== 'pokit-story'));
-  const showAdd = focusedRoute === 'index' && hasThumbnailCards;
-  const navigationSlotCount = visibleTabs.length + 1;
-  const slotCount = navigationSlotCount + (showAdd ? 1 : 0);
-  const itemWidth = Math.min(64, (width - 48 - 12 - (slotCount - 1) * 2) / slotCount);
-  // The first fragment contains both the diary and photo tabs.
-  const addAfterIndex = Math.max(0, Math.floor(navigationSlotCount / 2) - 2);
-  const photoSelected = focusedRoute === 'index' && !!characterPicker?.photoActive;
+  const slotCount = visibleTabs.length + (FEATURE_FLAGS.heroAiCameraTab ? 1 : 0);
+  const itemWidth = Math.min(88, (width - 48 - 12 - (slotCount - 1) * 2) / slotCount);
+  const photoSelected = FEATURE_FLAGS.heroAiCameraTab && focusedRoute === 'index' && !!characterPicker?.photoActive;
+  useEffect(() => {
+    if (!FEATURE_FLAGS.heroAiCameraTab && focusedRoute === 'index' && characterPicker?.photoActive) characterPicker.open();
+  }, [focusedRoute, characterPicker]);
+
+  const overlay = illustrationMode && focusedRoute === 'calendar' || selectedIllustration && calendarBackdrop && focusedRoute === 'index';
 
   return (
     <View
       onLayout={handleBarLayout}
-      style={[styles.outerWrap, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : 'transparent' }]}>
+      style={[styles.outerWrap, overlay && { position: 'absolute', bottom: 0, left: 0, right: 0 }, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : 'transparent', zIndex: 20, elevation: 20 }]}>
       <View style={styles.shell}>
         <View
           style={[
@@ -120,7 +138,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             { backgroundColor: colors.containerBg, borderWidth: 0.7, borderColor: isDark ? '#484C47' : '#FFFFFF' },
           ]}>
           <PaperGrain opacity={0.24} />
-          {visibleTabs.map((tab, tabIndex) => {
+          {visibleTabs.map((tab) => {
             const isFocused =
               focusedRoute === tab.route ||
               (tab.route === 'day-plan' && focusedRoute === 'index');
@@ -131,7 +149,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="tab"
                 testID={`hero-tab-${tab.route}`}
                 accessibilityState={{ selected: isFocused && !photoSelected }}
-                accessibilityLabel={t(tab.labelKey)}
+                accessibilityLabel={tab.route === 'history' ? 'Photo' : tab.route === 'index' ? 'Diary' : tab.route === 'calendar' ? 'Store' : t(tab.labelKey)}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   if (tab.route === 'index' && characterPicker) {
@@ -147,8 +165,8 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   isFocused && !photoSelected && { backgroundColor: colors.activeBg },
                   pressed && { opacity: 0.8 },
                 ]}>
-                {tab.route === 'history' ? <HeroDiaryHistoryIcon ink={isDark ? '#EEECE6' : '#252A26'} /> : tab.route === 'characters' ? <HeroGalleryIcon ink={isDark ? '#EEECE6' : '#252A26'} selected={isFocused && !photoSelected} /> : <Image source={tab.route === 'index' ? heroArtwork : tab.icon!} style={styles.icon} resizeMode="contain" />}
-              </Pressable>{tab.route === 'index' ? <>
+                {tab.route === 'calendar' || tab.route === 'history' || tab.route === 'index' ? <ThemedText numberOfLines={1} style={{ fontSize: tab.route === 'calendar' ? 16 : 20, lineHeight: 28, color: isFocused && !photoSelected ? colors.selectedText : colors.text, textAlign: 'center' }}>{tab.route === 'history' ? 'Photo' : tab.route === 'calendar' ? 'Store' : 'Diary'}</ThemedText> : <Image source={tab.icon!} style={[styles.icon, { tintColor: isFocused ? colors.selectedIcon : colors.icon }]} resizeMode="contain" />}
+              </Pressable>{tab.route === 'index' && FEATURE_FLAGS.heroAiCameraTab ? <>
                 <Pressable
                   testID="hero-ai-mode-tab"
                   accessibilityRole="tab"
@@ -162,13 +180,9 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                     } else characterPicker?.openPhoto();
                   }}
                   style={({ pressed }) => [styles.tabItem, { width: itemWidth }, photoSelected && { backgroundColor: colors.activeBg }, pressed && { opacity: 0.8 }]}>
-                  <HeroPhotoEntryIcon ink={isDark ? '#EEECE6' : '#252A26'} size={34} selected={photoSelected} />
+                  <HeroPhotoEntryIcon ink={photoSelected ? colors.selectedIcon : colors.icon} size={34} selected={photoSelected} />
                 </Pressable>
-              </> : null}{showAdd && tabIndex === addAfterIndex ? <ServiceTutorialTarget steps={['comicStart']}>
-                <View testID="hero-add-center-tab" style={[styles.tabItem, { width: itemWidth }]}>
-                  <SketchPaperButton iconOnly strongFrame frameless softKey label={t('comicDay.add')} ink="#292E28" onPress={() => characterPicker?.openAdd()} hitSlop={3} />
-                </View>
-              </ServiceTutorialTarget> : null}</Fragment>
+              </> : null}</Fragment>
             );
           })}
         </View>

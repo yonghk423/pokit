@@ -3,6 +3,7 @@ import SwiftUI
 import WidgetKit
 import UIKit
 import CoreText
+import ImageIO
 
 private enum ComicWidgetFonts {
   // Register in the extension process as well as declaring UIAppFonts.
@@ -371,7 +372,7 @@ private struct ComicSceneWidgetEntryView: View {
   private var isCompactWeather: Bool { family == .systemSmall }
 
   private func artwork(width: CGFloat, height: CGFloat) -> some View {
-    let name = "comic_\(model.imageId)"
+
     let viewport = CGSize(width: max(1, width), height: max(1, height))
     let sharedImage: UIImage? = {
       guard let file = model.artworkFile, file == (file as NSString).lastPathComponent,
@@ -379,7 +380,7 @@ private struct ComicSceneWidgetEntryView: View {
       else { return nil }
       return UIImage(contentsOfFile: container.appendingPathComponent("ComicArtwork").appendingPathComponent(file).path)
     }()
-    let artwork = sharedImage ?? UIImage(named: name)
+    let artwork = sharedImage
     let sourceSize = artwork?.size ?? CGSize(width: 720, height: 960)
     let scale = max(viewport.width / sourceSize.width, viewport.height / sourceSize.height)
     let origin = ComicSceneWidgetCrop.origin(imageSize: sourceSize, viewport: viewport, imageId: model.imageId)
@@ -431,7 +432,7 @@ private struct ComicSceneWidgetEntryView: View {
     GeometryReader { proxy in
       if model.id.isEmpty {
         VStack(alignment: .leading, spacing: 6) {
-          Image("comic_10-park-walk").resizable().scaledToFit()
+          Image(systemName: "photo").resizable().scaledToFit()
             .frame(width: 44, height: 44).clipShape(ContainerRelativeShape())
             .accessibilityHidden(true)
           Text("widget.comic.name").font(diaryFont(17))
@@ -492,20 +493,71 @@ private struct ComicSceneWidgetEntryView: View {
   }
 }
 
+private struct CalendarDesignEntry: TimelineEntry {
+  let date: Date
+  let imageData: Data?
+}
+
+private struct CalendarDesignProvider: TimelineProvider {
+  func placeholder(in context: Context) -> CalendarDesignEntry { entry() }
+  private func entry() -> CalendarDesignEntry {
+    let defaults = UserDefaults(suiteName: PokitAppGroup.identifier)
+    var data: Data?
+    if let name = defaults?.string(forKey: "pokit.calendar-widget.image"),
+       name.hasPrefix("calendar-"),
+       let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier) {
+      data = try? Data(contentsOf: container.appendingPathComponent(name))
+    }
+    return CalendarDesignEntry(date: .now, imageData: data)
+  }
+  func getSnapshot(in context: Context, completion: @escaping (CalendarDesignEntry) -> Void) { completion(entry()) }
+  func getTimeline(in context: Context, completion: @escaping (Timeline<CalendarDesignEntry>) -> Void) {
+    completion(Timeline(entries: [entry()], policy: .never))
+  }
+}
+
+// Decode at widget resolution so older oversized snapshots cannot exhaust the extension.
+private func calendarThumbnail(_ data: Data) -> UIImage? {
+  guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+        let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+          kCGImageSourceCreateThumbnailFromImageAlways: true,
+          kCGImageSourceThumbnailMaxPixelSize: 1080,
+          kCGImageSourceCreateThumbnailWithTransform: true,
+          kCGImageSourceShouldCacheImmediately: true
+        ] as CFDictionary) else { return nil }
+  return UIImage(cgImage: image)
+}
+
+@available(iOS 17.0, *)
+private struct CalendarDesignWidgetView: View {
+  let entry: CalendarDesignEntry
+  var body: some View {
+    ZStack {
+      Color(red: 250 / 255, green: 250 / 255, blue: 246 / 255)
+      if let data = entry.imageData, let image = calendarThumbnail(data) {
+        Image(uiImage: image).resizable().scaledToFit().padding(3)
+      } else {
+        VStack(spacing: 8) {
+          Text(Date.now, format: .dateTime.month(.wide).year()).font(.headline)
+          Image(systemName: "calendar").font(.largeTitle)
+          Text("앱에서 달력을 열어주세요").font(.caption2)
+        }.foregroundStyle(Color.primary)
+      }
+    }
+    .widgetURL(URL(string: "pokit://comic-day?calendarWidget=1"))
+    .containerBackground(Color(red: 250 / 255, green: 250 / 255, blue: 246 / 255), for: .widget)
+  }
+}
+
 @available(iOS 17.0, *)
 struct ComicSceneWidget: Widget {
   private let kind = "PokitComicSceneWidget"
-
   var body: some WidgetConfiguration {
-    AppIntentConfiguration(
-      kind: kind,
-      intent: SelectComicSceneIntent.self,
-      provider: ComicSceneWidgetProvider()
-    ) { entry in
-      ComicSceneWidgetEntryView(entry: entry)
+    StaticConfiguration(kind: kind, provider: CalendarDesignProvider()) { entry in
+      CalendarDesignWidgetView(entry: entry)
     }
-    .configurationDisplayName("widget.comic.name")
-    .description("widget.comic.galleryDescription")
+    .configurationDisplayName("나의 달력")
+    .description("앱에서 선택한 달력 디자인과 날짜를 보여줘요.")
     .supportedFamilies([.systemSmall, .systemLarge])
     .contentMarginsDisabled()
   }

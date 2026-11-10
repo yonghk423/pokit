@@ -1,13 +1,17 @@
+import { HeroCardFlipContext } from './HeroDiaryCardSides';
+import { HeroTrashIcon } from './HeroTrashIcon';
+import { heroCameraBottom } from './HeroCameraPrintAnimation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DayPlanCanvasContext } from '../model/dayPlanHeaderActions';
+import { HeroRestingCamera } from './HeroRestingCamera';
 import { HeroDraggablePrint } from './HeroDraggablePrint';
 import { loadPrintPositions, savePrintPosition } from '../lib/heroPrintPositions';
 import { HeroScaledPrint } from './HeroScaledPrint';
 import { polaroidScatter } from '../lib/polaroidScatter';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
-import { HeroPrintStaple } from './HeroPrintStaple';
 import type { AppFontId } from '@shared/lib/ui-font';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { HeroPolaroidSurface } from './HeroPolaroidSurface';
-import { HeroThumbnailStripToggle } from './HeroThumbnailStripToggle';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { HeroRandomDraftCard, type HeroRandomDraftHandle } from './HeroRandomDraftCard';
 import { HeroEntryActions } from './HeroEntryActions';
@@ -33,7 +37,7 @@ import { PaperGrain } from '@shared/ui/paper-grain';
 import { Image } from 'expo-image';
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import Svg, { Path, Rect } from 'react-native-svg';
-import { Animated, Easing, LayoutAnimation, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image as NativeImage, Animated, Easing, LayoutAnimation, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
@@ -148,6 +152,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   };
   const gridOffsetRef = useRef(0);
   const holdStartedAtTopRef = useRef(false);
+  const activeCardFlip = useRef<(() => void) | null>(null);
   const closeGrid = () => { tapHaptic(); setGridOpen(false); setMenuOpen(false); };
   const gridDismiss = Gesture.Pan().enabled(cardsFirst && gridOpen && !deleteMode)
     .activateAfterLongPress(350).activeOffsetY(16).failOffsetX([-16, 16]).runOnJS(true)
@@ -162,6 +167,14 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const gridGesture = Gesture.Simultaneous(gridNative, gridDismiss, gridHoldFeedback);
   const { width: windowWidth } = useWindowDimensions();
   const [boardWidth, setBoardWidth] = useState(() => lastBoardWidth || Math.max(1, windowWidth - 32));
+  const safeInsets = useSafeAreaInsets();
+  const canvasContext = useContext(DayPlanCanvasContext);
+  const setCanvasExpanded = canvasContext?.setExpanded;
+  useLayoutEffect(() => {
+    setCanvasExpanded?.(cardsFirst);
+    return () => setCanvasExpanded?.(false);
+  }, [setCanvasExpanded, cardsFirst]);
+  const upperReach = (canvasContext?.headerHeight ?? 0) + safeInsets.top;
   const [scatterHeights, setScatterHeights] = useState<Record<string, number>>({});
   const [printPositions, setPrintPositions] = useState(loadPrintPositions);
   const [draggingPrint, setDraggingPrint] = useState<string | null>(null);
@@ -169,17 +182,16 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const anchors = scatter.frames;
   scatter.frames = scatter.frames.map((frame, index) => {
     const saved = printPositions[items[index].key];
-    return saved ? { ...frame, left: Math.max(4, Math.min(boardWidth - frame.width - 4, saved.x * boardWidth)), top: Math.max(8, saved.y * boardWidth), rotation: saved.rotation ?? frame.rotation, zIndex: 100 + saved.order } : frame;
+    return saved ? { ...frame, left: Math.max(4, Math.min(boardWidth - frame.width - 4, saved.x * boardWidth)), top: Math.max(8 - upperReach, saved.y * boardWidth), rotation: saved.rotation ?? frame.rotation, zIndex: 100 + saved.order } : frame;
   });
   scatter.height = Math.max(scatter.height, ...scatter.frames.map(frame => frame.top + frame.height + 36));
   const [sourceFrame, setSourceFrame] = useState<HeroDeckFrame>({ active: 0, width: Math.max(1, windowWidth - 24), height: 320 });
   const activeKey = items[sourceFrame.active]?.key;
   useEffect(() => { if (activeKey) onActiveSceneChange?.(activeKey); }, [activeKey, onActiveSceneChange]);
   const [stageWidth, setStageWidth] = useState(windowWidth);
-  const [gridTop, setGridTop] = useState(0);
   const gridScrollRef = useRef<ScrollView>(null);
   const [overviewSettled, setOverviewSettled] = useState(false);
-  const [overviewProgress] = useState(() => new Animated.Value(cardsFirst ? 0 : 1));
+  const [overviewProgress] = useState(() => new Animated.Value(showCards ? 0 : 1));
   useEffect(() => {
     setOverviewSettled(false);
     if (!focused) { overviewProgress.stopAnimation(); overviewProgress.setValue(showCards ? 0 : 1); setOverviewSettled(!showCards); return; }
@@ -199,21 +211,35 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     opacity: overviewProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
   };
 
+  const [uploadedRatios, setUploadedRatios] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let live = true;
+    const uris = [...new Set(items.map(item => item.artworkUri).filter((uri): uri is string => !!uri))];
+    for (const uri of uris) {
+      if (uploadedRatios[uri]) continue;
+      NativeImage.getSize(uri, (width, height) => {
+        if (live && width > 0 && height > 0) setUploadedRatios(previous => ({ ...previous, [uri]: width / height }));
+      }, () => { if (live) setUploadedRatios(previous => ({ ...previous, [uri]: 1 })); });
+    }
+    return () => { live = false; };
+  }, [items, uploadedRatios]);
+
   const renderCard = (item: BoardItem, index: number, panel?: ComicPanel, pageTop = 0) => {
     if (cardsFirst) {
       const scene = resolveComicScene(item.key, item.label, choices);
       const title = item.label.trim();
-      const memo = item.memo?.trim();
-      return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={gridTop} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => previous[item.key] === height ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
-        <HeroDraggablePrint anchorLeft={anchors[index].left} anchorTop={anchors[index].top} anchorRotation={anchors[index].rotation} onRotate={angle => setPrintPositions(savePrintPosition(item.key, scatter.frames[index].left / boardWidth, scatter.frames[index].top / boardWidth, angle))} rotation={scatter.frames[index].rotation} enabled={gridOpen && overviewSettled && !deleteMode} scrollGesture={gridNative} dismissGesture={gridDismiss} left={scatter.frames[index].left} top={scatter.frames[index].top} width={scatter.frames[index].width} boardWidth={boardWidth} bottom={scatter.height + 120} onActive={active => setDraggingPrint(active ? item.key : null)} onDrop={(x, y) => setPrintPositions(savePrintPosition(item.key, x / boardWidth, y / boardWidth))}>
+      const provided = !item.artworkUri || item.artworkUri.includes('/character-packs/protagonist-7/');
+      // Do not paint a square provisional photo before its actual ratio arrives.
+      if (!provided && item.artworkUri && !uploadedRatios[item.artworkUri]) return null;
+      const printHeight = scatter.frames[index].width * 2 * 1.2;
+      return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={0} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => Math.abs((previous[item.key] ?? 0) - height) < 1 ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
+        <HeroDraggablePrint minTop={8 - upperReach} anchorLeft={anchors[index].left} anchorTop={anchors[index].top} anchorRotation={anchors[index].rotation} onRotate={angle => setPrintPositions(savePrintPosition(item.key, scatter.frames[index].left / boardWidth, scatter.frames[index].top / boardWidth, angle))} rotation={scatter.frames[index].rotation} enabled={gridOpen && overviewSettled && !deleteMode} scrollGesture={gridNative} dismissGesture={gridDismiss} left={scatter.frames[index].left} top={scatter.frames[index].top} width={scatter.frames[index].width} boardWidth={boardWidth} bottom={scatter.height + 120} onActive={active => setDraggingPrint(active ? item.key : null)} onDrop={(x, y) => setPrintPositions(savePrintPosition(item.key, x / boardWidth, y / boardWidth))}>
         <HeroScaledPrint width={scatter.frames[index].width}>
-        <Pressable accessibilityRole="button" accessibilityLabel={title || memo || t('comicDay.showCards')} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => [s.polaroid, { opacity: pressed ? 0.75 : 1 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={title || t('comicDay.showCards')} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => [s.polaroid, provided && { height: printHeight }, { opacity: pressed ? 0.75 : 1 }]}>
           <HeroPolaroidSurface />
-          <HeroPrintStaple />
-          <ComicSceneImage preserveFullImage showSkeletonOnMount contentFit="contain" backgroundColor="#EEEEEC" imageKey={`history-grid:${item.artworkUri ?? scene.id}`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} style={{ width: '100%', aspectRatio: 3 / 4 }} />
-          <View style={{ minHeight: 44, flexGrow: 1, paddingTop: 7, paddingHorizontal: 2, gap: 3 }}>
+          <ComicSceneImage preserveFullImage showSkeletonOnMount contentFit="contain" backgroundColor="#EEEEEC" imageKey={`history-grid:${item.artworkUri ?? scene.id}`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} style={{ width: '100%', ...(provided ? { height: Math.max(1, printHeight - 66) } : { aspectRatio: item.artworkUri ? uploadedRatios[item.artworkUri] ?? 1 : 3 / 4 }) }} />
+          <View style={{ minHeight: 44, ...(provided ? { flex: 1, overflow: 'hidden' as const } : { flexGrow: 1 }), paddingTop: 7, paddingHorizontal: 2, gap: 3 }}>
             {title ? <ThemedText fontId={item.fontId} numberOfLines={2} style={{ color: item.inkColor ?? ink, fontSize: 12, lineHeight: 17 }}>{title}</ThemedText> : null}
-            {memo && memo !== title ? <ThemedText fontId={item.fontId} numberOfLines={2} style={{ color: item.inkColor ?? ink, opacity: 0.7, fontSize: 10, lineHeight: 15 }}>{memo}</ThemedText> : null}
           </View>
         </Pressable>
         </HeroScaledPrint>
@@ -229,7 +255,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     const time = item.startMinutes == null ? item.timeLabel : `${String(Math.floor(item.startMinutes / 60) % 24).padStart(2, '0')}:${String(item.startMinutes % 60).padStart(2, '0')}`;
     return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length}
       enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={(hideCharacterHeading ? 0 : 56) + (sourceFrame.top ?? 0)}
-      parentTop={gridTop + pageTop} style={panel ? { position: 'absolute', left: panel.left, top: panel.top, width: panel.width, height: panel.height } : { width: layout.width }}>
+      parentTop={pageTop} style={panel ? { position: 'absolute', left: panel.left, top: panel.top, width: panel.width, height: panel.height } : { width: layout.width }}>
       <View pointerEvents="box-none" style={[s.card, { backgroundColor: item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF'), borderColor: muted }, panel && { height: panel.height }, diagonal && { borderWidth: 0, backgroundColor: 'transparent', overflow: 'visible' }]}>
         {diagonal && panel ? <Svg pointerEvents="box-none" width={panel.width} height={panel.height} style={StyleSheet.absoluteFill}><Path d={diagonalPanelPath(panel)} fill={item.faceColor ?? (isDark ? '#262B28' : '#FFFFFF')} stroke={muted} strokeWidth={0.9} /></Svg> : null}
         <View pointerEvents="box-none" style={diagonal ? { marginLeft: diagonal.side === 'right' ? diagonal.slant + 2 : 2, marginRight: diagonal.side === 'left' ? diagonal.slant + 2 : 2, paddingTop: 1 } : undefined}>
@@ -266,10 +292,27 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const tools = !historyOverview && !(cardsFirst && gridOpen) && items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <HeroCardToolsPortal><CardToolsFab compact docked={!!toolsHost} isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
     ...(cardsFirst && gridOpen ? [{ key: 'cards', testID: 'comic-show-cards', label: t('comicDay.showCards'), onPress: () => { setMenuOpen(false); setDeleteMode(false); setDeleteFromCards(false); setSelectedForDeletion([]); setGridOpen(false); }, icon: <Svg width={26} height={26} viewBox="0 0 30 30"><Path d="M10 3L25 4L26 21L12 22ZM6 7L21 6L23 25L7 26Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1} strokeLinejoin="round" /><Path d="M3 11L18 10L20 28L4 28Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" /></Svg> } satisfies CardToolAction] : []),
     ...(!deleteMode ? [{ key: 'layout', testID: 'comic-board-view', label: t('comicDay.boardView'), selected: menuOpen, onPress: () => { if (cardsFirst) setGridOpen(!gridOpen); else setMenuOpen(value => !value); }, icon: <LayoutDiagram mode={viewMode} ink={ink} size={26} /> } satisfies CardToolAction] : []),
-    ...(onRemove || onRemoveMany ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <Image source={require('../../../../assets/control-illustrations/trash.webp')} style={{ width: 29, height: 29 }} contentFit="contain" useAppleWebpCodec={false} accessible={false} /> } satisfies CardToolAction] : []),
+    ...(onRemove || onRemoveMany ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <HeroTrashIcon size={29} color={ink} /> } satisfies CardToolAction] : []),
   ]} /></HeroCardToolsPortal> : !items.length && bagAction ? <ServiceTutorialTarget steps={['comicTools']} style={{ position: 'absolute', right: 14, bottom: 96, zIndex: 4 }}><Pressable testID={bagAction.testID} accessibilityRole="button" accessibilityLabel={bagAction.label} onPress={() => { tapHaptic(); bagAction.onPress(); }} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>{bagAction.icon}</Pressable></ServiceTutorialTarget> : null;
-  const hasWallpaper = useWallpaperStore(state => state.wallpaper !== 'default');
+  const hasWallpaper = useWallpaperStore(state => !!state.wallpaper);
   const canvas = hasWallpaper ? 'transparent' : isDark ? '#262B28' : 'transparent';
+  const mainCamera = syncMainState && cardsFirst && (gridOpen || !items.length) && !historyOverview && !deleteMode && !detailOpen ? <Pressable
+    testID="hero-duvet-camera" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')}
+    onPress={() => { tapHaptic(); (onAddPhoto ?? onAdd)(); }}
+    style={({ pressed }) => ({ position: 'absolute', right: 20, bottom: heroCameraBottom(safeInsets.bottom), width: 75, height: 53, zIndex: 3, transform: [ { translateY: pressed ? 1.5 : 0 }, { scale: pressed ? 0.985 : 1 }] })}>
+    <HeroRestingCamera dark={isDark} />
+  </Pressable> : null;
+  if (!items.length && syncMainState && cardsFirst && !historyOverview) return <View style={{ flex: 1, backgroundColor: canvas }}>
+    <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, paddingBottom: 180, paddingTop: safeInsets.top + 60 }}>
+      <Pressable testID="hero-empty-photo-print" accessibilityRole="button" accessibilityLabel="사진을 추가해주세요." onPress={() => { tapHaptic(); (onAddPhoto ?? onAdd)(); }} style={({ pressed }) => ({ width: 140, aspectRatio: 1 / 1.2, paddingHorizontal: 7, paddingTop: 8, paddingBottom: 28, opacity: pressed ? 0.75 : 1, shadowColor: '#302C24', shadowOpacity: 0.16, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, transform: [{ rotate: '-2deg' }] })}>
+        <HeroPolaroidSurface />
+        <View style={{ flex: 1, backgroundColor: isDark ? '#383C37' : '#E5E5DF', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
+          <ThemedText style={{ color: muted, fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{'사진을\n추가해주세요.'}</ThemedText>
+        </View>
+      </Pressable>
+    </View>
+    {mainCamera}
+  </View>;
   if (!items.length && emptyContent) return <View style={{ flex: 1, backgroundColor: canvas }}>{emptyContent}</View>;
   if (!items.length) return <View style={{ flex: 1, backgroundColor: canvas }}>
     <View style={[s.deckHeading, hideCharacterHeading && { height: 0 }]}>{hideCharacterHeading ? null : heading}</View>
@@ -292,22 +335,25 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   {tools}
   {!cardsFirst && !showCards && toolsHost ? <View style={{ position: 'absolute', right: 18, bottom: 80 }}><HeroCardToolsOutlet /></View> : null}
   </View>;
-  return <View style={{ flex: 1, backgroundColor: canvas }} onLayout={({ nativeEvent: { layout } }) => { if (focused && layout.width > 0) setStageWidth(previous => previous === layout.width ? previous : layout.width); }}>
-    {cardsFirst ? <Animated.View testID="comic-card-deck-layer" pointerEvents={showCards ? 'auto' : 'none'} accessibilityElementsHidden={!showCards} importantForAccessibility={showCards ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, deckVisibility]}>
+  return <View style={{ flex: 1, backgroundColor: canvas }} onLayout={({ nativeEvent: { layout } }) => {  if (focused && layout.width > 0) setStageWidth(previous => previous === layout.width ? previous : layout.width); }}>
+    {cardsFirst ? <Animated.View testID="comic-card-deck-layer" pointerEvents={showCards ? 'auto' : 'none'} accessibilityElementsHidden={!showCards} importantForAccessibility={showCards ? 'auto' : 'no-hide-descendants'} style={[StyleSheet.absoluteFill, { top: upperReach }, deckVisibility]}>
       <View style={[s.deckHeading, hideCharacterHeading && { height: 0 }]}>{hideCharacterHeading ? null : heading}</View>
-      <View style={s.deckStage}>
+      <HeroCardFlipContext.Provider value={activeCardFlip}><View style={s.deckStage}>
         <ComicSceneDeck syncMainState={syncMainState} presentationOverride={presentationOverride} focusKey={overviewFocusKey ?? focusSceneId} detailOpen={detailOpen} items={items} ink={ink} muted={muted} isDark={isDark} choices={choices} onOpen={onOpen} onRemove={onRemove} onEditCard={onEditCard} interactive={showCards} onFrameChange={setSourceFrame} onShowOverview={() => { setGridOpen(true); setMenuOpen(false); }} />
       </View>
-      {!historyOverview ? <View testID="hero-thumbnail-toggle-beside-strip" style={s.deckAdd}><HeroThumbnailStripToggle width={44} isDark={isDark} enabled={showCards && !detailOpen} /></View> : null}
+      </HeroCardFlipContext.Provider>
+      {!historyOverview ? <View testID="hero-carousel-close" style={[s.deckAdd, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+        {showCards && !detailOpen ? <Pressable testID="hero-main-card-flip" accessibilityRole="button" accessibilityLabel="회전" onPress={() => activeCardFlip.current?.()} style={{ minWidth: 48, height: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 17 }}>회전</ThemedText></Pressable> : null}
+        {showCards && !detailOpen ? <Pressable testID="comic-close-carousel" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic('select'); setGridOpen(true); setMenuOpen(false); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 17, lineHeight: 24 }}>닫기</ThemedText></Pressable> : null}
+      </View> : null}
     </Animated.View> : null}
     <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1 }, gridVisibility]}>
-  <GestureDetector gesture={gridGesture}><ScrollView ref={gridScrollRef} removeClippedSubviews={false} scrollEnabled={!showCards} testID="comic-card-overview" onScrollBeginDrag={() => setMenuOpen(false)} onScroll={event => { gridOffsetRef.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[s.board, { flexGrow: 1 }]}>
+  <GestureDetector gesture={gridGesture}><ScrollView ref={gridScrollRef} removeClippedSubviews={false} scrollEnabled={!showCards} testID="comic-card-overview" onScrollBeginDrag={() => setMenuOpen(false)} onScroll={event => { gridOffsetRef.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[s.board, { flexGrow: 1, paddingTop: cardsFirst ? upperReach + 6 : 6 }]}>
 
     {heading}
     <View testID="comic-card-grid-layout" style={cardsFirst ? { height: scatter.height, position: 'relative', overflow: 'visible' } : s.grid} onLayout={event => {
-      const { width, y } = event.nativeEvent.layout;
+      const width = Math.round(event.nativeEvent.layout.width);
       if (!focused || width <= 0) return;
-      setGridTop(previous => previous === y ? previous : y);
       lastBoardWidth = width;
       setBoardWidth(previous => previous === width ? previous : width);
     }}>
@@ -337,6 +383,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     </Pressable>
   </View> : null}
   </Animated.View>
+  {mainCamera}
   {tools}
   {!cardsFirst && !showCards && toolsHost ? <View style={{ position: 'absolute', right: 18, bottom: 80 }}><HeroCardToolsOutlet /></View> : null}
   {menuOpen ? <>

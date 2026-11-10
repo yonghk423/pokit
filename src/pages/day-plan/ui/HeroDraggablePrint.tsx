@@ -4,12 +4,12 @@ import { Animated, useAnimatedValue } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
 /** Keep one transform throughout a gesture and persistence; never hand off to layout on release. */
-export function HeroDraggablePrint({ children, enabled, scrollGesture, dismissGesture, onActive, onDrop, onRotate, left, top, width, boardWidth, bottom, rotation, anchorLeft, anchorTop, anchorRotation }: {
+export function HeroDraggablePrint({ children, enabled, scrollGesture, dismissGesture, onActive, onDrop, onRotate, left, top, width, boardWidth, bottom, minTop = 8, rotation, anchorLeft, anchorTop, anchorRotation }: {
   children: ReactNode; enabled: boolean;
   scrollGesture: ReturnType<typeof Gesture.Native>; dismissGesture: ReturnType<typeof Gesture.Pan>;
   onActive: (active: boolean) => void; onDrop: (x: number, y: number) => void; onRotate?: (angle: number) => void;
   left: number; top: number; width: number; boardWidth: number; bottom: number; rotation: number;
-  anchorLeft?: number; anchorTop?: number; anchorRotation?: number;
+  minTop?: number; anchorLeft?: number; anchorTop?: number; anchorRotation?: number;
 }) {
   const initial = useRef({ left, top, rotation }).current;
   const base = { left: anchorLeft ?? initial.left, top: anchorTop ?? initial.top, rotation: anchorRotation ?? initial.rotation };
@@ -54,13 +54,15 @@ export function HeroDraggablePrint({ children, enabled, scrollGesture, dismissGe
     active.current = null; onActive(false);
     Animated.timing(lifted, { toValue: 0, duration: 150, useNativeDriver: true }).start();
   };
-  const pan = Gesture.Pan().enabled(enabled).activateAfterLongPress(220).minDistance(2)
+  // A normal tap often lasts 150–250ms and includes a few pixels of finger drift.
+  // Do not claim it as a drag before the nested photo Pressable can receive release.
+  const pan = Gesture.Pan().enabled(enabled).activateAfterLongPress(350).minDistance(8).shouldCancelWhenOutside(false)
     .blocksExternalGesture(scrollGesture, dismissGesture).runOnJS(true)
     .onStart(() => { if (active.current !== 'rotation') start('pan'); })
     .onUpdate(event => {
       if (active.current !== 'pan' || event.numberOfPointers > 1) return;
       delta.current.x = Math.max(-left + 4, Math.min(boardWidth - width - left - 4, event.translationX));
-      delta.current.y = Math.max(-top + 8, Math.min(bottom - top, event.translationY));
+      delta.current.y = Math.max(minTop - top, Math.min(bottom - top, event.translationY));
       paint(left + delta.current.x, top + delta.current.y, rotation);
     })
     .onEnd((_event, success) => { if (success && active.current === 'pan') { committed.current = true; pending.current = { left: left + delta.current.x, top: top + delta.current.y, rotation }; onDrop(left + delta.current.x, top + delta.current.y); } })

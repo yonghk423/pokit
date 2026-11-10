@@ -1,3 +1,4 @@
+import { loadHeroOriginalPhotoLibrary } from '../../pages/day-plan/lib/heroOriginalPhoto';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as fs from 'expo-file-system/legacy';
@@ -77,7 +78,7 @@ function walk(value: unknown, replace: (s: string) => string): any {
 type Manifest = { format: 'pokit-date'; version: 1; date: string; data: DateData; assets: { ref: string; id: string; size: number; ext: string }[] };
 export async function backupDate(date: string, progress: (s: string) => void) {
   const data = collectDate(date);
-  data.gallery = (await loadHeroAiLibrary()).filter(image => dateOf(image.createdAt) === date);
+  data.originals = (await loadHeroOriginalPhotoLibrary()).filter(image => dateOf(image.createdAt) === date);
   const uris = new Set<string>(); walk(data, s => { if (/^(file|content):\/\//.test(s)) uris.add(s); return s; });
   const created: string[] = []; const assets: Manifest['assets'] = []; const refs = new Map<string, string>();
   try {
@@ -125,11 +126,13 @@ export async function restoreDate(backup: DriveBackup, progress: (s: string) => 
       return s;
     });
     const writes = mergeDate(restored, restorePreferences);
+    if (restored.contentVersion !== 2) {
     const replacedImages = (await loadHeroAiLibrary()).filter(image => dateOf(image.createdAt) === manifest.date);
     const deleted = new Set(storage.getJson<string[]>('pokit:hero-ai-library-deleted:v1') ?? []);
     for (const image of replacedImages) { const name = image.uri.split('/').pop(); if (name) deleted.add(name); }
     for (const image of restored.gallery) { const name = image.uri?.split('/').pop(); if (name) deleted.delete(name); }
     writes['pokit:hero-ai-library-deleted:v1'] = [...deleted];
+    }
     const previous = Object.fromEntries(Object.keys(writes).map(key => [key, storage.getItemRaw(key)]));
     progress('날짜별 기록 복구 중');
     // Persist rollback material before changing any records. Retained for recovery.
@@ -138,11 +141,11 @@ export async function restoreDate(backup: DriveBackup, progress: (s: string) => 
     storage.setJson('pokit:drive-restore-rollback', { date: manifest.date, previous }); await flushLocalStorageClientWrites();
     await AsyncStorage.setItem('pokit:drive-restore-pending', JSON.stringify(previous));
     try {
-      for (const [key, value] of Object.entries(writes)) storage.setJson(key, value);
+      for (const [key, value] of Object.entries(writes)) { if (key.startsWith('pokit:canvas-note:')) storage.setItemRaw(key, String(value)); else storage.setJson(key, value); }
       await flushLocalStorageClientWrites();
       if (Platform.OS !== 'web') {
         const persisted = await AsyncStorage.multiGet(Object.keys(writes));
-        for (const [key, value] of persisted) if (value !== JSON.stringify(writes[key])) throw new Error('기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.');
+        for (const [key, value] of persisted) if (value !== (key.startsWith('pokit:canvas-note:') ? String(writes[key]) : JSON.stringify(writes[key]))) throw new Error('기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.');
       }
       await AsyncStorage.removeItem('pokit:drive-restore-pending');
     }

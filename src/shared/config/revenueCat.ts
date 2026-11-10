@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 /**
  * RevenueCat 공개 SDK 키·엔타이틀먼트·상품 식별자.
  *
@@ -16,7 +17,7 @@
 export const REVENUECAT_ENTITLEMENT_PRO = 'yourday_pro' as const;
 
 /** 개발 빌드는 연동하며, 배포 빌드는 판매 준비 후 명시적으로 활성화한다. */
-export const REVENUECAT_ENABLED = __DEV__ || process.env.EXPO_PUBLIC_REVENUECAT_ENABLED === 'true';
+export const REVENUECAT_ENABLED = FEATURE_FLAGS.proSubscriptions && (__DEV__ || process.env.EXPO_PUBLIC_REVENUECAT_ENABLED === 'true');
 
 /** Offering 에 붙일 스토어 Product identifier (App Store / Play 와 동일하게) */
 export const REVENUECAT_PRODUCT_IDS = {

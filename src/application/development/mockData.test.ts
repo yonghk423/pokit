@@ -126,7 +126,7 @@ it.each<AppLocale>(['ko', 'en', 'ja'])('adds the bookstore to an existing %s moc
   expect(updated.activeId).toBe(library.activeId);
   expect(updated.diaries[0].title).toBe('My edited title');
   expect(updated.diaries[0].scenes[0].memo).toBe('My edited memo');
-  expect(updated.diaries[0].scenes.filter(scene => scene.image === '56-bookstore')).toHaveLength(1);
+  expect(updated.diaries[0].scenes.filter(scene => scene.image === '01-exercise')).toHaveLength(1);
   expect(updated.diaries.slice(1)).toEqual(library.diaries.slice(1));
   expect(loadDayPlanDraft()).toEqual(draft);
   expect(ensureDevelopmentMockData(false, '2026-10-26')).toBe(false);

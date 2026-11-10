@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Asset } from 'expo-asset';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { deleteAsync } from 'expo-file-system/legacy';
-import { polaroidPixelScript, type PolaroidEffects } from './HeroPolaroidEffects';
+import { hasProPolaroidEffects, polaroidPixelScript, type PolaroidEffects } from './HeroPolaroidEffects';
 
 /** Local-only canvas processing: no image is uploaded. Capped to match export density. */
 export function HeroPolaroidProcessor({ uri, source, effects, onResult, onError }: {
@@ -19,7 +19,7 @@ export function HeroPolaroidProcessor({ uri, source, effects, onResult, onError 
   const running = useRef(false);
   const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const submit = useCallback(() => {
-    if (running.current || !web.current) return;
+    if (running.current || !web.current || !hasProPolaroidEffects(latest.current)) return;
     running.current = true;
     const key = JSON.stringify(latest.current);
     web.current.injectJavaScript(`window.renderCorrection(${key},${JSON.stringify(key)});true;`);
@@ -28,7 +28,7 @@ export function HeroPolaroidProcessor({ uri, source, effects, onResult, onError 
   }, []);
   useEffect(() => {
     if (!ready) return;
-    const timer = setTimeout(submit, 50);
+    const timer = setTimeout(submit, 16);
     return () => clearTimeout(timer);
   }, [effects, ready, submit]);
   useEffect(() => () => clearTimeout(timeout.current), []);
@@ -41,7 +41,16 @@ export function HeroPolaroidProcessor({ uri, source, effects, onResult, onError 
       let local = uri;
       if (!local && source != null) { const asset = Asset.fromModule(source); await asset.downloadAsync(); local = asset.localUri ?? asset.uri; }
       if (!local) throw new Error('missing_image');
-      const image = await manipulateAsync(local, [], { format: SaveFormat.PNG, base64: true });
+      // Cap before PNG/base64 encoding and WebView transfer, rather than decoding
+      // a full-resolution photo twice only to shrink it in the canvas afterward.
+      const dimensions = await new Promise<{ width: number; height: number } | null>(resolve => {
+        Image.getSize(local!, (width, height) => resolve({ width, height }), () => resolve(null));
+      });
+      if (!live) return;
+      const resize = dimensions && Math.max(dimensions.width, dimensions.height) > 2048
+        ? [{ resize: dimensions.width >= dimensions.height ? { width: 2048 } : { height: 2048 } }]
+        : [];
+      const image = await manipulateAsync(local, resize, { format: SaveFormat.PNG, base64: true });
       try { if (live) setInput(`data:image/png;base64,${image.base64}`); }
       finally { await deleteAsync(image.uri, { idempotent: true }); }
     })().catch(() => { if (live) callbacks.current.onError(); });
@@ -69,6 +78,6 @@ img.src = ${JSON.stringify(input)};
   const documentSource = useMemo(() => ({ html }), [html]);
   if (!html) return null;
   return <View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}><WebView ref={web} originWhitelist={['about:*']} source={documentSource} javaScriptEnabled onError={onError} onMessage={event => {
-    try { const result = JSON.parse(event.nativeEvent.data); if (result.ready) { clearTimeout(timeout.current); setReady(true); return; } clearTimeout(timeout.current); running.current = false; if (typeof result.uri === 'string' && result.uri.startsWith('data:image/png;base64,')) { callbacks.current.onResult(result.uri, result.key); if (result.key !== JSON.stringify(latest.current)) submit(); } else callbacks.current.onError(); } catch { onError(); }
+    try { const result = JSON.parse(event.nativeEvent.data); if (result.ready) { clearTimeout(timeout.current); setReady(true); return; } clearTimeout(timeout.current); running.current = false; if (typeof result.uri === 'string' && result.uri.startsWith('data:image/png;base64,')) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onResult(result.uri, result.key); else submit(); } else callbacks.current.onError(); } catch { onError(); }
   }} /></View>;
 }

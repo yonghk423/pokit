@@ -1,0 +1,485 @@
+{
+  "version": 1,
+  "status": "research-draft",
+  "date": "2026-11-08",
+  "counts": {
+    "cameras": 12,
+    "films": 20,
+    "candidateProducts": 32,
+    "camerasFree": 4,
+    "camerasPro": 8,
+    "filmsFree": 6,
+    "filmsPro": 14
+  },
+  "cameras": [
+    {
+      "id": "polaroid-now",
+      "name": "Polaroid Now",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "i-type",
+        "600"
+      ],
+      "proposedTier": "free",
+      "sourcePage": "https://www.polaroid.com/en_us/cameras/now-camera",
+      "designIntent": "즉석사진 기본",
+      "validation": "즉석카메라 공통 효과와 중복 여부",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified",
+      "candidateImageUrl": "https://istyle.ro/cdn/shop/files/polaroidnow-white_front.png?v=1769076430"
+    },
+    {
+      "id": "polaroid-now-plus",
+      "name": "Polaroid Now+",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "i-type",
+        "600"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://press.polaroid.com/en/assets/235233/",
+      "designIntent": "창작용 즉석사진",
+      "validation": "Now와 결과 차이가 없으면 별도 유료 효과에서 제외",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "polaroid-flip",
+      "name": "Polaroid Flip",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "i-type",
+        "600"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://www.polaroid.com/en_us/cameras",
+      "designIntent": "플래시 중심 즉석사진",
+      "validation": "기존 사진에서 실제 플래시·초점 기능을 재현한다고 표현하지 않기",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "polaroid-go",
+      "name": "Polaroid Go",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "go"
+      ],
+      "proposedTier": "free",
+      "sourcePage": "https://shop.polaroid.com/collections/film-for-polaroid-go-camera",
+      "designIntent": "작은 즉석사진",
+      "validation": "Go 프레임 비율과 작은 인화지 느낌",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "instax-mini12",
+      "name": "Fujifilm instax mini 12",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "instax-mini"
+      ],
+      "proposedTier": "free",
+      "sourcePage": "https://www.instax.com/mini_12/en/",
+      "designIntent": "작은 세로 인화지",
+      "validation": "Polaroid와 다른 프레임 및 발색",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "instax-mini99",
+      "name": "Fujifilm instax mini 99",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "instax-mini"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://www.instax.com/camera/",
+      "designIntent": "창작형 즉석사진",
+      "validation": "Mini12와 기본 발색 중복; 별도 색 효과는 옵션으로 검증",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "instax-sq40",
+      "name": "Fujifilm instax SQUARE SQ40",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "instax-square"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://www.instax.com/camera/",
+      "designIntent": "정사각형 즉석사진",
+      "validation": "Mini와 필름 발색이 아닌 프레임 차이로 분류",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "instax-wide400",
+      "name": "Fujifilm instax WIDE 400",
+      "format": "instant",
+      "physicalFilmFormats": [
+        "instax-wide"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://www.instax.com/camera/",
+      "designIntent": "가로로 넓은 즉석사진",
+      "validation": "원본을 자르지 않는 인화지 구성 검증",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "kodak-h35",
+      "name": "Kodak EKTAR H35",
+      "format": "35mm-half-frame",
+      "physicalFilmFormats": [
+        "135"
+      ],
+      "proposedTier": "free",
+      "sourcePage": "https://www.ormsdirect.co.za/collections/35mm-film-cameras",
+      "designIntent": "하프프레임 일상",
+      "validation": "해상감·입자 스케일 차이; 렌즈 효과 과장 금지",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified",
+      "candidateImageUrl": "https://www.ormsdirect.co.za/cdn/shop/files/kodak-ektar-h35-film-camera-sand-front.webp?v=1725008123&width=1024"
+    },
+    {
+      "id": "ilford-sprite35",
+      "name": "ILFORD Sprite 35-II",
+      "format": "35mm",
+      "physicalFilmFormats": [
+        "135"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://ilfocolor.com/ilfocolor-cameras/",
+      "designIntent": "간단한 포인트앤슛",
+      "validation": "H35와 주변부 선명도·비네팅 구별",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "pentax17",
+      "name": "PENTAX 17",
+      "format": "35mm-half-frame",
+      "physicalFilmFormats": [
+        "135"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://pentax.eu/pages/pentax17-filmcamera_details",
+      "designIntent": "깨끗한 하프프레임",
+      "validation": "기본 깨끗한 렌즈 대비; 단순 선명도 증가만으로 유료화하지 않기",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "lomoapparat",
+      "name": "Lomography LomoApparat",
+      "format": "35mm",
+      "physicalFilmFormats": [
+        "135"
+      ],
+      "proposedTier": "pro",
+      "sourcePage": "https://www.lomography.com/school/what-are-the-best-lomography-cameras-for-beginners-fa-nrlmj5em",
+      "designIntent": "실험적 광각 사진",
+      "validation": "비네팅·주변부 부드러움·색 플래시를 각각 선택 옵션으로 검증",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    }
+  ],
+  "films": [
+    {
+      "id": "itype-color",
+      "name": "Polaroid Color i-Type",
+      "format": "i-type",
+      "proposedTier": "free",
+      "sourcePage": "https://www.polaroid.com/en_us/products/color-itype-instant-film",
+      "designIntent": "부드러운 즉석 컬러",
+      "similarityGroup": "instant-color",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "itype-bw",
+      "name": "Polaroid B&W i-Type",
+      "format": "i-type",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.polaroid.com/en_us/film/itype-film",
+      "designIntent": "즉석 흑백",
+      "similarityGroup": "instant-bw",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "600-color",
+      "name": "Polaroid Color 600",
+      "format": "600",
+      "proposedTier": "free",
+      "sourcePage": "https://shop-us.polaroid.com/collections/instant-film",
+      "designIntent": "빈티지 호환 컬러",
+      "similarityGroup": "instant-color",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "600-bw",
+      "name": "Polaroid B&W 600",
+      "format": "600",
+      "proposedTier": "pro",
+      "sourcePage": "https://shop-us.polaroid.com/collections/instant-film",
+      "designIntent": "빈티지 호환 흑백",
+      "similarityGroup": "instant-bw",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "sx70-color",
+      "name": "Polaroid Color SX-70",
+      "format": "sx-70",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.polaroid.com/en_im/film/sx-70-film",
+      "designIntent": "SX-70 컬러",
+      "similarityGroup": "sx70",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "go-color",
+      "name": "Polaroid Go Color",
+      "format": "go",
+      "proposedTier": "free",
+      "sourcePage": "https://shop.polaroid.com/collections/film-for-polaroid-go-camera",
+      "designIntent": "작은 즉석 컬러",
+      "similarityGroup": "go",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "8x10-color",
+      "name": "Polaroid Color 8×10",
+      "format": "8x10",
+      "proposedTier": "pro",
+      "sourcePage": "https://shop-us.polaroid.com/collections/instant-film",
+      "designIntent": "대형 즉석사진",
+      "similarityGroup": "large-instant",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "gold200",
+      "name": "Kodak Gold 200",
+      "format": "135",
+      "proposedTier": "free",
+      "sourcePage": "https://www.kodakprofessional.com/en-gb/photographers/film/everyday-film",
+      "designIntent": "따뜻한 일상",
+      "similarityGroup": "warm-daylight",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified",
+      "candidateImageUrl": "https://cdn.uniquephoto.com/resources/uniquephoto/images/products/processed/EKF421.superZoom.a.jpg"
+    },
+    {
+      "id": "ultramax400",
+      "name": "Kodak UltraMax 400",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.kodakprofessional.com/en-gb/photographers/film/everyday-film",
+      "designIntent": "생생한 일상",
+      "similarityGroup": "vivid-daylight",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "portra160",
+      "name": "Kodak Portra 160",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.kodakprofessional.com/sites/default/files/wysiwyg/film/KODAKPROFESSIONAL_Film_Brochure2018.pdf",
+      "designIntent": "차분한 피부톤",
+      "similarityGroup": "portrait",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "portra400",
+      "name": "Kodak Portra 400",
+      "format": "135",
+      "proposedTier": "free",
+      "sourcePage": "https://www.kodakprofessional.com/sites/default/files/wysiwyg/film/KODAKPROFESSIONAL_Film_Brochure2018.pdf",
+      "designIntent": "부드러운 인물",
+      "similarityGroup": "portrait",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "portra800",
+      "name": "Kodak Portra 800",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.kodakprofessional.com/sites/default/files/wysiwyg/film/KODAKPROFESSIONAL_Film_Brochure2018.pdf",
+      "designIntent": "저녁 인물과 입자",
+      "similarityGroup": "portrait-grain",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "ektar100",
+      "name": "Kodak Ektar 100",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.kodakprofessional.com/sites/default/files/wysiwyg/film/KODAKPROFESSIONAL_Film_Brochure2018.pdf",
+      "designIntent": "선명한 풍경",
+      "similarityGroup": "landscape",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "trix400",
+      "name": "Kodak Tri-X 400",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.kodakprofessional.com/sites/default/files/wysiwyg/film/KODAKPROFESSIONAL_Film_Brochure2018.pdf",
+      "designIntent": "거친 다큐 흑백",
+      "similarityGroup": "documentary-bw",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "cinestill800t",
+      "name": "CineStill 800T",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://cinestillfilm.com/",
+      "designIntent": "밤의 광원 번짐",
+      "similarityGroup": "night-tungsten",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "cinestill400d",
+      "name": "CineStill 400D",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://cinestillfilm.com/",
+      "designIntent": "주광 시네마",
+      "similarityGroup": "cinema-daylight",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "cinestill50d",
+      "name": "CineStill 50D",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://cinestillfilm.com/",
+      "designIntent": "밝은 날의 미세한 입자",
+      "similarityGroup": "fine-daylight",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "hp5",
+      "name": "ILFORD HP5 PLUS 400",
+      "format": "135",
+      "proposedTier": "free",
+      "sourcePage": "https://www.ilfordphoto.com/wp/wp-content/uploads/2017/05/Ilford-Product-Brochure-LOW-RES-WEB-1.pdf",
+      "designIntent": "넓은 명암의 흑백",
+      "similarityGroup": "classic-bw",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "fp4",
+      "name": "ILFORD FP4 PLUS 125",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.ilfordphoto.com/wp/wp-content/uploads/2017/05/Ilford-Product-Brochure-LOW-RES-WEB-1.pdf",
+      "designIntent": "미세한 입자 흑백",
+      "similarityGroup": "fine-bw",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    },
+    {
+      "id": "delta3200",
+      "name": "ILFORD DELTA 3200",
+      "format": "135",
+      "proposedTier": "pro",
+      "sourcePage": "https://www.ilfordphoto.com/wp/wp-content/uploads/2017/05/Ilford-Product-Brochure-LOW-RES-WEB-1.pdf",
+      "designIntent": "밤의 거친 흑백",
+      "similarityGroup": "night-bw",
+      "imageStatus": "not-acquired",
+      "sourceStatus": "needs-live-recheck",
+      "effectStatus": "not-implemented",
+      "commercialUseStatus": "not-verified"
+    }
+  ],
+  "notes": [
+    "Display names are research references, not claims of manufacturer affiliation or calibrated reproduction.",
+    "Source pages are discovery leads; current availability, front-view image quality and reuse terms require recheck.",
+    "8x10 and SX-70 have no matching body in this 12-camera shortlist. Do not show as physically compatible.",
+    "Instax bodies need their own Mini/Square/Wide film profiles, not included in this 20-film shortlist. Add native profiles before real-compatibility mode ships.",
+    "i-Type/600 color and B&W pairs can share chemistry; do not count them as independent paid looks without evidence.",
+    "Proposed tier is provisional. Similarity testing may reduce distinct looks; 32 products do not mean 32 distinct effects.",
+    "Existing app has 15 generic looks plus original; these are not calibrated to the products in this catalog."
+  ]
+}

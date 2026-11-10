@@ -1,0 +1,513 @@
+{
+  "bucket": "character-illustrations",
+  "revision": "upload-candidate-v8",
+  "backgroundCount": 50,
+  "totalBytes": 12726930,
+  "backup": "output/calendar-v6-server-verification-20261110",
+  "status": "verified",
+  "files": [
+    {
+      "themeId": "01-rush-hour-commute",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/01-rush-hour-commute/background.webp",
+      "storagePath": "calendar-themes/city-animation/01-rush-hour-commute/background.webp",
+      "bytes": 268098,
+      "sha256": "60f23f751257e1b4a11d3128cde2122b0fcb4bc59c7259ee29661e370fffabaf",
+      "previousSha256": "20b9fd759f6468af7c4398db0803351ad1601e87bf7be612fb25d37696c7a7e9",
+      "status": "verified",
+      "downloadedSha256": "60f23f751257e1b4a11d3128cde2122b0fcb4bc59c7259ee29661e370fffabaf"
+    },
+    {
+      "themeId": "02-office-presentation",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/02-office-presentation/background.webp",
+      "storagePath": "calendar-themes/city-animation/02-office-presentation/background.webp",
+      "bytes": 125724,
+      "sha256": "513f90b2e7b5a53144cc7057906a3ae3b73c647c8043afc70817084c6713673b",
+      "previousSha256": "77cf56fc389a430f783e4c183b5b37875eae733d5c03033f4d5813313995ede8",
+      "status": "verified",
+      "downloadedSha256": "513f90b2e7b5a53144cc7057906a3ae3b73c647c8043afc70817084c6713673b"
+    },
+    {
+      "themeId": "03-spilled-coffee-report",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/03-spilled-coffee-report/background.webp",
+      "storagePath": "calendar-themes/city-animation/03-spilled-coffee-report/background.webp",
+      "bytes": 200312,
+      "sha256": "0c5b9b911b556a4d42951c987875b2d6ad0cda37059a81e8753920503221f11b",
+      "previousSha256": "024500efa961e78d93cdb9b3fa7a11a73948d8a669ed3e3fac5bae3fc6e68bea",
+      "status": "verified",
+      "downloadedSha256": "0c5b9b911b556a4d42951c987875b2d6ad0cda37059a81e8753920503221f11b"
+    },
+    {
+      "themeId": "04-lunch-rooftop",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/04-lunch-rooftop/background.webp",
+      "storagePath": "calendar-themes/city-animation/04-lunch-rooftop/background.webp",
+      "bytes": 213066,
+      "sha256": "a387f654b6858585b6c65ddbda453de526b694da8132bc91836ef193f981e20e",
+      "previousSha256": "c8a37e378569495620313da395f593bc4d25f09e745504b5a57d321b956bdce6",
+      "status": "verified",
+      "downloadedSha256": "a387f654b6858585b6c65ddbda453de526b694da8132bc91836ef193f981e20e"
+    },
+    {
+      "themeId": "05-proud-promotion",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/05-proud-promotion/background.webp",
+      "storagePath": "calendar-themes/city-animation/05-proud-promotion/background.webp",
+      "bytes": 230908,
+      "sha256": "09dbe68d91b1144e5f95aa8d93d7cc8b38d727d8d4c04246332f3fb5c71addce",
+      "previousSha256": "b5be8075afa0feb80404428623e602254e5af28321cee04336b531c65b71c76d",
+      "status": "verified",
+      "downloadedSha256": "09dbe68d91b1144e5f95aa8d93d7cc8b38d727d8d4c04246332f3fb5c71addce"
+    },
+    {
+      "themeId": "06-angry-email",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/06-angry-email/background.webp",
+      "storagePath": "calendar-themes/city-animation/06-angry-email/background.webp",
+      "bytes": 103584,
+      "sha256": "51d6c41f0d60983b21e186986aa687de100059dfada9991f8fe662ffa9357027",
+      "previousSha256": "971de80af40feb4f2dad098de73f4a7419c2d8c8cf17bde64acd99fefdad437f",
+      "status": "verified",
+      "downloadedSha256": "51d6c41f0d60983b21e186986aa687de100059dfada9991f8fe662ffa9357027"
+    },
+    {
+      "themeId": "07-after-work-run",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/07-after-work-run/background.webp",
+      "storagePath": "calendar-themes/city-animation/07-after-work-run/background.webp",
+      "bytes": 305454,
+      "sha256": "7160bd6810b96e23dd8d4e38dcc609b30a5bba181daedbedb822af9227f18645",
+      "previousSha256": "aa8b6bd4760f0c6df973f479ba31a1ede682ae040d2f960c296a4a75debbdcc1",
+      "status": "verified",
+      "downloadedSha256": "7160bd6810b96e23dd8d4e38dcc609b30a5bba181daedbedb822af9227f18645"
+    },
+    {
+      "themeId": "08-missed-deadline",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/08-missed-deadline/background.webp",
+      "storagePath": "calendar-themes/city-animation/08-missed-deadline/background.webp",
+      "bytes": 95342,
+      "sha256": "9849c38ffb7066501c1970c9ddd6460c2e1b4582d422878700223f4a6e7021be",
+      "previousSha256": "c138446421826b59b38faf1cddbc7c79297c589dec2bd26b88b7475ca4793426",
+      "status": "verified",
+      "downloadedSha256": "9849c38ffb7066501c1970c9ddd6460c2e1b4582d422878700223f4a6e7021be"
+    },
+    {
+      "themeId": "09-boxing-bag",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/09-boxing-bag/background.webp",
+      "storagePath": "calendar-themes/city-animation/09-boxing-bag/background.webp",
+      "bytes": 311778,
+      "sha256": "b97ca0f96ba2b926cab093721e017c6b8db6568969afdfa9b7fc4a3f9f20e88a",
+      "previousSha256": "ea55035966559a296f486db5849c043c4028123b36cc97b1f1666239a36e4330",
+      "status": "verified",
+      "downloadedSha256": "b97ca0f96ba2b926cab093721e017c6b8db6568969afdfa9b7fc4a3f9f20e88a"
+    },
+    {
+      "themeId": "10-basketball-shot",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/10-basketball-shot/background.webp",
+      "storagePath": "calendar-themes/city-animation/10-basketball-shot/background.webp",
+      "bytes": 248290,
+      "sha256": "450e754b4b1f608ea3603c475aa6ea80fb2c902e35677342a3b594beb21c21bb",
+      "previousSha256": "bc77b5e68318569861859c98141421a12a27ea48b2e6ab201f4a0ac91c413968",
+      "status": "verified",
+      "downloadedSha256": "450e754b4b1f608ea3603c475aa6ea80fb2c902e35677342a3b594beb21c21bb"
+    },
+    {
+      "themeId": "11-swimming-laps",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/11-swimming-laps/background.webp",
+      "storagePath": "calendar-themes/city-animation/11-swimming-laps/background.webp",
+      "bytes": 236868,
+      "sha256": "efede3a7e6e451a6eaf8e5b7acc1825a658f538ea354c9ed85034aad33385fd8",
+      "previousSha256": "b15ff3c56106a6c0a315c5e207de924a6a935b37bd489c3931f503665f6b22c1",
+      "status": "verified",
+      "downloadedSha256": "efede3a7e6e451a6eaf8e5b7acc1825a658f538ea354c9ed85034aad33385fd8"
+    },
+    {
+      "themeId": "12-cycling-hill",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/12-cycling-hill/background.webp",
+      "storagePath": "calendar-themes/city-animation/12-cycling-hill/background.webp",
+      "bytes": 353396,
+      "sha256": "1609bf533f102128121890b17c3d8954e854228d982c07ddf90cb89b51ca9948",
+      "previousSha256": "1d1b8e9810237aa6712efc087d8830b15308465d8dae7a23f16f1283141282d0",
+      "status": "verified",
+      "downloadedSha256": "1609bf533f102128121890b17c3d8954e854228d982c07ddf90cb89b51ca9948"
+    },
+    {
+      "themeId": "13-yoga-balance",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/13-yoga-balance/background.webp",
+      "storagePath": "calendar-themes/city-animation/13-yoga-balance/background.webp",
+      "bytes": 147032,
+      "sha256": "dd43f3dfb9631f30018421eeaa974c220d25925d3947798ba914487413a4b3ca",
+      "previousSha256": "82f474d2be0d32b45793ca5233ffb9508c2fd865862fc9a5d75855486147e9be",
+      "status": "verified",
+      "downloadedSha256": "dd43f3dfb9631f30018421eeaa974c220d25925d3947798ba914487413a4b3ca"
+    },
+    {
+      "themeId": "14-tennis-serve",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/14-tennis-serve/background.webp",
+      "storagePath": "calendar-themes/city-animation/14-tennis-serve/background.webp",
+      "bytes": 319440,
+      "sha256": "637cdcf3f1e4f39a1590109037dc47ae7c757d593bff49699efc73222ac551af",
+      "previousSha256": "752e06c7c56057d145d88bf8619cf88ebe4e9c5bcf3bf9994f0bbce37e7ffd87",
+      "status": "verified",
+      "downloadedSha256": "637cdcf3f1e4f39a1590109037dc47ae7c757d593bff49699efc73222ac551af"
+    },
+    {
+      "themeId": "15-soccer-dribble",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/15-soccer-dribble/background.webp",
+      "storagePath": "calendar-themes/city-animation/15-soccer-dribble/background.webp",
+      "bytes": 194402,
+      "sha256": "06a23c9bd62985c0fee626d20f9170e90e005bfe0ed6968fa6814b0b4c7a9600",
+      "previousSha256": "da8b557079a14147520ecfb1fd71db749df89c72c455b7df80c24c83d32ca76f",
+      "status": "verified",
+      "downloadedSha256": "06a23c9bd62985c0fee626d20f9170e90e005bfe0ed6968fa6814b0b4c7a9600"
+    },
+    {
+      "themeId": "16-dance-practice",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/16-dance-practice/background.webp",
+      "storagePath": "calendar-themes/city-animation/16-dance-practice/background.webp",
+      "bytes": 127028,
+      "sha256": "c50068917cf3d1d47a795f9753e735a880259fd21ce2eda4a746ac497383745f",
+      "previousSha256": "5866e3999b431e0e65ca5d6cf57a15e91ff6c822b9067ecc63e8675cf9045cec",
+      "status": "verified",
+      "downloadedSha256": "c50068917cf3d1d47a795f9753e735a880259fd21ce2eda4a746ac497383745f"
+    },
+    {
+      "themeId": "17-climbing-wall",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/17-climbing-wall/background.webp",
+      "storagePath": "calendar-themes/city-animation/17-climbing-wall/background.webp",
+      "bytes": 185332,
+      "sha256": "d998cbf201b6c00fcfe25fa88d84ad456cc721388771936f8bf799a1cd8b6b8c",
+      "previousSha256": "d723a3b9d3b8e37c3752006c962be7cadaed28087acb3e418fa6f3373cea986d",
+      "status": "verified",
+      "downloadedSha256": "d998cbf201b6c00fcfe25fa88d84ad456cc721388771936f8bf799a1cd8b6b8c"
+    },
+    {
+      "themeId": "18-jump-rope",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/18-jump-rope/background.webp",
+      "storagePath": "calendar-themes/city-animation/18-jump-rope/background.webp",
+      "bytes": 280326,
+      "sha256": "c472eec95101be36a439f819d4a77de3f9b11f7110d8df0a395cfb9eb7b1523c",
+      "previousSha256": "0f031d2858b0473c5834fec03b03584f6df053f1ba493d704f9ff473f6471914",
+      "status": "verified",
+      "downloadedSha256": "c472eec95101be36a439f819d4a77de3f9b11f7110d8df0a395cfb9eb7b1523c"
+    },
+    {
+      "themeId": "19-rain-run",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/19-rain-run/background.webp",
+      "storagePath": "calendar-themes/city-animation/19-rain-run/background.webp",
+      "bytes": 345310,
+      "sha256": "35bee03b62e868881e4c4bbcee0cca23b15702b6163fdbe8ecfd98dc0b61595b",
+      "previousSha256": "986f82de9a556c2a368136250cdd270a2875d0758ebe4414c31676ffa710d8ab",
+      "status": "verified",
+      "downloadedSha256": "35bee03b62e868881e4c4bbcee0cca23b15702b6163fdbe8ecfd98dc0b61595b"
+    },
+    {
+      "themeId": "20-badminton-rally",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/20-badminton-rally/background.webp",
+      "storagePath": "calendar-themes/city-animation/20-badminton-rally/background.webp",
+      "bytes": 295488,
+      "sha256": "56f3462d94cf848fbdb79f1efc64d45ea2272904d414ed6314b118463642a4c7",
+      "previousSha256": "dd00bea61326c64e7a0a54d973164fd2b9395e536a68e1d443ca91ae66b63da8",
+      "status": "verified",
+      "downloadedSha256": "56f3462d94cf848fbdb79f1efc64d45ea2272904d414ed6314b118463642a4c7"
+    },
+    {
+      "themeId": "21-couch-after-work",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/21-couch-after-work/background.webp",
+      "storagePath": "calendar-themes/city-animation/21-couch-after-work/background.webp",
+      "bytes": 133640,
+      "sha256": "efdde31df591c117de4fe3df974f2beea21085c5d3af7a7ceafa97795ac4411e",
+      "previousSha256": "e71363285e546f512967c05d48887bd3ecd6a0f955365a5cfce3f3fa70aedfb8",
+      "status": "verified",
+      "downloadedSha256": "efdde31df591c117de4fe3df974f2beea21085c5d3af7a7ceafa97795ac4411e"
+    },
+    {
+      "themeId": "22-window-tea",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/22-window-tea/background.webp",
+      "storagePath": "calendar-themes/city-animation/22-window-tea/background.webp",
+      "bytes": 171732,
+      "sha256": "ce234694f4beb679e5f9b6aaee9a9d149bd856879df6f08f28731c221d5084f9",
+      "previousSha256": "821a5acd01f9b3643399c71d2815a02e2959295dea20196659b7afcc102f33b8",
+      "status": "verified",
+      "downloadedSha256": "ce234694f4beb679e5f9b6aaee9a9d149bd856879df6f08f28731c221d5084f9"
+    },
+    {
+      "themeId": "23-laundry-day",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/23-laundry-day/background.webp",
+      "storagePath": "calendar-themes/city-animation/23-laundry-day/background.webp",
+      "bytes": 192296,
+      "sha256": "fd5b3e736bf5e6995d8a9ec89c1d95c8a989488b5ca44314934a99c20ac8a232",
+      "previousSha256": "f2516178666849dca78dd23c237b7c443362ef0bd234837a89486cd821a73afd",
+      "status": "verified",
+      "downloadedSha256": "fd5b3e736bf5e6995d8a9ec89c1d95c8a989488b5ca44314934a99c20ac8a232"
+    },
+    {
+      "themeId": "24-home-cooking",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/24-home-cooking/background.webp",
+      "storagePath": "calendar-themes/city-animation/24-home-cooking/background.webp",
+      "bytes": 187516,
+      "sha256": "dc54d1084ba1a0f4962a5943b78f896c516be7d32fba9a666a10ed23592646e5",
+      "previousSha256": "56d9d7cda146820744f2f6d20c24b325f5d9044b619d8d177ae351e527d15573",
+      "status": "verified",
+      "downloadedSha256": "dc54d1084ba1a0f4962a5943b78f896c516be7d32fba9a666a10ed23592646e5"
+    },
+    {
+      "themeId": "25-lazy-morning",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/25-lazy-morning/background.webp",
+      "storagePath": "calendar-themes/city-animation/25-lazy-morning/background.webp",
+      "bytes": 125532,
+      "sha256": "0491a44b678f7920d7fff7955298ec4c8da585c17fae19209546d1edb3ec7a5a",
+      "previousSha256": "c2e2491086974a59c19ca8aa959019fd82c69fb797421fa2e16e7b16822b1960",
+      "status": "verified",
+      "downloadedSha256": "0491a44b678f7920d7fff7955298ec4c8da585c17fae19209546d1edb3ec7a5a"
+    },
+    {
+      "themeId": "26-couch-nap",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/26-couch-nap/background.webp",
+      "storagePath": "calendar-themes/city-animation/26-couch-nap/background.webp",
+      "bytes": 164160,
+      "sha256": "14e34223d3be66c587eb02515185b6c904f963465dfde3c417b78292e9d84f78",
+      "previousSha256": "a9fbc4841dd55fd54f23793861b6c3d3db0f3915c9a15a719b5559b87cdb3b20",
+      "status": "verified",
+      "downloadedSha256": "14e34223d3be66c587eb02515185b6c904f963465dfde3c417b78292e9d84f78"
+    },
+    {
+      "themeId": "27-houseplant-care",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/27-houseplant-care/background.webp",
+      "storagePath": "calendar-themes/city-animation/27-houseplant-care/background.webp",
+      "bytes": 203848,
+      "sha256": "840101c014a70e9381259bcb5e3d013a02d96df6262d9a9dfe264c6570bfb20f",
+      "previousSha256": "bb803a8d6ec910610318633688489f062672cc560f73f7215301af844cc3eb97",
+      "status": "verified",
+      "downloadedSha256": "840101c014a70e9381259bcb5e3d013a02d96df6262d9a9dfe264c6570bfb20f"
+    },
+    {
+      "themeId": "28-movie-night",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/28-movie-night/background.webp",
+      "storagePath": "calendar-themes/city-animation/28-movie-night/background.webp",
+      "bytes": 183880,
+      "sha256": "4a5456288cd65601bab04cbf616e3a29fb7971aade40ac7020eb7bfa2bd975d0",
+      "previousSha256": "af37e43306b8a1a26c2bb06a76cdfbec00f5d3ce57f867bd33d3bfa864efd27c",
+      "status": "verified",
+      "downloadedSha256": "4a5456288cd65601bab04cbf616e3a29fb7971aade40ac7020eb7bfa2bd975d0"
+    },
+    {
+      "themeId": "29-bathroom-skincare",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/29-bathroom-skincare/background.webp",
+      "storagePath": "calendar-themes/city-animation/29-bathroom-skincare/background.webp",
+      "bytes": 108776,
+      "sha256": "433e57c8ccdcb410789aa6a3decb30fcda224d1e7357a89cf278fc90bda52f64",
+      "previousSha256": "1a411a7416dc42149dd982f2b6721e76e30fcd1fd4e0349b01a0226f709358de",
+      "status": "verified",
+      "downloadedSha256": "433e57c8ccdcb410789aa6a3decb30fcda224d1e7357a89cf278fc90bda52f64"
+    },
+    {
+      "themeId": "30-cat-on-lap",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/30-cat-on-lap/background.webp",
+      "storagePath": "calendar-themes/city-animation/30-cat-on-lap/background.webp",
+      "bytes": 375652,
+      "sha256": "24c8f29a97e2d9ee0ced4860e9488fd5daf65b0386850b46877c26a70e0d30fe",
+      "previousSha256": "aed238f406d33c4ed35f7b34f0319cf5dc71e363c59bb6f07496b52718e4e663",
+      "status": "verified",
+      "downloadedSha256": "24c8f29a97e2d9ee0ced4860e9488fd5daf65b0386850b46877c26a70e0d30fe"
+    },
+    {
+      "themeId": "31-frustrated-phone-call",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/31-frustrated-phone-call/background.webp",
+      "storagePath": "calendar-themes/city-animation/31-frustrated-phone-call/background.webp",
+      "bytes": 225176,
+      "sha256": "1a9475d5df6b9ffdf78c94a0ffa5f2beb66b9adc4fd899b457f35e9a490d309a",
+      "previousSha256": "6fe8fa9536d3f58ae6cdc679b256f5b2369956acf8c42778e56cdfe84304ebd9",
+      "status": "verified",
+      "downloadedSha256": "1a9475d5df6b9ffdf78c94a0ffa5f2beb66b9adc4fd899b457f35e9a490d309a"
+    },
+    {
+      "themeId": "32-sad-bus-stop",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/32-sad-bus-stop/background.webp",
+      "storagePath": "calendar-themes/city-animation/32-sad-bus-stop/background.webp",
+      "bytes": 268174,
+      "sha256": "79981f8a5a1992e5c1dbce59d1705a3a4bdd1c47ee852bf476379992ade7c69d",
+      "previousSha256": "3a2b744a0b47411a6ebc5d8c23ddfecb09ef952529ca7e749c19baf197d52535",
+      "status": "verified",
+      "downloadedSha256": "79981f8a5a1992e5c1dbce59d1705a3a4bdd1c47ee852bf476379992ade7c69d"
+    },
+    {
+      "themeId": "33-exam-results-joy",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/33-exam-results-joy/background.webp",
+      "storagePath": "calendar-themes/city-animation/33-exam-results-joy/background.webp",
+      "bytes": 186532,
+      "sha256": "671d2f363abeed98e3a9cf7ef248b9a84045aa96ae231d1471f5dc5e60e886f9",
+      "previousSha256": "83334e27b0605fcc752304f1d9885aa42e050c760af5ff1b067ac75e134aac46",
+      "status": "verified",
+      "downloadedSha256": "671d2f363abeed98e3a9cf7ef248b9a84045aa96ae231d1471f5dc5e60e886f9"
+    },
+    {
+      "themeId": "34-interview-nerves",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/34-interview-nerves/background.webp",
+      "storagePath": "calendar-themes/city-animation/34-interview-nerves/background.webp",
+      "bytes": 177878,
+      "sha256": "64128eee33f89ecf69b43cbcbcbc21533bdc3c339e556b30b12866a927cbb773",
+      "previousSha256": "92cd651c021fb1de95c6a1dc6de10099931dfc79a67fc274d037c92f53b37b03",
+      "status": "verified",
+      "downloadedSha256": "64128eee33f89ecf69b43cbcbcbc21533bdc3c339e556b30b12866a927cbb773"
+    },
+    {
+      "themeId": "35-breakup-evening",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/35-breakup-evening/background.webp",
+      "storagePath": "calendar-themes/city-animation/35-breakup-evening/background.webp",
+      "bytes": 199782,
+      "sha256": "ff993a9df3c33521536fc298f498c9c22efc81b4d304b8442fd6e876dd42d8f5",
+      "previousSha256": "1c81773d9f17195b1e9d854dc3feb4734d9eddd8fb4bd1f44bf0968996d1e463",
+      "status": "verified",
+      "downloadedSha256": "ff993a9df3c33521536fc298f498c9c22efc81b4d304b8442fd6e876dd42d8f5"
+    },
+    {
+      "themeId": "36-concert-happiness",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/36-concert-happiness/background.webp",
+      "storagePath": "calendar-themes/city-animation/36-concert-happiness/background.webp",
+      "bytes": 245716,
+      "sha256": "b1add42c466fdccf7094ca0519ec87194bbccefbded5ad6a3e3386d6ae38764b",
+      "previousSha256": "2120a1fd4245e457d1a0f5029d510c7038dfcedd882bdb7be18d8d01e161d096",
+      "status": "verified",
+      "downloadedSha256": "b1add42c466fdccf7094ca0519ec87194bbccefbded5ad6a3e3386d6ae38764b"
+    },
+    {
+      "themeId": "37-embarrassed-spill",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/37-embarrassed-spill/background.webp",
+      "storagePath": "calendar-themes/city-animation/37-embarrassed-spill/background.webp",
+      "bytes": 245626,
+      "sha256": "5330fa27a64dfee7bdbe36bb6624d5a8e80dcb14da8efdf362d69dca86b93eef",
+      "previousSha256": "1bd56912315a794bb82dd851add1e555a5158c6622255e68138e16c9f0d3aace",
+      "status": "verified",
+      "downloadedSha256": "5330fa27a64dfee7bdbe36bb6624d5a8e80dcb14da8efdf362d69dca86b93eef"
+    },
+    {
+      "themeId": "38-holiday-loneliness",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/38-holiday-loneliness/background.webp",
+      "storagePath": "calendar-themes/city-animation/38-holiday-loneliness/background.webp",
+      "bytes": 126898,
+      "sha256": "571d552d83cacbaff718076ddc801e6006d6cd55258cd3c8d577fb492e6f21fe",
+      "previousSha256": "c5c221ef0fa65995c4159eab4536037c47610d8ee75a8c12df5154f2afb06d32",
+      "status": "verified",
+      "downloadedSha256": "571d552d83cacbaff718076ddc801e6006d6cd55258cd3c8d577fb492e6f21fe"
+    },
+    {
+      "themeId": "39-birthday-surprise",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/39-birthday-surprise/background.webp",
+      "storagePath": "calendar-themes/city-animation/39-birthday-surprise/background.webp",
+      "bytes": 229352,
+      "sha256": "00ac5d8ede6dcbb0909cf4e4453e79ad67b60e94d20276173e8a6c0de2996ceb",
+      "previousSha256": "abb60c94076517ee14ac1acd28039d743277c7238d5607ea2c937d5869591a14",
+      "status": "verified",
+      "downloadedSha256": "00ac5d8ede6dcbb0909cf4e4453e79ad67b60e94d20276173e8a6c0de2996ceb"
+    },
+    {
+      "themeId": "40-relief-after-cry",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/40-relief-after-cry/background.webp",
+      "storagePath": "calendar-themes/city-animation/40-relief-after-cry/background.webp",
+      "bytes": 276514,
+      "sha256": "d5417e1886343842d94598597b47c95cd01cdb00629d4ba68b0125e3500c4131",
+      "previousSha256": "9f8dc8d43a7d49b799efd6eaf8a8b9ff4dd8d093ba6b0646178eb713576edac5",
+      "status": "verified",
+      "downloadedSha256": "d5417e1886343842d94598597b47c95cd01cdb00629d4ba68b0125e3500c4131"
+    },
+    {
+      "themeId": "41-spring-blossom-bicycle",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/41-spring-blossom-bicycle/background.webp",
+      "storagePath": "calendar-themes/city-animation/41-spring-blossom-bicycle/background.webp",
+      "bytes": 372760,
+      "sha256": "bccc356661b68805ee565d9dc7357651df1152c72d073feb3a0df72233ad83c9",
+      "previousSha256": "57aaf03ffffb55638b0d2e553e43d5cb0fc28a96702a281c14ec3ed47b4825a6",
+      "status": "verified",
+      "downloadedSha256": "bccc356661b68805ee565d9dc7357651df1152c72d073feb3a0df72233ad83c9"
+    },
+    {
+      "themeId": "42-spring-rain-puddle",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/42-spring-rain-puddle/background.webp",
+      "storagePath": "calendar-themes/city-animation/42-spring-rain-puddle/background.webp",
+      "bytes": 433832,
+      "sha256": "c511401e39da8d154fd1a54ae22c295a407b6fee24e30ab27949410843cf9fb9",
+      "previousSha256": "3c20e3af3f7e8d01eee9ed6924ccaf401fec4c47d86d45125fb4c15a180bae2c",
+      "status": "verified",
+      "downloadedSha256": "c511401e39da8d154fd1a54ae22c295a407b6fee24e30ab27949410843cf9fb9"
+    },
+    {
+      "themeId": "43-spring-garden-planting",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/43-spring-garden-planting/background.webp",
+      "storagePath": "calendar-themes/city-animation/43-spring-garden-planting/background.webp",
+      "bytes": 434182,
+      "sha256": "10e6d8d7bd7ee35e1bdc0177220cd21df849565df911a20dbf095882589f62df",
+      "previousSha256": "d13a05bec04ef21a5a3ef65c9fe209b40e78a28f7fae86be0123b93a75559035",
+      "status": "verified",
+      "downloadedSha256": "10e6d8d7bd7ee35e1bdc0177220cd21df849565df911a20dbf095882589f62df"
+    },
+    {
+      "themeId": "44-summer-beach-walk",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/44-summer-beach-walk/background.webp",
+      "storagePath": "calendar-themes/city-animation/44-summer-beach-walk/background.webp",
+      "bytes": 437800,
+      "sha256": "29437a35ab691be13eda2aff5d0be0075772934aea94a3751586208829a66ac3",
+      "previousSha256": "9cdbf1cbc7a1fbd3c92b49b5ed388fa4520f59df7a88bd8aec91be366196a7b8",
+      "status": "verified",
+      "downloadedSha256": "29437a35ab691be13eda2aff5d0be0075772934aea94a3751586208829a66ac3"
+    },
+    {
+      "themeId": "45-summer-hill-hike",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/45-summer-hill-hike/background.webp",
+      "storagePath": "calendar-themes/city-animation/45-summer-hill-hike/background.webp",
+      "bytes": 467230,
+      "sha256": "0fd08aa9c7e04a743d5719a6199a7b9af0cf1df1eef9f45805e5cbb1e37071f0",
+      "previousSha256": "9d47d0b40c0ede480f1ccc349968249e522638e22072b9ed5feadbd642f98681",
+      "status": "verified",
+      "downloadedSha256": "0fd08aa9c7e04a743d5719a6199a7b9af0cf1df1eef9f45805e5cbb1e37071f0"
+    },
+    {
+      "themeId": "46-autumn-leaves",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/46-autumn-leaves/background.webp",
+      "storagePath": "calendar-themes/city-animation/46-autumn-leaves/background.webp",
+      "bytes": 352974,
+      "sha256": "83f2a988b3d619d60ccf41ae25f66202725e7d869a67e1f000c5116a6a58faf7",
+      "previousSha256": "4e66fe44d250f1493632bd5dcbcf446099b8d163a6bd043ae134fe5366718d53",
+      "status": "verified",
+      "downloadedSha256": "83f2a988b3d619d60ccf41ae25f66202725e7d869a67e1f000c5116a6a58faf7"
+    },
+    {
+      "themeId": "47-autumn-market",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/47-autumn-market/background.webp",
+      "storagePath": "calendar-themes/city-animation/47-autumn-market/background.webp",
+      "bytes": 511792,
+      "sha256": "5b76d6f379866dd687e08707d11622b7459609ccba82821e3451d687c94e3ce9",
+      "previousSha256": "ab6abcc476b1f6248c0656ae63839e2cb61441b8c0c6174cf9a8514e611c0946",
+      "status": "verified",
+      "downloadedSha256": "5b76d6f379866dd687e08707d11622b7459609ccba82821e3451d687c94e3ce9"
+    },
+    {
+      "themeId": "48-autumn-bus-shelter",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/48-autumn-bus-shelter/background.webp",
+      "storagePath": "calendar-themes/city-animation/48-autumn-bus-shelter/background.webp",
+      "bytes": 306960,
+      "sha256": "0be5a6a0b54d67bea11849a451e871261b66a67985a9786143f33f6714ff0d8f",
+      "previousSha256": "1a2d468be4215d8ec1bf2ec9829ac4c98d80ff478e04d5bef6273cc9d75986ea",
+      "status": "verified",
+      "downloadedSha256": "0be5a6a0b54d67bea11849a451e871261b66a67985a9786143f33f6714ff0d8f"
+    },
+    {
+      "themeId": "49-winter-snow-play",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/49-winter-snow-play/background.webp",
+      "storagePath": "calendar-themes/city-animation/49-winter-snow-play/background.webp",
+      "bytes": 347478,
+      "sha256": "4380df90c4b3945e129d8bd2402e7cfcf2e47d1a5dadbccb7c8b1d5c3312b084",
+      "previousSha256": "de12049f36be64ba37d2913099559b66bf69b04376fae3c645e5b8a56d593568",
+      "status": "verified",
+      "downloadedSha256": "4380df90c4b3945e129d8bd2402e7cfcf2e47d1a5dadbccb7c8b1d5c3312b084"
+    },
+    {
+      "themeId": "50-winter-bus-wait",
+      "localPath": "assets/calendar-illustrations/upload-candidate-v8/50-winter-bus-wait/background.webp",
+      "storagePath": "calendar-themes/city-animation/50-winter-bus-wait/background.webp",
+      "bytes": 446064,
+      "sha256": "594367478a7a5d5f0dcc7e45b8882ad8f815936a40741afb77f68dd4f34368db",
+      "previousSha256": "62267581b401ce5eaebeb52bcfb4ad17c82052ec01099b4f99090c3ffa66adbc",
+      "status": "verified",
+      "downloadedSha256": "594367478a7a5d5f0dcc7e45b8882ad8f815936a40741afb77f68dd4f34368db"
+    }
+  ],
+  "uploadedAt": "2026-11-10T01:45:35.637013+00:00",
+  "verifiedAt": "2026-11-10T01:47:00.739252+00:00",
+  "verificationDirectory": "output/calendar-v8-server-verification-20261110"
+}

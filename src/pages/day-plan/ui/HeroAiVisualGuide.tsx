@@ -14,7 +14,7 @@ const words = {
   'zh-TW': { modes: ['用文字描繪', '照片轉插畫'], steps: ['準備', '畫風', '寫故事', '完成'], hints: ['不需照片也能開始，或按 + 選人物照片。', '點圓形畫風圖片查看清單。', '輸入 Title 和故事，再按鋼筆生成。', '完成的卡片可下載、分享或編輯。'], photoHint: '點照片圖示或方形預覽選照片，也能用相機拍攝。', photoWrite: '寫下想和照片保留的故事。此模式會盡量保留人物與構圖，同時改變畫風。', example: '在咖啡廳看書的午後', optional: '選填', source: '原始照片', result: '完成示意', details: '詳細使用說明', play: '播放', pause: '暫停', replay: '重播', tools: ['下載', '分享', '編輯'], toolHints: ['儲存到裝置照片。', '傳送到其他應用程式。', '編輯標題和文字。'] },
 };
 export const visualGuideWords = (locale?: string) => words[locale as keyof typeof words] ?? words.ko;
-const art = require('../../../../assets/activity-illustrations/protagonist-1/52-reading-cafe-960.webp');
+const art = require('../../../../assets/images/empty-artwork.png');
 const ink = '#343933';
 
 function GuideSymbol({ kind, size = 25 }: { kind: 'pen' | 'download' | 'share' | 'edit' | 'arrow'; size?: number }) {

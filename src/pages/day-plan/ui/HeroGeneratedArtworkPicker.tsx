@@ -12,5 +12,5 @@ export function HeroGeneratedArtworkPicker({ images, paper, onClose, onChoose, o
 }) {
   const insets = useSafeAreaInsets();
   const collection = initialCollectionId ?? (images[0]?.uri.includes('/hero-photos/') ? 'original-photos' : 'generated-illustrations');
-  return <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: paper }}><ComicScenePicker embedded initialCollectionId={collection} scenes={[]} onChange={() => undefined} selectionPurpose="add" onSelectArtwork={onChoose} onSelectScene={onChooseScene} onClose={onClose} /></View>;
+  return <View style={{ flex: 1, backgroundColor: paper }}><View style={{ flex: 1, marginTop: insets.top, marginBottom: insets.bottom }}><ComicScenePicker embedded initialCollectionId={collection} scenes={[]} onChange={() => undefined} selectionPurpose="add" onSelectArtwork={onChoose} onSelectScene={onChooseScene} onClose={onClose} /></View></View>;
 }

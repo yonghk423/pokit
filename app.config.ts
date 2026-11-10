@@ -3,7 +3,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   return {
     ...config,
-    name: config.name ?? 'YOUR DAY',
+    name: config.name ?? 'Daylight',
     slug: config.slug ?? 'pokit',
     plugins: [
       ...(config.plugins ?? []),

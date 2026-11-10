@@ -2,6 +2,16 @@
  * 저장된 사진·진행 기록은 유지하며 메뉴, 가이드, 직접 접근과 자동 동기화만 중단한다.
  */
 export const FEATURE_FLAGS = {
+  /** 백업·복구 점검 동안 설정 메뉴만 숨기며 기능과 저장 데이터는 유지한다. */
+  driveBackupSettings: false,
+  /** 무료 운영 중에는 구독 메뉴와 SDK 연결을 중단한다. 재개 시 이 값으로 활성화한다. */
+  proSubscriptions: false,
+  /** 구매 연동을 재개해도 기존 기능을 자동으로 유료화하지 않는다. */
+  proPolaroidExport: false,
+  proIllustrationPacks: false,
+  proAiUpgrade: false,
+  /** AI 생성 기능을 보류하며 하단 카메라 탭을 임시로 숨긴다. */
+  heroAiCameraTab: false,
   /** 책(스토리) 탭은 화면·데이터를 유지하고 진입과 콘텐츠 로딩을 임시로 중단한다. */
   pokitStory: false,
   /** 메이트 기능·데이터는 유지하고 주인공 화면의 가방 진입 버튼을 임시로 숨긴다. */

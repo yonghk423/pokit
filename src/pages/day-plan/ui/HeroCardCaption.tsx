@@ -1,7 +1,7 @@
 import { HeroCardAppearanceControls } from './HeroCardAppearanceControls';
 import type { AppFontId } from '@shared/lib/ui-font';
 import { useRef, useState, type ReactNode } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, useWindowDimensions, type TextInput } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppModal } from '@shared/ui/app-modal';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
@@ -18,8 +18,8 @@ import { ThemedTextInput } from '@shared/ui/themed-text-input';
 export type HeroCardText = { title: string; memo: string; paper?: string; pen?: string; fontId?: AppFontId };
 
 /** A caption can be edited without opening or flipping the scene card. */
-export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = '#F5E8CF', fontId, onSave, showEdit = !!onSave, onOpen, onEditingChange, topActions, tapToEdit = false }: {
-  title: string; memo?: string; number: number; ink: string; muted: string; paper?: string; fontId?: AppFontId; topActions?: ReactNode; tapToEdit?: boolean;
+export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = '#F5E8CF', fontId, onSave, showEdit = !!onSave, onOpen, onEditingChange, topActions, tapToEdit = false, showMemo = true }: {
+  showMemo?: boolean; title: string; memo?: string; number: number; ink: string; muted: string; paper?: string; fontId?: AppFontId; topActions?: ReactNode; tapToEdit?: boolean;
   onOpen?: () => void;
   showEdit?: boolean;
   onSave?: (text: HeroCardText) => void; onEditingChange?: (editing: boolean) => void;
@@ -27,9 +27,6 @@ export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = 
   const { t } = useTranslation();
   const empty = !title.trim() && !memo.trim();
   const [editing, setEditing] = useState(false);
-  const [memoSpace, setMemoSpace] = useState(0);
-  const [memoLineHeight, setMemoLineHeight] = useState(18);
-  const memoLines = memoSpace > 0 ? Math.max(1, Math.floor(memoSpace / memoLineHeight)) : 2;
   const [draft, setDraft] = useState<HeroCardText>({ title, memo });
   const startEditing = () => {
     if (!onSave) return;
@@ -49,25 +46,22 @@ export function HeroCardCaption({ title, memo = '', number, ink, muted, paper = 
       {empty ? <Pressable testID="hero-card-empty-write" disabled={!onSave} accessibilityRole="button" accessibilityLabel={t('comicDay.emptyDayPrompt')} onPress={startEditing} hitSlop={4}>
         <ThemedText testID="hero-card-empty-prompt" style={{ color: muted, fontSize: 14, lineHeight: 20, marginBottom: 6 }}>{t('comicDay.emptyDayPrompt')}</ThemedText>
       </Pressable> : null}
-      <View style={[s.titleRow, empty && { borderTopWidth: 0.5, borderTopColor: muted, paddingTop: 8 }]}>
+      <View style={[s.titleRow, !showMemo && { marginRight: 40 }, empty && { borderTopWidth: 0.5, borderTopColor: muted, paddingTop: 8 }]}>
         {!empty ? <Pressable disabled={!onOpen} onPress={onOpen} style={{ flex: 1 }}><ThemedText fontId={fontId} numberOfLines={1} style={[s.title, { color: ink }]}>{title}</ThemedText></Pressable> : null}
         {!tapToEdit ? topActions : null}
         {showEdit && !tapToEdit ? <Pressable testID="hero-card-edit" disabled={!onSave} accessibilityRole="button" accessibilityLabel={`${t('comicDay.sceneTitle')} · ${t('comicDay.memo')}`} onPress={startEditing} style={[s.edit, !!topActions && s.compactEdit]}>
           <HeroEditPencil ink={ink} enabled={!!onSave && !editing} />
         </Pressable> : null}
       </View>
-      {memo.trim() ? <View testID="hero-card-memo-space" style={s.memoDisplay} onLayout={event => setMemoSpace(event.nativeEvent.layout.height)}>
-        <ThemedText fontId={fontId} testID="hero-card-memo" numberOfLines={memoLines} onTextLayout={event => {
-          const height = event.nativeEvent.lines[0]?.height;
-          if (height && height > 0) setMemoLineHeight(previous => Math.abs(previous - height) > 0.25 ? height : previous);
-        }} style={{ color: ink, opacity: 0.75, fontSize: 14, lineHeight: 18 }}>{memo.trim().replace(/\s+/g, ' ')}</ThemedText>
-      </View> : null}
+      {showMemo && memo.trim() ? <ScrollView testID="hero-card-memo-space" style={s.memoDisplay} contentContainerStyle={s.memoContent} nestedScrollEnabled showsVerticalScrollIndicator>
+        <ThemedText fontId={fontId} testID="hero-card-memo" style={{ color: ink, opacity: 0.75, fontSize: 14, lineHeight: 18 }}>{memo.trim().replace(/\s+/g, ' ')}</ThemedText>
+      </ScrollView> : null}
       </View>
     </Pressable>
   </View>;
 }
 /** A native input surface stays outside the clipped, gesture-driven card stack. */
-function HeroCardEditor({ number, ink: savedInk, muted: savedMuted, paper: savedPaper, draft, onChange, onSave, onCancel }: {
+export function HeroCardEditor({ number, ink: savedInk, muted: savedMuted, paper: savedPaper, draft, onChange, onSave, onCancel }: {
   number: number; ink: string; muted: string; paper: string; draft: HeroCardText;
   onChange: (text: HeroCardText) => void; onSave: () => void; onCancel: () => void;
 }) {
@@ -126,7 +120,8 @@ function HeroCardEditor({ number, ink: savedInk, muted: savedMuted, paper: saved
 }
 const s = StyleSheet.create({
   caption: { flex: 1, minHeight: 0, marginHorizontal: 14, paddingTop: 8, gap: 2 },
-  memoDisplay: { flex: 1, minHeight: 0, overflow: 'hidden' },
+  memoDisplay: { flex: 1, minHeight: 0 },
+  memoContent: { flexGrow: 1, paddingBottom: 8 },
   compactEdit: { width: 32, height: 28 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 18, lineHeight: 25 },

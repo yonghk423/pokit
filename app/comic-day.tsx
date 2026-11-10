@@ -1,6 +1,7 @@
-import { Redirect } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 
-/** Compatibility for existing widget links; normal launch renders the home tab directly. */
+/** Compatibility for widget links; the calendar widget also restores the calendar view. */
 export default function LegacyComicDayLink() {
-  return <Redirect href="/(tabs)" />;
+  const { calendarWidget } = useLocalSearchParams<{ calendarWidget?: string }>();
+  return <Redirect href={calendarWidget === '1' ? { pathname: '/(tabs)', params: { calendarWidget: '1' } } : '/(tabs)'} />;
 }

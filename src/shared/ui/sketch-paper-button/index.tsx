@@ -25,7 +25,7 @@ export function SketchPaperButton({ label, onPress, ink = '#343434', labelSize =
         {!softKey ? <PaperGrain opacity={0.25} /> : null}
         {!frameless ? strongFrame ? <PenFrame color={ink} straight={iconOnly} /> : <HanddrawnFrame color={FRAME} /> : null}
         <Svg width={iconOnly ? 22 : 17} height={iconOnly ? 22 : 18} viewBox="0 0 20 20" accessible={false}>
-          {strongFrame ? <>
+          {softKey ? <Path d="M3.2 10H16.8M10 3.2V16.8" fill="none" stroke={ink} strokeWidth={1.9} strokeLinecap="round" /> : strongFrame ? <>
             <Path d={penContour([[3.2, 10.2], [7, 9.9], [12, 10.1], [16.8, 9.8]], 1.9, 0.4)} fill={ink} />
             <Path d={penContour([[10.3, 3], [10, 7], [10.2, 12], [9.8, 17]], 2.1, 1.6)} fill={ink} />
           </> : <Path d="M3.1 10.4Q9.9 9.8 16.7 10.1M10.2 3L9.8 17M4.2 9.5L15.7 9.4M9.3 4L9.1 15.5" fill="none" stroke={ink} strokeWidth={0.9} strokeLinecap="round" />}

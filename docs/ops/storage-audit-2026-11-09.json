@@ -1,0 +1,428 @@
+{
+  "assetBytes": 36790855,
+  "assetCount": 725,
+  "candidates": [
+    {
+      "path": "assets/wallpapers/ivory-linen-v1.png",
+      "bytes": 2835262,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/splash-artwork.png",
+      "bytes": 2670801,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/fonts/cafe24-shiningstar/License-Shiningstar.pdf",
+      "bytes": 2031244,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/fonts/cafe24-syongsyong/License-Syongsyong.pdf",
+      "bytes": 1926839,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/wallpapers/ivory-linen-v1.webp",
+      "bytes": 313634,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/wallpapers/gray-duvet-v1.jpg",
+      "bytes": 300768,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/control-illustrations/nikon-fm2-duvet.png",
+      "bytes": 230340,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/wallpapers/gray-duvet-light-v2.jpg",
+      "bytes": 156453,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/help-videos/results/writing.jpg",
+      "bytes": 129000,
+      "status": "no-static-reference",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/calendar-illustrations/autumn-wind-test.webp",
+      "bytes": 95540,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/control-illustrations/polaroid-overview-photo.webp",
+      "bytes": 93864,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/activity-illustrations/prompts.md",
+      "bytes": 85543,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/help-videos/photos/group.jpg",
+      "bytes": 73320,
+      "status": "tool-only-or-dynamic",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/help-videos/photos/landscape.jpg",
+      "bytes": 59975,
+      "status": "no-static-reference",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/help-videos/photos/woman-2.jpg",
+      "bytes": 59798,
+      "status": "no-static-reference",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/help-videos/photos/portrait.jpg",
+      "bytes": 35353,
+      "status": "tool-only-or-dynamic",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/help-videos/photos/woman.jpg",
+      "bytes": 34397,
+      "status": "no-static-reference",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/help-videos/photos/man.jpg",
+      "bytes": 20686,
+      "status": "no-static-reference",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/calendar-illustrations/city-animation-cover.webp",
+      "bytes": 15558,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/calendar-illustrations/autumn-crosswalk/leaf.webp",
+      "bytes": 14660,
+      "status": "no-static-reference",
+      "review": "May be remote theme upload source; not a deletion recommendation."
+    },
+    {
+      "path": "assets/calendar-illustrations/city-animation/02-office-presentation/leaf.webp",
+      "bytes": 14660,
+      "status": "no-static-reference",
+      "review": "May be remote theme upload source; not a deletion recommendation."
+    },
+    {
+      "path": "assets/calendar-illustrations/city-animation/05-proud-promotion/leaf.webp",
+      "bytes": 14660,
+      "status": "no-static-reference",
+      "review": "May be remote theme upload source; not a deletion recommendation."
+    },
+    {
+      "path": "assets/calendar-illustrations/city-animation/04-lunch-rooftop/leaf.webp",
+      "bytes": 14660,
+      "status": "no-static-reference",
+      "review": "May be remote theme upload source; not a deletion recommendation."
+    },
+    {
+      "path": "assets/calendar-illustrations/city-animation/01-rush-hour-commute/leaf.webp",
+      "bytes": 14660,
+      "status": "no-static-reference",
+      "review": "May be remote theme upload source; not a deletion recommendation."
+    },
+    {
+      "path": "assets/calendar-illustrations/city-animation/03-spilled-coffee-report/leaf.webp",
+      "bytes": 14660,
+      "status": "no-static-reference",
+      "review": "May be remote theme upload source; not a deletion recommendation."
+    },
+    {
+      "path": "assets/.DS_Store",
+      "bytes": 12292,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/widget/comic-check-checked.png",
+      "bytes": 6054,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/fonts/cafe24-shiningstar/LICENSE.txt",
+      "bytes": 4267,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/fonts/cafe24-syongsyong/Cafe24Syongsyong-LICENSE.txt",
+      "bytes": 4266,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/tab-icons/today@3x.webp",
+      "bytes": 4258,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/widget/comic-check-unchecked.png",
+      "bytes": 3652,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/story-pen.svg",
+      "bytes": 3605,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/story@3x.webp",
+      "bytes": 3218,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/comic@3x.webp",
+      "bytes": 2460,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/today@2x.webp",
+      "bytes": 2160,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/story@2x.webp",
+      "bytes": 1672,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/packed-backpack.svg",
+      "bytes": 1449,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/comic@2x.webp",
+      "bytes": 1372,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/textures/polaroid-handled-v1.md",
+      "bytes": 1246,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/wallpapers/gray-duvet-v1.prompt.txt",
+      "bytes": 1122,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/guide/README.md",
+      "bytes": 925,
+      "status": "tool-only-or-dynamic",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/wallpapers/README.md",
+      "bytes": 910,
+      "status": "tool-only-or-dynamic",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/fonts/cafe24-shiningstar/SOURCE.txt",
+      "bytes": 832,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/tab-icons/today.webp",
+      "bytes": 760,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/fonts/ownglyph-corncorn/SOURCE.txt",
+      "bytes": 753,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/help-videos/results/README.md",
+      "bytes": 737,
+      "status": "tool-only-or-dynamic",
+      "review": "Guide generation inputs, dynamic script references; preserve if regenerating guides."
+    },
+    {
+      "path": "assets/wallpapers/gray-duvet-light-v2.prompt.txt",
+      "bytes": 677,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/story.webp",
+      "bytes": 630,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/tab-icons/comic.webp",
+      "bytes": 516,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/control-illustrations/personal-photo-invitation.prompt.txt",
+      "bytes": 429,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/fonts/cafe24-syongsyong/SOURCE.txt",
+      "bytes": 423,
+      "status": "no-static-reference",
+      "review": "License/source documentation: preserve; can move outside app asset folder after checking terms."
+    },
+    {
+      "path": "assets/control-illustrations/personal-photo-silhouette.prompt.txt",
+      "bytes": 399,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/control-illustrations/coming-soon-woman.prompt.txt",
+      "bytes": 345,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/control-illustrations/personal-camera-hands.prompt.txt",
+      "bytes": 341,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/control-illustrations/personal-photo-empty.prompt.txt",
+      "bytes": 305,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/activity-illustrations/index.html",
+      "bytes": 148,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    },
+    {
+      "path": "assets/activity-illustrations/representatives.json",
+      "bytes": 138,
+      "status": "no-static-reference",
+      "review": "No static runtime reference found; check dynamic paths before deletion."
+    }
+  ],
+  "candidateBytes": 11318696,
+  "duplicateGroups": [
+    [
+      {
+        "path": "assets/calendar-illustrations/autumn-crosswalk/paper.webp",
+        "bytes": 18512,
+        "status": "referenced"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/02-office-presentation/paper.webp",
+        "bytes": 18512,
+        "status": "referenced"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/05-proud-promotion/paper.webp",
+        "bytes": 18512,
+        "status": "referenced"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/04-lunch-rooftop/paper.webp",
+        "bytes": 18512,
+        "status": "referenced"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/01-rush-hour-commute/paper.webp",
+        "bytes": 18512,
+        "status": "referenced"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/03-spilled-coffee-report/paper.webp",
+        "bytes": 18512,
+        "status": "referenced"
+      }
+    ],
+    [
+      {
+        "path": "assets/calendar-illustrations/autumn-crosswalk/leaf.webp",
+        "bytes": 14660,
+        "status": "no-static-reference"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/02-office-presentation/leaf.webp",
+        "bytes": 14660,
+        "status": "no-static-reference"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/05-proud-promotion/leaf.webp",
+        "bytes": 14660,
+        "status": "no-static-reference"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/04-lunch-rooftop/leaf.webp",
+        "bytes": 14660,
+        "status": "no-static-reference"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/01-rush-hour-commute/leaf.webp",
+        "bytes": 14660,
+        "status": "no-static-reference"
+      },
+      {
+        "path": "assets/calendar-illustrations/city-animation/03-spilled-coffee-report/leaf.webp",
+        "bytes": 14660,
+        "status": "no-static-reference"
+      }
+    ]
+  ],
+  "dependenciesWithoutLiteralReference": [
+    "@expo/config-plugins",
+    "@react-navigation/bottom-tabs",
+    "@react-navigation/elements",
+    "@react-navigation/native",
+    "expo-dev-client",
+    "expo-system-ui",
+    "react-dom",
+    "react-native-worklets"
+  ],
+  "limitations": [
+    "Static references include inactive and unreachable code. Dynamic paths require manual verification. Dependencies can be required by native autolinking, Expo, config plugins or peer dependencies. Local caches are not installed-app size."
+  ]
+}

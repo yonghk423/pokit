@@ -1,0 +1,371 @@
+{
+  "bucket": "character-illustrations",
+  "revision": "fullbleed-v2",
+  "backgroundCount": 50,
+  "files": [
+    {
+      "themeId": "01-rush-hour-commute",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/01-rush-hour-commute/background.webp",
+      "storagePath": "calendar-themes/city-animation/01-rush-hour-commute/background.webp",
+      "bytes": 297542,
+      "sha256": "3c8adc1fe78249bdc831e65fbdbb7fa84436f964a4d0c8ac5a8c2e25a7658463"
+    },
+    {
+      "themeId": "02-office-presentation",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/02-office-presentation/background.webp",
+      "storagePath": "calendar-themes/city-animation/02-office-presentation/background.webp",
+      "bytes": 119944,
+      "sha256": "44096abdda1c645136b45ac72775be1f611baf03ed2c1a4b9c6c75f6ff655500"
+    },
+    {
+      "themeId": "03-spilled-coffee-report",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/03-spilled-coffee-report/background.webp",
+      "storagePath": "calendar-themes/city-animation/03-spilled-coffee-report/background.webp",
+      "bytes": 190178,
+      "sha256": "8e7ba213c0d775a37c6a2de7ad9c0e154ad6f7d72352f293b2f0f498ea5f50c5"
+    },
+    {
+      "themeId": "04-lunch-rooftop",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/04-lunch-rooftop/background.webp",
+      "storagePath": "calendar-themes/city-animation/04-lunch-rooftop/background.webp",
+      "bytes": 230530,
+      "sha256": "aa98f72db6a32b13d694f77259fff912f7c7a5fab33bef2fa309451bb2dd5e88"
+    },
+    {
+      "themeId": "05-proud-promotion",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/05-proud-promotion/background.webp",
+      "storagePath": "calendar-themes/city-animation/05-proud-promotion/background.webp",
+      "bytes": 235268,
+      "sha256": "86a55681b31cc6fbd63598f44643e8d304734ab95f7bb159274e48199edd4b1e"
+    },
+    {
+      "themeId": "06-angry-email",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/06-angry-email/background.webp",
+      "storagePath": "calendar-themes/city-animation/06-angry-email/background.webp",
+      "bytes": 141740,
+      "sha256": "c78ebd27049a76924518398f78d2cb9379fa22fa964069000393edf783849c54"
+    },
+    {
+      "themeId": "07-after-work-run",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/07-after-work-run/background.webp",
+      "storagePath": "calendar-themes/city-animation/07-after-work-run/background.webp",
+      "bytes": 317234,
+      "sha256": "04ffe32d1b309f19ea7d6f5d5285ed3c955885e1ab978f038459cbe400de55c4"
+    },
+    {
+      "themeId": "08-missed-deadline",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/08-missed-deadline/background.webp",
+      "storagePath": "calendar-themes/city-animation/08-missed-deadline/background.webp",
+      "bytes": 154390,
+      "sha256": "d25ac994b2c5c9237eff1bc2bb45cb66f484397e8aa58630cf2ec71eeb256613"
+    },
+    {
+      "themeId": "09-boxing-bag",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/09-boxing-bag/background.webp",
+      "storagePath": "calendar-themes/city-animation/09-boxing-bag/background.webp",
+      "bytes": 192250,
+      "sha256": "badc0551581c9ed6adb64aca24541f624600dbefb8f3b3cbb7bfccfcd1cabb60"
+    },
+    {
+      "themeId": "10-basketball-shot",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/10-basketball-shot/background.webp",
+      "storagePath": "calendar-themes/city-animation/10-basketball-shot/background.webp",
+      "bytes": 315908,
+      "sha256": "f43d08fe72ea229a404d0da8ff8620fd72ca0ca5f91a0720b2d6aca79f566c49"
+    },
+    {
+      "themeId": "11-swimming-laps",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/11-swimming-laps/background.webp",
+      "storagePath": "calendar-themes/city-animation/11-swimming-laps/background.webp",
+      "bytes": 249972,
+      "sha256": "859cbbbb0678a6a7fed763be78355dcedf9264d96a46b03702c4e2f08efeeed8"
+    },
+    {
+      "themeId": "12-cycling-hill",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/12-cycling-hill/background.webp",
+      "storagePath": "calendar-themes/city-animation/12-cycling-hill/background.webp",
+      "bytes": 360916,
+      "sha256": "7e57a92d79df8ab6e3b2497610b460e16246ec8e47d40fdf0a1dd82faea46a88"
+    },
+    {
+      "themeId": "13-yoga-balance",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/13-yoga-balance/background.webp",
+      "storagePath": "calendar-themes/city-animation/13-yoga-balance/background.webp",
+      "bytes": 144544,
+      "sha256": "5cb4e668ce596d714d5e87299960a38fd25b80e3d8a439e21ff87df8aa7f8227"
+    },
+    {
+      "themeId": "14-tennis-serve",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/14-tennis-serve/background.webp",
+      "storagePath": "calendar-themes/city-animation/14-tennis-serve/background.webp",
+      "bytes": 298688,
+      "sha256": "9460b0402effdb3a4e01928c2a0fd29186e153d8fbca342b446c7fe64feb7402"
+    },
+    {
+      "themeId": "15-soccer-dribble",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/15-soccer-dribble/background.webp",
+      "storagePath": "calendar-themes/city-animation/15-soccer-dribble/background.webp",
+      "bytes": 236324,
+      "sha256": "5d5e5854415f37b814b6a0760e147ae370c22026257a7455d6ebe09d8bcfe150"
+    },
+    {
+      "themeId": "16-dance-practice",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/16-dance-practice/background.webp",
+      "storagePath": "calendar-themes/city-animation/16-dance-practice/background.webp",
+      "bytes": 157614,
+      "sha256": "be36184806708d875c14ca459ab8504fb0a594b793571433d64cd2ce4a178de8"
+    },
+    {
+      "themeId": "17-climbing-wall",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/17-climbing-wall/background.webp",
+      "storagePath": "calendar-themes/city-animation/17-climbing-wall/background.webp",
+      "bytes": 198490,
+      "sha256": "2dd7134a15ca06a577d94142410b8deda251a9ab9c473334891cc2b5b9d2973e"
+    },
+    {
+      "themeId": "18-jump-rope",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/18-jump-rope/background.webp",
+      "storagePath": "calendar-themes/city-animation/18-jump-rope/background.webp",
+      "bytes": 302844,
+      "sha256": "a72624062a2a0662809c35f569e13f079d38328161940369e0a8180774cd323c"
+    },
+    {
+      "themeId": "19-rain-run",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/19-rain-run/background.webp",
+      "storagePath": "calendar-themes/city-animation/19-rain-run/background.webp",
+      "bytes": 322262,
+      "sha256": "419530884ada872090e9a99b5493a91670f492eeb98c0fb2ebea35e290059175"
+    },
+    {
+      "themeId": "20-badminton-rally",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/20-badminton-rally/background.webp",
+      "storagePath": "calendar-themes/city-animation/20-badminton-rally/background.webp",
+      "bytes": 263852,
+      "sha256": "c721d0b1de9a716d5159a99c2356fec02650acbe7115d22ed07d21b7174bb18a"
+    },
+    {
+      "themeId": "21-couch-after-work",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/21-couch-after-work/background.webp",
+      "storagePath": "calendar-themes/city-animation/21-couch-after-work/background.webp",
+      "bytes": 161440,
+      "sha256": "8333240c430cdfd7e2792ca9637334e3f4e02ce9d414a8ef469d27bce6d9b196"
+    },
+    {
+      "themeId": "22-window-tea",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/22-window-tea/background.webp",
+      "storagePath": "calendar-themes/city-animation/22-window-tea/background.webp",
+      "bytes": 188376,
+      "sha256": "26ba40561bca557335a57b8b10c93305f972453b54078e42261e471aa997933c"
+    },
+    {
+      "themeId": "23-laundry-day",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/23-laundry-day/background.webp",
+      "storagePath": "calendar-themes/city-animation/23-laundry-day/background.webp",
+      "bytes": 201446,
+      "sha256": "691af828e6294465a244b98d3af170e1f4a74cbd2effcf3c45825be90cc5a08b"
+    },
+    {
+      "themeId": "24-home-cooking",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/24-home-cooking/background.webp",
+      "storagePath": "calendar-themes/city-animation/24-home-cooking/background.webp",
+      "bytes": 232376,
+      "sha256": "5c285a38147b65adeb2d6988738dd171e89684e2b53b8d43d0fb46596a8aeff1"
+    },
+    {
+      "themeId": "25-lazy-morning",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/25-lazy-morning/background.webp",
+      "storagePath": "calendar-themes/city-animation/25-lazy-morning/background.webp",
+      "bytes": 140650,
+      "sha256": "75bc06fcedb5addd37f97c573314ee18923c935ab09fdd734c1f9b4c9b28297f"
+    },
+    {
+      "themeId": "26-couch-nap",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/26-couch-nap/background.webp",
+      "storagePath": "calendar-themes/city-animation/26-couch-nap/background.webp",
+      "bytes": 156884,
+      "sha256": "844391745389d7ac82d17ac4eaa30aa06954101ef12fd5194251fc6272868466"
+    },
+    {
+      "themeId": "27-houseplant-care",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/27-houseplant-care/background.webp",
+      "storagePath": "calendar-themes/city-animation/27-houseplant-care/background.webp",
+      "bytes": 280576,
+      "sha256": "3ead81c37c7bbcded4fab21d3b47759abe0e5f29d244b49f93c7c2d8623001f3"
+    },
+    {
+      "themeId": "28-movie-night",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/28-movie-night/background.webp",
+      "storagePath": "calendar-themes/city-animation/28-movie-night/background.webp",
+      "bytes": 204832,
+      "sha256": "043ff325a50e223d4c10e8d7f15e470859c719f678970322beb03c49398f0758"
+    },
+    {
+      "themeId": "29-bathroom-skincare",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/29-bathroom-skincare/background.webp",
+      "storagePath": "calendar-themes/city-animation/29-bathroom-skincare/background.webp",
+      "bytes": 138552,
+      "sha256": "19a9ec7480ea7cb0091804f85a980ed437eabadbffe0d54eade76ca88bdb36f2"
+    },
+    {
+      "themeId": "30-cat-on-lap",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/30-cat-on-lap/background.webp",
+      "storagePath": "calendar-themes/city-animation/30-cat-on-lap/background.webp",
+      "bytes": 230738,
+      "sha256": "65f48621e161f54f94369b7cc38b3e6a474cdde3c3842f47900d8f167f2fc452"
+    },
+    {
+      "themeId": "31-frustrated-phone-call",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/31-frustrated-phone-call/background.webp",
+      "storagePath": "calendar-themes/city-animation/31-frustrated-phone-call/background.webp",
+      "bytes": 233764,
+      "sha256": "02d033988fc12e938600276f3061e3c15ca214a752d8ffe88ac42ba506984360"
+    },
+    {
+      "themeId": "32-sad-bus-stop",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/32-sad-bus-stop/background.webp",
+      "storagePath": "calendar-themes/city-animation/32-sad-bus-stop/background.webp",
+      "bytes": 332886,
+      "sha256": "6c3de149c7dbe1544bd4c5f37d1543746c1311983d754251e45a1068f8f2f838"
+    },
+    {
+      "themeId": "33-exam-results-joy",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/33-exam-results-joy/background.webp",
+      "storagePath": "calendar-themes/city-animation/33-exam-results-joy/background.webp",
+      "bytes": 206588,
+      "sha256": "f019e15603da257e1e733d0bdf1b589cd2a60cc48a03307f5976e112624b8175"
+    },
+    {
+      "themeId": "34-interview-nerves",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/34-interview-nerves/background.webp",
+      "storagePath": "calendar-themes/city-animation/34-interview-nerves/background.webp",
+      "bytes": 198492,
+      "sha256": "0e47172a3951568b2bac11cff7637d66ae9822a2b35567977e8a1974b9c3cffb"
+    },
+    {
+      "themeId": "35-breakup-evening",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/35-breakup-evening/background.webp",
+      "storagePath": "calendar-themes/city-animation/35-breakup-evening/background.webp",
+      "bytes": 170382,
+      "sha256": "1cb549c825e4c39b904f8f65b23536691b2bf145d78a8523ae5978d0dbe41f96"
+    },
+    {
+      "themeId": "36-concert-happiness",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/36-concert-happiness/background.webp",
+      "storagePath": "calendar-themes/city-animation/36-concert-happiness/background.webp",
+      "bytes": 335698,
+      "sha256": "85eabec34657911d2cfd0a1a7bf34bfd8a65b35cc8d34ea51c41c580dd7b0bf9"
+    },
+    {
+      "themeId": "37-embarrassed-spill",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/37-embarrassed-spill/background.webp",
+      "storagePath": "calendar-themes/city-animation/37-embarrassed-spill/background.webp",
+      "bytes": 257650,
+      "sha256": "f1373cbfe91d40caa0912074443af63071eb5b4e869f4df02a696839eb7ce81b"
+    },
+    {
+      "themeId": "38-holiday-loneliness",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/38-holiday-loneliness/background.webp",
+      "storagePath": "calendar-themes/city-animation/38-holiday-loneliness/background.webp",
+      "bytes": 174318,
+      "sha256": "1eba8e0967b318f3600f9b7932bef239ee6200861d1e82594030e998860b4ef7"
+    },
+    {
+      "themeId": "39-birthday-surprise",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/39-birthday-surprise/background.webp",
+      "storagePath": "calendar-themes/city-animation/39-birthday-surprise/background.webp",
+      "bytes": 242692,
+      "sha256": "b474faecff03f8ef66b58b4d9a192d1b97c42c80ab261ba9ad018ca2b427dcff"
+    },
+    {
+      "themeId": "40-relief-after-cry",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/40-relief-after-cry/background.webp",
+      "storagePath": "calendar-themes/city-animation/40-relief-after-cry/background.webp",
+      "bytes": 235992,
+      "sha256": "0705505a065897ff93181de38b89b183bc951b4999898854123beccfb9dd63c8"
+    },
+    {
+      "themeId": "41-spring-blossom-bicycle",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/41-spring-blossom-bicycle/background.webp",
+      "storagePath": "calendar-themes/city-animation/41-spring-blossom-bicycle/background.webp",
+      "bytes": 373558,
+      "sha256": "adf294b00c829aa6077b2baf642c11c4d156e4d8e48e88f1c986ed9669c0ff1c"
+    },
+    {
+      "themeId": "42-spring-rain-puddle",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/42-spring-rain-puddle/background.webp",
+      "storagePath": "calendar-themes/city-animation/42-spring-rain-puddle/background.webp",
+      "bytes": 393676,
+      "sha256": "4d6fd55e0b7b9afd0db3a429824cca2c7114e153d78c0b4b574f383c5dde1d52"
+    },
+    {
+      "themeId": "43-spring-garden-planting",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/43-spring-garden-planting/background.webp",
+      "storagePath": "calendar-themes/city-animation/43-spring-garden-planting/background.webp",
+      "bytes": 404912,
+      "sha256": "2678224ff5ba04205cbfe114093b8fa9627082047d08ca19cf54531ab401ac92"
+    },
+    {
+      "themeId": "44-summer-beach-walk",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/44-summer-beach-walk/background.webp",
+      "storagePath": "calendar-themes/city-animation/44-summer-beach-walk/background.webp",
+      "bytes": 346048,
+      "sha256": "83d164f1f32cfc235e585640acb02348f356fa4233acc2a688a4a4432ec58260"
+    },
+    {
+      "themeId": "45-summer-hill-hike",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/45-summer-hill-hike/background.webp",
+      "storagePath": "calendar-themes/city-animation/45-summer-hill-hike/background.webp",
+      "bytes": 465876,
+      "sha256": "87db5a8b3bb485a4d22851c30c1402e3ca49663d6e8923314d85954c199d01eb"
+    },
+    {
+      "themeId": "46-autumn-leaves",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/46-autumn-leaves/background.webp",
+      "storagePath": "calendar-themes/city-animation/46-autumn-leaves/background.webp",
+      "bytes": 342266,
+      "sha256": "d134f57b90e8abb28d6e48314ab1b04e161da4e6eaf515e69468a11e43004136"
+    },
+    {
+      "themeId": "47-autumn-market",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/47-autumn-market/background.webp",
+      "storagePath": "calendar-themes/city-animation/47-autumn-market/background.webp",
+      "bytes": 508152,
+      "sha256": "5bfd2868c6ea94d06cf5cd48e2dff25f3a6a4208a9bdf7d43eadadc6f4fdcecc"
+    },
+    {
+      "themeId": "48-autumn-bus-shelter",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/48-autumn-bus-shelter/background.webp",
+      "storagePath": "calendar-themes/city-animation/48-autumn-bus-shelter/background.webp",
+      "bytes": 346234,
+      "sha256": "cf0085e1be51bd43d40e807647277f30a3aab7b2d1338ca5fd1bbd3236415398"
+    },
+    {
+      "themeId": "49-winter-snow-play",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/49-winter-snow-play/background.webp",
+      "storagePath": "calendar-themes/city-animation/49-winter-snow-play/background.webp",
+      "bytes": 386110,
+      "sha256": "beece38c26d773e65ba4013430ef82be1971a153494c874bb5aa0ab95dec3d7a"
+    },
+    {
+      "themeId": "50-winter-bus-wait",
+      "localPath": "assets/calendar-illustrations/fullbleed-v2/50-winter-bus-wait/background.webp",
+      "storagePath": "calendar-themes/city-animation/50-winter-bus-wait/background.webp",
+      "bytes": 460496,
+      "sha256": "33114a4272db05f5402292d2a216e8c8643b6648bee8c9561e77aa6718c12a51"
+    },
+    {
+      "themeId": "shared",
+      "localPath": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "storagePath": "calendar-themes/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "shared",
+      "localPath": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "storagePath": "calendar-themes/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    }
+  ]
+}

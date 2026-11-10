@@ -169,11 +169,6 @@ export default function RootLayout() {
                     name="day-plan-view-settings"
                     options={{ headerShown: false, presentation: 'card' }}
                   />
-                  <Stack.Screen
-                    name="layout-settings"
-                    options={{ headerShown: false, presentation: 'card' }}
-                  />
-                  <Stack.Screen name="wallpaper-settings" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
                     name="announcements"

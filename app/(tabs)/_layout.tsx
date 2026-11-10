@@ -1,3 +1,4 @@
+import { useCalendarBackdropVisible } from '../../src/pages/day-plan/model/heroCalendarDesign';
 import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { View } from 'react-native';
 import { useContext } from 'react';
@@ -14,19 +15,23 @@ import { useTranslation } from '@shared/lib/i18n';
 export const unstable_settings = { initialRouteName: 'index' };
 
 function TabWallpaper() {
+  const calendarVisible = useCalendarBackdropVisible();
   const photoActive = useContext(HeroCharacterPickerActionContext)?.photoActive;
   const segments = useSegments();
   const home = segments.every(segment => segment === '(tabs)');
+  if (home && calendarVisible && !photoActive) return <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: '#FAFAF6' }} />;
   return photoActive && home ? null : <AppWallpaperBackground />;
 }
 
 export default function TabLayout() {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
+  const segments = useSegments();
+  const tabBackground = isDark ? '#262B28' : '#F7F6F4';
 
   return (
     <DayPlanTabBridgeProvider><HeroCardToolsProvider><HeroCharacterPickerActionProvider>
-      <View style={{ flex: 1, backgroundColor: isDark ? '#262B28' : '#F7F6F4' }}>
+      <View style={{ flex: 1, backgroundColor: tabBackground }}>
       <TabWallpaper />
       <Tabs
         initialRouteName="index"
@@ -46,7 +51,7 @@ export default function TabLayout() {
           },
         }}>
         <Tabs.Screen name="index" options={{ title: t('tabs.comicDay') }} />
-        <Tabs.Screen name="characters" options={{ title: t('comicDay.gallery.title') }} />
+        <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), lazy: false, animation: 'fade', transitionSpec: { animation: 'timing', config: { duration: 180 } } }} />
         <Tabs.Screen name="history" options={{ title: t('comicDiary.history') }} />
         <Tabs.Screen
           name="fixed-routines"

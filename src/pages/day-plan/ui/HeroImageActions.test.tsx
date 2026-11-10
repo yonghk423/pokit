@@ -23,6 +23,16 @@ const button = (kind: string) => tree.root.findAllByProps({ testID: `hero-image-
 const openEditor = async () => { await act(async () => button('save').props.onPress()); };
 const save = () => tree.root.findByType(HeroPolaroidEditor).props.onExport('save', tree.root.findByType(HeroPolaroidEditor).props.initial);
 
+it('shows download completion only on the download button and keeps the editor icon unchanged', async () => {
+  await act(async () => { tree.update(<HeroImageActions uri="file:///completed.png" directDownload />); });
+  const editorPaths = () => button('save').findAll(node => typeof node.props.d === 'string').map(node => node.props.d);
+  const editorIcon = editorPaths();
+  await act(async () => { button('direct-download').props.onPress(); });
+  expect(media.saveToLibraryAsync).toHaveBeenCalledWith('file:///polaroid.png');
+  expect(button('direct-download').findAllByProps({ testID: 'hero-download-complete' }).length).toBeGreaterThan(0);
+  expect(editorPaths()).toEqual(editorIcon);
+});
+
 it('allows another download after completion while blocking overlapping saves', async () => {
   await openEditor();
   await act(async () => { void save(); void save(); });
@@ -43,7 +53,7 @@ it('does not save without permission', async () => {
 });
 it('opens the system share sheet with the generated PNG', async () => {
   await act(async () => button('share').props.onPress());
-  expect(sharing.shareAsync).toHaveBeenCalledWith('file:///completed.png', { mimeType: 'image/png', UTI: 'public.png' });
+  expect(sharing.shareAsync).toHaveBeenCalledWith('file:///polaroid.png', { mimeType: 'image/png', UTI: 'public.png' });
 });
 it('handles unavailable sharing and save failures without locking controls', async () => {
   jest.mocked(sharing.isAvailableAsync).mockResolvedValue(false);
@@ -59,7 +69,7 @@ it('handles unavailable sharing and save failures without locking controls', asy
 it('saves and shares a bundled illustration without any written title or AI result', async () => {
   act(() => tree.update(<HeroImageActions source={12} compact />));
   await act(async () => button('share').props.onPress());
-  expect(sharing.shareAsync).toHaveBeenCalledWith('file:///export.png', { mimeType: 'image/png', UTI: 'public.png' });
+  expect(sharing.shareAsync).toHaveBeenCalledWith('file:///polaroid.png', { mimeType: 'image/png', UTI: 'public.png' });
   await openEditor();
   await act(async () => { void save(); });
   expect(media.saveToLibraryAsync).toHaveBeenCalledWith('file:///polaroid.png');
@@ -101,4 +111,25 @@ it('shares the decorated result from the editor', async () => {
   await act(async () => { void tree.root.findByType(HeroPolaroidEditor).props.onExport('share', { title: 'edited', date: '2026. 11. 06', film: 'warm' }); });
   expect(sharing.shareAsync).toHaveBeenCalledWith('file:///polaroid.png', { mimeType: 'image/png', UTI: 'public.png' });
   expect(jest.mocked(HeroPolaroidExport).mock.calls.at(-1)![0].content).toMatchObject({ title: 'edited', film: 'warm' });
+});
+
+
+it('fits direct polaroid sharing to the feed without opening the editor', async () => {
+  await act(async () => { tree.update(<HeroImageActions uri="file:///completed.png" title="오늘의 장면" directDownload />); });
+  await act(async () => { button('share').props.onPress(); });
+  expect(tree.root.findAllByType(HeroPolaroidEditor)).toHaveLength(0);
+  expect(jest.mocked(HeroPolaroidExport).mock.calls[0][0].content).toMatchObject({ title: '오늘의 장면' });
+  expect(sharing.shareAsync).toHaveBeenCalledWith('file:///polaroid.png', { mimeType: 'image/png', UTI: 'public.png' });
+});
+
+it('applies edited settings to the current record without requesting photo-library access', async () => {
+  const apply = jest.fn(async () => undefined), close = jest.fn();
+  await act(async () => { tree.update(<HeroImageActions uri="file:///original.png" onSaveDraft={apply} onEditorClose={close} />); });
+  await openEditor();
+  const draft = { title: 'Updated', date: '2026.11.10', film: 'warm' as const, processedUri: 'file:///edited.png' };
+  await act(async () => { await tree.root.findByType(HeroPolaroidEditor).props.onExport('save', draft); });
+  expect(apply).toHaveBeenCalledWith(draft);
+  expect(media.requestPermissionsAsync).not.toHaveBeenCalled();
+  expect(media.saveToLibraryAsync).not.toHaveBeenCalled();
+  expect(close).toHaveBeenCalledTimes(1);
 });

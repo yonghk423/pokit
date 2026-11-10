@@ -14,7 +14,7 @@ it.each<AppLocale>(['ko', 'en', 'ja', 'zh-TW'])('builds dense editable %s calend
   expect(grouped.has('2026-09-30')).toBe(true);
   expect(grouped.size).toBeGreaterThan(10);
   expect(diaries.some(diary => diary.scenes.length === 20)).toBe(true);
-  expect(new Set(diaries.map(diary => diary.characterId))).toEqual(new Set(['protagonist-1', 'protagonist-2', 'protagonist-3', 'protagonist-4', 'protagonist-5', 'protagonist-6']));
+  expect(new Set(diaries.map(diary => diary.characterId))).toEqual(new Set(['protagonist-1', 'protagonist-2', 'protagonist-3', 'protagonist-5', 'protagonist-6']));
   const scenes = diaries.flatMap(diary => diary.scenes);
   expect(normalizeComicScenes(scenes)).toEqual(scenes);
   expect(scenes.every(scene => scene.memo.length > 40 && scene.todos.length > 0)).toBe(true);

@@ -4,11 +4,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { DayPlanTabScreenShell } from './DayPlanTabScreenShell';
 import { useDayPlanHeaderActions } from '../model/dayPlanHeaderActions';
 
+let mockSafeTop = 0;
 let mockWeatherAvailable = true;
 let mockPlanMode = 'priority';
 let mockSegments = ['(tabs)', 'day-plan'];
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }), useSegments: () => mockSegments, useLocalSearchParams: () => ({}) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: mockSafeTop }) }));
 jest.mock('@entities/day-plan', () => ({ consumePendingWidgetPlanMode: jest.fn(async () => null), useDayPlanDraftStore: (selector: (state: unknown) => unknown) => selector({ planMode: mockPlanMode, setPlanMode: jest.fn() }) }));
 jest.mock('@shared/lib/hooks/use-color-scheme', () => ({ useColorScheme: () => 'light' }));
 jest.mock('@shared/lib/i18n/hooks/useTranslation', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -194,4 +195,16 @@ it('hides the home header for the camera tab even when the keyboard is closed', 
     expect(StyleSheet.flatten(header.props.style).display).toBe('none');
     expect(header.props.accessibilityElementsHidden).toBe(true);
   } finally { act(() => tree.unmount()); }
+});
+
+it('keeps calendar collection controls below the notch in normal layout flow', async () => {
+  mockSafeTop = 59;
+  mockSegments = ['(tabs)', 'calendar'];
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<DayPlanTabScreenShell tabName="calendar"><View testID="calendar-collection" /></DayPlanTabScreenShell>); });
+  try {
+    const header = tree.root.findAllByProps({ testID: 'day-plan-shell-header' })[0];
+    expect(StyleSheet.flatten(header.props.style).position).not.toBe('absolute');
+    expect(StyleSheet.flatten(header.parent!.props.style).paddingTop).toBe(59);
+  } finally { act(() => tree.unmount()); mockSafeTop = 0; mockSegments = ['(tabs)', 'day-plan']; }
 });

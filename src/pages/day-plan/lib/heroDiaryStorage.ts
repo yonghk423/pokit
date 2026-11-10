@@ -1,3 +1,4 @@
+import { cleanupDeletedHeroArtwork, clearLegacyHeroImageCache } from './heroArtworkCleanup';
 import { getClockNow } from '@shared/lib/time/appClock';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { syncComicSceneWidgetToWidget } from './heroSceneWidgetSync';
@@ -5,16 +6,19 @@ import { COMIC_CHARACTERS, DEFAULT_COMIC_CHARACTER_ID } from './heroCharacters';
 import { normalizeComicScenes, type ComicDayScene } from './heroDayStorage';
 
 export const COMIC_DIARY_STORAGE_KEY = 'pokit:comic-diaries:v1';
-export type ComicDiary = { id: string; title: string; artworkCollection?: 'generated' | 'original'; characterId: string; characterName?: string; scenes: ComicDayScene[]; createdAt: number; updatedAt: number };
+export type ComicDiary = { id: string; title: string; date?: string; artworkCollection?: 'generated' | 'original'; characterId: string; characterName?: string; scenes: ComicDayScene[]; createdAt: number; updatedAt: number };
 export type ComicDiaryLibrary = { version: 1; diaries: ComicDiary[]; activeId: string | null; migratedLegacyKeys: string[] };
 const knownCharacter = (id: unknown): id is string => COMIC_CHARACTERS.some(character => character.id === id);
 export function saveComicDiaryLibrary(library: ComicDiaryLibrary) {
   localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, library);
+  void cleanupDeletedHeroArtwork();
   syncComicSceneWidgetToWidget(library);
 }
 
 /** Import every dated record once, leaving its original data intact as a backup. */
 export function loadComicDiaryLibrary(currentDate: string, titleForNumber: (number: number) => string): ComicDiaryLibrary {
+  void cleanupDeletedHeroArtwork();
+  void clearLegacyHeroImageCache();
   localStorageClient.removeItem('pokit:comic-character-name:puppy-companion');
   const navigation = localStorageClient.getJson<{ characterId?: string }>('pokit:comic-navigation');
   if (navigation?.characterId === 'puppy-companion') localStorageClient.removeItem('pokit:comic-navigation');
@@ -60,10 +64,10 @@ export function loadComicDiaryLibrary(currentDate: string, titleForNumber: (numb
   saveComicDiaryLibrary(library);
   return library;
 }
-export function createComicDiary(library: ComicDiaryLibrary, characterId: string, title: string, characterName?: string): ComicDiaryLibrary {
+export function createComicDiary(library: ComicDiaryLibrary, characterId: string, title: string, characterName?: string, date?: string): ComicDiaryLibrary {
   if (!knownCharacter(characterId)) return library;
   const now = getClockNow().getTime();
-  const diary: ComicDiary = { id: `diary:${now}:${Math.random().toString(36).slice(2, 10)}`, characterId, ...(characterName?.trim() ? { characterName: characterName.trim().slice(0, 24) } : {}), title: title.trim().slice(0, 60), scenes: [], createdAt: now, updatedAt: now };
+  const diary: ComicDiary = { id: `diary:${now}:${Math.random().toString(36).slice(2, 10)}`, characterId, ...(date ? { date } : {}), ...(characterName?.trim() ? { characterName: characterName.trim().slice(0, 24) } : {}), title: title.trim().slice(0, 60), scenes: [], createdAt: now, updatedAt: now };
   return { ...library, diaries: [diary, ...library.diaries], activeId: diary.id };
 }
 export function updateComicDiary(library: ComicDiaryLibrary, id: string, patch: { title?: string; scenes?: ComicDayScene[]; characterName?: string }): ComicDiaryLibrary {

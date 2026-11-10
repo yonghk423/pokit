@@ -4,7 +4,7 @@ export type { AppFontId };
 export type AppFontWeight = '400' | '500' | '600' | '700' | '800';
 
 /** 앱 기본 글씨체 — 온글잎 콘콘체 */
-export const DEFAULT_APP_FONT_ID: AppFontId = 'corncorn';
+export const DEFAULT_APP_FONT_ID: AppFontId = 'cafe24ShiningStar';
 
 /** 설정에 노출하는 선택지 */
 export const APP_FONT_IDS: readonly AppFontId[] = [

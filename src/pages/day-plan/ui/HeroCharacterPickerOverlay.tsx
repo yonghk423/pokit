@@ -1,8 +1,10 @@
+import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
+import { premiumSceneTitle, loadPremiumPack, PREMIUM_CHARACTER_ID } from '../lib/heroPremiumPack';
 import { HeroGeneratedCollectionCard, useHeroGeneratedImages } from './HeroGeneratedCollectionCard';
 import type { HeroAiLibraryImage } from '../lib/heroAiLibrary';
 import { useComicCharacterNames } from '../lib/heroCharacterName';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Alert, Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
 import { Image, type ImageSource } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppModal } from '@shared/ui/app-modal';
@@ -21,6 +23,7 @@ function PickerPreview({ source, fallback, width, height, isDark, id, contain = 
   const [failed, setFailed] = useState(false);
   return <View testID={`hero-picker-preview-frame-${id}`} style={{ width, height, overflow: 'hidden' }}>
     <Image testID={`hero-picker-image-${id}`} source={failed ? fallback : source} contentFit={contain ? 'contain' : 'cover'} transition={150} style={StyleSheet.absoluteFill} onDisplay={() => setReady(true)} onError={() => { if (failed) setReady(true); else setFailed(true); }} />
+    <HeroPhotoEmulsion />
     {!ready ? <View testID={`hero-picker-skeleton-${id}`} pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? '#363B37' : '#E9E6DF', padding: 12, justifyContent: 'flex-end', gap: 6 }]}>
       <View style={{ position: 'absolute', top: '16%', left: '18%', width: '64%', height: '45%', borderRadius: 18, backgroundColor: isDark ? '#414640' : '#E0DCD3' }} />
       <View style={{ width: '65%', height: 5, borderRadius: 3, backgroundColor: isDark ? '#494E48' : '#D9D5CC' }} />
@@ -52,16 +55,28 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const cardWidth = Math.max(80, Math.min(124, (width - 64) / 2.5, (height - insets.top - insets.bottom - 180) * 0.6));
-  const imageHeight = cardWidth * 1.1;
-  const cardHeight = imageHeight + 48;
+  const imageHeight = cardWidth * 0.86;
+  const cardHeight = cardWidth * 1.2;
   const [previews] = useState(() => Object.fromEntries(SELECTABLE_COMIC_CHARACTERS.map(character => {
     const scene = character.scenes[Math.floor(Math.random() * character.scenes.length)];
     return [character.id, scene ? COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source : character.cover];
   })));
+  const [premiumImages, setPremiumImages] = useState<{ id: string; uri: string }[]>([]);
+  const [premiumOpen, setPremiumOpen] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    void loadPremiumPack().then(images => { if (mounted) setPremiumImages(images); });
+    return () => { mounted = false; };
+  }, []);
+  const openPremium = () => {
+    if (!premiumImages.length) return;
+    tapHaptic('select');
+    setPremiumOpen(true);
+  };
   const generatedImages = useHeroGeneratedImages();
   const originalImages = useHeroGeneratedImages(true);
-  const [savedOrder, setOrder] = useState(() => readHeroCharacterOrder(undefined, ['generated-illustrations', 'original-photos']));
-  const order = savedOrder.filter(id => (id !== 'generated-illustrations' || generatedImages.length > 0) && (id !== 'original-photos' || originalImages.length > 0));
+  const [savedOrder, setOrder] = useState(() => readHeroCharacterOrder(undefined, [PREMIUM_CHARACTER_ID, 'generated-illustrations', 'original-photos']));
+  const order = savedOrder.filter(id => (id !== PREMIUM_CHARACTER_ID || premiumImages.length > 0) && (id !== 'generated-illustrations' || generatedImages.length > 0) && (id !== 'original-photos' || originalImages.length > 0));
   const characters = order.map(id => SELECTABLE_COMIC_CHARACTERS.find(character => character.id === id) ?? { ...SELECTABLE_COMIC_CHARACTERS[0], id });
   const [dragging, setDragging] = useState<{ id: string; start: number; target: number } | null>(null);
   const drag = useRef<{ id: string; start: number; target: number; pageX: number; scrollStart: number } | null>(null);
@@ -130,7 +145,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
   }, [!!dragging, width, stride, order.length]);
   const ink = isDark ? '#EEEDE5' : '#292E28';
   const paper = isDark ? '#262B28' : '#F7F6F4';
-  const cardStyle = { width: cardWidth, height: cardHeight, flexShrink: 0, padding: 5, backgroundColor: paper, shadowColor: '#161B16', shadowOffset: { width: 2, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 2 };
+  const cardStyle = { width: cardWidth, height: cardHeight, flexShrink: 0, paddingHorizontal: cardWidth * 0.05, paddingTop: cardWidth * 0.1, paddingBottom: 0, backgroundColor: paper, shadowColor: '#403624', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 1.3, elevation: 1 };
   const progress = useAnimatedValue(0);
   const closing = useRef(false);
   const live = useRef(true);
@@ -169,7 +184,11 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                 : dragging.target <= index && index < dragging.start ? stride : 0
               : 0;
             return <PickerCardSlot key={character.id} id={character.id} width={cardWidth} height={cardHeight} active={active} offset={active ? dragOffset : shift}>
-                {character.id === 'generated-illustrations' || character.id === 'original-photos' ? <HeroGeneratedCollectionCard original={character.id === 'original-photos'} images={character.id === 'original-photos' ? originalImages : generatedImages} compact width={cardWidth} height={cardHeight} ink={ink} paper={paper} onChoose={onChooseGenerated} onChooseScene={id => { const owner = SELECTABLE_COMIC_CHARACTERS.find(item => item.scenes.some(scene => scene.id === id)); if (owner) close(() => onSelect({ ...owner, scenes: owner.scenes.filter(scene => scene.id === id) })); }}
+                {character.id === PREMIUM_CHARACTER_ID ? <Pressable testID="hero-character-picker-premium" accessibilityRole="button" accessibilityLabel="시티팝 레트로 선택" onPress={() => { void openPremium(); }} style={cardStyle}>
+                  <HeroPolaroidSurface />
+                  {premiumImages[0]?.uri ? <Image source={{ uri: premiumImages[0]?.uri }} contentFit="contain" style={{ width: cardWidth * 0.9, height: imageHeight }} /> : <View style={{ width: cardWidth * 0.9, height: imageHeight, backgroundColor: isDark ? '#363B37' : '#E9E6DF', alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink }}>Pro</ThemedText></View>}
+                  <View style={{ height: cardWidth * 0.24, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText></View>
+                </Pressable> : character.id === 'generated-illustrations' || character.id === 'original-photos' ? <HeroGeneratedCollectionCard original={character.id === 'original-photos'} images={character.id === 'original-photos' ? originalImages : generatedImages} compact width={cardWidth} height={cardHeight} ink={ink} paper={paper} onChoose={onChooseGenerated} onChooseScene={id => { const owner = SELECTABLE_COMIC_CHARACTERS.find(item => item.scenes.some(scene => scene.id === id)); if (owner) close(() => onSelect({ ...owner, scenes: owner.scenes.filter(scene => scene.id === id) })); }}
                   delayLongPress={350}
                   onPressIn={() => { if (!drag.current) suppressPress.current = false; }}
                   onLongPress={event => {
@@ -199,9 +218,9 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                   }}
                   onPressOut={() => { setTimeout(() => { if (drag.current && !panActive.current) endDrag(); }, 0); }}
                   onPress={() => { if (suppressPress.current) return; tapHaptic('select'); close(() => { const chosen = SELECTABLE_COMIC_CHARACTERS.find(item => item.id === character.id); if (chosen) onSelect(chosen); }); }} style={cardStyle}>
-                  <PaperGrain opacity={0.85} />
-                  <PickerPreview id={character.id} source={previews[character.id]} fallback={character.cover} width={cardWidth - 10} height={imageHeight} isDark={isDark} />
-                  <View style={{ height: 38, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{nameFor(character.id, t(character.name))}</ThemedText></View>
+                  <HeroPolaroidSurface />
+                  <PickerPreview id={character.id} source={previews[character.id]} fallback={character.cover} width={cardWidth * 0.9} height={imageHeight} isDark={isDark} />
+                  <View style={{ height: cardWidth * 0.24, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{nameFor(character.id, t(character.name))}</ThemedText></View>
 
                 </Pressable></>}
 
@@ -211,5 +230,13 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
 
       </Animated.View>
     </View>
+    {premiumOpen ? <AppModal visible animationType="fade" onRequestClose={() => setPremiumOpen(false)}>
+      <View style={{ flex: 1, backgroundColor: paper, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}><ThemedText style={{ flex: 1, color: ink }}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPremiumOpen(false)} style={{ padding: 16 }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable></View>
+        <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 10 }}>
+          {premiumImages.map((image, index) => <Pressable key={image.id} accessibilityRole="button" accessibilityLabel={`${premiumSceneTitle(image.id)} 선택`} onPress={() => { tapHaptic('select'); setPremiumOpen(false); close(() => onChooseGenerated?.({ uri: image.uri, title: premiumSceneTitle(image.id) })); }} style={{ width: (width - 44) / 3, padding: 5, backgroundColor: paper }}><Image source={{ uri: image.uri }} contentFit="contain" style={{ width: '100%', aspectRatio: 0.75 }} /><ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12 }}>{premiumSceneTitle(image.id)}</ThemedText></Pressable>)}
+        </ScrollView>
+      </View>
+    </AppModal> : null}
   </AppModal>;
 }

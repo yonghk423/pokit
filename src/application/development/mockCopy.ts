@@ -2,7 +2,7 @@ import type { AppLocale } from '@shared/lib/i18n';
 import type { ComicSceneId } from '@pages/day-plan/lib/heroSceneImages';
 
 type SceneCopy = [title: string, memo: string, tasks: string[]];
-export const sceneImages: ComicSceneId[] = ['23-morning-stretch', '27-breakfast', '05-work', '09-coffee-tablet', '10-park-walk', '53-diary-in-bed', '46-camping', '11-photography', '54-seaside-trip', '56-bookstore', '24-making-bed', '28-cooking', '43-sketching', '25-skincare', '50-nap'];
+export const sceneImages: ComicSceneId[] = ['23-morning-stretch', '27-breakfast', '05-work', '09-coffee-tablet', '10-park-walk', '01-exercise', '46-camping', '11-photography', '01-exercise', '01-exercise', '24-making-bed', '28-cooking', '43-sketching', '25-skincare', '50-nap'];
 type MockCopy = {
   name: string; titles: [string, string, string]; scenes: SceneCopy[];
   mateNames: string[]; summaries: string[]; checklists: string[][]; notes: string[][];

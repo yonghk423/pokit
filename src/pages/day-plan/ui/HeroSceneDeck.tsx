@@ -1,21 +1,18 @@
-import { useHeroCardLayout } from '../model/heroCardLayout';
+import { POLAROID_PHOTO_WIDTH, POLAROID_PHOTO_HEIGHT } from '../lib/heroPolaroidFraming';
+import { HeroDiaryCardSides } from './HeroDiaryCardSides';
 import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
 import type { AppFontId } from '@shared/lib/ui-font';
-import { HeroSceneThumbnail } from './HeroSceneThumbnail';
-import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 import { rememberHeroGenerationCardSize } from '../lib/heroGenerationFrame';
 import { createCardTapGuard } from '../lib/cardTapGuard';
-import { useHeroThumbnailStrip } from '../model/useHeroThumbnailStrip';
 import { useTranslation } from '@shared/lib/i18n';
 import { HeroCardCaption, type HeroCardText } from './HeroCardCaption';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { useSettledDeckLayout, type DeckSize } from '../lib/useSettledDeckLayout';
-import { HeroCardStack, type HeroCardStackHandle } from './HeroCardStack';
 import type { HeroCardOpen } from './HeroCardFlip';
 import type { HeroDeckFrame } from './HeroOverviewCardMotion';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Image as NativeImage, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -25,12 +22,6 @@ import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 
 export type ComicDeckItem = { key: string; label: string; artworkUri?: string; exportDate?: string | number; memo?: string; faceColor?: string; inkColor?: string; fontId?: AppFontId };
 
-const THUMB = 44;
-const THUMB_GAP = 8;
-const THUMB_STRIDE = THUMB + THUMB_GAP;
-/** Matches the add button: 8px from the bottom, 44px tall, plus its right inset. */
-const FOOTER_BOTTOM = 8;
-const ADD_RESERVE = 72;
 /** Artwork paper. A pure white card plus grain reads as a second sheet behind the drawing. */
 const ILLUSTRATION_PAPER = '#F9F9F6';
 
@@ -56,9 +47,7 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   detailOpen?: boolean;
 }) {
   const { t } = useTranslation();
-  const savedPresentation = useHeroCardLayout();
-  const presentation = presentationOverride ?? savedPresentation;
-  const thumbnailStrip = useHeroThumbnailStrip();
+  const presentation = 'carousel';
   const rememberSize = useCallback((next: DeckSize) => {
     if (syncMainState) rememberDeckSize(next);
   }, [syncMainState]);
@@ -75,7 +64,7 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const measureStage = useCallback((width: number, height: number) => {
     // Detached native screens can briefly report only their footer or a one-pixel stage.
-    if (height <= FOOTER_BOTTOM + THUMB + 112 + 24) return;
+    if (height <= 136) return;
     updateSize(width, height);
   }, [updateSize]);
   useLayoutEffect(() => {
@@ -109,7 +98,7 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   if (focusKey !== previousFocusKey) {
     setPreviousFocusKey(focusKey);
     const requested = items.findIndex(item => item.key === focusKey);
-    if (requested >= 0) { setActive(requested); setArrivalKey(items[requested].key); }
+    if (requested >= 0) { setActive(requested); setArrivalKey(null); }
   }
   useEffect(() => {
     if (!arrivalKey) return;
@@ -118,32 +107,12 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   }, [arrivalKey]);
   const cardRefs = useRef(new Map<string, View>());
   const readCurrentCard = useRef<(key: string, complete: (card: HeroCardOpen | null) => void) => void>(() => {});
-  const turnRef = useRef<HeroCardStackHandle>(null);
   const carouselRef = useRef<ScrollView>(null);
-  const availableHeight = Math.max(1, size.height - FOOTER_BOTTOM - THUMB - 16);
+  const availableHeight = Math.max(1, size.height - 16);
   // Keep the phone-sized card on compact screens, but let it grow on iPad.
   // The proportional cap also behaves smoothly in split view and Stage Manager.
   const cardWidth = Math.max(1, Math.min(size.width - 76, 560));
   const safeActive = Math.max(0, Math.min(active, items.length - 1));
-  const [photoRatios, setPhotoRatios] = useState<Record<string, number>>({});
-  useEffect(() => {
-    if (!syncMainState) return;
-    let live = true;
-    const uris = [...new Set(items.map(item => item.artworkUri).filter((uri): uri is string => !!uri))];
-    for (const uri of uris) {
-      if (photoRatios[uri]) continue;
-      NativeImage.getSize(resolveHeroArtworkUri(uri), (width, height) => {
-        if (live && width > 0 && height > 0) setPhotoRatios(previous => previous[uri] === width / height ? previous : { ...previous, [uri]: width / height });
-      }, () => {});
-    }
-    return () => { live = false; };
-  }, [syncMainState, items, photoRatios]);
-  const carouselStride = cardWidth + 16;
-  useLayoutEffect(() => {
-    if (presentation === 'carousel' && focused && size.width > 0) {
-      carouselRef.current?.scrollTo({ x: safeActive * carouselStride, animated: false });
-    }
-  }, [presentation, focused, safeActive, carouselStride, size.width, items.length]);
   const currentItem = items[safeActive];
   const currentScene = currentItem ? resolveComicScene(currentItem.key, currentItem.label, choices) : null;
   const savedArtwork = currentItem?.artworkUri;
@@ -156,17 +125,23 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   const originalCardTop = Math.max(8, frameTop - 28);
   const maximumCardHeight = Math.max(1, availableHeight - originalCardTop + 8);
   const frameForItem = (item: ComicDeckItem | undefined) => {
-    if (!syncMainState || !item) return { width: cardWidth, height: Math.min(cardWidth * 1.55, maximumCardHeight) };
-    const scene = resolveComicScene(item.key, item.label, choices);
-    const asset = NativeImage.resolveAssetSource(scene.source);
-    const ratio = item.artworkUri ? photoRatios[item.artworkUri] ?? 2 / 3 : asset?.width && asset.height ? asset.width / asset.height : 2 / 3;
-    const caption = (item.memo?.trim() ? 105 : item.label.trim() ? 77 : 64) + 8;
+    if (!item) return { width: cardWidth, height: Math.min(cardWidth * 1.55, maximumCardHeight) };
+    const ratio = POLAROID_PHOTO_WIDTH / POLAROID_PHOTO_HEIGHT;
+    const caption = 56;
     const imageWidth = Math.max(1, Math.min(cardWidth - 24, (maximumCardHeight - caption - 40) * ratio));
     return { width: imageWidth + 24, height: imageWidth / ratio + caption + 40 };
   };
   const currentFrame = frameForItem(currentItem);
+  const itemFrames = items.map(frameForItem);
+  const carouselOffsets = itemFrames.map((_, index) => itemFrames.slice(0, index).reduce((total, frame) => total + frame.width + 12, 0));
+  const carouselOffset = carouselOffsets[safeActive] ?? 0;
+  useLayoutEffect(() => {
+    if (presentation === 'carousel' && focused && size.width > 0) {
+      carouselRef.current?.scrollTo({ x: carouselOffset, animated: false });
+    }
+  }, [presentation, focused, carouselOffset, size.width, items.length]);
   const cardHeight = currentFrame.height;
-  const cardTop = syncMainState ? Math.max(8, originalCardTop - 8) : Math.max(8, (size.height - cardHeight) / 2);
+  const cardTop = Math.max(8, ((syncMainState ? availableHeight : size.height) - cardHeight) / 2);
   useEffect(() => {
     if (size.width > 0) {
       if (syncMainState) rememberHeroGenerationCardSize(currentFrame.width, cardHeight);
@@ -174,7 +149,6 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
     }
   }, [syncMainState, safeActive, currentFrame.width, cardHeight, cardTop, onFrameChange, size.width]);
   useEffect(() => { if (syncMainState) lastActive = active; }, [active, syncMainState]);
-  const thumbRef = useRef<ScrollView>(null);
   const verticalSwipe = Gesture.Pan().enabled(focused && interactive && !detailOpen && !editingKey && items.length > 0 && !!onShowOverview)
     .activateAfterLongPress(350)
     .activeOffsetY([-10, 10]).failOffsetX([-12, 12])
@@ -182,32 +156,18 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
     .onEnd((event, success) => {
       if (success && event.translationY < -40 && onShowOverview) runOnJS(onShowOverview)();
     });
-  const [thumbViewport, setThumbViewport] = useState(0);
-  const stripWidth = Math.max(0, items.length * THUMB_STRIDE - THUMB_GAP) + 24;
-  const thumbLane = thumbViewport || Math.max(1, size.width - ADD_RESERVE * (syncMainState ? 1 : 2));
-  const thumbOverflows = stripWidth > thumbLane + 1;
-  // The strip stays put; it only scrolls when the focused thumbnail would leave a long row.
-  const thumbPlaced = useRef(false);
-  useEffect(() => {
-    const lane = thumbLane;
-    if (!focused || !interactive || detailOpen || !thumbOverflows) return;
-    const target = 12 + active * THUMB_STRIDE + THUMB / 2 - lane / 2;
-    thumbRef.current?.scrollTo({ x: Math.max(0, Math.min(stripWidth - lane, target)), animated: thumbPlaced.current });
-    thumbPlaced.current = true;
-  }, [active, thumbLane, thumbOverflows, stripWidth, focused, interactive, detailOpen]);
   const renderPage = (index: number, pageInteractive: boolean, trackNative = false, paperBack = false): ReactNode => {
     const item = items[index];
     if (!item) return null;
     const { width: pageWidth, height: pageHeight } = frameForItem(item);
         const scene = resolveComicScene(item.key, item.label, choices);
         const face = scenePaper(item.faceColor, isDark);
-        if (paperBack) return <View testID="hero-paper-back" style={[s.card, { width: currentFrame.width, height: currentFrame.height, alignSelf: 'center', backgroundColor: face }]}><HeroPolaroidSurface /></View>;
-        const captionBudget = (item.memo?.trim() ? 105 : item.label.trim() ? 77 : 64) + 8;
+        if (paperBack) return <View testID="hero-paper-back" style={[s.card, { width: pageWidth, height: pageHeight, alignSelf: 'center', backgroundColor: face }]}><HeroPolaroidSurface /></View>;
+        const captionBudget = 56;
         const imageFrameHeight = Math.max(1, pageHeight - captionBudget - 40);
         const cardInk = item.inkColor ?? ink;
-        return <CardArrival animate={syncMainState && trackNative && item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[s.card, { width: pageWidth, height: pageHeight, alignSelf: 'center', backgroundColor: face, opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
-          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: face, shadowColor: '#393329', shadowOpacity: 0.28, shadowRadius: 1.5, shadowOffset: { width: 0.8, height: 1.8 } }]} />
-          {face !== '#000000' ? <HeroPolaroidSurface /> : null}
+        return <CardArrival animate={syncMainState && trackNative && item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[{ width: pageWidth, height: pageHeight, alignSelf: 'center', opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
+          <HeroDiaryCardSides paper={face} key={item.key} title={item.label} memo={item.memo} ink={cardInk} fontId={item.fontId} interactive={pageInteractive && index === safeActive}>
           <ServiceTutorialTarget steps={pageInteractive && index === active ? ['comicOpen'] : []} style={s.body}><Pressable disabled={!pageInteractive || !!editingKey} accessibilityRole="button" accessibilityLabel={item.label} delayLongPress={500}
             onTouchStart={event => { const touch = event.nativeEvent; tapGuard.start(touch.pageX, touch.pageY, touch.touches.length); }}
             onTouchMove={event => { const touch = event.nativeEvent; tapGuard.move(touch.pageX, touch.pageY, touch.touches.length); }}
@@ -226,16 +186,17 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={syncMainState ? 180 : 0} preserveFullImage contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={syncMainState ? 180 : 0} contentFit="cover" contentPosition="center" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
             <HeroPhotoEmulsion />
           </Pressable>
-            <HeroCardCaption tapToEdit fontId={item.fontId} key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
+            <HeroCardCaption showMemo={false} tapToEdit fontId={item.fontId} key={item.key} title={item.label} memo={item.memo} number={index + 1} ink={cardInk} muted={muted} paper={face}
               showEdit={!!onEditCard}
               onSave={pageInteractive && onEditCard ? text => onEditCard(item.key, text) : undefined}
               onEditingChange={pageInteractive ? editing => setEditingKey(editing ? item.key : null) : undefined} />
           </ServiceTutorialTarget>
+          </HeroDiaryCardSides>
         </View></CardArrival>;
   };
   // Refresh this reader after each commit, so closing uses the edited card rather than its opening copy.
@@ -254,55 +215,27 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
     const { width, height } = event.nativeEvent.layout;
     measureStage(width, height);
   }}>
-    {size.width > 0 && size.height > 0 ? presentation === 'carousel' ?
+    {size.width > 0 && size.height > 0 ?
       <GestureScrollView ref={carouselRef} testID="comic-scene-carousel" horizontal
-        contentOffset={{ x: safeActive * carouselStride, y: 0 }}
+        contentOffset={{ x: carouselOffset, y: 0 }}
         style={StyleSheet.absoluteFill} showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: (size.width - cardWidth) / 2, paddingTop: cardTop, gap: 16 }}
-        snapToInterval={carouselStride} decelerationRate="fast" disableIntervalMomentum bounces={false}
+        contentContainerStyle={{ paddingHorizontal: Math.max(0, (size.width - (itemFrames[0]?.width ?? currentFrame.width)) / 2), height: size.height, gap: 12 }}
+        snapToOffsets={carouselOffsets} decelerationRate="fast" disableIntervalMomentum bounces={false}
         scrollEnabled={focused && interactive && !detailOpen && !editingKey}
         onScrollBeginDrag={() => tapGuard.cancel()}
         onMomentumScrollEnd={event => {
-          const next = Math.max(0, Math.min(items.length - 1, Math.round(event.nativeEvent.contentOffset.x / carouselStride)));
+          const x = event.nativeEvent.contentOffset.x;
+          const next = Math.max(0, Math.min(items.length - 1, carouselOffsets.reduce((best, offset, index) => Math.abs(offset - x) < Math.abs(carouselOffsets[best] - x) ? index : best, 0)));
           if (next !== safeActive) { tapHaptic('select'); setActive(next); }
         }}>
-        {items.map((item, index) => <View key={item.key} style={{ width: cardWidth, height: cardHeight }}>
-          {renderPage(index, index === safeActive && focused && interactive && !detailOpen, true)}
+        {items.map((item, index) => <View key={item.key} style={{ width: itemFrames[index].width, height: size.height }}>
+          <View style={{ marginTop: Math.max(8, ((syncMainState ? availableHeight : size.height) - itemFrames[index].height) / 2) }}>
+            {renderPage(index, index === safeActive && focused && interactive && !detailOpen, true)}
+          </View>
         </View>)}
-      </GestureScrollView> : <HeroCardStack ref={turnRef} active={safeActive} count={items.length} width={size.width} height={size.height}
-        onCardHold={onRemove && !editingKey ? (x, y) => {
-          const left = (size.width - cardWidth) / 2;
-          if (x >= left && x <= left + cardWidth && y >= cardTop && y <= cardTop + cardHeight) requestRemoval(items[safeActive].key);
-        } : undefined}
-        overviewGesture={verticalSwipe}
-        cardWidth={currentFrame.width} cardHeight={cardHeight} top={cardTop} swipeEnabled={!editingKey} enabled={focused && interactive && !detailOpen}
-        renderBack={index => renderPage(index, false, false, true)}
-        pageKey={index => items[index].key} renderPage={(index, pageInteractive, focusedCard) => renderPage(index, pageInteractive, focusedCard)} onChange={setActive} />
-    : null}
-    {size.width > 0 && items.length > 0 ? <Animated.View testID="comic-scene-thumbs" pointerEvents={thumbnailStrip.collapsed ? 'none' : 'auto'} accessibilityElementsHidden={thumbnailStrip.collapsed} importantForAccessibility={thumbnailStrip.collapsed ? 'no-hide-descendants' : 'auto'} style={[s.thumbs, !syncMainState && { left: ADD_RESERVE, bottom: FOOTER_BOTTOM + 20 }, thumbnailStrip.motionStyle]} onLayout={event => {
-      const width = event.nativeEvent.layout.width;
-      if (focused && width > 0) setThumbViewport(previous => previous === width ? previous : width);
-    }}>
-      <GestureScrollView ref={thumbRef} testID="comic-scene-thumbs-scroll" horizontal nestedScrollEnabled disallowInterruption
-        style={s.thumbScroll} showsHorizontalScrollIndicator={false} bounces={false} alwaysBounceHorizontal={false} directionalLockEnabled
-        scrollEnabled={focused && interactive && !detailOpen && !editingKey && thumbOverflows}
-        contentContainerStyle={[s.thumbRow, { justifyContent: thumbOverflows ? 'flex-start' : 'center' }]}>
-        {items.map((item, index) => {
-          const scene = resolveComicScene(item.key, item.label, choices);
-          const face = scenePaper(item.faceColor, isDark);
-          const selected = index === active;
-          return <HeroSceneThumbnail isDark={isDark} key={item.key} disabled={!!editingKey} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected }} onPress={() => {
-            tapHaptic();
-            if (presentation === 'carousel') setActive(index);
-            else turnRef.current?.turnTo(index);
-          }}>
-            <ComicSceneImage preserveFullImage contentFit="contain" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
-              source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
-              style={StyleSheet.absoluteFill} />
-          </HeroSceneThumbnail>;
-        })}
       </GestureScrollView>
-    </Animated.View> : null}
+    : null}
+
   </View>;
 }
 
@@ -315,9 +248,6 @@ const s = StyleSheet.create({
   root: { flex: 1, minHeight: 0 },
   card: { borderRadius: 0, shadowColor: '#262218', shadowOpacity: 0.24, shadowRadius: 11, shadowOffset: { width: 3, height: 9 }, elevation: 8 },
   body: { flex: 1, borderRadius: 2, overflow: 'hidden', padding: 12, paddingTop: 28 },
-  thumbs: { position: 'absolute', left: 0, right: ADD_RESERVE, bottom: FOOTER_BOTTOM - 4, height: THUMB + 8, justifyContent: 'center' },
-  thumbScroll: { flex: 1 },
-  thumbRow: { flexGrow: 1, alignItems: 'center', gap: THUMB_GAP, paddingHorizontal: 12, paddingVertical: 4 },
 });
 
 /** Native position motion adds the new card without moving the stack's layout. */

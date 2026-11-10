@@ -1,3 +1,4 @@
+jest.mock('../lib/heroPremiumPack', () => ({ PREMIUM_CHARACTER_ID: 'protagonist-7', premiumSceneTitle: () => '꽃집 앞에서', loadPremiumPack: jest.fn(async () => []) }));
 import { useHeroGeneratedImages } from './useHeroGeneratedImages';
 import { useState } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -122,7 +123,7 @@ it('uses the same gallery for single-card replacement without sequence controls 
 
 it('switches protagonist libraries without changing existing cards and returns the chosen scene', () => {
   const { SELECTABLE_COMIC_CHARACTERS } = jest.requireActual('../lib/heroCharacters') as typeof import('../lib/heroCharacters');
-  const initial = SELECTABLE_COMIC_CHARACTERS[5];
+  const initial = SELECTABLE_COMIC_CHARACTERS.find(character => character.id === 'protagonist-6')!;
   const other = SELECTABLE_COMIC_CHARACTERS[1];
   const choose = jest.fn(), change = jest.fn();
   let tree!: ReactTestRenderer;

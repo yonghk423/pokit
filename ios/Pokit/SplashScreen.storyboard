@@ -36,9 +36,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="SplashScreenLegacy" width="940" height="1672"/>
+        <image name="SplashScreenLegacy" width="1199" height="1312"/>
         <namedColor name="SplashScreenBackground">
-            <color alpha="1.000" blue="0.929411764705882" green="0.960784313725490" red="0.972549019607843" customColorSpace="sRGB" colorSpace="custom"/>
+            <color alpha="1.000" blue="0.964705882352941" green="0.960784313725490" red="0.976470588235294" customColorSpace="sRGB" colorSpace="custom"/>
         </namedColor>
     </resources>
 </document>

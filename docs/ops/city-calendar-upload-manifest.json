@@ -1,0 +1,1078 @@
+{
+  "bucket": "character-illustrations",
+  "revision": "city-animation",
+  "backgroundCount": 51,
+  "files": [
+    {
+      "themeId": "01-rush-hour-commute",
+      "object": "calendar-themes/city-animation/01-rush-hour-commute/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/01-rush-hour-commute/background.webp",
+      "bytes": 271246,
+      "sha256": "7390b76a772ddc4a0e8cf147720a7578a26b49daf8a5ad88782e4188f31f2705"
+    },
+    {
+      "themeId": "01-rush-hour-commute",
+      "object": "calendar-themes/city-animation/01-rush-hour-commute/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "01-rush-hour-commute",
+      "object": "calendar-themes/city-animation/01-rush-hour-commute/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "02-office-presentation",
+      "object": "calendar-themes/city-animation/02-office-presentation/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/02-office-presentation/background.webp",
+      "bytes": 64042,
+      "sha256": "a07789b6a6c790b759d5a419aef4c6b4a9d5ec1fcf8ac5cb06fda7e779870df5"
+    },
+    {
+      "themeId": "02-office-presentation",
+      "object": "calendar-themes/city-animation/02-office-presentation/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "02-office-presentation",
+      "object": "calendar-themes/city-animation/02-office-presentation/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "03-spilled-coffee-report",
+      "object": "calendar-themes/city-animation/03-spilled-coffee-report/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/03-spilled-coffee-report/background.webp",
+      "bytes": 128820,
+      "sha256": "9992650804586efca1b7a6708e65132228beb2db9f8193d376646101fd6d7dc3"
+    },
+    {
+      "themeId": "03-spilled-coffee-report",
+      "object": "calendar-themes/city-animation/03-spilled-coffee-report/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "03-spilled-coffee-report",
+      "object": "calendar-themes/city-animation/03-spilled-coffee-report/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "04-lunch-rooftop",
+      "object": "calendar-themes/city-animation/04-lunch-rooftop/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/04-lunch-rooftop/background.webp",
+      "bytes": 179764,
+      "sha256": "56ffb3925f52f9931315f3ca463f94da31884905e0b24e250f2ba9d485080e4a"
+    },
+    {
+      "themeId": "04-lunch-rooftop",
+      "object": "calendar-themes/city-animation/04-lunch-rooftop/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "04-lunch-rooftop",
+      "object": "calendar-themes/city-animation/04-lunch-rooftop/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "05-proud-promotion",
+      "object": "calendar-themes/city-animation/05-proud-promotion/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/05-proud-promotion/background.webp",
+      "bytes": 251232,
+      "sha256": "903bbdc836895b7a2486b75686db9a0f26b1a72ffaf839ea905e9e6c4ddceb44"
+    },
+    {
+      "themeId": "05-proud-promotion",
+      "object": "calendar-themes/city-animation/05-proud-promotion/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "05-proud-promotion",
+      "object": "calendar-themes/city-animation/05-proud-promotion/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "06-angry-email",
+      "object": "calendar-themes/city-animation/06-angry-email/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/06-angry-email/background.webp",
+      "bytes": 64160,
+      "sha256": "741fb628f4057eb8c4790b5ac767dbd6e7c614b8130b2a2ab4e0428e40d07f43"
+    },
+    {
+      "themeId": "06-angry-email",
+      "object": "calendar-themes/city-animation/06-angry-email/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "06-angry-email",
+      "object": "calendar-themes/city-animation/06-angry-email/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "07-after-work-run",
+      "object": "calendar-themes/city-animation/07-after-work-run/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/07-after-work-run/background.webp",
+      "bytes": 175738,
+      "sha256": "9bd461f10b2dfa7f6c7ef1c01d08ae125fd7a9af8e8634011c4b79c290ecf5af"
+    },
+    {
+      "themeId": "07-after-work-run",
+      "object": "calendar-themes/city-animation/07-after-work-run/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "07-after-work-run",
+      "object": "calendar-themes/city-animation/07-after-work-run/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "08-missed-deadline",
+      "object": "calendar-themes/city-animation/08-missed-deadline/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/08-missed-deadline/background.webp",
+      "bytes": 66180,
+      "sha256": "0baa5d9533308dc2b7e2e3cdfb7e29cf21ed3cd402573ba69a2dd3fe34f2a0cb"
+    },
+    {
+      "themeId": "08-missed-deadline",
+      "object": "calendar-themes/city-animation/08-missed-deadline/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "08-missed-deadline",
+      "object": "calendar-themes/city-animation/08-missed-deadline/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "09-boxing-bag",
+      "object": "calendar-themes/city-animation/09-boxing-bag/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/09-boxing-bag/background.webp",
+      "bytes": 238228,
+      "sha256": "5f469b850a1be4c2e703325db4f091fb724161cd8623947cefdaac0719c0a300"
+    },
+    {
+      "themeId": "09-boxing-bag",
+      "object": "calendar-themes/city-animation/09-boxing-bag/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "09-boxing-bag",
+      "object": "calendar-themes/city-animation/09-boxing-bag/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "10-basketball-shot",
+      "object": "calendar-themes/city-animation/10-basketball-shot/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/10-basketball-shot/background.webp",
+      "bytes": 201702,
+      "sha256": "3c24fbf03a76ddfef6666af265aad7d092347dcc5c38db5b59b39d9e320f9409"
+    },
+    {
+      "themeId": "10-basketball-shot",
+      "object": "calendar-themes/city-animation/10-basketball-shot/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "10-basketball-shot",
+      "object": "calendar-themes/city-animation/10-basketball-shot/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "11-swimming-laps",
+      "object": "calendar-themes/city-animation/11-swimming-laps/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/11-swimming-laps/background.webp",
+      "bytes": 162340,
+      "sha256": "c41937ba607ab484dfa4706a796e390b3fac425498030bc259a51901d7689ef5"
+    },
+    {
+      "themeId": "11-swimming-laps",
+      "object": "calendar-themes/city-animation/11-swimming-laps/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "11-swimming-laps",
+      "object": "calendar-themes/city-animation/11-swimming-laps/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "12-cycling-hill",
+      "object": "calendar-themes/city-animation/12-cycling-hill/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/12-cycling-hill/background.webp",
+      "bytes": 225896,
+      "sha256": "c54f671c9a76a150e91f24461d31a52d89e6b64e1d037bb094c4b736c29ae248"
+    },
+    {
+      "themeId": "12-cycling-hill",
+      "object": "calendar-themes/city-animation/12-cycling-hill/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "12-cycling-hill",
+      "object": "calendar-themes/city-animation/12-cycling-hill/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "13-yoga-balance",
+      "object": "calendar-themes/city-animation/13-yoga-balance/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/13-yoga-balance/background.webp",
+      "bytes": 108396,
+      "sha256": "55c9f12dba10aa2c3651b91b7316a922110c39b3d4ef545105078731e7975c11"
+    },
+    {
+      "themeId": "13-yoga-balance",
+      "object": "calendar-themes/city-animation/13-yoga-balance/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "13-yoga-balance",
+      "object": "calendar-themes/city-animation/13-yoga-balance/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "14-tennis-serve",
+      "object": "calendar-themes/city-animation/14-tennis-serve/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/14-tennis-serve/background.webp",
+      "bytes": 224018,
+      "sha256": "d3eb61c3f92bbc5e0cbb56ad0f34a4e0cb7b6b4865a579d5b2e41992ecd4b177"
+    },
+    {
+      "themeId": "14-tennis-serve",
+      "object": "calendar-themes/city-animation/14-tennis-serve/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "14-tennis-serve",
+      "object": "calendar-themes/city-animation/14-tennis-serve/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "15-soccer-dribble",
+      "object": "calendar-themes/city-animation/15-soccer-dribble/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/15-soccer-dribble/background.webp",
+      "bytes": 131842,
+      "sha256": "922dafe529a28ccc46d444d7849fbd3120cb3b6d37389d714902d32d4f88b14c"
+    },
+    {
+      "themeId": "15-soccer-dribble",
+      "object": "calendar-themes/city-animation/15-soccer-dribble/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "15-soccer-dribble",
+      "object": "calendar-themes/city-animation/15-soccer-dribble/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "16-dance-practice",
+      "object": "calendar-themes/city-animation/16-dance-practice/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/16-dance-practice/background.webp",
+      "bytes": 97432,
+      "sha256": "aa50cca1337d6940f700de4ba478b047752b168f50ba6528fdc39f443cd39065"
+    },
+    {
+      "themeId": "16-dance-practice",
+      "object": "calendar-themes/city-animation/16-dance-practice/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "16-dance-practice",
+      "object": "calendar-themes/city-animation/16-dance-practice/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "17-climbing-wall",
+      "object": "calendar-themes/city-animation/17-climbing-wall/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/17-climbing-wall/background.webp",
+      "bytes": 107836,
+      "sha256": "2717cf737bdbb823df8cf28700fcc14ab0fdd0ef0b86ac73327996fe4aa62753"
+    },
+    {
+      "themeId": "17-climbing-wall",
+      "object": "calendar-themes/city-animation/17-climbing-wall/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "17-climbing-wall",
+      "object": "calendar-themes/city-animation/17-climbing-wall/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "18-jump-rope",
+      "object": "calendar-themes/city-animation/18-jump-rope/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/18-jump-rope/background.webp",
+      "bytes": 220522,
+      "sha256": "d5ff450d903b1a342993040cb4223193f65de9d74c2d29f257c6eb62cbbd95a9"
+    },
+    {
+      "themeId": "18-jump-rope",
+      "object": "calendar-themes/city-animation/18-jump-rope/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "18-jump-rope",
+      "object": "calendar-themes/city-animation/18-jump-rope/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "19-rain-run",
+      "object": "calendar-themes/city-animation/19-rain-run/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/19-rain-run/background.webp",
+      "bytes": 204832,
+      "sha256": "a306066e6cab6c9fcc45eb64bc63cfc189684f5f6f26b51c949c1b0434f8bc8d"
+    },
+    {
+      "themeId": "19-rain-run",
+      "object": "calendar-themes/city-animation/19-rain-run/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "19-rain-run",
+      "object": "calendar-themes/city-animation/19-rain-run/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "20-badminton-rally",
+      "object": "calendar-themes/city-animation/20-badminton-rally/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/20-badminton-rally/background.webp",
+      "bytes": 232332,
+      "sha256": "5db90e94270c710590c490c60e2cab75be1873fe6f2fcd76947b00069b0839ac"
+    },
+    {
+      "themeId": "20-badminton-rally",
+      "object": "calendar-themes/city-animation/20-badminton-rally/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "20-badminton-rally",
+      "object": "calendar-themes/city-animation/20-badminton-rally/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "21-couch-after-work",
+      "object": "calendar-themes/city-animation/21-couch-after-work/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/21-couch-after-work/background.webp",
+      "bytes": 87586,
+      "sha256": "91fc5d66f96effb5895bd4f642772ab91a30daa07884bb3d9809e9149ef14354"
+    },
+    {
+      "themeId": "21-couch-after-work",
+      "object": "calendar-themes/city-animation/21-couch-after-work/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "21-couch-after-work",
+      "object": "calendar-themes/city-animation/21-couch-after-work/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "22-window-tea",
+      "object": "calendar-themes/city-animation/22-window-tea/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/22-window-tea/background.webp",
+      "bytes": 126926,
+      "sha256": "93c2e7865b166bac1031b74df25a1a5072e5cca3f1284b5162c5f1c14d16e3db"
+    },
+    {
+      "themeId": "22-window-tea",
+      "object": "calendar-themes/city-animation/22-window-tea/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "22-window-tea",
+      "object": "calendar-themes/city-animation/22-window-tea/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "23-laundry-day",
+      "object": "calendar-themes/city-animation/23-laundry-day/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/23-laundry-day/background.webp",
+      "bytes": 146490,
+      "sha256": "e3424cfccfc646af5fc1cd5ece37e0ddf352b34cd8ee2c6cf50f96534a074281"
+    },
+    {
+      "themeId": "23-laundry-day",
+      "object": "calendar-themes/city-animation/23-laundry-day/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "23-laundry-day",
+      "object": "calendar-themes/city-animation/23-laundry-day/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "24-home-cooking",
+      "object": "calendar-themes/city-animation/24-home-cooking/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/24-home-cooking/background.webp",
+      "bytes": 151310,
+      "sha256": "d55d084cbee43e2ec5e97c74c7a39d6f4a0d4ce8dbeb73142291695eb94ad687"
+    },
+    {
+      "themeId": "24-home-cooking",
+      "object": "calendar-themes/city-animation/24-home-cooking/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "24-home-cooking",
+      "object": "calendar-themes/city-animation/24-home-cooking/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "25-lazy-morning",
+      "object": "calendar-themes/city-animation/25-lazy-morning/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/25-lazy-morning/background.webp",
+      "bytes": 89988,
+      "sha256": "7a76898159a33a5dd797ff955a196aee64dad32399761bd8c1cd59dfb29f38cc"
+    },
+    {
+      "themeId": "25-lazy-morning",
+      "object": "calendar-themes/city-animation/25-lazy-morning/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "25-lazy-morning",
+      "object": "calendar-themes/city-animation/25-lazy-morning/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "26-couch-nap",
+      "object": "calendar-themes/city-animation/26-couch-nap/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/26-couch-nap/background.webp",
+      "bytes": 114586,
+      "sha256": "174bf81b9c9fcb23c2a2c3b43e6d8a91f43c8cc6557486a948f2c1671212a846"
+    },
+    {
+      "themeId": "26-couch-nap",
+      "object": "calendar-themes/city-animation/26-couch-nap/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "26-couch-nap",
+      "object": "calendar-themes/city-animation/26-couch-nap/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "27-houseplant-care",
+      "object": "calendar-themes/city-animation/27-houseplant-care/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/27-houseplant-care/background.webp",
+      "bytes": 142756,
+      "sha256": "ddfa81132478066e2514e94a9b61b66bc8fe90801876c7d4c66555fb9a8949db"
+    },
+    {
+      "themeId": "27-houseplant-care",
+      "object": "calendar-themes/city-animation/27-houseplant-care/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "27-houseplant-care",
+      "object": "calendar-themes/city-animation/27-houseplant-care/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "28-movie-night",
+      "object": "calendar-themes/city-animation/28-movie-night/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/28-movie-night/background.webp",
+      "bytes": 122748,
+      "sha256": "c2a349a36f9b09db6ff1402a9e46b19236380943ea914e7793493d4e6513ac54"
+    },
+    {
+      "themeId": "28-movie-night",
+      "object": "calendar-themes/city-animation/28-movie-night/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "28-movie-night",
+      "object": "calendar-themes/city-animation/28-movie-night/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "29-bathroom-skincare",
+      "object": "calendar-themes/city-animation/29-bathroom-skincare/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/29-bathroom-skincare/background.webp",
+      "bytes": 74078,
+      "sha256": "522342d17f120c0d767b104481dc51ebb807e5103e342e37780b228bfecfc681"
+    },
+    {
+      "themeId": "29-bathroom-skincare",
+      "object": "calendar-themes/city-animation/29-bathroom-skincare/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "29-bathroom-skincare",
+      "object": "calendar-themes/city-animation/29-bathroom-skincare/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "30-cat-on-lap",
+      "object": "calendar-themes/city-animation/30-cat-on-lap/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/30-cat-on-lap/background.webp",
+      "bytes": 257224,
+      "sha256": "00bba93ad6083635f476f0c8eb31891b34044b9fa4b938bd2971ad6023dc5f33"
+    },
+    {
+      "themeId": "30-cat-on-lap",
+      "object": "calendar-themes/city-animation/30-cat-on-lap/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "30-cat-on-lap",
+      "object": "calendar-themes/city-animation/30-cat-on-lap/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "31-frustrated-phone-call",
+      "object": "calendar-themes/city-animation/31-frustrated-phone-call/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/31-frustrated-phone-call/background.webp",
+      "bytes": 166638,
+      "sha256": "6411fd0db8d1a810e7cd5e5729e064d22c4cd7cd4ba11f4e95d7f9dce52a7be2"
+    },
+    {
+      "themeId": "31-frustrated-phone-call",
+      "object": "calendar-themes/city-animation/31-frustrated-phone-call/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "31-frustrated-phone-call",
+      "object": "calendar-themes/city-animation/31-frustrated-phone-call/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "32-sad-bus-stop",
+      "object": "calendar-themes/city-animation/32-sad-bus-stop/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/32-sad-bus-stop/background.webp",
+      "bytes": 188020,
+      "sha256": "8525cd386e5cc6978030a4f34714270c1385d09d2be0c4fcfdb618f5a6b952e1"
+    },
+    {
+      "themeId": "32-sad-bus-stop",
+      "object": "calendar-themes/city-animation/32-sad-bus-stop/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "32-sad-bus-stop",
+      "object": "calendar-themes/city-animation/32-sad-bus-stop/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "33-exam-results-joy",
+      "object": "calendar-themes/city-animation/33-exam-results-joy/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/33-exam-results-joy/background.webp",
+      "bytes": 130028,
+      "sha256": "f6a58770a840220b2cd1d39ec4d3d82ed09f4bccb2bbdaec27c872d4a7991aaf"
+    },
+    {
+      "themeId": "33-exam-results-joy",
+      "object": "calendar-themes/city-animation/33-exam-results-joy/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "33-exam-results-joy",
+      "object": "calendar-themes/city-animation/33-exam-results-joy/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "34-interview-nerves",
+      "object": "calendar-themes/city-animation/34-interview-nerves/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/34-interview-nerves/background.webp",
+      "bytes": 163738,
+      "sha256": "98cf1df69f2d0a382404c54ecbf0b7ff9740d56b876aad603c905fa8d2c839a4"
+    },
+    {
+      "themeId": "34-interview-nerves",
+      "object": "calendar-themes/city-animation/34-interview-nerves/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "34-interview-nerves",
+      "object": "calendar-themes/city-animation/34-interview-nerves/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "35-breakup-evening",
+      "object": "calendar-themes/city-animation/35-breakup-evening/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/35-breakup-evening/background.webp",
+      "bytes": 136202,
+      "sha256": "e2f076839ab2928bd7f71fac4434545aa0fb0ba828f19cd112c6913a41654a10"
+    },
+    {
+      "themeId": "35-breakup-evening",
+      "object": "calendar-themes/city-animation/35-breakup-evening/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "35-breakup-evening",
+      "object": "calendar-themes/city-animation/35-breakup-evening/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "36-concert-happiness",
+      "object": "calendar-themes/city-animation/36-concert-happiness/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/36-concert-happiness/background.webp",
+      "bytes": 153436,
+      "sha256": "2b84a6fd27f724e8726d30f8ab9f83cdbadd7cc84fcb257f64cf0208ae069472"
+    },
+    {
+      "themeId": "36-concert-happiness",
+      "object": "calendar-themes/city-animation/36-concert-happiness/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "36-concert-happiness",
+      "object": "calendar-themes/city-animation/36-concert-happiness/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "37-embarrassed-spill",
+      "object": "calendar-themes/city-animation/37-embarrassed-spill/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/37-embarrassed-spill/background.webp",
+      "bytes": 170624,
+      "sha256": "9a549413955796726bcecef50a9f1d6b8b623ddd2d1e93a4235e4baceb3581ac"
+    },
+    {
+      "themeId": "37-embarrassed-spill",
+      "object": "calendar-themes/city-animation/37-embarrassed-spill/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "37-embarrassed-spill",
+      "object": "calendar-themes/city-animation/37-embarrassed-spill/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "38-holiday-loneliness",
+      "object": "calendar-themes/city-animation/38-holiday-loneliness/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/38-holiday-loneliness/background.webp",
+      "bytes": 83248,
+      "sha256": "fc0047a5443c33fc5375e4afbfc62f42375a7c4be4521b81e42b5a88d528e764"
+    },
+    {
+      "themeId": "38-holiday-loneliness",
+      "object": "calendar-themes/city-animation/38-holiday-loneliness/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "38-holiday-loneliness",
+      "object": "calendar-themes/city-animation/38-holiday-loneliness/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "39-birthday-surprise",
+      "object": "calendar-themes/city-animation/39-birthday-surprise/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/39-birthday-surprise/background.webp",
+      "bytes": 174092,
+      "sha256": "c40121918244684426dd005fc0488b0976e032df5de50d299eae33de519698b7"
+    },
+    {
+      "themeId": "39-birthday-surprise",
+      "object": "calendar-themes/city-animation/39-birthday-surprise/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "39-birthday-surprise",
+      "object": "calendar-themes/city-animation/39-birthday-surprise/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "40-relief-after-cry",
+      "object": "calendar-themes/city-animation/40-relief-after-cry/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/40-relief-after-cry/background.webp",
+      "bytes": 149082,
+      "sha256": "5ea97ad14f3d54ecd082766624d757ce81c8dfbf370e8a3cca816e3948de09d9"
+    },
+    {
+      "themeId": "40-relief-after-cry",
+      "object": "calendar-themes/city-animation/40-relief-after-cry/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "40-relief-after-cry",
+      "object": "calendar-themes/city-animation/40-relief-after-cry/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "41-spring-blossom-bicycle",
+      "object": "calendar-themes/city-animation/41-spring-blossom-bicycle/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/41-spring-blossom-bicycle/background.webp",
+      "bytes": 321540,
+      "sha256": "16ca387ef236afef82fe03276de8aa6fe9a18a896440fe6fd76abcbec320105f"
+    },
+    {
+      "themeId": "41-spring-blossom-bicycle",
+      "object": "calendar-themes/city-animation/41-spring-blossom-bicycle/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "41-spring-blossom-bicycle",
+      "object": "calendar-themes/city-animation/41-spring-blossom-bicycle/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "42-spring-rain-puddle",
+      "object": "calendar-themes/city-animation/42-spring-rain-puddle/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/42-spring-rain-puddle/background.webp",
+      "bytes": 326218,
+      "sha256": "8fe3899ffe0fcd8e89a9e0414e6545eb0d4fb816e123d2719ee4827c3fcebd5e"
+    },
+    {
+      "themeId": "42-spring-rain-puddle",
+      "object": "calendar-themes/city-animation/42-spring-rain-puddle/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "42-spring-rain-puddle",
+      "object": "calendar-themes/city-animation/42-spring-rain-puddle/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "43-spring-garden-planting",
+      "object": "calendar-themes/city-animation/43-spring-garden-planting/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/43-spring-garden-planting/background.webp",
+      "bytes": 383350,
+      "sha256": "483009e81889ffca93cde73eec95e63eca5af0587e475255a5455b48168461bd"
+    },
+    {
+      "themeId": "43-spring-garden-planting",
+      "object": "calendar-themes/city-animation/43-spring-garden-planting/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "43-spring-garden-planting",
+      "object": "calendar-themes/city-animation/43-spring-garden-planting/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "44-summer-beach-walk",
+      "object": "calendar-themes/city-animation/44-summer-beach-walk/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/44-summer-beach-walk/background.webp",
+      "bytes": 311648,
+      "sha256": "2e93ca75ca0ffc14c49285f3a4c3a920abec1e299eaedd77a147474676b99851"
+    },
+    {
+      "themeId": "44-summer-beach-walk",
+      "object": "calendar-themes/city-animation/44-summer-beach-walk/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "44-summer-beach-walk",
+      "object": "calendar-themes/city-animation/44-summer-beach-walk/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "45-summer-hill-hike",
+      "object": "calendar-themes/city-animation/45-summer-hill-hike/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/45-summer-hill-hike/background.webp",
+      "bytes": 416712,
+      "sha256": "8213b00273587843b2c2a5647310c8ca835ca0ff471c1f579157fc7c2e88a559"
+    },
+    {
+      "themeId": "45-summer-hill-hike",
+      "object": "calendar-themes/city-animation/45-summer-hill-hike/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "45-summer-hill-hike",
+      "object": "calendar-themes/city-animation/45-summer-hill-hike/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "46-autumn-leaves",
+      "object": "calendar-themes/city-animation/46-autumn-leaves/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/46-autumn-leaves/background.webp",
+      "bytes": 277590,
+      "sha256": "cc63f633e8daa853e6b0f8386877c9d267cf88e72fe6bb9a79f62fbc66001528"
+    },
+    {
+      "themeId": "46-autumn-leaves",
+      "object": "calendar-themes/city-animation/46-autumn-leaves/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "46-autumn-leaves",
+      "object": "calendar-themes/city-animation/46-autumn-leaves/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "47-autumn-market",
+      "object": "calendar-themes/city-animation/47-autumn-market/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/47-autumn-market/background.webp",
+      "bytes": 458142,
+      "sha256": "ef6bca0d8cd7445e73cc65a4338ace20ae5196452a717238c423111b87a53b4a"
+    },
+    {
+      "themeId": "47-autumn-market",
+      "object": "calendar-themes/city-animation/47-autumn-market/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "47-autumn-market",
+      "object": "calendar-themes/city-animation/47-autumn-market/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "48-autumn-bus-shelter",
+      "object": "calendar-themes/city-animation/48-autumn-bus-shelter/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/48-autumn-bus-shelter/background.webp",
+      "bytes": 235160,
+      "sha256": "e37a60afdb1c0cc0677a735a4f2707a7a95e60b66a81745311da155bf14cc3f2"
+    },
+    {
+      "themeId": "48-autumn-bus-shelter",
+      "object": "calendar-themes/city-animation/48-autumn-bus-shelter/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "48-autumn-bus-shelter",
+      "object": "calendar-themes/city-animation/48-autumn-bus-shelter/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "49-winter-snow-play",
+      "object": "calendar-themes/city-animation/49-winter-snow-play/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/49-winter-snow-play/background.webp",
+      "bytes": 260030,
+      "sha256": "368a60a86e00e7b7549962977e60c7070791e664aa99fb2dace916bf6da1f6d1"
+    },
+    {
+      "themeId": "49-winter-snow-play",
+      "object": "calendar-themes/city-animation/49-winter-snow-play/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "49-winter-snow-play",
+      "object": "calendar-themes/city-animation/49-winter-snow-play/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "50-winter-bus-wait",
+      "object": "calendar-themes/city-animation/50-winter-bus-wait/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/50-winter-bus-wait/background.webp",
+      "bytes": 365398,
+      "sha256": "a49aed4bfc18bb2edf62de96250ba3e6d168587bf1aa0fbffbc5e83febe1546b"
+    },
+    {
+      "themeId": "50-winter-bus-wait",
+      "object": "calendar-themes/city-animation/50-winter-bus-wait/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "50-winter-bus-wait",
+      "object": "calendar-themes/city-animation/50-winter-bus-wait/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    },
+    {
+      "themeId": "walking-with-the-wind-v1",
+      "object": "calendar-themes/city-animation/walking-with-the-wind-v1/background.webp",
+      "file": "assets/calendar-illustrations/city-animation/walking-with-the-wind-v1/background.webp",
+      "bytes": 281594,
+      "sha256": "449ca84be13c58737607672531568bd26401e515024542234a5404f04c305457"
+    },
+    {
+      "themeId": "walking-with-the-wind-v1",
+      "object": "calendar-themes/city-animation/walking-with-the-wind-v1/paper.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/paper.webp",
+      "bytes": 18512,
+      "sha256": "df3854930c8591c9dcfadc3557d69f8c4c99246eecee14b13358696fc893ead8"
+    },
+    {
+      "themeId": "walking-with-the-wind-v1",
+      "object": "calendar-themes/city-animation/walking-with-the-wind-v1/leaf.webp",
+      "file": "assets/calendar-illustrations/city-animation/shared/leaf.webp",
+      "bytes": 14660,
+      "sha256": "ab0d453aaa60ecba26113d8a44a57de9636666d7dffc35a552ed5ec3b2b4200d"
+    }
+  ]
+}

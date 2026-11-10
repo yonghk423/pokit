@@ -29,3 +29,11 @@ it('lays out all dates under the correct Sunday-first weekday including leap yea
   expect(comicCalendarDays(new Date(2026, 7, 1))).toHaveLength(42);
   expect(comicCalendarDays(new Date(2026, 1, 1))).toHaveLength(28);
 });
+
+it('groups a backdated diary under its selected date rather than its creation date', () => {
+  const backdated = { ...diary('backdated', 13), date: '2026-09-02' };
+  expect(comicDiaryDate(backdated)).toBe('2026-09-02');
+  const groups = groupCalendarDiaries([backdated]);
+  expect(groups.get('2026-09-02')).toEqual([backdated]);
+  expect(groups.has('2026-10-13')).toBe(false);
+});

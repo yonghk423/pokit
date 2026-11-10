@@ -46,7 +46,7 @@ export const HeroRandomDraftCard = forwardRef<HeroRandomDraftHandle, { scene: Sc
     <KeyboardAvoidingView testID="hero-random-draft" keyboardVerticalOffset={keyboardOffset} behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.root}>
     <View style={[s.card, { backgroundColor: paper }]}>
       {paper !== '#000000' ? <PaperGrain opacity={0.15} /> : null}
-      {!keyboard ? <View style={s.image}><ComicSceneImage imageKey={`${scene.id}:draft`} source={scene.source} fitToCard style={StyleSheet.absoluteFill} /></View> : null}
+      {!keyboard ? <View style={s.image}><ComicSceneImage imageKey={`${scene.id}:draft`} source={scene.source} preserveFullImage contentFit="contain" style={StyleSheet.absoluteFill} /></View> : null}
       <View style={[s.writing, keyboard && { flex: 1 }]}>
         {!keyboard ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{!title.trim() && !memo.trim() ? <HeroEmptyCardTimestamp color={muted} /> : <View style={{ flex: 1 }} />}<HeroImageActions key={scene.id} source={scene.source} title={title} compact /></View> : null}
         <ThemedTextInput testID="hero-random-title" accessibilityLabel={t('comicDay.sceneTitle')} placeholder={t('comicDay.sceneTitle')} placeholderTextColor={muted} onFocus={beginEditing} value={title} onChangeText={setTitle} maxLength={80} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => memoRef.current?.focus()} style={[s.title, { color: pen, borderBottomColor: muted }]} />

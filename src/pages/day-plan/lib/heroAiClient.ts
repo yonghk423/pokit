@@ -6,7 +6,7 @@ import { getYourdayAiDevelopmentHeaders } from '@shared/config/yourdayAi';
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
 import type { ComicSceneId } from './heroSceneImages';
 
-export type HeroStory = { cardAspectRatio?: number; title?: string; text: string; source: 'character' | 'photo'; styleId?: 'protagonist-1' | 'protagonist-2' | 'protagonist-3' | 'protagonist-4' | 'protagonist-5' | 'protagonist-6' };
+export type HeroStory = { cardAspectRatio?: number; title?: string; text: string; source: 'character' | 'photo'; styleId?: 'protagonist-1' | 'protagonist-2' | 'protagonist-3' | 'protagonist-5' | 'protagonist-6' };
 export type HeroAiResult = { uri: string; sceneId?: ComicSceneId };
 export class HeroAiError extends Error { constructor(public code: string) { super(code); } }
 function config() {
@@ -140,7 +140,7 @@ export async function generateHeroImages({ id, mode, photo, photos, scenes, onPr
   checkCancellation(signal);
   const reference = mode === 'face' ? await jpeg(photo) : story?.source === 'photo' ? await artwork(scenes[0]) : undefined;
   const inputs: { base: string; reference?: string; story?: HeroStory }[] = [];
-  for (let i = 0; i < count; i++) inputs.push({ base: mode === 'face' || story?.source === 'character' ? await artwork(scenes[i]) : await jpeg(photos[i]), ...(reference ? { reference } : {}), ...(story ? { story } : {}) });
+  for (let i = 0; i < count; i++) inputs.push({ base: mode === 'face' || story?.source === 'character' ? await artwork(scenes[i]) : await jpeg(photos[i]), ...(reference ? { reference } : {}), ...(story ? { story: { ...story, cardAspectRatio: 5 / 6 } } : {}) });
   checkCancellation(signal);
   if (!fs.documentDirectory) throw new HeroAiError('save_failed');
   const folder = `${fs.documentDirectory}hero-ai/`;
@@ -194,6 +194,26 @@ async function finishHeroAiJob(pending: PendingHeroAiJob, job: JobSnapshot, onPr
   return result;
 }
 
+/** Normalize new AI files to width:height 1:1.2, matching top-anchored card framing. */
+async function normalizeAiImage(uri: string) {
+  const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
+  const decoded = await manipulateAsync(uri, [], { format: SaveFormat.PNG });
+  let cropped: { uri: string } | undefined;
+  try {
+    // Multiples of 5 and 6 keep the saved pixel ratio exact.
+    const unit = Math.floor(Math.min(decoded.width / 5, decoded.height / 6));
+    if (unit < 1) throw new Error('invalid_image');
+    const width = unit * 5, height = unit * 6;
+    cropped = await manipulateAsync(decoded.uri, [{ crop: {
+      originX: Math.floor((decoded.width - width) / 2), originY: 0, width, height,
+    } }], { format: SaveFormat.PNG });
+    await fs.moveAsync({ from: cropped.uri, to: uri });
+  } finally {
+    await fs.deleteAsync(decoded.uri, { idempotent: true }).catch(() => undefined);
+    if (cropped) await fs.deleteAsync(cropped.uri, { idempotent: true }).catch(() => undefined);
+  }
+}
+
 /** Atomic device-only save, before any result is shown or acknowledged. */
 async function saveDirectResult(id: string, index: number, result: { index?: number; b64_json?: string }) {
   if (result.index !== index || typeof result.b64_json !== 'string' || result.b64_json.length > 28000000 || !result.b64_json.startsWith('iVBORw0KGgo') || !/^[A-Za-z0-9+/=]+$/.test(result.b64_json)) throw new HeroAiError('invalid_result');
@@ -203,6 +223,7 @@ async function saveDirectResult(id: string, index: number, result: { index?: num
   const target = `${folder}${id}-${index}.png`, temporary = `${target}.download`;
   try {
     await fs.writeAsStringAsync(temporary, result.b64_json, { encoding: fs.EncodingType.Base64 });
+    await normalizeAiImage(temporary);
     await fs.moveAsync({ from: temporary, to: target });
     notifyHeroAiLibraryChanged();
   } catch {
@@ -223,6 +244,7 @@ async function downloadResult(url: string, target: string) {
     if (!info.exists || !info.size || info.size > 20971520) throw new Error('invalid_result');
     const signature = await fs.readAsStringAsync(temporary, { encoding: fs.EncodingType.Base64, position: 0, length: 8 });
     if (!signature.startsWith('iVBORw0KGgo')) throw new Error('invalid_result');
+    await normalizeAiImage(temporary);
     await fs.moveAsync({ from: temporary, to: target });
     notifyHeroAiLibraryChanged();
   } catch {

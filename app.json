@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "YOUR DAY",
+    "name": "Daylight",
     "slug": "pokit",
-    "version": "2.1.7",
+    "version": "2.1.8",
     "orientation": "portrait",
-    "icon": "./assets/app-icon4.png",
+    "icon": "./assets/app-icon4-inset.png",
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
     "notification": {
-      "icon": "./assets/app-icon4.png",
+      "icon": "./assets/app-icon4-inset.png",
       "color": "#000000"
     },
     "newArchEnabled": true,
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "124",
+      "buildNumber": "125",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -46,11 +46,11 @@
       }
     },
     "android": {
-      "version": "2.1.7",
-      "versionCode": 124,
+      "version": "2.1.8",
+      "versionCode": 125,
       "adaptiveIcon": {
-        "backgroundColor": "#F2EDE4",
-        "foregroundImage": "./assets/app-icon4.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/app-icon4-inset.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -61,7 +61,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/app-icon4.png"
+      "favicon": "./assets/app-icon4-inset.png"
     },
     "plugins": [
       "expo-router",
@@ -92,17 +92,17 @@
         "expo-splash-screen",
         {
           "resizeMode": "contain",
-          "backgroundColor": "#F8F5ED",
+          "backgroundColor": "#F9F5F6",
           "android": {
             "drawable": {
               "icon": "./assets/splash-background.xml"
             }
           },
           "dark": {
-            "backgroundColor": "#F8F5ED"
+            "backgroundColor": "#F9F5F6"
           },
           "ios": {
-            "image": "./assets/splash-artwork.png",
+            "image": "./assets/splash-polaroid-quote.png",
             "enableFullScreenImage_legacy": true
           }
         }
@@ -110,7 +110,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/app-icon4.png",
+          "icon": "./assets/app-icon4-inset.png",
           "color": "#000000",
           "defaultChannel": "default"
         }
@@ -155,7 +155,14 @@
           "faceIDPermission": false
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "선택한 캘린더의 일정을 다이어리 달력에 함께 표시합니다.",
+          "remindersPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

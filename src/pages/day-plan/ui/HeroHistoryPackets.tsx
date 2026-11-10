@@ -1,17 +1,18 @@
+import { HeroTrashIcon } from './HeroTrashIcon';
+import { getClockNow } from '@shared/lib/time/appClock';
+import { comicDiaryDate } from '../lib/heroCalendar';
 import { HeroPolaroidOverviewIcon } from './HeroPolaroidOverviewIcon';
 import { polaroidScatter } from '../lib/polaroidScatter';
 import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
-import { HeroDiaryCalendar, EmptyDiaryIcon } from './HeroDiaryCalendar';
-import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
+import { EmptyDiaryIcon } from './HeroDiaryCalendar';
 import { CloseIcon } from '@shared/ui/icon-symbol/CloseIcon';
 import { BackChevron } from '@shared/ui/icon-symbol';
 import { HeroHistorySceneDetail } from './HeroHistorySceneDetail';
 import { AppAlert } from '@shared/lib/app-alert';
 import { useTranslation } from '@shared/lib/i18n';
-import { SettingsPenIcon } from '../../settings/lib/settingsPen';
-import { useId, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useId, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import { AppModal } from '@shared/ui/app-modal';
@@ -30,7 +31,7 @@ import { ComicDayBoard } from './HeroDayBoard';
 import { HeroCardToolsProvider } from '../model/heroCardToolsPortal';
 import type { HeroCardText } from './HeroCardCaption';
 
-const dateLabel = (date: string) => date === 'undated' ? 'UNDATED' : new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase();
+const dateLabel = (date: string) => date === 'undated' ? 'UNDATED' : new Date(`${date}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
 const timeLabel = (n: number) => n > 0 ? new Date(n).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 function source(diary: ComicDiary, index = 0) {
   const scene = diary.scenes[index];
@@ -72,14 +73,11 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
       { text: t('comicDiary.deleteSelected', { count: ids.length }), style: 'destructive', onPress: () => { onDeleteMany(ids); setSelected([]); setSelecting(false); } },
     ], { cancelable: true });
   };
-  const hasWallpaper = useWallpaperStore(state => state.wallpaper !== 'default');
+  const hasWallpaper = useWallpaperStore(state => !!state.wallpaper);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const groups = groupDiaryLibrary(diaries);
-  const [month, setMonth] = useState(() => groups.find(g => g.date !== 'undated')?.date.slice(0, 7) ?? new Date().toISOString().slice(0, 7));
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const monthPressOpacity = useRef(new Animated.Value(0)).current;
-  const animateMonthPress = (pressed: boolean) => Animated.timing(monthPressOpacity, { toValue: pressed ? 1 : 0, duration: pressed ? 80 : 160, useNativeDriver: true }).start();
+  const groups = groupDiaryLibrary(diaries, 'month');
+  const [year, setYear] = useState(() => Number(groups.find(g => g.date !== 'undated')?.date.slice(0, 4) ?? getClockNow().getFullYear()));
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [opened, setOpened] = useState<string | null>(null);
@@ -101,39 +99,38 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
     ], { cancelable: true });
   };
 
-  const visible = groups.filter(g => g.date.startsWith(month) || g.date === 'undated');
+  const visible = groups.filter(g => g.date.startsWith(`${year}-`) || g.date === 'undated');
   const packetCanvasWidth = Math.min(520, Math.max(1, width - 32));
   const packetLayout = polaroidScatter(packetCanvasWidth, visible.map(group => group.date), {}, 'packets');
-  const moveMonth = (delta: number) => { const d = new Date(`${month}-01T12:00:00`); d.setMonth(d.getMonth() + delta); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); };
+  const moveYear = (delta: number) => { tapHaptic('select'); setYear(value => value + delta); setSelected([]); };
   const close = () => { if (sceneDetail) setSceneDetail(null); else { setOpened(null); setDetail(null); setDateGridOpen(false); } };
   return <View style={{ flex: 1, paddingTop: insets.top }}>
-    <View style={s.month}><Pressable testID="history-previous-month" accessibilityRole="button" accessibilityLabel={t('comicCalendar.previous')} onPress={() => moveMonth(-1)} style={s.touch}><BackChevron color="#000000" /></Pressable><Pressable testID="history-calendar-open" accessibilityRole="button" accessibilityLabel={`${new Date(`${month}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}, ${t('comicCalendar.open')}`} onPress={() => { tapHaptic(); setCalendarOpen(true); }} onPressIn={() => animateMonthPress(true)} onPressOut={() => animateMonthPress(false)} style={[s.touch, { width: 180, flexDirection: 'row', gap: 7 }]}><Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#292E2810', borderRadius: 7, opacity: monthPressOpacity }]} /><ThemedText style={{ textAlign: 'center' }}>{new Date(`${month}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}</ThemedText><Svg width={12} height={8} viewBox="0 0 12 8" accessible={false}><Path d="M2 2.5 6 6l4-3.5" fill="none" stroke="#292E28" strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable><Pressable testID="history-next-month" accessibilityRole="button" accessibilityLabel={t('comicCalendar.next')} onPress={() => moveMonth(1)} style={s.touch}><View style={{ transform: [{ rotate: '180deg' }] }}><BackChevron color="#000000" /></View></Pressable><Pressable testID="history-selection-toggle" accessibilityRole="button" accessibilityLabel={selecting ? t('common.cancel') : t('comicDiary.delete')} onPress={() => { setSelecting(!selecting); setSelected([]); }} style={[s.touch, { position: 'absolute', right: 4 }]}>{selecting ? <CloseIcon color="#292E28" /> : <SettingsPenIcon name="trash.fill" size={22} color="#000000" />}</Pressable></View>
+    <View style={s.month}><Pressable testID="history-previous-year" accessibilityRole="button" accessibilityLabel={t('comicDiary.previousYear')} onPress={() => moveYear(-1)} style={s.touch}><BackChevron color="#000000" /></Pressable><View style={{ width: 180, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ textAlign: 'center' }}>{year}</ThemedText></View><Pressable testID="history-next-year" accessibilityRole="button" accessibilityLabel={t('comicDiary.nextYear')} onPress={() => moveYear(1)} style={s.touch}><View style={{ transform: [{ rotate: '180deg' }] }}><BackChevron color="#000000" /></View></Pressable><Pressable testID="history-selection-toggle" accessibilityRole="button" accessibilityLabel={selecting ? t('common.cancel') : t('comicDiary.delete')} onPress={() => { setSelecting(!selecting); setSelected([]); }} style={[s.touch, { position: 'absolute', right: 4 }]}>{selecting ? <CloseIcon color="#292E28" /> : <HeroTrashIcon size={28} />}</Pressable></View>
     <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}><View style={{ alignSelf: 'center', width: packetCanvasWidth, height: packetLayout.height }}>
       {visible.map((g, i) => <View key={g.date} style={{ position: 'absolute', left: packetLayout.frames[i].left, top: packetLayout.frames[i].top, width: packetLayout.frames[i].width, zIndex: packetLayout.frames[i].zIndex, transform: [{ rotate: `${packetLayout.frames[i].rotation}deg` }] }}><Packet date={g.date} diaries={g.diaries} width={packetLayout.frames[i].width} onPress={() => { tapHaptic(); if (selecting) setSelected(current => current.includes(g.date) ? current.filter(date => date !== g.date) : [...current, g.date]); else { setOpened(g.date); setDetail(null); setDateGridOpen(true); } }} />{selecting && selected.includes(g.date) ? <View pointerEvents="none" style={{ position: 'absolute', right: 3, top: 4, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}><Svg width={24} height={24} viewBox="0 0 24 24"><Path d="M4 12L9 18L21 5" stroke="#000000" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg></View> : null}</View>)}
     </View></ScrollView>
-    {!visible.length ? <View testID="history-empty-state" pointerEvents="none" accessible accessibilityRole="image" accessibilityLabel={t('comicDiary.monthEmpty')} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', gap: 12 }]}><EmptyDiaryIcon ink="#777B72" /><ThemedText style={{ fontSize: 15, color: '#777B72', textAlign: 'center' }}>{t('comicDiary.monthEmpty')}</ThemedText></View> : null}
+    {!visible.length ? <View testID="history-empty-state" pointerEvents="none" accessible accessibilityRole="image" accessibilityLabel={t('comicDiary.yearEmpty')} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', gap: 12 }]}><EmptyDiaryIcon ink="#777B72" /><ThemedText style={{ fontSize: 15, color: '#777B72', textAlign: 'center' }}>{t('comicDiary.yearEmpty')}</ThemedText></View> : null}
     {selecting ? <Pressable testID="history-delete-selected" accessibilityRole="button" disabled={!selected.length} onPress={() => confirmDelete(groups.filter(g => selected.includes(g.date)).flatMap(g => g.diaries.map(d => d.id)))} style={[s.touch, { opacity: selected.length ? 1 : 0.3 }]}><ThemedText style={{ color: '#000000' }}>{t('comicDiary.deleteSelected', { count: selected.length })}</ThemedText></Pressable> : null}
     {group ? <AppModal visible animationType="fade" onRequestClose={close}><View style={{ flex: 1, backgroundColor: '#F7F6F4', paddingTop: insets.top, paddingBottom: insets.bottom }}>
       {hasWallpaper ? <AppWallpaperBackground /> : <SurfaceTexture kind="wrinkled" opacity={0.18} />}
       <View style={s.header}>
         <View style={{ width: 88, alignItems: 'flex-start' }}><Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={close} style={s.touch}><BackChevron color="#202020" /></Pressable></View>
-        <ThemedText testID="history-detail-date" style={{ flex: 1, textAlign: 'center', color: '#292E28', fontSize: 18 }}>{group.date === 'undated' ? dateLabel(group.date) : group.date.replace(/-/g, '.')}</ThemedText>
+        <ThemedText testID="history-detail-date" style={{ flex: 1, textAlign: 'center', color: '#292E28', fontSize: 18 }}>{dateLabel(group.date)}</ThemedText>
         <View style={{ width: 88, flexDirection: 'row', justifyContent: 'flex-end' }}>
-          {detail ? <Pressable testID="history-header-toggle-date-grid" accessibilityRole="button" accessibilityLabel={t(dateGridOpen ? 'comicDay.showCards' : 'comicDay.boardView')} accessibilityState={{ expanded: dateGridOpen }} onPress={() => { tapHaptic('select'); setDateGridOpen(value => !value); }} style={s.touch}>
+          {<Pressable testID="history-header-toggle-date-grid" accessibilityRole="button" accessibilityLabel={t(dateGridOpen ? 'comicDay.showCards' : 'comicDay.boardView')} accessibilityState={{ expanded: dateGridOpen }} onPress={() => { tapHaptic('select'); setDateGridOpen(value => !value); }} style={s.touch}>
             <HeroPolaroidOverviewIcon ink="#292E28" expanded={dateGridOpen} />
-          </Pressable> : null}
+          </Pressable>}
           <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { setOpened(null); setDetail(null); setDateGridOpen(false); }} style={s.touch}><CloseIcon color="#292E28" /></Pressable>
         </View>
       </View>
       <View style={{ flex: 1 }}>
       <View style={StyleSheet.absoluteFill}>
-        <HeroCardToolsProvider><ComicDayBoard syncMainState={false} focusSceneId={detail} diaryTitle={dateLabel(group.date)} hideEntryActions hideCharacterHeading onAdd={onCreate} historyOverview overviewOpen={dateGridOpen} onOverviewChange={setDateGridOpen} onRemove={key => removeScenes([key])} onRemoveMany={removeScenes} items={entries.map(item => ({ key: item.key, icon: 'photo' as const, label: item.scene?.title ?? '', memo: item.scene?.memo, artworkUri: item.scene?.artworkUri, exportDate: item.diary.createdAt, faceColor: item.scene?.paper, inkColor: item.scene?.pen, fontId: item.scene?.fontId }))} ink="#292E28" muted="#73796C" isDark={false} choices={Object.fromEntries(entries.filter(item => item.scene).map(item => [item.key, item.scene!.image]))} onOpen={key => { const item = entries.find(entry => entry.key === key); if (item?.scene) setSceneDetail(key); }} onEditCard={(key, text) => { const item = entries.find(entry => entry.key === key); if (item?.scene) onUpdateScene(item.diary.id, item.scene.id, text); }} /></HeroCardToolsProvider>
+        <HeroCardToolsProvider><ComicDayBoard syncMainState={false} focusSceneId={detail} diaryTitle={dateLabel(group.date)} hideEntryActions hideCharacterHeading onAdd={onCreate} historyOverview overviewOpen={dateGridOpen} onOverviewChange={setDateGridOpen} onRemove={key => removeScenes([key])} onRemoveMany={removeScenes} items={entries.map(item => ({ key: item.key, icon: 'photo' as const, label: item.scene?.title ?? '', memo: item.scene?.memo, artworkUri: item.scene?.artworkUri, exportDate: comicDiaryDate(item.diary) ?? item.diary.createdAt, faceColor: item.scene?.paper, inkColor: item.scene?.pen, fontId: item.scene?.fontId }))} ink="#292E28" muted="#73796C" isDark={false} choices={Object.fromEntries(entries.filter(item => item.scene).map(item => [item.key, item.scene!.image]))} onOpen={key => { const item = entries.find(entry => entry.key === key); if (item?.scene) setSceneDetail(key); }} onEditCard={(key, text) => { const item = entries.find(entry => entry.key === key); if (item?.scene) onUpdateScene(item.diary.id, item.scene.id, text); }} /></HeroCardToolsProvider>
 
       </View>
       </View>
-      {selectedEntry?.scene ? <HeroHistorySceneDetail scene={selectedEntry.scene} source={source(selectedEntry.diary, selectedEntry.index)} date={selectedEntry.diary.createdAt} onClose={() => setSceneDetail(null)} /> : null}
+      {selectedEntry?.scene ? <HeroHistorySceneDetail onSaveText={text => onUpdateScene(selectedEntry.diary.id, selectedEntry.scene!.id, text)} scene={selectedEntry.scene} source={source(selectedEntry.diary, selectedEntry.index)} date={selectedEntry.diary.createdAt} onDelete={() => removeScenes([selectedEntry.key])} onClose={() => setSceneDetail(null)} /> : null}
     </View></AppModal> : null}
-    {calendarOpen ? <HeroDiaryCalendar diaries={diaries} today={getLocalDateKey()} ink="#000000" muted="#666666" isDark={false} onClose={() => setCalendarOpen(false)} onOpen={id => { setCalendarOpen(false); const group = groups.find(value => value.diaries.some(diary => diary.id === id)); if (group) { setOpened(group.date); setDetail(null); setDateGridOpen(true); } }} /> : null}
   </View>;
 }
 const s = StyleSheet.create({

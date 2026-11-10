@@ -1,0 +1,42 @@
+{
+  "themeId": "02-office-presentation",
+  "revision": "upload-candidate-v6-pose2-with-grid",
+  "status": "candidate-not-uploaded",
+  "background": "background.webp",
+  "dimensions": {
+    "width": 911,
+    "height": 1727
+  },
+  "bytes": 77076,
+  "sha256": "77cf56fc389a430f783e4c183b5b37875eae733d5c03033f4d5813313995ede8",
+  "boardBoundsNormalized": [
+    0.035,
+    0.315,
+    0.93,
+    0.61
+  ],
+  "monthRowNormalized": [
+    0.07683863885839737,
+    0.37637521713954836,
+    0.8474204171240395,
+    0.027793862188766647
+  ],
+  "weekdayRowNormalized": [
+    0.07683863885839737,
+    0.4163288940359004,
+    0.8474204171240395,
+    0.024898668210770122
+  ],
+  "dateGridNormalized": [
+    0.07683863885839737,
+    0.45222929936305734,
+    0.8474204171240395,
+    0.3595830920671685
+  ],
+  "runtimeGrid": [
+    7,
+    6
+  ],
+  "backgroundIncludesGrid": true,
+  "integrationNote": "Grid is included in the background as requested. Render month/year, weekday labels, dates, photos and events over these calibrated regions; do not draw another grid."
+}

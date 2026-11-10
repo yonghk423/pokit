@@ -1,10 +1,13 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Image as NativeImage, StyleSheet } from 'react-native';
+import { Animated, Image as NativeImage, StyleSheet } from 'react-native';
 import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
+jest.mock('react-native', () => { const native = jest.requireActual('react-native'); Object.defineProperty(native.Animated, 'View', { configurable: true, value: native.View }); return native; });
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
-afterEach(() => { jest.useRealTimers(); });
+// Native-driver fades do not use JS retry timers on device.
+beforeEach(() => { jest.spyOn(Animated, 'timing').mockImplementation(() => ({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() })); });
+afterEach(() => { jest.restoreAllMocks(); jest.useRealTimers(); });
 function layoutCard(tree: ReactTestRenderer, width = 300, height = 400) {
   act(() => tree.root.findAll(node => typeof node.props.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { width, height } } }));
 }

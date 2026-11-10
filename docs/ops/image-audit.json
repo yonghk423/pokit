@@ -1,0 +1,7089 @@
+{
+  "scope": "Static app/config/native reference audit; not a measured release bundle. Metro density variants preserved.",
+  "images": [
+    {
+      "path": "assets/wallpapers/ivory-linen-v1.png",
+      "bytes": 2835262,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 173966
+    },
+    {
+      "path": "assets/splash-artwork.png",
+      "bytes": 2670801,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 940,
+      "height": 1672,
+      "mode": "RGBA",
+      "estimatedWebp85Bytes": 274614
+    },
+    {
+      "path": "assets/textures/polaroid-handled-v1.png",
+      "bytes": 2245076,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroPolaroidSurface.tsx"
+      ],
+      "devReferences": [],
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 63172
+    },
+    {
+      "path": "assets/textures/polaroid-stock-v1.png",
+      "bytes": 1990687,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroPolaroidSurface.tsx"
+      ],
+      "devReferences": [],
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 27318
+    },
+    {
+      "path": "assets/app-icon4.png",
+      "bytes": 1342833,
+      "runtimeReferences": [
+        "app.json"
+      ],
+      "devReferences": [
+        "scripts/sync-app-icons.mjs"
+      ],
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 76384
+    },
+    {
+      "path": "assets/splash-polaroid-quote.png",
+      "bytes": 707171,
+      "runtimeReferences": [
+        "app.json"
+      ],
+      "devReferences": [],
+      "width": 960,
+      "height": 1050,
+      "mode": "P",
+      "estimatedWebp85Bytes": 21422
+    },
+    {
+      "path": "assets/splash-artwork.webp",
+      "bytes": 400664,
+      "runtimeReferences": [
+        "src/pages/welcome-intro/ui/TutorialHeroImage.tsx"
+      ],
+      "devReferences": [],
+      "width": 940,
+      "height": 1672,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/personal-camera-hands.webp",
+      "bytes": 392648,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroPersonalizationFlow.tsx"
+      ],
+      "devReferences": [],
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/wallpapers/ivory-linen-v1.webp",
+      "bytes": 313634,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/wallpapers/gray-duvet-v1.jpg",
+      "bytes": 300768,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 843,
+      "height": 1600,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 115714
+    },
+    {
+      "path": "assets/color-textures/wrinkled-paper-v1.jpg",
+      "bytes": 242667,
+      "runtimeReferences": [
+        "src/shared/ui/surface-texture/textureCache.ts"
+      ],
+      "devReferences": [],
+      "width": 941,
+      "height": 1672,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 52998
+    },
+    {
+      "path": "assets/control-illustrations/nikon-fm2-duvet.png",
+      "bytes": 230340,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 480,
+      "height": 320,
+      "mode": "RGBA",
+      "estimatedWebp85Bytes": 36892
+    },
+    {
+      "path": "assets/help-videos/results/photo.jpg",
+      "bytes": 210418,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 720,
+      "height": 1080,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 283278
+    },
+    {
+      "path": "assets/wallpapers/gray-duvet-light-v2.jpg",
+      "bytes": 156453,
+      "runtimeReferences": [
+        "src/shared/lib/wallpaper/wallpaperStore.ts"
+      ],
+      "devReferences": [],
+      "width": 842,
+      "height": 1600,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 25290
+    },
+    {
+      "path": "assets/help-videos/results/writing.jpg",
+      "bytes": 129000,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 720,
+      "height": 1080,
+      "mode": "RGB",
+      "estimatedWebp85Bytes": 152128
+    },
+    {
+      "path": "assets/control-illustrations/photo-camera-save.png",
+      "bytes": 127533,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroRestingCamera.tsx",
+        "src/pages/day-plan/ui/HeroShutterSave.tsx"
+      ],
+      "devReferences": [],
+      "width": 320,
+      "height": 257,
+      "mode": "RGBA",
+      "estimatedWebp85Bytes": 16700
+    },
+    {
+      "path": "assets/control-illustrations/polaroid-overview-photo.webp",
+      "bytes": 93864,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 400,
+      "height": 400,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/photos/group.jpg",
+      "bytes": 73320,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs",
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 640,
+      "height": 960,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/help-videos/photos/landscape.jpg",
+      "bytes": 59975,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 720,
+      "height": 480,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/help-videos/photos/woman-2.jpg",
+      "bytes": 59798,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 640,
+      "height": 960,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/help-videos/photos/portrait.jpg",
+      "bytes": 35353,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs",
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 720,
+      "height": 900,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/help-videos/photos/woman.jpg",
+      "bytes": 34397,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 640,
+      "height": 960,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/weather/outfits/09.webp",
+      "bytes": 30770,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/color-textures/clean-paper.webp",
+      "bytes": 22534,
+      "runtimeReferences": [
+        "src/shared/ui/surface-texture/textureCache.ts",
+        "src/widgets/daily-mate-time-field/ui/DayCycleDial.tsx"
+      ],
+      "devReferences": [
+        "scripts/sync-widget-illustrations.py"
+      ],
+      "width": 640,
+      "height": 640,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/help-videos/photos/man.jpg",
+      "bytes": 20686,
+      "runtimeReferences": [],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs (includes dynamic template paths)"
+      ],
+      "width": 720,
+      "height": 487,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/tutorial-guide/thinking.webp",
+      "bytes": 16390,
+      "runtimeReferences": [
+        "src/pages/welcome-intro/ui/MateTutorialGuide.tsx",
+        "src/pages/welcome-intro/ui/TutorialCharacterGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 294,
+      "height": 384,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tutorial-guide/welcome.webp",
+      "bytes": 16346,
+      "runtimeReferences": [
+        "src/pages/welcome-intro/ui/TutorialCharacterGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 294,
+      "height": 384,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/photo-ja-poster.jpg",
+      "bytes": 16005,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/tutorial-guide/neutral-coffee.webp",
+      "bytes": 15792,
+      "runtimeReferences": [
+        "src/pages/welcome-intro/ui/MateTutorialGuide.tsx",
+        "src/pages/welcome-intro/ui/TutorialCharacterGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 294,
+      "height": 384,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/photo-en-poster.jpg",
+      "bytes": 15637,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/help-videos/photo-ko-poster.jpg",
+      "bytes": 15617,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/tutorial-guide/celebrate.webp",
+      "bytes": 15520,
+      "runtimeReferences": [
+        "src/pages/welcome-intro/ui/TutorialCharacterGuide.tsx",
+        "src/pages/welcome-intro/ui/TutorialCompletion.tsx"
+      ],
+      "devReferences": [],
+      "width": 294,
+      "height": 384,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/07.webp",
+      "bytes": 15442,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/15.webp",
+      "bytes": 15422,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/photo-zh-TW-poster.jpg",
+      "bytes": 15382,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/weather/outfits/12.webp",
+      "bytes": 14936,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/button-border.webp",
+      "bytes": 14896,
+      "runtimeReferences": [
+        "src/shared/ui/handdrawn-frame/index.tsx"
+      ],
+      "devReferences": [],
+      "width": 600,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/writing-ja-poster.jpg",
+      "bytes": 14719,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/weather/outfits/05.webp",
+      "bytes": 14654,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/writing-ko-poster.jpg",
+      "bytes": 14597,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/weather/outfits/17.webp",
+      "bytes": 14458,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/writing-en-poster.jpg",
+      "bytes": 14287,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/weather/outfits/18.webp",
+      "bytes": 14168,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/06.webp",
+      "bytes": 14160,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/help-videos/writing-zh-TW-poster.jpg",
+      "bytes": 14159,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroAiVideoGuide.tsx"
+      ],
+      "devReferences": [],
+      "width": 405,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/weather/outfits/10.webp",
+      "bytes": 14034,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/14.webp",
+      "bytes": 13534,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/08.webp",
+      "bytes": 13250,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/13.webp",
+      "bytes": 13108,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/16.webp",
+      "bytes": 12990,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/11.webp",
+      "bytes": 12892,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/20.webp",
+      "bytes": 12066,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/02.webp",
+      "bytes": 11890,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/04.webp",
+      "bytes": 11642,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/19.webp",
+      "bytes": 11536,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/01.webp",
+      "bytes": 11348,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 176,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/weather/outfits/03.webp",
+      "bytes": 10774,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/WeatherSummary.tsx"
+      ],
+      "devReferences": [],
+      "width": 168,
+      "height": 175,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/scale@3x.webp",
+      "bytes": 8612,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/scale.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/memo@3x.webp",
+      "bytes": 8086,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/memo.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shopping@3x.webp",
+      "bytes": 8042,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/shopping.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/trash@3x.webp",
+      "bytes": 8032,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/trash.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/checklist@3x.webp",
+      "bytes": 7892,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/checklist.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/timer@3x.webp",
+      "bytes": 7708,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/timer.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/sun@3x.webp",
+      "bytes": 7668,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/sun.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/bell@3x.webp",
+      "bytes": 7666,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/bell.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/pills@3x.webp",
+      "bytes": 7592,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/pills.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/letters@3x.webp",
+      "bytes": 7562,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/letters.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/plus-circle@3x.webp",
+      "bytes": 7458,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/plus-circle.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/music@3x.webp",
+      "bytes": 7430,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/music.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bus@3x.webp",
+      "bytes": 7428,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/bus.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/clock@3x.webp",
+      "bytes": 7384,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/clock.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/color-textures/grain-overlay.webp",
+      "bytes": 7302,
+      "runtimeReferences": [
+        "src/shared/ui/surface-texture/textureCache.ts"
+      ],
+      "devReferences": [
+        "scripts/prepare-color-grain.py",
+        "scripts/sync-widget-illustrations.py"
+      ],
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/chart@3x.webp",
+      "bytes": 7286,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/chart.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/list@3x.webp",
+      "bytes": 7282,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/list.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/plant@3x.webp",
+      "bytes": 7210,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/plant.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/lunchbox@3x.webp",
+      "bytes": 7150,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/lunchbox.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/megaphone@3x.webp",
+      "bytes": 7046,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/megaphone.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gift@3x.webp",
+      "bytes": 7006,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/gift.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/finance@3x.webp",
+      "bytes": 6982,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/finance.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/grid@3x.webp",
+      "bytes": 6930,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/grid.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/blood-pressure@3x.webp",
+      "bytes": 6916,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/blood-pressure.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/walking@3x.webp",
+      "bytes": 6876,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/walking.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/camera@3x.webp",
+      "bytes": 6866,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/camera.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/laundry@3x.webp",
+      "bytes": 6830,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/laundry.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/stack@3x.webp",
+      "bytes": 6822,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/stack.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sewing@3x.webp",
+      "bytes": 6818,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sewing.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/watercolor@3x.webp",
+      "bytes": 6720,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/watercolor.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cycling@3x.webp",
+      "bytes": 6718,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/cycling.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/breakfast@3x.webp",
+      "bytes": 6660,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/breakfast.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/train@3x.webp",
+      "bytes": 6534,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/train.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/beach@3x.webp",
+      "bytes": 6518,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/beach.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/recycling@3x.webp",
+      "bytes": 6418,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/recycling.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/book@3x.webp",
+      "bytes": 6412,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/book.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hiking@3x.webp",
+      "bytes": 6378,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/hiking.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/abstain@3x.webp",
+      "bytes": 6368,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/abstain.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/running@3x.webp",
+      "bytes": 6366,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/running.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/knitting@3x.webp",
+      "bytes": 6346,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/knitting.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/tag@3x.webp",
+      "bytes": 6332,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/tag.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/vacuum@3x.webp",
+      "bytes": 6324,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/vacuum.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/birdwatching@3x.webp",
+      "bytes": 6270,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/birdwatching.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/travel@3x.webp",
+      "bytes": 6202,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/travel.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/planning@3x.webp",
+      "bytes": 6182,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/planning.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/reset@3x.webp",
+      "bytes": 6124,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/reset.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/photos@3x.webp",
+      "bytes": 6122,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/photos.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/salad@3x.webp",
+      "bytes": 6092,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/salad.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/desk-bell@3x.webp",
+      "bytes": 6076,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/desk-bell.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/watering@3x.webp",
+      "bytes": 6056,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/watering.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/widget/comic-check-checked.png",
+      "bytes": 6054,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 90,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/car@3x.webp",
+      "bytes": 6054,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/car.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/measuring@3x.webp",
+      "bytes": 6046,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/measuring.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/map@3x.webp",
+      "bytes": 6032,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/map.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/search@3x.webp",
+      "bytes": 5986,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/search.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tennis@3x.webp",
+      "bytes": 5986,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/tennis.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/journal@3x.webp",
+      "bytes": 5978,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/journal.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/keyboard@3x.webp",
+      "bytes": 5970,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/keyboard.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/flower@3x.webp",
+      "bytes": 5960,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/flower.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/focus@3x.webp",
+      "bytes": 5946,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/focus.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/calendar@3x.webp",
+      "bytes": 5914,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/calendar.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/game@3x.webp",
+      "bytes": 5876,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/game.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/skiing.webp",
+      "bytes": 5872,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/sliders@3x.webp",
+      "bytes": 5860,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/sliders.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/piano@3x.webp",
+      "bytes": 5856,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/piano.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/coffee@3x.webp",
+      "bytes": 5850,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/coffee.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/passport@3x.webp",
+      "bytes": 5838,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/passport.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/info@3x.webp",
+      "bytes": 5810,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/info.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exam@3x.webp",
+      "bytes": 5790,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/exam.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/organizing@3x.webp",
+      "bytes": 5786,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/organizing.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/football@3x.webp",
+      "bytes": 5782,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/football.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/vitamins@3x.webp",
+      "bytes": 5718,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/vitamins.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/drawing@3x.webp",
+      "bytes": 5716,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/drawing.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/basketball@3x.webp",
+      "bytes": 5710,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/basketball.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/volunteer@3x.webp",
+      "bytes": 5702,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/volunteer.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pet-care@3x.webp",
+      "bytes": 5662,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/pet-care.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exercise@3x.webp",
+      "bytes": 5636,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/exercise.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/collage@3x.webp",
+      "bytes": 5588,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/collage.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/stethoscope.webp",
+      "bytes": 5524,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bed-making@3x.webp",
+      "bytes": 5508,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/bed-making.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/crafts@3x.webp",
+      "bytes": 5504,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/crafts.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/moon@3x.webp",
+      "bytes": 5498,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/moon.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meal@3x.webp",
+      "bytes": 5460,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/meal.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/dishes@3x.webp",
+      "bytes": 5418,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/dishes.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/anniversary@3x.webp",
+      "bytes": 5390,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/anniversary.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/research@3x.webp",
+      "bytes": 5388,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/research.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/send@3x.webp",
+      "bytes": 5378,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/send.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/breathing@3x.webp",
+      "bytes": 5370,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/breathing.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/weight@3x.webp",
+      "bytes": 5368,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/weight.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/reading@3x.webp",
+      "bytes": 5306,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/reading.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/handwashing@3x.webp",
+      "bytes": 5298,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/handwashing.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/film@3x.webp",
+      "bytes": 5272,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/film.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cooking@3x.webp",
+      "bytes": 5266,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/cooking.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/yoga@3x.webp",
+      "bytes": 5258,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/yoga.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/lecture@3x.webp",
+      "bytes": 5236,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/lecture.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/work@3x.webp",
+      "bytes": 5212,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/work.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/plus@3x.webp",
+      "bytes": 5202,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/plus.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bath@3x.webp",
+      "bytes": 5186,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/bath.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/water@3x.webp",
+      "bytes": 5182,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/water.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sunshine@3x.webp",
+      "bytes": 5178,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sunshine.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/boxing@3x.webp",
+      "bytes": 5142,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/boxing.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sleep@3x.webp",
+      "bytes": 5138,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sleep.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/coding@3x.webp",
+      "bytes": 5126,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/coding.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/star@3x.webp",
+      "bytes": 5112,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/star.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/alarm-clock.webp",
+      "bytes": 5106,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bibimbap.webp",
+      "bytes": 5086,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/checkup@3x.webp",
+      "bytes": 5056,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/checkup.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/medicine@3x.webp",
+      "bytes": 5048,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/medicine.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/climbing-rope.webp",
+      "bytes": 5024,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/swimming@3x.webp",
+      "bytes": 5002,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/swimming.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exercise-bike.webp",
+      "bytes": 4954,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/guitar@3x.webp",
+      "bytes": 4950,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/guitar.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/budget@3x.webp",
+      "bytes": 4936,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/budget.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/offline@3x.webp",
+      "bytes": 4912,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/offline.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/spaghetti.webp",
+      "bytes": 4890,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/save@3x.webp",
+      "bytes": 4846,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/save.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/kimchi-stew.webp",
+      "bytes": 4844,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pilates@3x.webp",
+      "bytes": 4820,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/pilates.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/fruit@3x.webp",
+      "bytes": 4782,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/fruit.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/laundry-basket.webp",
+      "bytes": 4780,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/stretching@3x.webp",
+      "bytes": 4770,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/stretching.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/camping@3x.webp",
+      "bytes": 4746,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/camping.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/yarn-ball.webp",
+      "bytes": 4692,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shower@3x.webp",
+      "bytes": 4684,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/shower.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/candle@3x.webp",
+      "bytes": 4670,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/candle.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/face-mask.webp",
+      "bytes": 4668,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/backpack.webp",
+      "bytes": 4632,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sunscreen@3x.webp",
+      "bytes": 4622,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sunscreen.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/desk-calendar.webp",
+      "bytes": 4598,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/baking@3x.webp",
+      "bytes": 4576,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/baking.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meeting@3x.webp",
+      "bytes": 4574,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/meeting.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/dental-floss.webp",
+      "bytes": 4526,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/jump-rope@3x.webp",
+      "bytes": 4524,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/jump-rope.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/email@3x.webp",
+      "bytes": 4518,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/email.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tteokbokki.webp",
+      "bytes": 4502,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/up@3x.webp",
+      "bytes": 4500,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/up.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meditation@3x.webp",
+      "bytes": 4500,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/meditation.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cutting-board.webp",
+      "bytes": 4478,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/down@3x.webp",
+      "bytes": 4400,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/down.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/id-card.webp",
+      "bytes": 4378,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bandage-roll.webp",
+      "bytes": 4364,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/letter@3x.webp",
+      "bytes": 4356,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/letter.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/language@3x.webp",
+      "bytes": 4334,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/language.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tea@3x.webp",
+      "bytes": 4328,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/tea.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/badminton-racket.webp",
+      "bytes": 4322,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/kettlebell.webp",
+      "bytes": 4310,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/baseball-glove.webp",
+      "bytes": 4308,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/puzzle@3x.webp",
+      "bytes": 4292,
+      "runtimeReferences": [
+        "Metro density variant of assets/tab-icons/puzzle.webp"
+      ],
+      "devReferences": [],
+      "width": 78,
+      "height": 78,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/call@3x.webp",
+      "bytes": 4276,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/call.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/left@3x.webp",
+      "bytes": 4270,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/left.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/today@3x.webp",
+      "bytes": 4258,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 78,
+      "height": 78,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shopping@2x.webp",
+      "bytes": 4254,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/shopping.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hot-water-bottle.webp",
+      "bytes": 4252,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/desk-lamp.webp",
+      "bytes": 4240,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/calculator.webp",
+      "bytes": 4212,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/nap@3x.webp",
+      "bytes": 4194,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/nap.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gyoza.webp",
+      "bytes": 4182,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/paint-palette.webp",
+      "bytes": 4170,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/ballet-shoes.webp",
+      "bytes": 4164,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/roller-skates.webp",
+      "bytes": 4132,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/scale@2x.webp",
+      "bytes": 4126,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/scale.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pancakes.webp",
+      "bytes": 4120,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cake-slice.webp",
+      "bytes": 4118,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/curry-rice.webp",
+      "bytes": 4118,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/mail@3x.webp",
+      "bytes": 4116,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/mail.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/fried-chicken.webp",
+      "bytes": 4114,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/painting-room@3x.webp",
+      "bytes": 4102,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/painting-room.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/stapler.webp",
+      "bytes": 4100,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/noodle-soup.webp",
+      "bytes": 4092,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cookie.webp",
+      "bytes": 4092,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/repair@3x.webp",
+      "bytes": 4076,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/repair.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/ice-pack.webp",
+      "bytes": 4076,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/power-drill.webp",
+      "bytes": 4062,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/donut.webp",
+      "bytes": 4046,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/first-aid-kit.webp",
+      "bytes": 4034,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/memo@2x.webp",
+      "bytes": 3996,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/memo.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/keyboard.webp",
+      "bytes": 3996,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hairbrush.webp",
+      "bytes": 3994,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gimbap.webp",
+      "bytes": 3990,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/right@3x.webp",
+      "bytes": 3970,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/right.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/iron.webp",
+      "bytes": 3958,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hamburger.webp",
+      "bytes": 3956,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/rowing-machine.webp",
+      "bytes": 3954,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/grilled-fish.webp",
+      "bytes": 3954,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/oven-mitt.webp",
+      "bytes": 3946,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/trash@2x.webp",
+      "bytes": 3936,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/trash.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/music@2x.webp",
+      "bytes": 3934,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/music.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/dustpan.webp",
+      "bytes": 3926,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/scissors.webp",
+      "bytes": 3910,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/stopwatch.webp",
+      "bytes": 3894,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/calendar@3x.webp",
+      "bytes": 3882,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/calendar.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sandwich.webp",
+      "bytes": 3880,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/mouthwash.webp",
+      "bytes": 3880,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/checklist@2x.webp",
+      "bytes": 3870,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/checklist.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/plant@2x.webp",
+      "bytes": 3866,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/plant.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bus@2x.webp",
+      "bytes": 3830,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/bus.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sushi.webp",
+      "bytes": 3830,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/teapot.webp",
+      "bytes": 3828,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/spray-bottle.webp",
+      "bytes": 3826,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/letters@2x.webp",
+      "bytes": 3806,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/letters.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cleaning@3x.webp",
+      "bytes": 3800,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/cleaning.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/comb.webp",
+      "bytes": 3786,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/pills@2x.webp",
+      "bytes": 3772,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/pills.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/sun@2x.webp",
+      "bytes": 3770,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/sun.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/monitor.webp",
+      "bytes": 3768,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/taco.webp",
+      "bytes": 3766,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/eye-rest@3x.webp",
+      "bytes": 3762,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/eye-rest.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/blood-pressure@2x.webp",
+      "bytes": 3752,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/blood-pressure.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/milk-carton.webp",
+      "bytes": 3742,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/lunchbox@2x.webp",
+      "bytes": 3740,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/lunchbox.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/bell@2x.webp",
+      "bytes": 3734,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/bell.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sponge.webp",
+      "bytes": 3734,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/rice-bowl.webp",
+      "bytes": 3732,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/timer@2x.webp",
+      "bytes": 3716,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/timer.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/daily@3x.webp",
+      "bytes": 3716,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/daily.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/clock@2x.webp",
+      "bytes": 3700,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/clock.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/steak.webp",
+      "bytes": 3688,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gift@2x.webp",
+      "bytes": 3678,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/gift.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/finance@2x.webp",
+      "bytes": 3660,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/finance.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/widget/comic-check-unchecked.png",
+      "bytes": 3652,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 90,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gardening@3x.webp",
+      "bytes": 3652,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/gardening.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/list@2x.webp",
+      "bytes": 3650,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/list.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/chart@2x.webp",
+      "bytes": 3646,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/chart.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pen-cup.webp",
+      "bytes": 3646,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/laundry@2x.webp",
+      "bytes": 3642,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/laundry.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hair-dryer.webp",
+      "bytes": 3640,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pizza-slice.webp",
+      "bytes": 3636,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pencil@3x.webp",
+      "bytes": 3632,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/pencil.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/abstain@2x.webp",
+      "bytes": 3624,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/abstain.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/measuring-cup.webp",
+      "bytes": 3622,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story-pen.svg",
+      "bytes": 3605,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "imageNote": "cannot identify image file '/Users/yonghee/Documents/project/pokit/assets/tab-ic"
+    },
+    {
+      "path": "assets/routine-icons/camera@2x.webp",
+      "bytes": 3602,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/camera.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cycling@2x.webp",
+      "bytes": 3598,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/cycling.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/walking@2x.webp",
+      "bytes": 3568,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/walking.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sewing@2x.webp",
+      "bytes": 3562,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sewing.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/watercolor@2x.webp",
+      "bytes": 3560,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/watercolor.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/plus-circle@2x.webp",
+      "bytes": 3538,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/plus-circle.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/toolbox.webp",
+      "bytes": 3528,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/frying-pan.webp",
+      "bytes": 3526,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/megaphone@2x.webp",
+      "bytes": 3500,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/megaphone.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/mug.webp",
+      "bytes": 3498,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/breakfast@2x.webp",
+      "bytes": 3498,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/breakfast.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/inhaler.webp",
+      "bytes": 3490,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/earplugs.webp",
+      "bytes": 3472,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/skincare@3x.webp",
+      "bytes": 3464,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/skincare.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/grid@2x.webp",
+      "bytes": 3458,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/grid.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/toothbrush@3x.webp",
+      "bytes": 3458,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/toothbrush.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/train@2x.webp",
+      "bytes": 3450,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/train.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pencil-sharpener.webp",
+      "bytes": 3448,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/toast.webp",
+      "bytes": 3446,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tablet-stylus.webp",
+      "bytes": 3446,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/adjustable-wrench.webp",
+      "bytes": 3426,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/beach@2x.webp",
+      "bytes": 3426,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/beach.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hiking@2x.webp",
+      "bytes": 3420,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/hiking.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/whisk.webp",
+      "bytes": 3420,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/binder.webp",
+      "bytes": 3418,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/knitting@2x.webp",
+      "bytes": 3418,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/knitting.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/vacuum@2x.webp",
+      "bytes": 3414,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/vacuum.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/training-cones.webp",
+      "bytes": 3412,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/juice-glass.webp",
+      "bytes": 3406,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/fried-egg.webp",
+      "bytes": 3404,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/printer.webp",
+      "bytes": 3396,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/eye-drops.webp",
+      "bytes": 3394,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hand-lotion.webp",
+      "bytes": 3392,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hand-broom.webp",
+      "bytes": 3390,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hammer.webp",
+      "bytes": 3382,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/planning@2x.webp",
+      "bytes": 3374,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/planning.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/onigiri.webp",
+      "bytes": 3364,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/crochet-hook.webp",
+      "bytes": 3358,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/running@2x.webp",
+      "bytes": 3358,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/running.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/paperclip.webp",
+      "bytes": 3352,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/recycling@2x.webp",
+      "bytes": 3344,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/recycling.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/routine@3x.webp",
+      "bytes": 3330,
+      "runtimeReferences": [
+        "Metro density variant of assets/tab-icons/routine.webp"
+      ],
+      "devReferences": [],
+      "width": 78,
+      "height": 78,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sticky-notes.webp",
+      "bytes": 3326,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/watering@2x.webp",
+      "bytes": 3318,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/watering.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story-pen@3x.png",
+      "bytes": 3289,
+      "runtimeReferences": [
+        "Metro density variant of assets/tab-icons/story-pen.png"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tennis@2x.webp",
+      "bytes": 3286,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/tennis.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/map@2x.webp",
+      "bytes": 3284,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/map.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/travel@2x.webp",
+      "bytes": 3282,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/travel.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/ice-cream.webp",
+      "bytes": 3282,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/stack@2x.webp",
+      "bytes": 3276,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/stack.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/birdwatching@2x.webp",
+      "bytes": 3272,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/birdwatching.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pillow.webp",
+      "bytes": 3272,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sleep-mask.webp",
+      "bytes": 3250,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/salad@2x.webp",
+      "bytes": 3246,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/salad.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/focus@2x.webp",
+      "bytes": 3222,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/focus.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/foam-roller.webp",
+      "bytes": 3222,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/book@2x.webp",
+      "bytes": 3220,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/book.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story@3x.webp",
+      "bytes": 3218,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 78,
+      "height": 78,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/reset@2x.webp",
+      "bytes": 3216,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/reset.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/flower@2x.webp",
+      "bytes": 3216,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/flower.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/brush@3x.webp",
+      "bytes": 3210,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/brush.webp"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shoulder-bag.webp",
+      "bytes": 3206,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/document-folder.webp",
+      "bytes": 3198,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hot-dog.webp",
+      "bytes": 3194,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/journal@2x.webp",
+      "bytes": 3192,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/journal.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/car@2x.webp",
+      "bytes": 3192,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/car.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/coffee@2x.webp",
+      "bytes": 3184,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/coffee.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/skateboard.webp",
+      "bytes": 3180,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exam@2x.webp",
+      "bytes": 3176,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/exam.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/thermos.webp",
+      "bytes": 3172,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/measuring@2x.webp",
+      "bytes": 3168,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/measuring.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/desk-bell@2x.webp",
+      "bytes": 3160,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/desk-bell.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/croissant.webp",
+      "bytes": 3160,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/tag@2x.webp",
+      "bytes": 3154,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/tag.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/volunteer@2x.webp",
+      "bytes": 3152,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/volunteer.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/sliders@2x.webp",
+      "bytes": 3142,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/sliders.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/spatula.webp",
+      "bytes": 3122,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/keyboard@2x.webp",
+      "bytes": 3120,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/keyboard.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/volleyball.webp",
+      "bytes": 3120,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/organizing@2x.webp",
+      "bytes": 3120,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/organizing.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/football@2x.webp",
+      "bytes": 3118,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/football.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/golf-club.webp",
+      "bytes": 3112,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/thermometer.webp",
+      "bytes": 3112,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/list@3x.webp",
+      "bytes": 3110,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/list.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/passport@2x.webp",
+      "bytes": 3108,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/passport.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/drawing@2x.webp",
+      "bytes": 3102,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/drawing.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/photos@2x.webp",
+      "bytes": 3094,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/photos.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/basketball@2x.webp",
+      "bytes": 3092,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/basketball.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/step-platform.webp",
+      "bytes": 3088,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/ruler.webp",
+      "bytes": 3082,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pull-up-bar.webp",
+      "bytes": 3076,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/game@2x.webp",
+      "bytes": 3072,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/game.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/computer-mouse.webp",
+      "bytes": 3070,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/surfboard.webp",
+      "bytes": 3068,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/piano@2x.webp",
+      "bytes": 3064,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/piano.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/collage@2x.webp",
+      "bytes": 3058,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/collage.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/search@2x.webp",
+      "bytes": 3054,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/search.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/crafts@2x.webp",
+      "bytes": 3054,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/crafts.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/toothbrush-cup.webp",
+      "bytes": 3054,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pet-care@2x.webp",
+      "bytes": 3050,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/pet-care.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/vitamins@2x.webp",
+      "bytes": 3044,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/vitamins.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/breathing@2x.webp",
+      "bytes": 3044,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/breathing.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/water-bottle.webp",
+      "bytes": 3038,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/research@2x.webp",
+      "bytes": 3002,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/research.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/rolling-pin.webp",
+      "bytes": 3000,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bed-making@2x.webp",
+      "bytes": 2996,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/bed-making.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/calendar@2x.webp",
+      "bytes": 2972,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/calendar.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/screwdriver.webp",
+      "bytes": 2954,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exercise@2x.webp",
+      "bytes": 2950,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/exercise.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/anniversary@2x.webp",
+      "bytes": 2920,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/anniversary.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/film@2x.webp",
+      "bytes": 2916,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/film.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/settings@3x.webp",
+      "bytes": 2916,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/settings.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/punching-bag.webp",
+      "bytes": 2912,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meal@2x.webp",
+      "bytes": 2906,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/meal.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/weight@2x.webp",
+      "bytes": 2894,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/weight.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/dishes@2x.webp",
+      "bytes": 2878,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/dishes.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/work@2x.webp",
+      "bytes": 2874,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/work.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/yoga@2x.webp",
+      "bytes": 2872,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/yoga.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sunshine@2x.webp",
+      "bytes": 2868,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sunshine.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/info@2x.webp",
+      "bytes": 2862,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/info.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cooking@2x.webp",
+      "bytes": 2856,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/cooking.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/handwashing@2x.webp",
+      "bytes": 2848,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/handwashing.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/checkup@2x.webp",
+      "bytes": 2836,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/checkup.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/reading@2x.webp",
+      "bytes": 2828,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/reading.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sleep@2x.webp",
+      "bytes": 2814,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sleep.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bath@2x.webp",
+      "bytes": 2814,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/bath.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/moon@2x.webp",
+      "bytes": 2792,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/moon.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/usb-drive.webp",
+      "bytes": 2782,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/lecture@2x.webp",
+      "bytes": 2772,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/lecture.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/send@2x.webp",
+      "bytes": 2758,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/send.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/swimming@2x.webp",
+      "bytes": 2756,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/swimming.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/water@2x.webp",
+      "bytes": 2738,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/water.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/boxing@2x.webp",
+      "bytes": 2734,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/boxing.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/coding@2x.webp",
+      "bytes": 2718,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/coding.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/budget@2x.webp",
+      "bytes": 2700,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/budget.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/clock@3x.webp",
+      "bytes": 2694,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/clock.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pilates@2x.webp",
+      "bytes": 2686,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/pilates.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/keys.webp",
+      "bytes": 2658,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/offline@2x.webp",
+      "bytes": 2650,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/offline.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/routine@2x.webp",
+      "bytes": 2648,
+      "runtimeReferences": [
+        "Metro density variant of assets/tab-icons/routine.webp"
+      ],
+      "devReferences": [],
+      "width": 52,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/guitar@2x.webp",
+      "bytes": 2632,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/guitar.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/medicine@2x.webp",
+      "bytes": 2630,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/medicine.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/rowing-paddle.webp",
+      "bytes": 2610,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/stretching@2x.webp",
+      "bytes": 2586,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/stretching.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shower@2x.webp",
+      "bytes": 2584,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/shower.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/jump-rope@2x.webp",
+      "bytes": 2580,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/jump-rope.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/star@2x.webp",
+      "bytes": 2576,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/star.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/note@3x.webp",
+      "bytes": 2576,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/note.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/fruit@2x.webp",
+      "bytes": 2568,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/fruit.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/plus@2x.webp",
+      "bytes": 2560,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/plus.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/camping@2x.webp",
+      "bytes": 2560,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/camping.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/email@2x.webp",
+      "bytes": 2548,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/email.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/baking@2x.webp",
+      "bytes": 2548,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/baking.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meeting@2x.webp",
+      "bytes": 2544,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/meeting.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/mail@2x.webp",
+      "bytes": 2538,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/mail.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/umbrella.webp",
+      "bytes": 2524,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sunscreen@2x.webp",
+      "bytes": 2512,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/sunscreen.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/lock-memo@3x.webp",
+      "bytes": 2496,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/lock-memo.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/glue-bottle.webp",
+      "bytes": 2490,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/save@2x.webp",
+      "bytes": 2488,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/save.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/comic@3x.webp",
+      "bytes": 2460,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 78,
+      "height": 78,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/routine-icons/candle@2x.webp",
+      "bytes": 2448,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/candle.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meditation@2x.webp",
+      "bytes": 2444,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/meditation.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tea@2x.webp",
+      "bytes": 2442,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/tea.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/letter@2x.webp",
+      "bytes": 2416,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/letter.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/language@2x.webp",
+      "bytes": 2378,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/language.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/call@2x.webp",
+      "bytes": 2340,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/call.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/down@2x.webp",
+      "bytes": 2312,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/down.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/painting-room@2x.webp",
+      "bytes": 2308,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/painting-room.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/nap@2x.webp",
+      "bytes": 2302,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/nap.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/puzzle@2x.webp",
+      "bytes": 2296,
+      "runtimeReferences": [
+        "Metro density variant of assets/tab-icons/puzzle.webp"
+      ],
+      "devReferences": [],
+      "width": 52,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/reading@3x.webp",
+      "bytes": 2260,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/reading.webp"
+      ],
+      "devReferences": [],
+      "width": 66,
+      "height": 66,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/wallet.webp",
+      "bytes": 2258,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/up@2x.webp",
+      "bytes": 2202,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/up.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/repair@2x.webp",
+      "bytes": 2190,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/repair.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story-pen@2x.png",
+      "bytes": 2182,
+      "runtimeReferences": [
+        "Metro density variant of assets/tab-icons/story-pen.png"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/left@2x.webp",
+      "bytes": 2166,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/left.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/today@2x.webp",
+      "bytes": 2160,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 52,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/calendar@2x.webp",
+      "bytes": 2156,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/calendar.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/eye-rest@2x.webp",
+      "bytes": 2142,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/eye-rest.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cleaning@2x.webp",
+      "bytes": 2050,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/cleaning.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/daily@2x.webp",
+      "bytes": 2042,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/daily.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gardening@2x.webp",
+      "bytes": 2040,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/gardening.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pencil@2x.webp",
+      "bytes": 2014,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/pencil.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/right@2x.webp",
+      "bytes": 2006,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/right.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/comic-portrait-v2.webp",
+      "bytes": 1964,
+      "runtimeReferences": [
+        "src/pages/day-plan/model/heroTabArtwork.ts",
+        "src/pages/day-plan/ui/DayPlanCustomTabBar.tsx",
+        "src/pages/day-plan/ui/DayPlanLayoutModeTabs.tsx"
+      ],
+      "devReferences": [],
+      "width": 78,
+      "height": 78,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/routine-icons/hanger.webp",
+      "bytes": 1964,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineGeneratedIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/skincare@2x.webp",
+      "bytes": 1956,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/skincare.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/toothbrush@2x.webp",
+      "bytes": 1918,
+      "runtimeReferences": [
+        "Metro density variant of assets/routine-icons/toothbrush.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/list@2x.webp",
+      "bytes": 1780,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/list.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/settings@2x.webp",
+      "bytes": 1724,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/settings.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story@2x.webp",
+      "bytes": 1672,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 52,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/brush@2x.webp",
+      "bytes": 1658,
+      "runtimeReferences": [
+        "Metro density variant of assets/control-illustrations/brush.webp"
+      ],
+      "devReferences": [],
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/clock@2x.webp",
+      "bytes": 1594,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/clock.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/note@2x.webp",
+      "bytes": 1504,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/note.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shopping.webp",
+      "bytes": 1496,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/packed-backpack.svg",
+      "bytes": 1449,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "imageNote": "cannot identify image file '/Users/yonghee/Documents/project/pokit/assets/tab-ic"
+    },
+    {
+      "path": "assets/routine-icons/music.webp",
+      "bytes": 1446,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/lock-memo@2x.webp",
+      "bytes": 1436,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/lock-memo.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/blood-pressure.webp",
+      "bytes": 1386,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/lunchbox.webp",
+      "bytes": 1382,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/memo.webp",
+      "bytes": 1378,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts",
+        "src/shared/ui/stationery-desk/StationeryCaptionIcon.tsx"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/comic@2x.webp",
+      "bytes": 1372,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 52,
+      "height": 52,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/routine-icons/plant.webp",
+      "bytes": 1346,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/abstain.webp",
+      "bytes": 1338,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts",
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/laundry.webp",
+      "bytes": 1336,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gift.webp",
+      "bytes": 1332,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/reading@2x.webp",
+      "bytes": 1324,
+      "runtimeReferences": [
+        "Metro density variant of assets/header-icons/reading.webp"
+      ],
+      "devReferences": [],
+      "width": 44,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/finance.webp",
+      "bytes": 1320,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/scale.webp",
+      "bytes": 1310,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/trash.webp",
+      "bytes": 1308,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/HeroDayBoard.tsx",
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sewing.webp",
+      "bytes": 1306,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/timer.webp",
+      "bytes": 1296,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bus.webp",
+      "bytes": 1296,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/checklist.webp",
+      "bytes": 1290,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/breakfast.webp",
+      "bytes": 1284,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/camera.webp",
+      "bytes": 1282,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/focus.webp",
+      "bytes": 1278,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/pills.webp",
+      "bytes": 1276,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/watercolor.webp",
+      "bytes": 1276,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exam.webp",
+      "bytes": 1274,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/knitting.webp",
+      "bytes": 1272,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/watering.webp",
+      "bytes": 1272,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/recycling.webp",
+      "bytes": 1270,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/bell.webp",
+      "bytes": 1268,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/planning.webp",
+      "bytes": 1268,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/list.webp",
+      "bytes": 1264,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/letters.webp",
+      "bytes": 1258,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/hiking.webp",
+      "bytes": 1254,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/train.webp",
+      "bytes": 1250,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/walking.webp",
+      "bytes": 1250,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/map.webp",
+      "bytes": 1248,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/football.webp",
+      "bytes": 1242,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/sun.webp",
+      "bytes": 1240,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cycling.webp",
+      "bytes": 1238,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/vacuum.webp",
+      "bytes": 1234,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/beach.webp",
+      "bytes": 1232,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/organizing.webp",
+      "bytes": 1228,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/volunteer.webp",
+      "bytes": 1226,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/clock.webp",
+      "bytes": 1224,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/coffee.webp",
+      "bytes": 1220,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/chart.webp",
+      "bytes": 1216,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/running.webp",
+      "bytes": 1212,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/passport.webp",
+      "bytes": 1208,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/mail.webp",
+      "bytes": 1202,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/grid.webp",
+      "bytes": 1198,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/journal.webp",
+      "bytes": 1192,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/drawing.webp",
+      "bytes": 1192,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/flower.webp",
+      "bytes": 1190,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/megaphone.webp",
+      "bytes": 1188,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/basketball.webp",
+      "bytes": 1184,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/birdwatching.webp",
+      "bytes": 1182,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/weight.webp",
+      "bytes": 1182,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/plus-circle.webp",
+      "bytes": 1178,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/vitamins.webp",
+      "bytes": 1178,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/research.webp",
+      "bytes": 1174,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/handwashing.webp",
+      "bytes": 1168,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/car.webp",
+      "bytes": 1160,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/travel.webp",
+      "bytes": 1160,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bed-making.webp",
+      "bytes": 1158,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/breathing.webp",
+      "bytes": 1156,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/work.webp",
+      "bytes": 1150,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/film.webp",
+      "bytes": 1148,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/salad.webp",
+      "bytes": 1148,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tennis.webp",
+      "bytes": 1146,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/crafts.webp",
+      "bytes": 1146,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/routine.webp",
+      "bytes": 1142,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/DayPlanCustomTabBar.tsx"
+      ],
+      "devReferences": [],
+      "width": 26,
+      "height": 26,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/measuring.webp",
+      "bytes": 1138,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pet-care.webp",
+      "bytes": 1136,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/collage.webp",
+      "bytes": 1136,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/game.webp",
+      "bytes": 1128,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/piano.webp",
+      "bytes": 1126,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sunshine.webp",
+      "bytes": 1124,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/reading.webp",
+      "bytes": 1124,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [
+        "src/shared/lib/media/pickPuzzleHistoryImage.test.ts"
+      ],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/book.webp",
+      "bytes": 1112,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/checkup.webp",
+      "bytes": 1112,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/search.webp",
+      "bytes": 1106,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/reset.webp",
+      "bytes": 1104,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/email.webp",
+      "bytes": 1104,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sleep.webp",
+      "bytes": 1104,
+      "runtimeReferences": [
+        "src/pages/day-plan/lib/dailyMateOnboardingAssets.ts",
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/photos.webp",
+      "bytes": 1102,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/stack.webp",
+      "bytes": 1102,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts",
+        "src/shared/ui/paper-action-icon/index.tsx"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/info.webp",
+      "bytes": 1090,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cooking.webp",
+      "bytes": 1088,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meal.webp",
+      "bytes": 1086,
+      "runtimeReferences": [
+        "src/pages/day-plan/lib/dailyMateOnboardingAssets.ts",
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/keyboard.webp",
+      "bytes": 1084,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/dishes.webp",
+      "bytes": 1084,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/sliders.webp",
+      "bytes": 1082,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/offline.webp",
+      "bytes": 1080,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/exercise.webp",
+      "bytes": 1080,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/anniversary.webp",
+      "bytes": 1080,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/tag.webp",
+      "bytes": 1078,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/desk-bell.webp",
+      "bytes": 1072,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/bath.webp",
+      "bytes": 1068,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/yoga.webp",
+      "bytes": 1064,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/budget.webp",
+      "bytes": 1062,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/jump-rope.webp",
+      "bytes": 1060,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/boxing.webp",
+      "bytes": 1054,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/calendar.webp",
+      "bytes": 1050,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/fruit.webp",
+      "bytes": 1048,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/swimming.webp",
+      "bytes": 1046,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/medicine.webp",
+      "bytes": 1046,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/baking.webp",
+      "bytes": 1038,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/letter.webp",
+      "bytes": 1038,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/water.webp",
+      "bytes": 1036,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story-pen.png",
+      "bytes": 1026,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/DayPlanCustomTabBar.tsx"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pilates.webp",
+      "bytes": 1022,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/down.webp",
+      "bytes": 1020,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/eye-rest.webp",
+      "bytes": 1020,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/lecture.webp",
+      "bytes": 1016,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/moon.webp",
+      "bytes": 1006,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/stretching.webp",
+      "bytes": 1002,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/language.webp",
+      "bytes": 1002,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/guitar.webp",
+      "bytes": 1002,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/shower.webp",
+      "bytes": 1000,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/camping.webp",
+      "bytes": 998,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/sunscreen.webp",
+      "bytes": 998,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meeting.webp",
+      "bytes": 986,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/calendar.webp",
+      "bytes": 984,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/coding.webp",
+      "bytes": 974,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/meditation.webp",
+      "bytes": 974,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/pencil.webp",
+      "bytes": 968,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts",
+        "src/shared/ui/stationery-desk/StationeryCaptionIcon.tsx"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/tea.webp",
+      "bytes": 954,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/gardening.webp",
+      "bytes": 952,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/daily.webp",
+      "bytes": 948,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/send.webp",
+      "bytes": 946,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts",
+        "src/shared/ui/paper-action-icon/index.tsx"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/candle.webp",
+      "bytes": 946,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/up.webp",
+      "bytes": 942,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/save.webp",
+      "bytes": 936,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/plus.webp",
+      "bytes": 936,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/cleaning.webp",
+      "bytes": 936,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/left.webp",
+      "bytes": 934,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/painting-room.webp",
+      "bytes": 928,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/skincare.webp",
+      "bytes": 916,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/call.webp",
+      "bytes": 914,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/nap.webp",
+      "bytes": 914,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/star.webp",
+      "bytes": 910,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/toothbrush.webp",
+      "bytes": 888,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/right.webp",
+      "bytes": 860,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/routine-icons/repair.webp",
+      "bytes": 856,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/routineIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/list.webp",
+      "bytes": 842,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/settings.webp",
+      "bytes": 816,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/puzzle.webp",
+      "bytes": 810,
+      "runtimeReferences": [
+        "src/pages/day-plan/ui/DayPlanCustomTabBar.tsx"
+      ],
+      "devReferences": [],
+      "width": 26,
+      "height": 26,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/note.webp",
+      "bytes": 792,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/clock.webp",
+      "bytes": 786,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/control-illustrations/brush.webp",
+      "bytes": 762,
+      "runtimeReferences": [
+        "src/shared/ui/icon-symbol/controlIllustrationSources.ts"
+      ],
+      "devReferences": [],
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/today.webp",
+      "bytes": 760,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 26,
+      "height": 26,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/reading.webp",
+      "bytes": 728,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/story.webp",
+      "bytes": 630,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 26,
+      "height": 26,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/header-icons/lock-memo.webp",
+      "bytes": 566,
+      "runtimeReferences": [
+        "src/shared/ui/header-icon/sources.ts"
+      ],
+      "devReferences": [],
+      "width": 22,
+      "height": 22,
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/tab-icons/comic.webp",
+      "bytes": 516,
+      "runtimeReferences": [],
+      "devReferences": [],
+      "width": 26,
+      "height": 26,
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/images/empty-artwork.png",
+      "bytes": 68,
+      "runtimeReferences": [
+        "src/pages/day-plan/lib/heroMateArt.ts",
+        "src/pages/day-plan/lib/heroSceneImages.ts",
+        "src/pages/day-plan/lib/heroSceneThumbnails.ts",
+        "src/pages/day-plan/ui/HeroAiVisualGuide.tsx",
+        "src/pages/welcome-intro/ui/TutorialSceneBackdrop.tsx",
+        "src/shared/lib/activityIllustrations.ts"
+      ],
+      "devReferences": [
+        "scripts/render-ai-guide-videos.cjs"
+      ],
+      "width": 1,
+      "height": 1,
+      "mode": "RGBA"
+    }
+  ],
+  "unusedBaseCandidateCount": 21,
+  "unusedBaseCandidateBytes": 7084282,
+  "exactDuplicateGroups": [
+    [
+      "assets/app-icon4.png",
+      "ios/Pokit/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png"
+    ],
+    [
+      "assets/splash-polaroid-quote.png",
+      "ios/Pokit/Images.xcassets/SplashScreenLegacy.imageset/image.png"
+    ],
+    [
+      "assets/widget/comic-check-checked.png",
+      "ios/PokitLiveActivity/ComicScenes.xcassets/comic_check_checked.imageset/comic_check_checked.png"
+    ],
+    [
+      "assets/widget/comic-check-unchecked.png",
+      "ios/PokitLiveActivity/ComicScenes.xcassets/comic_check_unchecked.imageset/comic_check_unchecked.png"
+    ],
+    [
+      "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "android/app/src/main/res/drawable-xhdpi/notification_icon.png"
+    ],
+    [
+      "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "android/app/src/main/res/drawable-xxhdpi/notification_icon.png"
+    ],
+    [
+      "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp",
+      "android/app/src/main/res/drawable-xxxhdpi/notification_icon.png"
+    ]
+  ],
+  "notes": [
+    "No image files were changed or removed in this audit.",
+    "Unused candidates include developer-guide source photos, which are not necessarily in the release bundle.",
+    "Do not delete @2x/@3x variants based on lack of literal references.",
+    "App icon and splash duplicates in native asset catalogs are generated build resources, not safe deletion candidates.",
+    "WebP85 sizes are in-memory trial encodes; visual quality and platform loading require review before replacing files.",
+    "Feature-disabled images may still be bundled through static requires; this audit does not calculate route reachability."
+  ]
+}

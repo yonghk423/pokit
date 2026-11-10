@@ -5,7 +5,6 @@ import { resetAppLocalData } from './resetAppLocalData';
 import { completeHeroCardEditHint, HERO_CARD_EDIT_HINT_KEY, initializeHeroCardEditHint, isHeroCardEditHintPending, subscribeHeroCardEditHint } from './heroCardEditHintStorage';
 import { StorageKeys } from './storageKeys';
 import { completeHeroInfoHint, isHeroInfoHintPending, subscribeHeroInfoHint } from './heroInfoHintStorage';
-import { HERO_THUMBNAIL_STRIP_KEY, isHeroThumbnailStripCollapsed, setHeroThumbnailStripCollapsed } from './heroThumbnailStripStorage';
 jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///Documents/', deleteAsync: jest.fn(async () => undefined) }));
 
 beforeEach(async () => { await clearPokitLocalStorage(); jest.clearAllMocks(); });
@@ -26,13 +25,6 @@ it('preserves AI illustrations, captions and previous deletions while clearing d
   expect(localStorageClient.getJson('pokit:hero-ai-caption:hero-old-0.png')).toEqual({ title: '하루', memo: '추억', createdAt: 123 });
   expect(await AsyncStorage.getItem('pokit:hero-ai-pending-v1')).toBeNull();
   expect(localStorageClient.getJson('pokit:comic-diaries:v1')).toBeNull();
-});
-
-it.each([true, false])('preserves the thumbnail strip preference across data reset: collapsed=%s', async collapsed => {
-  setHeroThumbnailStripCollapsed(collapsed);
-  await resetAppLocalData();
-  expect(isHeroThumbnailStripCollapsed()).toBe(collapsed);
-  expect(await AsyncStorage.getItem(HERO_THUMBNAIL_STRIP_KEY)).toBe(collapsed ? 'collapsed' : 'expanded');
 });
 
 it('re-enables both information hints on reset and keeps their completion independent', async () => {

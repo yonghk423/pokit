@@ -1,0 +1,50 @@
+{
+  "themeId": "01-rush-hour-commute",
+  "revision": "upload-candidate-v6",
+  "status": "image-ready-not-uploaded",
+  "size": {
+    "width": 852,
+    "height": 1846
+  },
+  "originalArtwork": "assets/calendar-illustrations/city-animation/01-rush-hour-commute/background.webp",
+  "generationTool": "built-in image_gen",
+  "sourcePng": "/Users/yonghee/.codex/generated_images/01a1aea7-827a-7f70-ae49-f10893c032de/exec-6794aefd-b866-49c2-9457-858e8a778b86.png",
+  "background": "background.webp",
+  "bytes": 251324,
+  "sha256": "20b9fd759f6468af7c4398db0803351ad1601e87bf7be612fb25d37696c7a7e9",
+  "visualCheck": {
+    "blankMonthAndWeekdayBands": true,
+    "paperColumns": 7,
+    "paperRows": 6,
+    "paperCount": 42,
+    "noBakedTextOrPhotosOrAppChrome": true
+  },
+  "layout": {
+    "units": "source-image-pixels",
+    "month": [
+      32,
+      842,
+      789,
+      74
+    ],
+    "weekdays": [
+      29,
+      944,
+      793,
+      37
+    ],
+    "paperGrid": [
+      30,
+      1004,
+      797,
+      672
+    ],
+    "columns": 7,
+    "rows": 6,
+    "gridLineRendering": "app",
+    "datePlacement": "top-center",
+    "photoPlacement": "below-date",
+    "dateFontSize": "uniform"
+  },
+  "integrationNote": "Candidate image only. App geometry, safe-area placement and event/touch alignment must be integrated with this image before activating it. Current production assets and Supabase objects are unchanged."
+}

@@ -1,3 +1,4 @@
+import { TrashIcon } from './TrashIcon';
 import Svg, { Path } from 'react-native-svg';
 import type { ColorValue } from 'react-native';
 
@@ -11,6 +12,7 @@ const DRAWINGS: Record<string, string[]> = {
   'plus.circle': ['M12 2.8C0 2.4-.2 21 11.8 21.2c12.2.3 12.6-18.3.2-18.4Z', 'M7 12h10M12 7v10'],
   timer: ['M12 6C2 6 2 22 12 22S22 6 12 6Z', 'M9 2h6M12 2v4M19 5l2 2M12 9v5l3 1'],
   'text.alignleft': ['M3 5q9-.3 18 0M3 10h12M3 15h17M3 20h10'],
+  calendar: ['M4 5.5q8-.3 16 0l-.2 15-15.7.1Z', 'M4 10h16M8 3v5M16 3v5', 'M8 13h1m3 0h1m3 0h1M8 17h1m3 0h1m3 0h1'],
   'note.text': ['M3.5 3.6q8-.4 17 0l-.2 17-16.9-.1Z', 'M7 8h10M7 12h9M7 16h6'],
   pencil: ['m4 16 11.5-12 4 3.5L8 20l-5 1Z', 'm13.7 6 4 3.6M4 16l4 4M6.4 16.6l9-9'],
   checkmark: ['M4 12.1q2.5 2.1 5 5.2Q15 10 20.3 5.5'],
@@ -56,6 +58,7 @@ const ALIASES: Record<string, string> = {
 };
 export function hasHanddrawnControl(name: string) { return (ALIASES[name] ?? name) in DRAWINGS; }
 export function HanddrawnControl({ name, size, color }: { name: string; size: number; color: ColorValue }) {
+  if (name === 'trash' || name.startsWith('trash.')) return <TrashIcon size={size} color={color} />;
   return <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false} pointerEvents="none">
     {DRAWINGS[ALIASES[name] ?? name]?.map((d, index) => <Path key={index} d={d} stroke={color} strokeWidth={name === 'chevron.left' || name === 'chevron.right' ? 1.25 : index === 2 && name === 'magnifyingglass' ? 0.65 : 1.35} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
   </Svg>;
