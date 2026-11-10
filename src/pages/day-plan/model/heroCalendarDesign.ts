@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 
 export const CITY_CALENDAR_THEMES = [
   { design: 'city-animation-01', themeId: '01-rush-hour-commute', title: '계단을 내려가는 아침', concept: '출근 계단마다 놓인 오늘의 날짜' },
@@ -71,7 +72,10 @@ export function useHeroCalendarDesign() {
 
 const coverKey = (month: string) => `pokit:calendar-cover:${month}`;
 export function useHeroCalendarCover(month: string) {
-  const snapshot = () => localStorageClient.getJson<string>(coverKey(month)) ?? null;
+  const snapshot = () => {
+    const saved = localStorageClient.getJson<string>(coverKey(month));
+    return saved ? resolveHeroArtworkUri(saved) : null;
+  };
   return useSyncExternalStore(subscribe, snapshot, snapshot);
 }
 export async function saveHeroCalendarCover(month: string, uri: string, fileName?: string | null) {
@@ -82,7 +86,8 @@ export async function saveHeroCalendarCover(month: string, uri: string, fileName
   await fs.makeDirectoryAsync(folder, { intermediates: true });
   const destination = `${folder}${month}-${Date.now()}.${extension}`;
   await fs.copyAsync({ from: uri, to: destination });
-  const previous = localStorageClient.getJson<string>(coverKey(month));
+  const savedPrevious = localStorageClient.getJson<string>(coverKey(month));
+  const previous = savedPrevious ? resolveHeroArtworkUri(savedPrevious) : null;
   localStorageClient.setJson(coverKey(month), destination);
   listeners.forEach(listener => listener());
   if (previous && previous !== destination && previous.startsWith(folder)) await fs.deleteAsync(previous, { idempotent: true }).catch(() => undefined);

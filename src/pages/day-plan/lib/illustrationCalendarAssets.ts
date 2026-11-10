@@ -2,26 +2,25 @@ import * as fs from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
 import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
-export type CalendarAssets = { background: string; paper: string; leaf: string };
+export type CalendarAssets = { background: string };
 export const CALENDAR_ASSET_REVISION = '20261110-fullscreen-v8';
 const previousRevision = '20261109-fullbleed-v2';
 const cacheRoot = () => `${fs.documentDirectory}calendar-themes/${CALENDAR_ASSET_REVISION}/`;
-const names = ['background', 'paper', 'leaf'] as const;
+const names = ['background'] as const;
 const installing = new Map<string, Promise<CalendarAssets>>();
 const pending = new Map<string, Promise<CalendarAssets>>();
 const readyAssets = new Map<string, CalendarAssets>();
 // Pack readiness can request 50 migrations together. Serialize installation so
-// shared paper/leaf temporary files cannot be moved by two themes at once.
+// avoid concurrent migrations competing for storage and bandwidth.
 let installationQueue: Promise<unknown> = Promise.resolve();
 export function getLoadedIllustrationCalendarAssets(themeId = '01-rush-hour-commute') { return readyAssets.get(themeId) ?? null; }
 async function installFiles(themeId = '01-rush-hour-commute', refresh = false): Promise<CalendarAssets> {
   if (!fs.documentDirectory) throw new Error('storage_unavailable');
   const folder = `${cacheRoot()}${themeId}/`;
-  const sharedFolder = `${cacheRoot()}shared/`;
-  await Promise.all([folder, sharedFolder].map(path => fs.makeDirectoryAsync(path, { intermediates: true })));
-  const assets: CalendarAssets = { background: `${folder}background.webp`, paper: `${sharedFolder}paper.webp`, leaf: `${sharedFolder}leaf.webp` };
+  await fs.makeDirectoryAsync(folder, { intermediates: true });
+  const assets: CalendarAssets = { background: `${folder}background.webp` };
   const existing = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
-  if (!refresh && existing.every(file => file.exists && !file.isDirectory && file.size > 0)) return assets;
+  if (!refresh && existing.every(file => file.exists && !file.isDirectory && file.size > 0)) { await removeUnusedCalendarDecorations(); return assets; }
   await getHeroAiAccessToken();
   const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-theme', { body: { themeId, revision: 'fullbleed-v2' } });
   if (error || data?.themeId !== themeId || data?.revision !== 'fullbleed-v2' || !Array.isArray(data?.files)) throw new Error('theme_download_unavailable');
@@ -30,9 +29,7 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
     if (!refresh && info.exists && !info.isDirectory && info.size > 0) continue;
     const file = data.files.find((item: { name: string; url: string }) => item.name === `${name}.webp`);
     if (!file?.url?.startsWith('https://')) throw new Error('invalid_theme');
-    const expectedPath = name === 'background'
-      ? `/calendar-themes/city-animation/${themeId}/${name}.webp`
-      : `/calendar-themes/city-animation/shared/${name}.webp`;
+    const expectedPath = `/calendar-themes/city-animation/${themeId}/${name}.webp`;
     if (!decodeURIComponent(new URL(file.url).pathname).endsWith(expectedPath)) throw new Error('theme_mismatch');
     const temp = assets[name] + '.part';
     const result = await fs.downloadAsync(file.url, temp, { headers: { 'Cache-Control': 'no-store' } });
@@ -48,6 +45,7 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
   }
   await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/city-animation-v2/${themeId}/`, { idempotent: true });
   await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/${previousRevision}/${themeId}/`, { idempotent: true });
+  await removeUnusedCalendarDecorations();
   return assets;
 }
 function install(themeId = '01-rush-hour-commute', refresh = false) {
@@ -83,9 +81,9 @@ async function hasLegacyDownload(themeId: string) {
 
 export async function isIllustrationCalendarInstalled(themeId: string): Promise<boolean> {
   if (!fs.documentDirectory) return false;
-  const assets: CalendarAssets = { background: `${cacheRoot()}${themeId}/background.webp`, paper: `${cacheRoot()}shared/paper.webp`, leaf: `${cacheRoot()}shared/leaf.webp` };
+  const assets: CalendarAssets = { background: `${cacheRoot()}${themeId}/background.webp` };
   const files = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
-  if (files.every(file => file.exists && !file.isDirectory && file.size > 0)) return true;
+  if (files.every(file => file.exists && !file.isDirectory && file.size > 0)) { await removeUnusedCalendarDecorations(); return true; }
   if (await hasLegacyDownload(themeId)) {
     try { await install(themeId); return true; } catch { return false; }
   }
@@ -110,4 +108,13 @@ export async function removeIllustrationCalendarDownloads() {
   // Clear legacy image caches created before calendar images opted out of caching.
   await Image.clearDiskCache();
   await Image.clearMemoryCache();
+}
+
+// Retired decorations are neither downloaded nor required for readiness.
+async function removeUnusedCalendarDecorations() {
+  if (!fs.documentDirectory) return;
+  for (const name of ['paper.webp', 'leaf.webp']) {
+    await fs.deleteAsync(`${cacheRoot()}shared/${name}`, { idempotent: true });
+    await fs.deleteAsync(`${cacheRoot()}shared/${name}.part`, { idempotent: true });
+  }
 }

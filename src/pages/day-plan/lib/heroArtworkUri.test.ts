@@ -3,6 +3,13 @@ import { normalizeComicScenes, newComicScene } from './heroDayStorage';
 
 jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///current/Documents/' }));
 
+it('keeps monthly calendar covers readable after the iOS container changes', () => {
+  expect(resolveHeroArtworkUri('file:///old/Documents/calendar-covers/2026-11-1793931000.png'))
+    .toBe('file:///current/Documents/calendar-covers/2026-11-1793931000.png');
+  expect(resolveHeroArtworkUri('file:///old/Documents/calendar-covers/../secret.png'))
+    .toBe('file:///old/Documents/calendar-covers/../secret.png');
+});
+
 it('loads generated originals from the current container, preserving filenames and diary content', () => {
   const uri = 'file:///old-container/Documents/hero-ai/hero-1793601077500-38uh37cqzo-0.png';
   const expected = 'file:///current/Documents/hero-ai/hero-1793601077500-38uh37cqzo-0.png';

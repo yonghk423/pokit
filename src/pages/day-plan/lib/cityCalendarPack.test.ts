@@ -1,3 +1,4 @@
+import { CITY_CALENDAR_THEMES } from '../model/heroCalendarDesign';
 import { isCityCalendarPackReady, downloadCityCalendarPack } from './cityCalendarPack';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { downloadIllustrationCalendarAssets, isIllustrationCalendarInstalled } from './illustrationCalendarAssets';
@@ -13,12 +14,12 @@ it('does not complete a partial or failed download', async () => {
   await expect(downloadCityCalendarPack(jest.fn())).rejects.toThrow('offline');
   expect(localStorageClient.setJson).not.toHaveBeenCalledWith(expect.anything(), true);
 });
-it('unlocks only after all six downloads complete', async () => {
+it('unlocks only after all theme downloads complete', async () => {
   (downloadIllustrationCalendarAssets as jest.Mock).mockResolvedValue({});
   const progress = jest.fn();
   await downloadCityCalendarPack(progress);
-  expect(downloadIllustrationCalendarAssets).toHaveBeenCalledTimes(6);
-  expect(progress).toHaveBeenLastCalledWith(6);
+  expect(downloadIllustrationCalendarAssets).toHaveBeenCalledTimes(CITY_CALENDAR_THEMES.length);
+  expect(progress).toHaveBeenLastCalledWith(CITY_CALENDAR_THEMES.length);
   expect(localStorageClient.setJson).toHaveBeenLastCalledWith(expect.anything(), true);
 });
 it('locks again when a downloaded file is missing', async () => {

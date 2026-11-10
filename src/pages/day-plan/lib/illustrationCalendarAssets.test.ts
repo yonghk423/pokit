@@ -6,7 +6,7 @@ import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
 import { isIllustrationCalendarInstalled, downloadIllustrationCalendarAssets, CALENDAR_ASSET_REVISION } from './illustrationCalendarAssets';
 const mockInvoke = jest.fn();
 const themeId = '04-lunch-rooftop';
-const response = (revision = 'fullbleed-v2') => ({ data: { themeId, revision, files: ['background', 'paper', 'leaf'].map(name => ({ name: `${name}.webp`, url: `https://example.com/calendar-themes/city-animation/${name === 'background' ? themeId : 'shared'}/${name}.webp` })) } });
+const response = (revision = 'fullbleed-v2') => ({ data: { themeId, revision, files: ['background'].map(name => ({ name: `${name}.webp`, url: `https://example.com/calendar-themes/city-animation/${name === 'background' ? themeId : 'shared'}/${name}.webp` })) } });
 beforeEach(() => {
   jest.clearAllMocks();
   (fs.getInfoAsync as jest.Mock).mockImplementation(async (uri: string) => ({ exists: uri.includes('city-animation-v2') || uri.endsWith('.part'), isDirectory: false, size: 100, md5: CALENDAR_ARTWORK_LAYOUTS[themeId].md5 }));
@@ -16,7 +16,7 @@ beforeEach(() => {
 it('refreshes an older installed theme before reporting it ready and removes only its obsolete cache', async () => {
   expect(await isIllustrationCalendarInstalled(themeId)).toBe(true);
   expect(mockInvoke).toHaveBeenCalledWith('calendar-theme', { body: { themeId, revision: 'fullbleed-v2' } });
-  expect(fs.downloadAsync).toHaveBeenCalledTimes(3);
+  expect(fs.downloadAsync).toHaveBeenCalledTimes(1);
   expect(fs.deleteAsync).toHaveBeenCalledWith(`file:///docs/calendar-themes/city-animation-v2/${themeId}/`, { idempotent: true });
 });
 it('retains the old cache when replacement downloading fails', async () => {
@@ -47,4 +47,17 @@ it('rejects a stale CDN image before replacing the installed file', async () => 
   expect(fs.moveAsync).not.toHaveBeenCalled();
   expect(fs.deleteAsync).toHaveBeenCalledTimes(1);
   expect((fs.deleteAsync as jest.Mock).mock.calls[0][0]).toMatch(/\.part$/);
+});
+
+it('accepts a pack without decorations and removes both obsolete files', async () => {
+  (fs.getInfoAsync as jest.Mock).mockImplementation(async (uri: string) => ({ exists: uri.endsWith('/background.webp'), isDirectory: false, size: 100 }));
+  expect(await isIllustrationCalendarInstalled(themeId)).toBe(true);
+  expect(fs.deleteAsync).toHaveBeenCalledWith(`file:///docs/calendar-themes/${CALENDAR_ASSET_REVISION}/shared/paper.webp`, { idempotent: true });
+  expect(mockInvoke).not.toHaveBeenCalled();
+});
+
+it('does not return decoration assets after installation', async () => {
+  const assets = await downloadIllustrationCalendarAssets(themeId);
+  expect(Object.keys(assets)).toEqual(['background']);
+  expect(fs.deleteAsync).toHaveBeenCalledWith(`file:///docs/calendar-themes/${CALENDAR_ASSET_REVISION}/shared/leaf.webp`, { idempotent: true });
 });

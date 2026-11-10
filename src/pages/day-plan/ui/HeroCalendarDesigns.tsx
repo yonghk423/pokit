@@ -60,7 +60,7 @@ export function CalendarPaper({ selectedPreview = false, eventDates = [], design
   const photoWidth = Math.min(width - 88 * scale, fitted ? layoutHeight * 0.42 / 1.2 : 220 * scale) * coverScale;
   const photoHeight = photoWidth * 1.2 + 25 * scale * coverScale;
   if (design === 'clipboard') return <HeroClipboardCalendar width={width} height={layoutHeight} month={month} today={today} miniature={miniature} eventDates={eventDates} recordDates={[...grouped.keys()]} photos={Object.fromEntries([...grouped].flatMap(([key, records]) => { const uri = records.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri; return uri ? [[key, uri]] : []; }))} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
-  return <View testID="calendar-paper" pointerEvents={miniature ? 'none' : 'auto'} onLayout={layoutWidth == null ? e => { const next = e.nativeEvent.layout.width; if (next > 0) setWidth(current => current === next ? current : next); } : undefined} style={[styles.paper, selectedPreview && { shadowOpacity: 0.24, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 6 }, wallpaper && { backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 }, { padding: 19 * scale, paddingTop: (wallpaper ? 0 : fitted ? 24 : 37) * scale, paddingBottom: (wallpaper ? 6 : 19) * scale, ...(fitted ? { height: layoutHeight } : {}) }]}>
+  return <View testID="calendar-paper" pointerEvents={miniature ? 'none' : 'auto'} onLayout={layoutWidth == null ? e => { const next = e.nativeEvent.layout.width; if (next > 0) setWidth(current => current === next ? current : next); } : undefined} style={[styles.paper, wallpaper && { backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 }, { padding: 19 * scale, paddingTop: (wallpaper ? 0 : fitted ? 24 : 37) * scale, paddingBottom: (wallpaper ? 6 : 19) * scale, ...(fitted ? { height: layoutHeight } : {}) }]}>
     {!wallpaper && <View pointerEvents="none" style={[styles.clip, { width: (design === 'bold' ? 100 : 19) * scale, height: 10 * scale, top: -3 * scale, backgroundColor: isPhoto ? '#A79564' : '#30312F' }]} />}
     {!hideMonthHeading && <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: isPhoto ? 'center' : 'space-between', marginBottom: (wallpaper ? 8 : 22) * scale }}>
       {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel="이전 달" onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 28, color: '#303330' }}>‹</Text></Pressable>}
@@ -111,9 +111,9 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
   const { width: windowWidth } = useWindowDimensions();
   const previewWidth = Math.min(270, (windowWidth - 40) * 0.78);
   return <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-    <View style={{ gap: 28, marginTop: 22, alignItems: 'center' }}>{CALENDAR_DESIGNS.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, 무료, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) applyHeroCalendarDesign(item.id); }} style={{ width: previewWidth }}>
-      <View pointerEvents="none" style={{ padding: 4 }}><CalendarPaper {...props} design={item.id} selectedPreview={selected === item.id} miniature layoutWidth={previewWidth - 8} /></View>
-      <Text style={styles.label}>{item.name}</Text><Text style={styles.free}>{selected === item.id ? '적용 중' : '무료'}</Text>
+    <View style={{ gap: 28, marginTop: 22, alignItems: 'center' }}>{CALENDAR_DESIGNS.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${selected === item.id ? '적용 중' : '무료'}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) { tapHaptic('select'); applyHeroCalendarDesign(item.id); } }} style={{ width: previewWidth }}>
+      <View pointerEvents="none" style={{ padding: 4 }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewWidth - 8} /></View>
+      <Text style={styles.label}>{item.name}</Text><Text numberOfLines={1} style={[styles.free, selected === item.id && { color: '#55BFA8' }]}>{selected === item.id ? '적용 중' : '무료'}</Text>
     </Pressable>)}</View>
   </ScrollView>;
 }
@@ -121,5 +121,5 @@ const styles = StyleSheet.create({
   paper: { backgroundColor: '#FAFAF6', shadowColor: '#34362E', shadowOpacity: 0.15, shadowRadius: 5, shadowOffset: { width: 1, height: 4 }, elevation: 3 },
   clip: { position: 'absolute', alignSelf: 'center', borderRadius: 1 },
   label: { fontSize: 12, color: '#3E4439', textAlign: 'center', marginTop: 12 },
-  free: { fontSize: 11, color: '#73796C', textAlign: 'center', marginTop: 5 },
+  free: { height: 18, lineHeight: 18, fontSize: 11, color: '#73796C', textAlign: 'center', marginTop: 5 },
 });

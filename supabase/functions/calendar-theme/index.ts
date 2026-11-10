@@ -15,12 +15,8 @@ Deno.serve(async request => {
     const themeId = body.themeId;
     if (!allowed.includes(themeId)) return new Response(JSON.stringify({ error: 'invalid_theme' }), { status: 400, headers });
     const revision = body.revision === 'fullbleed-v2' ? 'fullbleed-v2' : 'city-animation';
-    const names = ['background.webp', 'paper.webp', 'leaf.webp'];
-    const paths = revision === 'fullbleed-v2'
-      ? names.map(name => name === 'background.webp'
-        ? `calendar-themes/city-animation/${themeId}/${name}`
-        : `calendar-themes/city-animation/shared/${name}`)
-      : names.map(name => `calendar-themes/city-animation/${name === 'background.webp' ? themeId : 'shared'}/${name}`);
+    const names = ['background.webp'];
+    const paths = [`calendar-themes/city-animation/${themeId}/background.webp`];
     const { data: signed, error: signingError } = await admin.storage.from('character-illustrations').createSignedUrls(paths, 3600);
     if (signingError || !signed?.every(file => file.signedUrl)) throw signingError;
     return new Response(JSON.stringify({ themeId, revision, files: names.map((name, i) => ({ name, url: signed![i].signedUrl })) }), { headers });

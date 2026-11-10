@@ -1,3 +1,4 @@
+import { CityCalendarPackCover } from '../../src/pages/day-plan/ui/CityCalendarPackCover';
 import { applyHeroDiaryClip, useHeroDiaryClip } from '../../src/pages/day-plan/model/heroDiaryClip';
 import { HeroBlueClipPreview } from '../../src/pages/day-plan/ui/HeroBlueClipPreview';
 import { useCanvasEventDates } from '../../src/pages/day-plan/model/heroCanvasEvents';
@@ -166,8 +167,8 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
       : view === 'illustrationGallery'
       ? <ScrollView testID="illustration-calendar-gallery" contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 20, alignItems: 'center', gap: 20 }}>
           {!(packReady && packOpen) ? <View style={{ width: previewWidth }}>
-            <Pressable disabled={!packReady || deletingPack} onPress={() => setPackOpen(true)} accessibilityRole="button" accessibilityLabel="시티 애니메이션 받은 캘린더 보기" style={{ borderRadius: 14, backgroundColor: '#FFFFFF', shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 }, elevation: 6 }}>
-              {packReady ? <Image source={{ uri: illustrationCalendarBackgroundUri('04-lunch-rooftop') }} resizeMode="cover" style={{ width: previewWidth, height: previewWidth * 1728 / 910, borderRadius: 14 }} /> : <View style={{ width: previewWidth, height: previewWidth * 1728 / 910, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="calendar" size={72} color={ink} /></View>}
+            <Pressable disabled={!packReady || deletingPack} onPress={() => setPackOpen(true)} accessibilityRole="button" accessibilityLabel="시티 애니메이션 캘린더 열기" style={{ borderRadius: 14, backgroundColor: '#FFFFFF', shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 }, elevation: 6 }}>
+              <CityCalendarPackCover width={previewWidth} month={month} />
             </Pressable>
             <View style={{ padding: 16, gap: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -176,9 +177,14 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Pressable disabled={packProgress !== null || deletingPack} onPress={() => { if (packReady) setPackOpen(true); else void downloadPack(); }} accessibilityRole="button" style={({ pressed }) => ({ flex: 1, minHeight: 48, paddingVertical: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E5E5E5', borderBottomColor: '#D8D8D8', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: pressed ? 0.10 : 0.18, shadowRadius: pressed ? 3 : 7, elevation: pressed ? 2 : 6 })}>
-                <ThemedText style={{ color: '#000000', fontSize: 14, lineHeight: 24, textAlign: 'center' }}>{packProgress !== null ? `다운로드 중 ${packProgress}/${CITY_CALENDAR_THEMES.length}` : packReady ? `다운로드 완료 ${CITY_CALENDAR_THEMES.length}/${CITY_CALENDAR_THEMES.length} · 보기` : packError ? '다운로드 다시 시도' : `캘린더 ${CITY_CALENDAR_THEMES.length}종 다운로드`}</ThemedText>
+                <ThemedText style={{ color: '#000000', fontSize: 14, lineHeight: 24, textAlign: 'center' }}>{packProgress !== null ? `다운로드 중 ${packProgress}/${CITY_CALENDAR_THEMES.length}` : packReady ? `다운로드 완료 ${CITY_CALENDAR_THEMES.length}/${CITY_CALENDAR_THEMES.length}` : packError ? '다운로드 다시 시도' : `캘린더 ${CITY_CALENDAR_THEMES.length}종 다운로드`}</ThemedText>
               </Pressable>
-              {packReady && <Pressable testID="delete-city-calendar-pack" accessibilityRole="button" accessibilityLabel="다운로드한 캘린더 삭제" disabled={deletingPack} onPress={() => { void removePack(); }} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E5E5E5', borderBottomColor: '#D8D8D8', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: pressed ? 0.10 : 0.18, shadowRadius: pressed ? 3 : 7, elevation: pressed ? 2 : 6, opacity: deletingPack ? 0.4 : 1 })}><HeroTrashIcon size={28} color="#000000" /></Pressable>}
+              {packReady && <Pressable testID="delete-city-calendar-pack" accessibilityRole="button" accessibilityLabel="다운로드한 캘린더 삭제" disabled={deletingPack} onPress={() => {
+                AppAlert.alert('캘린더를 삭제할까요?', '다운로드한 시티 애니메이션 캘린더를 삭제합니다. 나중에 다시 다운로드할 수 있어요.', [
+                  { text: '취소', style: 'cancel' },
+                  { text: '삭제', style: 'destructive', onPress: () => { void removePack(); } },
+                ]);
+              }} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E5E5E5', borderBottomColor: '#D8D8D8', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: pressed ? 0.10 : 0.18, shadowRadius: pressed ? 3 : 7, elevation: pressed ? 2 : 6, opacity: deletingPack ? 0.4 : 1 })}><HeroTrashIcon size={28} color="#000000" /></Pressable>}
               </View>
               {packProgress !== null && <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 12, textAlign: 'center' }}>다운로드가 완료될 때까지 앱을 종료하지 마세요.</ThemedText>}
             </View>
