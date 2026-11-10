@@ -10,6 +10,7 @@ export function AppModal({ children, visible = true, onRequestClose, ...props }:
   return (
     <NativeModal
       {...props}
+      animationType="none"
       visible={visible}
       onRequestClose={(event) => {
         const state = useAppAlertStore.getState();

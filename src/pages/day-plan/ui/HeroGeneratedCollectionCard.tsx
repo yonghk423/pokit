@@ -28,6 +28,6 @@ export function HeroGeneratedCollectionCard({ width, height, ink, paper, onChoos
       <View style={compact ? { height: width * 0.24, alignItems: 'center', justifyContent: 'center' } : { paddingTop: 6, alignItems: 'center' }}><ThemedText numberOfLines={1} adjustsFontSizeToFit style={{ color: ink, fontSize: compact ? 14 : 15, lineHeight: 22 }}>{nameFor(original ? 'original-photos' : 'generated-illustrations', t(original ? 'comicDay.gallery.originalPhotos' : 'comicDay.gallery.generated'))}</ThemedText></View>
       {!compact ? <PenFrame color={ink} straight /> : null}
     </Pressable>
-    {open ? <AppModal visible animationType="fade" onRequestClose={() => setOpen(false)}><HeroGeneratedArtworkPicker images={images} initialCollectionId={original ? 'original-photos' : 'generated-illustrations'} onChooseScene={scene => { setOpen(false); onChooseScene?.(scene); }} ink={ink} paper={paper} onClose={() => setOpen(false)} onChoose={image => { setOpen(false); onChoose?.(image); }} /></AppModal> : null}
+    {open ? <AppModal visible animationType="none" onRequestClose={() => setOpen(false)}><HeroGeneratedArtworkPicker images={images} initialCollectionId={original ? 'original-photos' : 'generated-illustrations'} onChooseScene={scene => { setOpen(false); onChooseScene?.(scene); }} ink={ink} paper={paper} onClose={() => setOpen(false)} onChoose={image => { setOpen(false); onChoose?.(image); }} /></AppModal> : null}
   </>;
 }

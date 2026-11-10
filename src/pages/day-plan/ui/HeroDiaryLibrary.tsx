@@ -48,7 +48,7 @@ const SELECTION_TRANSITION_MS = 240;
 function AnimatedSelectionSlot({ visible, width, reduceMotion, children }: { visible: boolean; width: number; reduceMotion: boolean; children: ReactNode }) {
   const progress = useSharedValue(visible ? 1 : 0);
   useEffect(() => {
-    progress.value = withTiming(visible ? 1 : 0, { duration: reduceMotion ? 0 : SELECTION_TRANSITION_MS, easing: Easing.out(Easing.cubic) });
+    progress.value = visible ? 1 : 0;
   }, [visible, progress, reduceMotion]);
   const animatedStyle = useAnimatedStyle(() => ({
     width: width * progress.value,
@@ -68,7 +68,7 @@ function AnimatedDiaryDateAction({ date, mode, reduceMotion, onDelete, onSelect,
   const phase = mode === 'cancel' ? 1 : mode ? 0 : 2;
   const progress = useSharedValue(phase);
   useEffect(() => {
-    progress.value = withTiming(phase, { duration: reduceMotion ? 0 : SELECTION_TRANSITION_MS, easing: Easing.inOut(Easing.cubic) });
+    progress.value = phase;
   }, [phase, progress, reduceMotion]);
   const trashStyle = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0, 1, 2], [1, 0, 0]), transform: [{ scale: interpolate(progress.value, [0, 1, 2], [1, 0.9, 0.85]) }] }));
   const cancelStyle = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0, 1, 2], [0, 1, 0]), transform: [{ scale: interpolate(progress.value, [0, 1, 2], [0.9, 1, 0.85]) }] }));
@@ -86,7 +86,7 @@ function AnimatedDiaryDateAction({ date, mode, reduceMotion, onDelete, onSelect,
 function AnimatedSelectionFooter({ visible, reduceMotion, label, disabled, onPress }: { visible: boolean; reduceMotion: boolean; label: string; disabled: boolean; onPress: () => void }) {
   const progress = useSharedValue(visible ? 1 : 0);
   useEffect(() => {
-    progress.value = withTiming(visible ? 1 : 0, { duration: reduceMotion ? 0 : SELECTION_TRANSITION_MS, easing: Easing.out(Easing.cubic) });
+    progress.value = visible ? 1 : 0;
   }, [progress, reduceMotion, visible]);
   const animatedStyle = useAnimatedStyle(() => ({ height: 48 * progress.value, opacity: progress.value, transform: [{ translateY: 8 * (1 - progress.value) }] }));
   return <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]} pointerEvents={visible ? 'auto' : 'none'} accessibilityElementsHidden={!visible}>
@@ -106,13 +106,7 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
 }) {
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    let mounted = true;
-    void Promise.resolve(AccessibilityInfo.isReduceMotionEnabled()).then(value => { if (mounted) setReduceMotion(Boolean(value)); }).catch(() => undefined);
-    const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => { mounted = false; listener.remove(); };
-  }, []);
+  const reduceMotion = true;
   const allGroups = groupDiaryLibrary(diaries);
   const renameDate = allGroups.find(group => group.diaries.some(diary => diary.id === initialRenameId))?.date;
   const firstDate = (renameDate && renameDate !== 'undated' ? renameDate : allGroups.find(group => group.date !== 'undated')?.date) ?? '';
@@ -250,7 +244,7 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
         <AnimatedSelectionFooter visible={selectionMode} reduceMotion={reduceMotion} label={t('comicDiary.deleteSelected', { count: selected.length })} disabled={!selected.length} onPress={() => { tapHaptic('warn'); onDeleteMany?.(selected.map(diary => diary.id)); }} />
       </KeyboardAvoidingView>
     </View>;
-  return embedded ? content : <AppModal visible transparent animationType="fade" onRequestClose={onClose}>{content}</AppModal>;
+  return embedded ? content : <AppModal visible transparent animationType="none" onRequestClose={onClose}>{content}</AppModal>;
 }
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }, paper: { width: '87%', maxWidth: 420, flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 17 },

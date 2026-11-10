@@ -512,7 +512,8 @@ private struct CalendarDesignProvider: TimelineProvider {
   }
   func getSnapshot(in context: Context, completion: @escaping (CalendarDesignEntry) -> Void) { completion(entry()) }
   func getTimeline(in context: Context, completion: @escaping (Timeline<CalendarDesignEntry>) -> Void) {
-    completion(Timeline(entries: [entry()], policy: .never))
+    // Recover if iOS coalesces an explicit reload while the app is active.
+    completion(Timeline(entries: [entry()], policy: .after(Date().addingTimeInterval(15 * 60))))
   }
 }
 
@@ -521,7 +522,7 @@ private func calendarThumbnail(_ data: Data) -> UIImage? {
   guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
         let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
           kCGImageSourceCreateThumbnailFromImageAlways: true,
-          kCGImageSourceThumbnailMaxPixelSize: 1080,
+          kCGImageSourceThumbnailMaxPixelSize: 660,
           kCGImageSourceCreateThumbnailWithTransform: true,
           kCGImageSourceShouldCacheImmediately: true
         ] as CFDictionary) else { return nil }
@@ -535,7 +536,10 @@ private struct CalendarDesignWidgetView: View {
     ZStack {
       Color(red: 250 / 255, green: 250 / 255, blue: 246 / 255)
       if let data = entry.imageData, let image = calendarThumbnail(data) {
-        Image(uiImage: image).resizable().scaledToFit().padding(3)
+        GeometryReader { geometry in
+          Image(uiImage: image).resizable()
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
       } else {
         VStack(spacing: 8) {
           Text(Date.now, format: .dateTime.month(.wide).year()).font(.headline)

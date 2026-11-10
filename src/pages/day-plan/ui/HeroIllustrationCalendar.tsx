@@ -37,6 +37,7 @@ export function illustrationMonthCells(month: Date) {
 }
 
 type Props = {
+  widget?: boolean;
   bottomInset?: number;
   eventDates?: string[];
   width: number;
@@ -73,8 +74,21 @@ export function HeroIllustrationCalendar(props: Props) {
   const assets = loaded.themeId === themeId ? loaded.assets : getLoadedIllustrationCalendarAssets(themeId);
   if (failed) return <CalendarPaper design="bold" month={props.month} today={props.today} diaries={props.diaries} eventDates={props.eventDates} onSelectDate={props.onSelectDate} onPreviousMonth={() => props.onMoveMonth?.(-1)} onNextMonth={() => props.onMoveMonth?.(1)} layoutWidth={props.width} layoutHeight={Math.max(1, props.height - (props.bottomInset ?? 0))} wallpaper hideMonthHeading={props.hideMonthHeading} />;
   if (!assets) return <View style={{ width: props.width, height: props.height, backgroundColor: '#F7F6F4' }} />;
-  const frame = fitCalendarArtwork(themeId, props.width, props.height, props.topInset, props.bottomInset);
+  const layout = CALENDAR_ARTWORK_LAYOUTS[themeId] ?? CALENDAR_ARTWORK_LAYOUTS[DEFAULT_THEME];
+  // The widget contains the calendar itself, without the phone artwork's surrounding scene.
+  const regions = [layout.month, layout.weekdays, layout.grid];
+  const left = Math.max(0, Math.min(...regions.map(region => region[0])) - .02);
+  const top = Math.max(0, Math.min(...regions.map(region => region[1])) - .04);
+  const right = Math.min(1, Math.max(...regions.map(region => region[0] + region[2])) + .02);
+  // Equal artwork insets above and below keep the calendar centered.
+  const bottom = Math.min(1, Math.max(...regions.map(region => region[1] + region[3])) + .04);
+  const widgetInset = props.width * .05;
+  const widgetWidth = (props.width - widgetInset * 2) / (right - left), widgetHeight = props.height / (bottom - top);
+  const frame = props.widget
+    ? { width: widgetWidth, height: widgetHeight, left: widgetInset - left * widgetWidth, top: -top * widgetHeight }
+    : fitCalendarArtwork(themeId, props.width, props.height, props.topInset, props.bottomInset);
   return <View style={{ width: props.width, height: props.height, backgroundColor: '#F7F6F4', overflow: 'hidden' }}>
+    {props.widget ? <Image source={{ uri: assets.background }} contentFit="cover" transition={0} cachePolicy="memory" style={{ position: 'absolute', width: props.width, height: props.height }} /> : null}
     <View testID="illustration-calendar-frame" style={{ position: 'absolute', ...frame }}>
       <ArtworkCalendar {...props} themeId={themeId} assets={assets} width={frame.width} height={frame.height} />
     </View>

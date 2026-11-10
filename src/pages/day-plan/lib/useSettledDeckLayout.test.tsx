@@ -83,3 +83,19 @@ it('keeps the visible geometry when a tab returns without emitting another layou
   expect(remember.mock.calls).not.toContainEqual([{ width: 390, height: 1 }]);
   act(() => tree.unmount());
 });
+
+it('does not paint the calendar stage while a newly mounted diary stage is settling', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<Probe initialSize={{ width: 0, height: 0 }} />); });
+  const layout = (height: number) => act(() => tree.root.findByType(View).props.onLayout({ nativeEvent: { layout: { width: 390, height } } }));
+  layout(740);
+  frame();
+  // Header and tab bar return to diary layout in the next commit.
+  layout(650);
+  frame();
+  expect(tree.root.findByType(Text).props.children).toBe('0:0');
+  frame();
+  expect(tree.root.findByType(Text).props.children).toBe('390:650');
+  expect(remember).not.toHaveBeenCalledWith({ width: 390, height: 740 });
+  act(() => tree.unmount());
+});

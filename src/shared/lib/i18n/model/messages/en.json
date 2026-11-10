@@ -3031,5 +3031,6 @@
   "polaroid.film.amber": "Amber",
   "polaroid.film.disposable": "Disposable",
   "polaroid.film.bluehour": "Blue hour",
-  "polaroid.film.noir": "Noir"
+  "polaroid.film.noir": "Noir",
+  "comicCalendar.returnHint": "Returns to the calendar screen"
 }

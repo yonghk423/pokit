@@ -1,3 +1,4 @@
+import { photoPreview } from './heroPhotoPreview';
 import { cleanupDeletedHeroArtwork, clearLegacyHeroImageCache } from './heroArtworkCleanup';
 import * as fs from 'expo-file-system/legacy';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -12,6 +13,7 @@ export async function saveHeroOriginalPhoto(uri: string, fileName?: string | nul
   await fs.makeDirectoryAsync(folder, { intermediates: true });
   const destination = `${folder}photo-${Date.now()}-${Math.random().toString(36).slice(2, 12)}.${extension}`;
   await fs.copyAsync({ from: uri, to: destination });
+  await photoPreview(destination);
   return destination;
 }
 

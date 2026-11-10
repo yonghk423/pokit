@@ -20,7 +20,6 @@ import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { MateBagIcon } from './MateBagIcon';
 import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
 import type { HeroCardOpen } from './HeroCardFlip';
-import { DECK_OVERVIEW_MOTION } from '../lib/deckOverviewMotion';
 import { HeroOverviewCardMotion, type HeroDeckFrame } from './HeroOverviewCardMotion';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { CardToolsFab, type CardToolAction } from './CardToolsFab';
@@ -37,7 +36,7 @@ import { PaperGrain } from '@shared/ui/paper-grain';
 import { Image } from 'expo-image';
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import Svg, { Path, Rect } from 'react-native-svg';
-import { Image as NativeImage, Animated, Easing, LayoutAnimation, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image as NativeImage, Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { CompletionRadioButton } from '@shared/ui/completion-radio-button';
@@ -96,12 +95,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
       saveComicBoardMode('comic');
     }
   }, [viewMode]);
-  const animateLayout = () => LayoutAnimation.configureNext({
-    duration: 300,
-    update: { type: LayoutAnimation.Types.easeInEaseOut },
-    create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-    delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-  });
+  const animateLayout = () => undefined;
   const setViewMode = (mode: ComicBoardMode) => {
     if (mode === viewMode) return;
     animateLayout();
@@ -190,26 +184,12 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   useEffect(() => { if (activeKey) onActiveSceneChange?.(activeKey); }, [activeKey, onActiveSceneChange]);
   const [stageWidth, setStageWidth] = useState(windowWidth);
   const gridScrollRef = useRef<ScrollView>(null);
-  const [overviewSettled, setOverviewSettled] = useState(false);
+  const overviewSettled = !showCards;
   const [overviewProgress] = useState(() => new Animated.Value(showCards ? 0 : 1));
-  useEffect(() => {
-    setOverviewSettled(false);
-    if (!focused) { overviewProgress.stopAnimation(); overviewProgress.setValue(showCards ? 0 : 1); setOverviewSettled(!showCards); return; }
-    const animation = Animated.timing(overviewProgress, {
-      toValue: showCards ? 0 : 1,
-      duration: showCards ? DECK_OVERVIEW_MOTION.closeDuration : DECK_OVERVIEW_MOTION.openDuration,
-      easing: Easing.bezier(...DECK_OVERVIEW_MOTION.bezier), useNativeDriver: true,
-    });
-    animation.start(({ finished }) => { if (finished && !showCards) setOverviewSettled(true); });
-    return () => animation.stop();
-  }, [showCards, overviewProgress, focused]);
-  // Crossfade in place: deck-to-scatter transforms also amplify saved drag offsets.
-  const deckVisibility = {
-    opacity: overviewProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' }),
-  };
-  const gridVisibility = {
-    opacity: overviewProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
-  };
+  // Visibility must change in the same commit as pointer events and layout.
+  // Updating native opacity in an effect briefly exposes the previous layer.
+  const deckVisibility = { opacity: showCards ? 1 : 0 };
+  const gridVisibility = { opacity: showCards ? 0 : 1 };
 
   const [uploadedRatios, setUploadedRatios] = useState<Record<string, number>>({});
   useEffect(() => {

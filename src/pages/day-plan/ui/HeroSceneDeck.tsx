@@ -7,12 +7,12 @@ import { createCardTapGuard } from '../lib/cardTapGuard';
 import { useTranslation } from '@shared/lib/i18n';
 import { HeroCardCaption, type HeroCardText } from './HeroCardCaption';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
-import { useSettledDeckLayout, type DeckSize } from '../lib/useSettledDeckLayout';
+import { useSettledDeckLayout } from '../lib/useSettledDeckLayout';
 import type { HeroCardOpen } from './HeroCardFlip';
 import type { HeroDeckFrame } from './HeroOverviewCardMotion';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -25,9 +25,7 @@ export type ComicDeckItem = { key: string; label: string; artworkUri?: string; e
 /** Artwork paper. A pure white card plus grain reads as a second sheet behind the drawing. */
 const ILLUSTRATION_PAPER = '#F9F9F6';
 
-/** Last measured stage, so a remounted deck paints its cards in the first frame. */
-let lastDeckSize = { width: 0, height: 0 };
-const rememberDeckSize = (size: DeckSize) => { lastDeckSize = size; };
+const ignoreDeckSize = () => {};
 let lastActive = 0;
 /** Only cards this close to the focused one decode their full artwork. */
 const ARTWORK_WINDOW = 2;
@@ -48,12 +46,9 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
 }) {
   const { t } = useTranslation();
   const presentation = 'carousel';
-  const rememberSize = useCallback((next: DeckSize) => {
-    if (syncMainState) rememberDeckSize(next);
-  }, [syncMainState]);
-  // A history modal has a different stage from the main tab. Wait for its own
-  // measurement instead of painting once with the main tab's cached geometry.
-  const { size, updateSize, focused } = useSettledDeckLayout(syncMainState ? lastDeckSize : { width: 0, height: 0 }, rememberSize);
+  // Calendar and diary use different header/tab-bar geometry. A remounted
+  // deck must measure its own stage before painting, never reuse another stage.
+  const { size, updateSize, focused } = useSettledDeckLayout({ width: 0, height: 0 }, ignoreDeckSize);
   const rootRef = useRef<View>(null);
   const lastHold = useRef(0);
   const tapGuard = useRef(createCardTapGuard()).current;
@@ -136,10 +131,13 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   const carouselOffsets = itemFrames.map((_, index) => itemFrames.slice(0, index).reduce((total, frame) => total + frame.width + 12, 0));
   const carouselOffset = carouselOffsets[safeActive] ?? 0;
   useLayoutEffect(() => {
-    if (presentation === 'carousel' && focused && size.width > 0) {
+    // The native scroll view keeps its offset while another tab is shown.
+    // Reposition only when its geometry or selected card changes; scrolling
+    // again on focus causes a visible jump on tab return.
+    if (presentation === 'carousel' && size.width > 0) {
       carouselRef.current?.scrollTo({ x: carouselOffset, animated: false });
     }
-  }, [presentation, focused, carouselOffset, size.width, items.length]);
+  }, [presentation, carouselOffset, size.width, items.length]);
   const cardHeight = currentFrame.height;
   const cardTop = Math.max(8, ((syncMainState ? availableHeight : size.height) - cardHeight) / 2);
   useEffect(() => {
@@ -186,7 +184,7 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={syncMainState ? 180 : 0} contentFit="cover" contentPosition="center" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={0} contentFit="cover" contentPosition="center" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
             <HeroPhotoEmulsion />
@@ -251,29 +249,6 @@ const s = StyleSheet.create({
 });
 
 /** Native position motion adds the new card without moving the stack's layout. */
-function CardArrival({ animate, children }: { animate: boolean; children: ReactNode }) {
-  const [progress] = useState(() => new Animated.Value(1));
-  const reduced = useRef(false);
-  useEffect(() => {
-    let alive = true;
-    const update = (value: boolean) => {
-      if (!alive) return;
-      reduced.current = value;
-      if (value) { progress.stopAnimation(); progress.setValue(1); }
-    };
-    AccessibilityInfo.isReduceMotionEnabled().then(update).catch(() => undefined);
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', update);
-    return () => { alive = false; subscription.remove(); };
-  }, [progress]);
-  useLayoutEffect(() => {
-    if (!animate || reduced.current) return;
-    progress.setValue(0);
-    const animation = Animated.timing(progress, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true });
-    animation.start();
-    return () => { animation.stop(); progress.setValue(1); };
-  }, [animate, progress]);
-  return <Animated.View testID="comic-card-arrival" style={{ flex: 1, transform: [
-    { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
-    { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) },
-  ] }}>{children}</Animated.View>;
+function CardArrival({ children }: { animate: boolean; children: ReactNode }) {
+  return <View testID="comic-card-arrival" style={{ flex: 1 }}>{children}</View>;
 }

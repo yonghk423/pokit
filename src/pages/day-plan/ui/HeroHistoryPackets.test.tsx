@@ -52,12 +52,8 @@ it('combines different dates and protagonists into one photo list for the month'
     const deck = tree.root.findByType('SceneDeck' as never);
     expect(deck.props.items).toHaveLength(3);
     expect(deck.props.overviewOpen).toBe(true);
-    const toggle = () => tree.root.findAllByProps({ testID: 'history-header-toggle-date-grid' })[0];
-    act(() => toggle().props.onPress());
-    expect(tree.root.findByType('SceneDeck' as never).props.overviewOpen).toBe(false);
+    expect(tree.root.findAllByProps({ testID: 'history-header-toggle-date-grid' })).toHaveLength(0);
     expect(tree.root.findByType('SceneDeck' as never).props.presentationOverride).toBeUndefined();
-    act(() => toggle().props.onPress());
-    expect(tree.root.findByType('SceneDeck' as never).props.overviewOpen).toBe(true);
     expect(deck.props.items.map((item: { key: string }) => item.key)).toEqual(diaries.map(diary => `${diary.id}:${diary.scenes[0].id}`));
     expect(tree.root.findAllByProps({ accessibilityLabel: 'Record 1' })).toHaveLength(0);
   } finally { act(() => tree.unmount()); }

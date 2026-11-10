@@ -1,6 +1,7 @@
+import { photoPreview } from '../lib/heroPhotoPreview';
 import { Image, type ImageProps } from 'expo-image';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image as NativeImage, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image as NativeImage, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -81,6 +82,20 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   const exhausted = attempt >= 2;
   const activeSource = attempt >= 2 && fallbackSource ? fallbackSource : source;
   const resolvedSource = useMemo(() => fullResolutionSource(activeSource), [activeSource]);
+  const [preview, setPreview] = useState<{ original: string; uri: string } | null>(null);
+  const originalIdentity = imageIdentity(resolvedSource);
+  const smallPreview = !!frameSize && Math.max(frameSize.width, frameSize.height) <= 400;
+  useEffect(() => {
+    let live = true;
+    if (smallPreview && originalIdentity && /\/hero-photos\/photo-/.test(originalIdentity)) {
+      void photoPreview(originalIdentity).then(uri => { if (live) setPreview({ original: originalIdentity, uri }); });
+    }
+    return () => { live = false; };
+  }, [smallPreview, originalIdentity]);
+  const waitingForPreview = !frameSize || (smallPreview && !!originalIdentity && /\/hero-photos\/photo-/.test(originalIdentity) && preview?.original !== originalIdentity);
+  const displaySource = smallPreview && preview?.original === originalIdentity ? { uri: preview.uri } : resolvedSource;
+  const decodeSource = displaySource && typeof displaySource === 'object' && !Array.isArray(displaySource) && 'uri' in displaySource
+    ? { ...displaySource, cacheKey: `comic-display-v2:${smallPreview ? 'small' : 'large'}:${displaySource.uri}` } : displaySource;
   const identity = imageIdentity(resolvedSource) ?? `session:${imageKey}:${attempt}`;
   // Original photos fill the frame in every orientation, using centered cropping
   // rather than the illustration-specific portrait zoom.
@@ -106,26 +121,18 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
     const timer = setTimeout(() => setAttempt(value => value + 1), 300 * (attempt + 1));
     return () => clearTimeout(timer);
   }, [failed, key, exhausted, attempt]);
-  const reveal = useRef(new Animated.Value(0)).current;
-  const ready = displayed === key && !waitingForSize && failed !== key;
-  useEffect(() => {
-    reveal.stopAnimation();
-    if (!ready) { reveal.setValue(0); return; }
-    const animation = Animated.timing(reveal, { toValue: 1, duration: Math.max(220, transitionDuration), useNativeDriver: true });
-    animation.start();
-    return () => animation.stop();
-  }, [ready, reveal, transitionDuration]);
+  const ready = displayed === key && !waitingForPreview && !waitingForSize && failed !== key;
   const retry = () => { shownImageKeys.delete(imageKey); setFailed(null); setDisplayed(null); setAttempt(0); setReload(value => value + 1); };
-  return <View style={[{ overflow: 'hidden', backgroundColor }, style]} onLayout={fitToCard ? event => {
+  return <View style={[{ overflow: 'hidden', backgroundColor }, style]} onLayout={event => {
     const { width, height } = event.nativeEvent.layout;
     if (width > 0 && height > 0) setFrameSize(previous => previous?.width === width && previous.height === height ? previous : { width, height });
-  } : undefined}>
-    <Animated.View style={[StyleSheet.absoluteFill, { opacity: reveal }]} pointerEvents="none">
+  }}>
+    <View style={[StyleSheet.absoluteFill, { opacity: ready ? 1 : 0 }]} pointerEvents="none">
     {fillPortrait && !fitToCard && portrait ? <Image testID="comic-image-portrait-backdrop" source={resolvedSource} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} useAppleWebpCodec={false} cachePolicy="memory" accessible={false} /> : null}
-    <Image key={key} source={resolvedSource} recyclingKey={key}
+    {!waitingForPreview ? <Image key={key} source={decodeSource} recyclingKey={key}
       style={[StyleSheet.absoluteFill, waitingForSize && { opacity: 0 }, portraitFrame ?? (cropCardPadding && paddedCardFrame)]} contentFit={portraitFrame ? 'fill' : resolvedFit} contentPosition={originalPhoto ? 'center' : contentPosition ?? (fitToCard && portrait ? 'top' : undefined)}
       useAppleWebpCodec={false} cachePolicy={attempt > 0 || reload > 0 ? 'none' : /^https?:/.test(identity) ? 'memory-disk' : 'memory'}
-      allowDownscaling={false} enforceEarlyResizing={false} priority={priority} transition={0}
+      allowDownscaling enforceEarlyResizing priority={priority} transition={0}
       onLoad={event => {
         if (event.source.width <= 0 || event.source.height <= 0) return;
         const size = { width: event.source.width, height: event.source.height };
@@ -136,9 +143,9 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
         shownImageKeys.delete(imageKey);
         setFailed(key);
         if (__DEV__ && exhausted) console.warn('[ComicSceneImage] Artwork load failed', { imageKey, error: event?.error ?? 'Unknown image error' });
-      }} accessible={false} />
-    </Animated.View>
-    {(displayed !== key || waitingForSize) && !(failed === key && exhausted) ? <View pointerEvents="none" testID="comic-image-skeleton" style={[StyleSheet.absoluteFill, s.skeleton, { backgroundColor }]}>
+      }} accessible={false} /> : null}
+    </View>
+    {(displayed !== key || waitingForSize || waitingForPreview) && !(failed === key && exhausted) ? <View pointerEvents="none" testID="comic-image-skeleton" style={[StyleSheet.absoluteFill, s.skeleton, { backgroundColor }]}>
       <View style={[s.horizon, { backgroundColor: 'rgba(0,0,0,0.09)' }]} /><View style={[s.line, { backgroundColor: 'rgba(0,0,0,0.11)' }]} /><View style={[s.line, { width: '42%', backgroundColor: 'rgba(0,0,0,0.11)' }]} />
     </View> : null}
     {failed === key && exhausted ? <Pressable accessibilityRole="button" accessibilityLabel={t('comicDay.retryImage')} onPress={() => { tapHaptic(); retry(); }} style={[StyleSheet.absoluteFill, s.error, { backgroundColor }]}><ThemedText style={s.errorLabel}>{t('comicDay.retryImage')}</ThemedText></Pressable> : null}

@@ -133,8 +133,7 @@ it.each([false, true])('renders reopened rows at their natural height without wa
       expect(content().findAll(node => node.props.accessibilityLabel === 'comicDiary.open:Morning').length).toBeGreaterThan(0);
     }
     const list = tree.root.findAllByProps({ testID: 'comic-diary-library-list' })[0];
-    if (reduceMotion) expect(list.props.itemLayoutAnimation).toBeUndefined();
-    else expect(list.props.itemLayoutAnimation).toBeDefined();
+    expect(list.props.itemLayoutAnimation).toBeUndefined();
     act(() => tree.unmount());
   } finally { motion.mockRestore(); }
 });

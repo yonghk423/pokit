@@ -117,9 +117,11 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
               </Pressable></ScrollView>
             </Animated.View>
             </View>
-            {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ position: 'absolute', right: 64, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
-            <Pressable testID="polaroid-flip" accessibilityRole="button" accessibilityLabel={back ? t('polaroid.editor.view_photo') : t('polaroid.editor.view_story')} onPress={flip} style={{ position: 'absolute', right: 16, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-      <ThemedText style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.flip')}</ThemedText>
+          </View>
+          <View style={{ position: 'absolute', top: -10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ minWidth: 66, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
+            <Pressable testID="polaroid-flip" accessibilityRole="button" accessibilityLabel={back ? t('polaroid.editor.view_photo') : t('polaroid.editor.view_story')} onPress={flip} style={{ minWidth: 52, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}>
+              <ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.flip')}</ThemedText>
             </Pressable>
           </View>
           </View>
@@ -135,14 +137,14 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
         {writing ? <HeroCardEditor number={1} ink={pen} muted="#73796C" paper={draft.paper ?? paper} draft={textDraft} onChange={setTextDraft} onCancel={() => setWriting(false)} onSave={() => { if (!textDraft.title.trim()) return; const text = { ...textDraft, title: textDraft.title.trim(), memo: textDraft.memo.trim() }; patch(text); onSaveText?.(text); setWriting(false); }} /> : null}
         {datePickerOpen ? <HeroPolaroidDatePicker date={draft.date} showDate={draft.showDate !== false} onSelect={date => { patch({ date, showDate: true }); setDatePickerOpen(false); }} onHide={() => { patch({ showDate: false }); setDatePickerOpen(false); }} onClose={() => setDatePickerOpen(false)} /> : null}
         {children}
-        {paywallOpen ? <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!paywallBusy) finishPaywall('cancelled'); }}>
+        {paywallOpen ? <AppModal visible presentationStyle="fullScreen" animationType="none" onRequestClose={() => { if (!paywallBusy) finishPaywall('cancelled'); }}>
           <ProPreviewPage onBusyChange={setPaywallBusy} onClose={() => finishPaywall('cancelled')} onActivated={finishPaywall} />
         </AppModal> : null}
       </Animated.View>
       {imageFailed ? <View style={{ position: 'absolute', top: insets.top + 52, left: 24, right: 24 }}><ThemedText style={{ color: '#934C3C', textAlign: 'center' }}>{t('polaroid.editor.could_not_load_the_photo_close_and_reopen_it')}</ThemedText></View> : null}
     </View>
   </>;
-  return embedded ? content : <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!busy && !checking) onClose(); }}>{content}</AppModal>;
+  return embedded ? content : <AppModal visible presentationStyle="fullScreen" animationType="none" onRequestClose={() => { if (!busy && !checking) onClose(); }}>{content}</AppModal>;
 }
 
 function ExportButton({ icon, label, disabled, dimmed, onPress, testID }: { icon: 'share' | 'save' | 'download'; label: string; disabled: boolean; dimmed: boolean; onPress: () => void; testID: string }) {

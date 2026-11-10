@@ -30,10 +30,13 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
   const ids = useAppleCalendar(state => state.ids);
   const events = eventsOnDay(linked.events, day);
   const calendarTab = tab === 'calendar';
+  const [calendarSections, setCalendarSections] = useState({ google: true, apple: true });
+  const openCalendarSectionCount = Number(calendarSections.google) + Number(calendarSections.apple);
   const calendarColumns = [
     { id: 'google', title: ko ? 'Google 캘린더' : 'Google Calendar', events: events.filter(event => calendarSourceLabel(event.sourceName, event.sourceType, false) === 'Google Calendar') },
     { id: 'apple', title: ko ? 'Apple 캘린더' : 'Apple Calendar', events: events.filter(event => calendarSourceLabel(event.sourceName, event.sourceType, false).startsWith('Apple Calendar')) },
   ];
+  const visibleCalendarColumns = calendarColumns.filter(column => calendarSections[column.id as 'google' | 'apple']);
   const eventKey = `pokit:canvas-events:${date}`;
   const [ownEvents, setOwnEvents] = useState<{ id: string; title: string; time?: string }[]>(() => localStorageClient.getJson(eventKey) ?? []);
   const [eventTitle, setEventTitle] = useState('');
@@ -121,16 +124,33 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
       {!editing && calendarTab ? <ScrollView testID="hero-canvas-calendar-events" nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator style={{ position: 'absolute', left: 28, right: 28, top: 44, bottom: 0 }} contentContainerStyle={{ paddingTop: 6, paddingBottom: 24 }}>
         {ids.length ? <Pressable accessibilityRole="button" accessibilityLabel="캘린더 일정 새로고침" disabled={linked.loading} onPress={linked.refresh} style={{ alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center', paddingRight: 12 }}><ThemedText style={{ color: ink, fontSize: 13 }}>{linked.loading ? (ko ? '일정 확인 중…' : 'Checking events…') : (ko ? '일정 새로고침' : 'Refresh events')}</ThemedText></Pressable> : null}
         {linked.error ? <ThemedText style={{ color: ink, fontSize: 14 }}>{linked.error}</ThemedText> : !ids.length ? <ThemedText style={{ color: ink, fontSize: 14 }}>{ko ? '설정에서 캘린더를 연결해주세요.' : 'Connect a calendar in Settings.'}</ThemedText> : null}
+        {openCalendarSectionCount === 1 ? (() => {
+          const hidden = calendarColumns.find(column => !calendarSections[column.id as 'google' | 'apple'])!;
+          return <Pressable testID={`hero-canvas-calendar-restore-${hidden.id}`} accessibilityRole="button" accessibilityLabel={`${hidden.title}${ko ? ' 펼치기' : ' expand'}`} onPress={() => setCalendarSections(previous => ({ ...previous, [hidden.id]: true }))} style={{ minHeight: 36, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 10, marginBottom: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: `${ink}44`, borderRadius: 12 }}><ThemedText style={{ color: ink, fontSize: 13 }}>{`+ ${hidden.title}`}</ThemedText></Pressable>;
+        })() : null}
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-          {calendarColumns.map((column, columnIndex) => <View key={column.id} testID={`hero-canvas-calendar-${column.id}`} style={{ flex: 1, minWidth: 0, paddingLeft: columnIndex ? 12 : 0, paddingRight: columnIndex ? 0 : 12, borderLeftWidth: columnIndex ? StyleSheet.hairlineWidth : 0, borderLeftColor: `${ink}33` }}>
-            <ThemedText accessibilityRole="header" style={{ color: ink, fontSize: 15, marginBottom: 8 }}>{column.title}</ThemedText>
-            {ids.length > 0 && !linked.loading && !linked.error && !column.events.length ? <ThemedText style={{ color: ink, opacity: 0.6, fontSize: 13 }}>{ko ? '이날의 일정이 없어요.' : 'No events for this day.'}</ThemedText> : null}
-            {column.events.map((event, index) => <View key={`${event.id}:${index}`} style={{ paddingVertical: 8, gap: 3, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>
-              {event.calendarTitle ? <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 12 }}>{calendarDisplayTitle(event.calendarTitle, ko)}</ThemedText> : null}
-              <ThemedText style={{ color: ink, opacity: 0.7, fontSize: 13 }}>{event.allDay ? (ko ? '종일' : 'All day') : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
-              <ThemedText style={{ color: ink, fontSize: 16, flexShrink: 1 }}>{event.title}</ThemedText>
-            </View>)}
-          </View>)}
+          {visibleCalendarColumns.map((column, columnIndex) => {
+            const isExpanded = true;
+            const hasBothCalendarsOpen = visibleCalendarColumns.length === 2;
+            return <View key={column.id} testID={`hero-canvas-calendar-${column.id}`} style={[
+              { flex: 1, minWidth: 0 },
+              hasBothCalendarsOpen && columnIndex === 0 ? { paddingRight: 14 } : null,
+              hasBothCalendarsOpen && columnIndex === 1 ? { paddingLeft: 14, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: `${ink}55` } : null,
+            ]}>
+              <Pressable testID={`hero-canvas-calendar-toggle-${column.id}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} accessibilityLabel={`${column.title}${isExpanded ? (ko ? ' 접기' : ' collapse') : (ko ? ' 펼치기' : ' expand')}`} onPress={() => { if (openCalendarSectionCount > 1) setCalendarSections(previous => ({ ...previous, [column.id]: false })); }} style={{ minHeight: 42, marginBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                <ThemedText accessibilityRole="header" numberOfLines={isExpanded ? 1 : 2} style={{ flex: 1, color: ink, fontSize: 15 }}>{column.title}</ThemedText>
+                <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 16 }}>{isExpanded ? '⌄' : '›'}</ThemedText>
+              </Pressable>
+              {isExpanded ? <View>
+                {ids.length > 0 && !linked.loading && !linked.error && !column.events.length ? <ThemedText style={{ color: ink, opacity: 0.6, fontSize: 13 }}>{ko ? '이날의 일정이 없어요.' : 'No events for this day.'}</ThemedText> : null}
+                {column.events.map((event, index) => <View key={`${event.id}:${index}`} style={{ paddingVertical: 8, gap: 3, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>
+                  {event.calendarTitle ? <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 12 }}>{calendarDisplayTitle(event.calendarTitle, ko)}</ThemedText> : null}
+                  <ThemedText style={{ color: ink, opacity: 0.7, fontSize: 13 }}>{event.allDay ? (ko ? '종일' : 'All day') : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+                  <ThemedText style={{ color: ink, fontSize: 16, flexShrink: 1 }}>{event.title}</ThemedText>
+                </View>)}
+              </View> : null}
+            </View>;
+          })}
         </View>
       </ScrollView> : null}
       {tab === 'event' ? <View testID="hero-canvas-own-events" style={{ position: 'absolute', left: 28, right: 28, top: editing ? 0 : 44, bottom: 0 }}>

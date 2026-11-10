@@ -19,7 +19,7 @@ export function heroDiaryInfoCopy(locale?: string) {
 export function HeroDiaryInfoModal({ onClose }: { onClose: () => void }) {
   const { locale, t } = useTranslation();
   const content = heroDiaryInfoCopy(locale);
-  return <AppModal transparent animationType="fade" onRequestClose={onClose}>
+  return <AppModal transparent animationType="none" onRequestClose={onClose}>
     <View style={s.root}>
       <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} style={StyleSheet.absoluteFill} />
       <View testID="hero-diary-info-modal" accessibilityViewIsModal style={s.paper}>

@@ -17,7 +17,7 @@ export function HeroAiHelpModal({ onClose }: { onClose: () => void }) {
   const { locale, t } = useTranslation();
   const content = copy[locale as keyof typeof copy] ?? copy.ko;
   const close = () => { tapHaptic(); onClose(); };
-  return <AppModal transparent animationType="fade" onRequestClose={onClose}>
+  return <AppModal transparent animationType="none" onRequestClose={onClose}>
     <View style={s.root}>
       <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={close} style={StyleSheet.absoluteFill} />
       <View testID="hero-ai-help-modal" accessibilityViewIsModal style={s.paper}>

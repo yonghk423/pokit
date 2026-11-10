@@ -13,7 +13,7 @@ it('limits the iOS renderer cache without clearing it', () => {
   Object.defineProperty(Platform, 'OS', { value: 'ios' });
   configureImageCache();
   expect(IMAGE_DISK_CACHE_LIMIT).toBe(52428800);
-  expect(Image.configureCache).toHaveBeenCalledWith({ maxDiskSize: 52428800 });
+  expect(Image.configureCache).toHaveBeenCalledWith({ maxDiskSize: 52428800, maxMemoryCost: 33554432, maxMemoryCount: 80 });
   expect(Image.clearDiskCache).not.toHaveBeenCalled();
 });
 

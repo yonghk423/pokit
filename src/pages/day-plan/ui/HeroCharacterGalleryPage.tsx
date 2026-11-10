@@ -245,7 +245,7 @@ export function HeroCharacterGalleryPage({ initialGenerated = false, onExit, onS
         } },
       ]);
     } : undefined} /> : null}
-    {editing || editingScene ? <AppModal visible transparent animationType="fade" onRequestClose={cancelRename}>
+    {editing || editingScene ? <AppModal visible transparent animationType="none" onRequestClose={cancelRename}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.scrim}>
         <View style={[s.dialog, { backgroundColor: paper, borderColor: ink }]}>
           <ThemedText style={[s.dialogTitle, { color: ink }]}>{t(editingScene ? 'comicDay.sceneTitle' : 'comicDay.character.rename')}</ThemedText>

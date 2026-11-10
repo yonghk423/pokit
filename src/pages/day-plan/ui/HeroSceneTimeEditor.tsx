@@ -10,7 +10,7 @@ import { ThemedText } from '@shared/ui/themed-text';
 export function ComicSceneTimeEditor({ label, value, onSave, onCancel }: { label: string; value: string; onSave: (time: string) => void; onCancel: () => void }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(value || '09:00');
-  return <AppModal visible transparent animationType="fade" onRequestClose={onCancel}>
+  return <AppModal visible transparent animationType="none" onRequestClose={onCancel}>
     <View style={s.overlay}>
       <Pressable style={StyleSheet.absoluteFill} onPress={() => { tapHaptic(); onCancel(); }} accessibilityLabel={t('common.cancel')} />
       <View style={s.paper}>

@@ -77,7 +77,7 @@ export function HeroCardEditor({ number, ink: savedInk, muted: savedMuted, paper
   const appScale = useAppFontSizeScale(draft.fontId);
   const { fontScale } = useWindowDimensions();
   const { fontSize, lineHeight, titleSize, titleLineHeight } = resolveDiaryEditorTypography(appScale, fontScale);
-  return <AppModal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}
+  return <AppModal visible transparent animationType="none" statusBarTranslucent onRequestClose={onCancel}
     onShow={() => titleRef.current?.focus()} supportedOrientations={['portrait', 'landscape']}>
     <KeyboardAvoidingView testID="hero-card-editor" behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.editorRoot}>
       <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={Keyboard.dismiss} />

@@ -16,7 +16,7 @@ export function HeroPolaroidDatePicker({ date, showDate, onSelect, onHide, onClo
   const year = month.getFullYear(), m = month.getMonth();
   const start = month.getDay(), count = new Date(year, m + 1, 0).getDate();
   const action = { minHeight: 44, justifyContent: 'center' as const, alignItems: 'center' as const };
-  return <AppModal visible transparent animationType="fade" onRequestClose={onClose}>
+  return <AppModal visible transparent animationType="none" onRequestClose={onClose}>
     <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#00000066' }}>
       <Pressable accessibilityLabel={t('polaroid.editor.close_date_picker')} onPress={onClose} style={{ position: 'absolute', inset: 0 }} />
       <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 380, alignSelf: 'center', backgroundColor: '#F9F9F6', borderRadius: 20, padding: 16 }}>

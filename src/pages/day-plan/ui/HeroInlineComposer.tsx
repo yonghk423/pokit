@@ -466,7 +466,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
         <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : '키보드 내리기'} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={uiInk} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy && !photoOnly ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} disabled={importingPhoto} accessibilityState={{ selected: mode === value, disabled: importingPhoto }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={uiInk} paper={paper} selected={mode === value} /></Pressable>)}</View> : <View style={{ flex: 1 }} />}{mode !== 'original' ? <Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={uiInk} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable> : <View style={{ width: 32 }} />}</View>
       </View>
     </View>
-    {visible && photoPickerOpen ? <AppModal transparent animationType="fade" onRequestClose={() => setPhotoPickerOpen(false)}>
+    {visible && photoPickerOpen ? <AppModal transparent animationType="none" onRequestClose={() => setPhotoPickerOpen(false)}>
       <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: 'rgba(25,30,25,0.24)' }}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPhotoPickerOpen(false)} style={StyleSheet.absoluteFill} />
         <View style={{ padding: 16, backgroundColor: paper }}>
@@ -475,7 +475,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
         </View>
       </View>
     </AppModal> : null}
-    {visible && register ? <AppModal transparent animationType="fade" onRequestClose={() => { if (!savingFace) setRegister(false); }}>
+    {visible && register ? <AppModal transparent animationType="none" onRequestClose={() => { if (!savingFace) setRegister(false); }}>
       <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: 'rgba(25,30,25,0.24)' }}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { if (!savingFace) setRegister(false); }} style={StyleSheet.absoluteFill} />
         <View testID="hero-face-registration-modal" accessibilityViewIsModal style={{ width: '100%', maxWidth: 360, alignSelf: 'center', padding: 10, backgroundColor: paper }}>
@@ -492,7 +492,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
       </View>
     </AppModal> : null}
     {helpOpen ? <HeroAiHelpModal onClose={() => setHelpOpen(false)} /> : null}
-    {upgradeOpen ? <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!upgradeBusy) closeUpgrade(); }}><ProPreviewPage onBusyChange={setUpgradeBusy} onClose={closeUpgrade} onActivated={closeUpgrade} /></AppModal> : null}
+    {upgradeOpen ? <AppModal visible presentationStyle="fullScreen" animationType="none" onRequestClose={() => { if (!upgradeBusy) closeUpgrade(); }}><ProPreviewPage onBusyChange={setUpgradeBusy} onClose={closeUpgrade} onActivated={closeUpgrade} /></AppModal> : null}
   </View>;
 }
 const s = StyleSheet.create({

@@ -1,3 +1,5 @@
+import { Image as ExpoImage } from 'expo-image';
+import { useStoreArtwork } from '../../src/pages/day-plan/lib/storeArtwork';
 import { CityCalendarPackCover } from '../../src/pages/day-plan/ui/CityCalendarPackCover';
 import { applyHeroDiaryClip, useHeroDiaryClip } from '../../src/pages/day-plan/model/heroDiaryClip';
 import { HeroBlueClipPreview } from '../../src/pages/day-plan/ui/HeroBlueClipPreview';
@@ -43,6 +45,7 @@ type CityTheme = typeof CITY_CALENDAR_THEMES[number];
 const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme, width, height, dark, selected, error, onApply }: {
   theme: CityTheme; width: number; height: number; dark: boolean; selected: boolean; error: boolean; onApply: (theme: CityTheme) => void;
 }) {
+  const [previewReady, setPreviewReady] = useState(false);
   const today = useTodayDate();
   const month = useMemo(() => new Date(today.getFullYear(), today.getMonth(), 1, 12), [today]);
   const previewScale = width / 390;
@@ -50,7 +53,7 @@ const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme, width
   const ink = dark ? '#E8E5DF' : '#242321';
   const apply = useCallback(() => onApply(theme), [onApply, theme]);
   return <Pressable testID={`illustration-theme-${theme.themeId}`} accessibilityRole="button" accessibilityLabel={`${theme.title} 캘린더 적용`} accessibilityState={{ selected }} onPress={apply} style={{ width }}>
-    <Image source={{ uri: illustrationCalendarBackgroundUri(theme.themeId) }} resizeMode="cover" style={{ width, height, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }} />
+    <View style={{ width, height }}><ExpoImage source={{ uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ width, height, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }} />{!previewReady ? <View pointerEvents="none" style={{ position: 'absolute', width, height, borderRadius: 14, backgroundColor: '#E6E5E1' }} /> : null}</View>
     <View style={{ padding: 16, gap: 5 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <ThemedText style={{ flex: 1, color: ink, fontSize: 18 }}>{theme.title}</ThemedText>
@@ -64,6 +67,7 @@ const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme, width
 });
 
 function CalendarContent({ view, setView }: { view: CalendarView; setView: (value: CalendarView) => void }) {
+  const { artwork: storeArtwork, failed: storeArtworkFailed, retry: retryStoreArtwork } = useStoreArtwork();
   const selectedDesign = useHeroCalendarDesign();
   const selectedClip = useHeroDiaryClip();
   const windowSize = useWindowDimensions();
@@ -152,7 +156,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   </View>;
   return <View style={{ flex: 1, minHeight: 0 }}>
     {view !== 'illustrationDiary' ? selector : null}
-    {view === 'diary'
+    {!storeArtwork ? <Pressable disabled={!storeArtworkFailed} onPress={retryStoreArtwork} accessibilityLabel={storeArtworkFailed ? '이미지 다시 불러오기' : '상품 준비 중'} style={{ margin: 24, height: 320, borderRadius: 20, backgroundColor: '#E6E5E1', justifyContent: 'center', alignItems: 'center' }}>{storeArtworkFailed ? <ThemedText>이미지 다시 불러오기</ThemedText> : null}</Pressable> : view === 'diary'
       ? <ScrollView testID="diary-items-gallery" contentContainerStyle={{ padding: 20, paddingBottom: 120, alignItems: 'center' }}>
           {(['blue', 'black'] as const).map(clip => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: selectedClip === clip, disabled: selectedClip === clip }} disabled={selectedClip === clip} onPress={() => { tapHaptic('select'); applyHeroDiaryClip(clip); }} style={{ width: Math.min(210, windowSize.width - 48), padding: 18, gap: 12 }}>
             <HeroBlueClipPreview dark={isDark} clip={clip} />

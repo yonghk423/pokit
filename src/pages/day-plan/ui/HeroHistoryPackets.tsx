@@ -1,7 +1,6 @@
 import { HeroTrashIcon } from './HeroTrashIcon';
 import { getClockNow } from '@shared/lib/time/appClock';
 import { comicDiaryDate } from '../lib/heroCalendar';
-import { HeroPolaroidOverviewIcon } from './HeroPolaroidOverviewIcon';
 import { polaroidScatter } from '../lib/polaroidScatter';
 import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
@@ -111,16 +110,13 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
     </View></ScrollView>
     {!visible.length ? <View testID="history-empty-state" pointerEvents="none" accessible accessibilityRole="image" accessibilityLabel={t('comicDiary.yearEmpty')} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', gap: 12 }]}><EmptyDiaryIcon ink="#777B72" /><ThemedText style={{ fontSize: 15, color: '#777B72', textAlign: 'center' }}>{t('comicDiary.yearEmpty')}</ThemedText></View> : null}
     {selecting ? <Pressable testID="history-delete-selected" accessibilityRole="button" disabled={!selected.length} onPress={() => confirmDelete(groups.filter(g => selected.includes(g.date)).flatMap(g => g.diaries.map(d => d.id)))} style={[s.touch, { opacity: selected.length ? 1 : 0.3 }]}><ThemedText style={{ color: '#000000' }}>{t('comicDiary.deleteSelected', { count: selected.length })}</ThemedText></Pressable> : null}
-    {group ? <AppModal visible animationType="fade" onRequestClose={close}><View style={{ flex: 1, backgroundColor: '#F7F6F4', paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    {group ? <AppModal visible animationType="none" onRequestClose={close}><View style={{ flex: 1, backgroundColor: '#F7F6F4', paddingTop: insets.top, paddingBottom: insets.bottom }}>
       {hasWallpaper ? <AppWallpaperBackground /> : <SurfaceTexture kind="wrinkled" opacity={0.18} />}
       <View style={s.header}>
         <View style={{ width: 88, alignItems: 'flex-start' }}><Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={close} style={s.touch}><BackChevron color="#202020" /></Pressable></View>
         <ThemedText testID="history-detail-date" style={{ flex: 1, textAlign: 'center', color: '#292E28', fontSize: 18 }}>{dateLabel(group.date)}</ThemedText>
         <View style={{ width: 88, flexDirection: 'row', justifyContent: 'flex-end' }}>
-          {<Pressable testID="history-header-toggle-date-grid" accessibilityRole="button" accessibilityLabel={t(dateGridOpen ? 'comicDay.showCards' : 'comicDay.boardView')} accessibilityState={{ expanded: dateGridOpen }} onPress={() => { tapHaptic('select'); setDateGridOpen(value => !value); }} style={s.touch}>
-            <HeroPolaroidOverviewIcon ink="#292E28" expanded={dateGridOpen} />
-          </Pressable>}
-          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { setOpened(null); setDetail(null); setDateGridOpen(false); }} style={s.touch}><CloseIcon color="#292E28" /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { setOpened(null); setDetail(null); setDateGridOpen(false); }} style={[s.touch, { minWidth: 52 }]}><ThemedText style={{ color: '#292E28', fontSize: 15 }}>{t('common.close')}</ThemedText></Pressable>
         </View>
       </View>
       <View style={{ flex: 1 }}>

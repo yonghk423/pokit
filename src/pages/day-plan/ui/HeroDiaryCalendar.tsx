@@ -88,7 +88,7 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
     { text: t('common.cancel'), style: 'cancel' },
     { text: t('comicCalendar.setCover'), onPress: () => { tapHaptic('confirm'); const next = { ...covers, [selected]: { diaryId: diary.id, sceneId: scene.id } }; localStorageClient.setJson(COVER_KEY, next); setCovers(next); } },
   ]); };
-  return <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={onClose}>
+  return <AppModal visible presentationStyle="fullScreen" animationType="none" onRequestClose={onClose}>
     <View style={[s.root, { backgroundColor: isDark ? '#20241F' : '#F7F6F4', paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={s.header}>
         <View style={s.monthNavigation}>

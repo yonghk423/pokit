@@ -153,7 +153,7 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
   // presentation can be lost while the name keyboard/chooser is being dismissed.
   return embedded ? <View testID="comic-scene-picker-inline" style={[StyleSheet.absoluteFill, { zIndex: 10 }]} accessibilityViewIsModal>
     <TutorialGuideLayer>{content}</TutorialGuideLayer>
-  </View> : <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">{content}</Modal>;
+  </View> : <Modal visible animationType="none" onRequestClose={onClose} presentationStyle="fullScreen">{content}</Modal>;
 }
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' }, header: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, borderColor: '#B6B6B0', paddingHorizontal: 12 },

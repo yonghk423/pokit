@@ -22,7 +22,7 @@ function PickerPreview({ source, fallback, width, height, isDark, id, contain = 
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   return <View testID={`hero-picker-preview-frame-${id}`} style={{ width, height, overflow: 'hidden' }}>
-    <Image testID={`hero-picker-image-${id}`} source={failed ? fallback : source} contentFit={contain ? 'contain' : 'cover'} transition={150} style={StyleSheet.absoluteFill} onDisplay={() => setReady(true)} onError={() => { if (failed) setReady(true); else setFailed(true); }} />
+    <Image testID={`hero-picker-image-${id}`} source={failed ? fallback : source} contentFit={contain ? 'contain' : 'cover'} transition={0} style={StyleSheet.absoluteFill} onDisplay={() => setReady(true)} onError={() => { if (failed) setReady(true); else setFailed(true); }} />
     <HeroPhotoEmulsion />
     {!ready ? <View testID={`hero-picker-skeleton-${id}`} pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? '#363B37' : '#E9E6DF', padding: 12, justifyContent: 'flex-end', gap: 6 }]}>
       <View style={{ position: 'absolute', top: '16%', left: '18%', width: '64%', height: '45%', borderRadius: 18, backgroundColor: isDark ? '#414640' : '#E0DCD3' }} />
@@ -230,7 +230,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
 
       </Animated.View>
     </View>
-    {premiumOpen ? <AppModal visible animationType="fade" onRequestClose={() => setPremiumOpen(false)}>
+    {premiumOpen ? <AppModal visible animationType="none" onRequestClose={() => setPremiumOpen(false)}>
       <View style={{ flex: 1, backgroundColor: paper, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}><ThemedText style={{ flex: 1, color: ink }}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPremiumOpen(false)} style={{ padding: 16 }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable></View>
         <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 10 }}>

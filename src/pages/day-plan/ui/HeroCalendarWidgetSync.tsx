@@ -1,6 +1,6 @@
 import { CalendarWidgetRenderReadyContext } from '../model/calendarWidgetRenderReady';
 import { getLoadedIllustrationCalendarAssets } from '../lib/illustrationCalendarAssets';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { AppState, NativeModules, Platform, View } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { CalendarPaper } from './HeroCalendarDesigns';
@@ -13,8 +13,9 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
   design: HeroCalendarDesign; month: Date; today: Date; diaries: ComicDiary[]; eventDates: string[];
 }) {
   const target = useRef<View>(null);
-  const [revision, setRevision] = useState(0);
-  const imageReady = useCallback(() => setRevision(value => value + 1), []);
+  const scheduleCapture = useRef<(() => void) | undefined>(undefined);
+  // Decoder notifications must not rerender images and trigger another onLoad.
+  const imageReady = useCallback(() => scheduleCapture.current?.(), []);
   const cover = useHeroCalendarCover(`${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`);
   const native = NativeModules.PokitWidgetSync as { syncCalendarWidgetImage?: (uri: string, month: string) => Promise<void> } | undefined;
   const enabled = Platform.OS === 'ios' && !!native?.syncCalendarWidgetImage;
@@ -23,37 +24,53 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
   const diaryKey = JSON.stringify(diaries);
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', state => { if (state === 'active') setRevision(value => value + 1); });
-    return () => subscription.remove();
-  }, []);
-  useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
     let pending = false;
-    // Refresh after layout and again after asynchronous photo/texture decoding.
-    const timers = [400, 1600, 3500].map(delay => setTimeout(async () => {
+    let dirty = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      dirty = true;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(render, 400);
+    };
+    const render = async () => {
       if (cancelled || pending || !target.current || AppState.currentState === 'background') return;
       if ((theme || design === 'illustration') && !getLoadedIllustrationCalendarAssets(theme?.themeId ?? '01-rush-hour-commute')) return;
       pending = true;
+      dirty = false;
       let uri: string | undefined;
       try {
-        uri = await captureRef(target, { format: 'png', result: 'tmpfile', width: 330, height: 360 });
+        // Layer capture avoids drawViewHierarchy(afterScreenUpdates: true), which
+        // forces visible screen updates while capturing the offscreen calendar.
+        uri = await captureRef(target, { format: 'png', result: 'tmpfile', useRenderInContext: true });
         if (!cancelled) await native?.syncCalendarWidgetImage?.(uri, monthKey);
       } catch {
-        // A failed render keeps the last complete calendar in the widget.
+        // Keep the last complete calendar when capture is unavailable.
       } finally {
         if (uri) releaseCapture(uri);
         pending = false;
+        if (dirty && !cancelled) schedule();
       }
-    }, delay));
-    return () => { cancelled = true; timers.forEach(clearTimeout); };
-  }, [enabled, design, monthKey, today.getFullYear(), today.getMonth(), today.getDate(), diaryKey, eventKey, cover, revision]);
+    };
+    scheduleCapture.current = schedule;
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') schedule();
+    });
+    schedule();
+    return () => {
+      cancelled = true;
+      scheduleCapture.current = undefined;
+      if (timer) clearTimeout(timer);
+      subscription.remove();
+    };
+  }, [enabled, design, monthKey, today.getFullYear(), today.getMonth(), today.getDate(), diaryKey, eventKey, cover]);
   if (!enabled) return null;
-  return <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: -2000, top: 0, width: 330, height: 360 }}>
-    <CalendarWidgetRenderReadyContext.Provider value={imageReady}><View ref={target} collapsable={false} style={{ width: 330, height: 360, backgroundColor: '#FAFAF6', overflow: 'hidden' }}>
+  return <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: -2000, top: 0, width: 330, height: 330 }}>
+    <CalendarWidgetRenderReadyContext.Provider value={imageReady}><View ref={target} collapsable={false} style={{ width: 330, height: 330, backgroundColor: '#FAFAF6', overflow: 'hidden' }}>
       {theme || design === 'illustration'
-        ? <HeroIllustrationCalendar themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={360} month={month} today={today} diaries={diaries} eventDates={eventDates} onSelectDate={() => undefined} />
-        : <CalendarPaper design={design === 'clipboard' || design === 'photo' || design === 'grid' ? design : 'bold'} month={month} today={today} diaries={diaries} eventDates={eventDates} layoutWidth={330} layoutHeight={360} />}
+        ? <HeroIllustrationCalendar widget themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={330} month={month} today={today} diaries={diaries} eventDates={eventDates} onSelectDate={() => undefined} />
+        : <CalendarPaper design={design === 'clipboard' || design === 'photo' || design === 'grid' ? design : 'bold'} month={month} today={today} diaries={diaries} eventDates={eventDates} layoutWidth={330} layoutHeight={330} />}
     </View></CalendarWidgetRenderReadyContext.Provider>
   </View>;
 }

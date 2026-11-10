@@ -19,7 +19,7 @@ it('renders the selected design with diary dates and copies the image before rel
   act(() => { tree = create(<HeroCalendarWidgetSync {...props} />); });
   expect(tree!.root.findByType(CalendarPaper).props).toEqual(expect.objectContaining({ design: 'photo', month: props.month, eventDates: props.eventDates }));
   await act(async () => { jest.advanceTimersByTime(400); });
-  expect(captureRef).toHaveBeenCalled();
+  expect(captureRef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ useRenderInContext: true }));
   expect(sync).toHaveBeenCalledWith('file:///widget.png', '2026-11');
   expect(releaseCapture).toHaveBeenCalledWith('file:///widget.png');
   expect(sync.mock.invocationCallOrder[0]).toBeLessThan(jest.mocked(releaseCapture).mock.invocationCallOrder[0]);
@@ -36,4 +36,15 @@ it('cancels pending renders when the calendar closes', async () => {
   act(() => tree!.unmount()); tree = undefined;
   await act(async () => { jest.advanceTimersByTime(4000); });
   expect(captureRef).not.toHaveBeenCalled();
+});
+
+it('captures a settled calendar once and refreshes when its content changes', async () => {
+  NativeModules.PokitWidgetSync = { syncCalendarWidgetImage: jest.fn(async () => undefined) };
+  act(() => { tree = create(<HeroCalendarWidgetSync {...props} />); });
+  await act(async () => { jest.advanceTimersByTime(400); });
+  await act(async () => { jest.advanceTimersByTime(4000); });
+  expect(captureRef).toHaveBeenCalledTimes(1);
+  act(() => { tree!.update(<HeroCalendarWidgetSync {...props} eventDates={['2026-11-11']} />); });
+  await act(async () => { jest.advanceTimersByTime(400); });
+  expect(captureRef).toHaveBeenCalledTimes(2);
 });

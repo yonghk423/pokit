@@ -39,6 +39,7 @@ export default function TabLayout() {
         detachInactiveScreens={false}
         tabBar={(props) => <DayPlanCustomTabBar {...props} />}
         screenOptions={{
+          animation: 'none',
           headerShown: false,
           sceneStyle: { backgroundColor: 'transparent' },
           lazy: true,
@@ -51,7 +52,7 @@ export default function TabLayout() {
           },
         }}>
         <Tabs.Screen name="index" options={{ title: t('tabs.comicDay') }} />
-        <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), lazy: false, animation: 'fade', transitionSpec: { animation: 'timing', config: { duration: 180 } } }} />
+        <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), lazy: false, animation: 'none' }} />
         <Tabs.Screen name="history" options={{ title: t('comicDiary.history') }} />
         <Tabs.Screen
           name="fixed-routines"

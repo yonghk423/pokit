@@ -123,6 +123,7 @@ export default function RootLayout() {
               <ThemeProvider key={sessionEpoch} value={navigationTheme}><TutorialGuideLayer>
                 <Stack
                   screenOptions={{
+                    animation: 'none',
                     headerShown: false,
                     contentStyle: { backgroundColor: rootBg },
                     statusBarStyle: resolveStatusBarStyle(isDark),

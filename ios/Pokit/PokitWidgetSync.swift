@@ -82,13 +82,32 @@ class PokitWidgetSync: NSObject {
     comicImageQueue.async {
       guard let source = self.resolveArtworkSourceURL(uri),
             let image = UIImage(contentsOfFile: source.path),
-            let data = image.jpegData(compressionQuality: 0.92),
             let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier),
             let defaults = UserDefaults(suiteName: PokitAppGroup.identifier)
       else { reject("calendar_image_unavailable", "Calendar render unavailable", nil); return }
+      // View-shot dimensions can be multiplied by the device display scale.
+      // Store a bounded pixel image, not a 1980px snapshot that WidgetKit rejects.
+      let scale = min(1, 660 / max(image.size.width, image.size.height))
+      let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+      let format = UIGraphicsImageRendererFormat()
+      format.scale = 1
+      format.opaque = true
+      let thumbnail = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+        image.draw(in: CGRect(origin: .zero, size: size))
+      }
+      guard let data = thumbnail.jpegData(compressionQuality: 0.92) else {
+        reject("calendar_image_encode", "Calendar render could not be encoded", nil)
+        return
+      }
       do {
         let filename = "calendar-current.jpg"
         let target = container.appendingPathComponent(filename)
+        // Do not spend WidgetKit reload budget on identical foreground captures.
+        if (try? Data(contentsOf: target)) == data,
+           defaults.string(forKey: "pokit.calendar-widget.month") == month {
+          resolve(nil)
+          return
+        }
         try data.write(to: target, options: .atomic)
         defaults.set(filename, forKey: "pokit.calendar-widget.image")
         defaults.set(month, forKey: "pokit.calendar-widget.month")

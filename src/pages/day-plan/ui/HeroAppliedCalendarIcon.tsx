@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { CITY_CALENDAR_THEMES, useHeroCalendarDesign } from '../model/heroCalendarDesign';
 import { getLoadedIllustrationCalendarAssets, loadIllustrationCalendarAssets } from '../lib/illustrationCalendarAssets';
 import { CalendarPaper } from './HeroCalendarDesigns';
@@ -23,5 +24,8 @@ export function HeroAppliedCalendarIcon({ month, today }: { month: Date; today: 
     {illustrated ? <Image cachePolicy="none" source={art ? { uri: art } : undefined} transition={0} contentFit="cover" style={{ width: 30, height: 39 }} /> : <View style={{ width: 300, height: 390, transform: [{ translateX: -135 }, { translateY: -175.5 }, { scale: 0.1 }] }}>
       <CalendarPaper design={design === 'clipboard' || design === 'bold' || design === 'grid' || design === 'photo' ? design : 'bold'} month={month} today={today} diaries={[]} miniature previewSavedCover layoutWidth={300} layoutHeight={390} />
     </View>}
+    <View testID="calendar-return-arrow" pointerEvents="none" style={{ position: 'absolute', right: -5, bottom: -4, width: 17, height: 17, borderRadius: 9, backgroundColor: '#FAFAF6', alignItems: 'center', justifyContent: 'center', shadowColor: '#302C24', shadowOpacity: 0.18, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }}>
+      <Feather name="corner-up-left" size={12} color="#32372F" />
+    </View>
   </View>;
 }

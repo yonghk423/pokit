@@ -2971,5 +2971,6 @@
   "comicDay.photo.changeOriginal": "写真をタップして変更",
   "comicDay.photo.saveError": "写真を保存できませんでした。もう一度お試しください。",
   "comicDay.gallery.originalPhotos": "自分の写真",
-  "comicDiary.history": "履歴"
+  "comicDiary.history": "履歴",
+  "comicCalendar.returnHint": "カレンダー画面に戻ります"
 }

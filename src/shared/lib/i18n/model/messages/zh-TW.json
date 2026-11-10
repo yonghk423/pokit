@@ -2971,5 +2971,6 @@
   "comicDiary.monthEmpty": "還沒有日記紀錄。",
   "settings.font.cafe24ShiningStar": "Cafe24 閃耀之星",
   "settings.font.cafe24ShiningStarDesc": "纖細傾斜的書法手寫字體",
-  "settings.font.cafe24ShiningStarPreview": "Daylight · 我的一天"
+  "settings.font.cafe24ShiningStarPreview": "Daylight · 我的一天",
+  "comicCalendar.returnHint": "返回月曆畫面"
 }

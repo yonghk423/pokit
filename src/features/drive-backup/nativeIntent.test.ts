@@ -13,3 +13,8 @@ it('preserves normal app links and does not match a different Google client', ()
   expect(redirectSystemPath({ path: 'com.googleusercontent.apps.other:/oauthredirect', initial: false })).toBe('com.googleusercontent.apps.other:/oauthredirect');
   expect(redirectSystemPath({ path: null, initial: true })).toBeNull();
 });
+
+it.each([true, false])('opens widget links directly in the calendar tab (initial=%s)', initial => {
+  expect(redirectSystemPath({ path: 'pokit://comic-day?calendarWidget=1', initial })).toBe('/(tabs)?calendarWidget=1');
+  expect(redirectSystemPath({ path: '/comic-day?calendarWidget=1', initial })).toBe('/(tabs)?calendarWidget=1');
+});

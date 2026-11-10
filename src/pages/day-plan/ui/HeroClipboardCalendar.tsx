@@ -1,14 +1,17 @@
+import { Image } from 'expo-image';
+import { useStoreArtwork } from '../lib/storeArtwork';
 import { HeroCalendarPhoto } from './HeroCalendarPhoto';
 import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCalendarWidgetImageReady } from '../model/calendarWidgetRenderReady';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 
 /** All overlay coordinates share the artwork's 1024 × 1536 reference frame. */
 export function HeroClipboardCalendar({ width, height, month, today, miniature, eventDates, recordDates, photos = {}, onSelectDate, onPreviousMonth, onNextMonth }: {
   photos?: Record<string, string>; width: number; height?: number; month: Date; today: Date; miniature: boolean; eventDates: string[]; recordDates: string[]; onSelectDate?: (date: string) => void; onPreviousMonth?: () => void; onNextMonth?: () => void;
 }) {
+  const { artwork } = useStoreArtwork();
   const widgetImageReady = useCalendarWidgetImageReady();
   // Fill the available calendar canvas. Artwork and hit targets share the same
   // transform, so resizing never separates dates from the printed grid.
@@ -18,11 +21,12 @@ export function HeroClipboardCalendar({ width, height, month, today, miniature, 
   const verticalScale = canvasHeight / h;
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1, 12).getDay() + 6) % 7;
   const blue = '#1826AD';
+  if (!artwork) return <View style={{ width, height: canvasHeight, backgroundColor: '#E6E5E1', borderRadius: 20 }} />;
   return <View testID="clipboard-calendar" style={{ width, height: canvasHeight, alignItems: 'center', justifyContent: 'center' }}>
     <View style={{ width: w, height: h, transform: [{ scaleY: verticalScale }] }}>
       <View style={{ position: 'absolute', left: -55 * s, top: -112 * s, width: 1024 * s, height: 1536 * s }}>
       {/* Clip the source photograph to the board and metal clip; no tabletop is painted. */}
-      {[{ x: 55, y: 153, width: 914, height: 1298, radius: 62 }, { x: 385, y: 137, width: 252, height: 78, radius: 14 }, { x: 326, y: 184, width: 371, height: 76, radius: 20 }].map((part, index) => <View key={index} pointerEvents="none" style={{ position: 'absolute', left: part.x * s, top: part.y * s, width: part.width * s, height: part.height * s, borderRadius: part.radius * s, overflow: 'hidden' }}><Image onLoad={widgetImageReady} source={require('../../../../assets/control-illustrations/clipboard-calendar-v2.webp')} resizeMode="stretch" style={{ position: 'absolute', left: -part.x * s, top: -part.y * s, width: 1024 * s, height: 1536 * s }} /></View>)}
+      {[{ x: 55, y: 153, width: 914, height: 1298, radius: 62 }, { x: 385, y: 137, width: 252, height: 78, radius: 14 }, { x: 326, y: 184, width: 371, height: 76, radius: 20 }].map((part, index) => <View key={index} pointerEvents="none" style={{ position: 'absolute', left: part.x * s, top: part.y * s, width: part.width * s, height: part.height * s, borderRadius: part.radius * s, overflow: 'hidden' }}><Image onLoad={widgetImageReady} source={artwork.board} contentFit="fill" transition={0} style={{ position: 'absolute', left: -part.x * s, top: -part.y * s, width: 1024 * s, height: 1536 * s }} /></View>)}
       <View style={{ position: 'absolute', left: 115 * s, top: 280 * s, width: 792 * s, height: 155 * s, flexDirection: 'row', alignItems: 'center' }}>
         <Pressable disabled={miniature} accessibilityLabel="이전 달" accessibilityRole="button" onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ padding: 12 * s }}><Text style={{ color: blue, fontSize: 40 * s }}>‹</Text></Pressable>
         <View style={{ flex: 1 }}><Text style={{ color: blue, fontWeight: '800', fontSize: 78 * s }}>{month.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</Text><Text style={{ color: blue, fontSize: 26 * s }}>{month.getFullYear()}</Text></View>
