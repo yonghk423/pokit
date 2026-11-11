@@ -44,16 +44,6 @@ const TABS: TabDef[] = [
   { route: 'calendar', labelKey: 'tabs.calendar' },
 ];
 
-// Each illustration keeps the same controls, with colors drawn from its scene.
-const ILLUSTRATION_TAB_TONES = {
-  illustration: { surface: '#F2E4D0', active: '#E5B777', ink: '#5B4030', selected: '#4A2F1D', dark: '#352E27' },
-  'city-animation-01': { surface: '#DFE7EC', active: '#66869C', ink: '#344B5B', selected: '#FFFFFF', dark: '#253540' },
-  'city-animation-02': { surface: '#E6E9DC', active: '#788963', ink: '#3F5037', selected: '#FFFFFF', dark: '#2C3528' },
-  'city-animation-03': { surface: '#EFE0D7', active: '#A56D51', ink: '#624330', selected: '#FFFFFF', dark: '#3B2D27' },
-  'city-animation-04': { surface: '#DDECE8', active: '#527E78', ink: '#30554F', selected: '#FFFFFF', dark: '#233B37' },
-  'city-animation-05': { surface: '#F0DFDF', active: '#A65F6B', ink: '#683F48', selected: '#FFFFFF', dark: '#3D2931' },
-} as const;
-
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const calendarDesign = useHeroCalendarDesign();
   const selectedIllustration = calendarDesign === 'illustration' || calendarDesign.startsWith('city-animation-');
@@ -100,19 +90,10 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   }, [isDayPlanFocused, registerIsDayPlanFocused]);
 
   const colors = useMemo(() => {
-    const tone = ILLUSTRATION_TAB_TONES[calendarDesign as keyof typeof ILLUSTRATION_TAB_TONES];
-    if (tone) return {
-      containerBg: isDark ? tone.dark : tone.surface,
-      activeBg: tone.active,
-      text: isDark ? tone.surface : tone.ink,
-      selectedText: tone.selected,
-      icon: isDark ? tone.surface : tone.ink,
-      selectedIcon: tone.selected,
-    };
     return isDark
       ? { containerBg: '#262B28', activeBg: '#3A3A3C', text: '#EEECE6', selectedText: '#EEECE6', icon: '#EEECE6', selectedIcon: '#EEECE6' }
       : { containerBg: '#F7F6F4', activeBg: '#E6E3DE', text: '#252A26', selectedText: '#252A26', icon: '#252A26', selectedIcon: '#252A26' };
-  }, [isDark, calendarDesign]);
+  }, [isDark]);
 
   const visibleTabs = TABS.filter(tab =>
     (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
