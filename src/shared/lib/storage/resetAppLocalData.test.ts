@@ -5,19 +5,23 @@ import { resetAppLocalData } from './resetAppLocalData';
 import { completeHeroCardEditHint, HERO_CARD_EDIT_HINT_KEY, initializeHeroCardEditHint, isHeroCardEditHintPending, subscribeHeroCardEditHint } from './heroCardEditHintStorage';
 import { StorageKeys } from './storageKeys';
 import { completeHeroInfoHint, isHeroInfoHintPending, subscribeHeroInfoHint } from './heroInfoHintStorage';
+jest.mock('../../../pages/day-plan/lib/cityCalendarPack', () => ({ clearCityCalendarDownloads: jest.fn(async () => undefined) }));
 jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///Documents/', deleteAsync: jest.fn(async () => undefined) }));
 
 beforeEach(async () => { await clearPokitLocalStorage(); jest.clearAllMocks(); });
 afterEach(async () => { await flushLocalStorageClientWrites(); await clearPokitLocalStorage(); });
 
 it('preserves AI illustrations, captions and previous deletions while clearing diaries and pending requests', async () => {
+  localStorageClient.setJson('yourday:diary-clip', 'black');
   const preservedKeys = ['pokit:hero-ai-caption:hero-test-0.png', 'pokit:hero-ai-library-deleted:v1', 'pokit:comic-character-name:generated-illustrations'];
   for (const key of preservedKeys) localStorageClient.setJson(key, { value: 'keep' });
   localStorageClient.setJson('pokit:hero-ai-pending-v1', { value: 'clear' });
   localStorageClient.setJson('pokit:comic-diaries:v1', { diaries: [{ createdAt: 123, scenes: [{ artworkUri: 'file:///old/hero-ai/hero-old-0.png', title: '하루', memo: '추억' }, { artworkUri: 'file:///old/hero-ai/hero-test-0.png', title: 'changed' }] }] });
   await flushLocalStorageClientWrites();
   await resetAppLocalData();
-  expect(fs.deleteAsync).not.toHaveBeenCalled();
+  expect(fs.deleteAsync).toHaveBeenCalledWith('file:///Documents/hero-photos/', { idempotent: true });
+  expect(fs.deleteAsync).not.toHaveBeenCalledWith('file:///Documents/hero-ai/', expect.anything());
+  expect(await AsyncStorage.getItem('yourday:diary-clip')).toBeNull();
   for (const key of preservedKeys) {
     expect(localStorageClient.getJson(key)).toEqual({ value: 'keep' });
     expect(JSON.parse((await AsyncStorage.getItem(key))!)).toEqual({ value: 'keep' });

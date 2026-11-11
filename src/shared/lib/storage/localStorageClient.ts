@@ -20,7 +20,7 @@ const pendingNativeWrites = new Set<Promise<void>>();
 let storageResetGeneration = 0;
 
 function isPokitStorageKey(key: string): boolean {
-  return key.startsWith('pokit:') || key.startsWith('lockflow:');
+  return key.startsWith('pokit:') || key.startsWith('lockflow:') || key.startsWith('yourday:');
 }
 
 function scheduleNativeSetItem(key: string, value: string): void {
@@ -42,36 +42,20 @@ function scheduleNativeRemoveItem(key: string): void {
 
 /** 메모리·디스크의 pokit/lockflow 키를 비우고, 이후 완료되는 이전 쓰기를 무효화한다. */
 export async function clearPokitLocalStorage(): Promise<void> {
-  if (getDevelopmentStorageProfile()) {
-    for (const key of localStorageClient.listKeys().filter(isPokitStorageKey)) localStorageClient.removeItem(key);
-    await flushLocalStorageClientWrites();
-    return;
-  }
+  await flushLocalStorageClientWrites();
   storageResetGeneration += 1;
-
-  let diskKeysToClear: string[] = [];
-  if (!storage) {
-    try {
-      const diskKeys = await AsyncStorage.getAllKeys();
-      diskKeysToClear = diskKeys.filter(isPokitStorageKey);
-    } catch {
-      diskKeysToClear = [];
+  const profile = getDevelopmentStorageProfile();
+  const scope = profile ? `${DEV_PROFILE_PREFIX}${profile}:data:` : null;
+  const keys = new Set(localStorageClient.listKeys().filter(isPokitStorageKey).map(physicalStorageKey));
+  if (!storage && !isWeb) {
+    for (const key of await AsyncStorage.getAllKeys()) {
+      if (scope ? key.startsWith(scope) : isPokitStorageKey(key) && !key.startsWith(DEV_PROFILE_PREFIX)) keys.add(key);
     }
+    if (keys.size) await AsyncStorage.multiRemove([...keys]);
   }
-
-  const memoryKeys = [...memoryStorage.keys()].filter(isPokitStorageKey);
-  const allKeys = new Set([...memoryKeys, ...diskKeysToClear]);
-  for (const key of allKeys) {
-    memoryStorage.delete(key);
+  for (const key of keys) {
     storage?.removeItem(key);
-  }
-
-  if (!storage && diskKeysToClear.length > 0) {
-    try {
-      await AsyncStorage.multiRemove([...allKeys]);
-    } catch {
-      // ignore
-    }
+    memoryStorage.delete(key);
   }
 }
 

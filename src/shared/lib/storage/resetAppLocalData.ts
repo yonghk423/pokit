@@ -1,6 +1,8 @@
+import { Platform } from 'react-native';
+import * as fs from 'expo-file-system/legacy';
 import { clearDailyRhythmOnboardingCompleted } from './dailyMateOnboardingStorage';
 import { clearReadingBookstoreTapGuide } from './readingBookstoreTapGuideStorage';
-import { clearPokitLocalStorage, flushLocalStorageClientWrites, localStorageClient } from './localStorageClient';
+import { clearPokitLocalStorage, flushLocalStorageClientWrites, getDevelopmentStorageProfile, localStorageClient } from './localStorageClient';
 import { initializeHeroCardEditHint } from './heroCardEditHintStorage';
 import { notifyHeroInfoHintReset } from './heroInfoHintStorage';
 
@@ -23,6 +25,17 @@ export async function resetAppLocalData(): Promise<void> {
       if (!filename || !/^hero-[a-zA-Z0-9-]+-\d+\.png$/.test(filename)) continue;
       const key = `pokit:hero-ai-caption:${filename}`;
       if (!preserved.has(key)) preserved.set(key, JSON.stringify({ title: scene.title, memo: scene.memo, createdAt: diary.createdAt }));
+    }
+  }
+  if (Platform.OS !== 'web' && !getDevelopmentStorageProfile()) {
+    const { clearCityCalendarDownloads } = require('../../../pages/day-plan/lib/cityCalendarPack') as typeof import('../../../pages/day-plan/lib/cityCalendarPack');
+    await clearCityCalendarDownloads();
+    const { clearHeroPhotoPreviews } = require('../../../pages/day-plan/lib/heroPhotoPreview') as typeof import('../../../pages/day-plan/lib/heroPhotoPreview');
+    await clearHeroPhotoPreviews();
+    if (fs.documentDirectory) {
+      for (const directory of ['hero-photos', 'calendar-covers', 'drive-backups', 'hero-faces', 'character-packs']) {
+        await fs.deleteAsync(`${fs.documentDirectory}${directory}/`, { idempotent: true });
+      }
     }
   }
   await clearPokitLocalStorage();

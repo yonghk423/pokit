@@ -1,6 +1,5 @@
 import { useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
 import { useIllustrationCalendarMode } from '../model/illustrationCalendarMode';
-import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -12,6 +11,8 @@ import * as Haptics from 'expo-haptics';
 import { Fragment, useCallback, useContext, useEffect, useMemo } from 'react';
 import { HeroPhotoEntryIcon } from './HeroPhotoEntryIcon';
 import { Image, LayoutChangeEvent, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, ReduceMotion } from 'react-native-reanimated';
+import type { PressableProps } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,6 +44,19 @@ const TABS: TabDef[] = [
   { route: 'pokit-story', icon: require('../../../../assets/tab-icons/story-pen.png'), labelKey: 'tabs.story' },
   { route: 'calendar', labelKey: 'tabs.calendar' },
 ];
+
+const TAB_SPRING = { damping: 22, stiffness: 300, mass: 0.7, reduceMotion: ReduceMotion.System };
+
+function TabButton({ children, ...props }: PressableProps & { children: React.ReactNode }) {
+  const scale = useSharedValue(1);
+  const motion = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return <Pressable {...props}
+    onPressIn={event => { scale.value = withSpring(0.94, TAB_SPRING); props.onPressIn?.(event); }}
+    onPressOut={event => { scale.value = withSpring(1, TAB_SPRING); props.onPressOut?.(event); }}
+  >
+    <Animated.View style={motion}>{children}</Animated.View>
+  </Pressable>;
+}
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const calendarDesign = useHeroCalendarDesign();
@@ -91,8 +105,8 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   const colors = useMemo(() => {
     return isDark
-      ? { containerBg: '#262B28', activeBg: '#3A3A3C', text: '#EEECE6', selectedText: '#EEECE6', icon: '#EEECE6', selectedIcon: '#EEECE6' }
-      : { containerBg: '#F7F6F4', activeBg: '#E6E3DE', text: '#252A26', selectedText: '#252A26', icon: '#252A26', selectedIcon: '#252A26' };
+      ? { containerBg: 'rgba(38,43,40,0.65)', activeBg: 'rgba(255,255,255,0.14)', text: '#EEECE6', selectedText: '#EEECE6', icon: '#EEECE6', selectedIcon: '#EEECE6' }
+      : { containerBg: 'rgba(247,246,244,0.60)', activeBg: 'rgba(230,227,222,0.65)', text: '#252A26', selectedText: '#252A26', icon: '#252A26', selectedIcon: '#252A26' };
   }, [isDark]);
 
   const visibleTabs = TABS.filter(tab =>
@@ -106,26 +120,34 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (!FEATURE_FLAGS.heroAiCameraTab && focusedRoute === 'index' && characterPicker?.photoActive) characterPicker.open();
   }, [focusedRoute, characterPicker]);
 
+  const tabSlots = visibleTabs.flatMap(tab => tab.route === 'index' && FEATURE_FLAGS.heroAiCameraTab ? [tab.route, 'camera-mode'] : [tab.route]);
+  const selectedSlot = tabSlots.indexOf(photoSelected ? 'camera-mode' : focusedRoute ?? '');
+  const indicatorX = useSharedValue(Math.max(0, selectedSlot) * (itemWidth + 2));
+  useEffect(() => {
+    indicatorX.value = withSpring(Math.max(0, selectedSlot) * (itemWidth + 2), TAB_SPRING);
+  }, [selectedSlot, itemWidth, indicatorX]);
+  const indicatorStyle = useAnimatedStyle(() => ({ transform: [{ translateX: indicatorX.value }] }));
+
   const overlay = illustrationMode && focusedRoute === 'calendar' || selectedIllustration && calendarBackdrop && focusedRoute === 'index';
 
   return (
     <View
       onLayout={handleBarLayout}
-      style={[styles.outerWrap, overlay && { position: 'absolute', bottom: 0, left: 0, right: 0 }, { paddingBottom: safeBottom, backgroundColor: isDark ? '#262B28' : 'transparent', zIndex: 20, elevation: 20 }]}>
+      style={[styles.outerWrap, overlay && { position: 'absolute', bottom: 0, left: 0, right: 0 }, { paddingBottom: safeBottom, backgroundColor: 'transparent', zIndex: 20, elevation: 20 }]}>
       <View style={styles.shell}>
         <View
           style={[
             styles.container,
-            { backgroundColor: colors.containerBg, borderWidth: 0.7, borderColor: isDark ? '#484C47' : '#FFFFFF' },
+            { backgroundColor: colors.containerBg, borderWidth: 0.7, borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.65)' },
           ]}>
-          <PaperGrain opacity={0.24} />
+          {selectedSlot >= 0 && <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 6.7, top: '50%', marginTop: -22, width: itemWidth, height: 44, borderRadius: 22, backgroundColor: colors.activeBg }, indicatorStyle]} />}
           {visibleTabs.map((tab) => {
             const isFocused =
               focusedRoute === tab.route ||
               (tab.route === 'day-plan' && focusedRoute === 'index');
 
             return (
-              <Fragment key={tab.route}><Pressable
+              <Fragment key={tab.route}><TabButton
                 key={tab.route}
                 accessibilityRole="tab"
                 testID={`hero-tab-${tab.route}`}
@@ -143,12 +165,11 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                 style={({ pressed }) => [
                   styles.tabItem,
                   { width: itemWidth },
-                  isFocused && !photoSelected && { backgroundColor: colors.activeBg },
                   pressed && { opacity: 0.8 },
                 ]}>
                 {tab.route === 'calendar' || tab.route === 'history' || tab.route === 'index' ? <ThemedText numberOfLines={1} style={{ fontSize: tab.route === 'calendar' ? 16 : 20, lineHeight: 28, color: isFocused && !photoSelected ? colors.selectedText : colors.text, textAlign: 'center' }}>{tab.route === 'history' ? 'Photo' : tab.route === 'calendar' ? 'Store' : 'Diary'}</ThemedText> : <Image source={tab.icon!} style={[styles.icon, { tintColor: isFocused ? colors.selectedIcon : colors.icon }]} resizeMode="contain" />}
-              </Pressable>{tab.route === 'index' && FEATURE_FLAGS.heroAiCameraTab ? <>
-                <Pressable
+              </TabButton>{tab.route === 'index' && FEATURE_FLAGS.heroAiCameraTab ? <>
+                <TabButton
                   testID="hero-ai-mode-tab"
                   accessibilityRole="tab"
                   accessibilityLabel={t('comicDay.photo.choose')}
@@ -160,9 +181,9 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                       navigation.navigate('index');
                     } else characterPicker?.openPhoto();
                   }}
-                  style={({ pressed }) => [styles.tabItem, { width: itemWidth }, photoSelected && { backgroundColor: colors.activeBg }, pressed && { opacity: 0.8 }]}>
+                  style={({ pressed }) => [styles.tabItem, { width: itemWidth }, pressed && { opacity: 0.8 }]}>
                   <HeroPhotoEntryIcon ink={photoSelected ? colors.selectedIcon : colors.icon} size={34} selected={photoSelected} />
-                </Pressable>
+                </TabButton>
               </> : null}</Fragment>
             );
           })}

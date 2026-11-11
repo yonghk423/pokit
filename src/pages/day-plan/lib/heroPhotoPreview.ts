@@ -45,3 +45,8 @@ export function photoPreview(uri: string, maxEdge = 512): Promise<string> {
   void job.finally(() => jobs.delete(jobKey));
   return job;
 }
+
+export async function clearHeroPhotoPreviews() {
+  await queue;
+  if (fs.cacheDirectory) await fs.deleteAsync(root(), { idempotent: true });
+}

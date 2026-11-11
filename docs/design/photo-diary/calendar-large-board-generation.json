@@ -1,7 +1,7 @@
 {
-  "revision": "20261110-large-board-v3",
+  "revision": "20261111-fixed-calendar-footprint-v4",
   "tool": "built-in image_gen",
-  "commonPrompt": "Use case: precise-object-edit.\nAsset type: production illustration calendar BACKGROUND, not a screenshot and not a UI mockup.\nInput 1 is the theme to redesign; preserve its specific person, action, setting, lighting, painterly illustration style, board material and decorative identity.\nInput 2 is ONLY the approved LARGE-BOARD composition reference. Match its layout scale and placement, never borrow its subway setting.\nRecompose the scene: retain the meaningful character/action in the top roughly 38% of the tall portrait, and enlarge the theme's calendar board to almost the full canvas width in the lower half. Keep the board front-facing, not tilted, no perspective warp. Board exterior roughly x2%-98%, y39%-84%. Usable date grid roughly x5%-95%, y49%-82%. Above it leave a spacious EMPTY month header and a separate EMPTY weekday strip, using the theme's materials. Below the board continue the painted surroundings to the canvas bottom.\nDATE GRID: exactly SEVEN equal-width columns and SIX equal-height rows, 42 EMPTY cells. Thin straight lines only. All rows equal height, all columns equal width; no extra mini-grid or row. Do not shrink the board to leave large side margins. No object, person, decoration, shadow edge, or pointer may obstruct the header or cells. Keep decorations on outer frame.\nABSOLUTELY NO letters, words, numbers, year/month, weekday names, dates, arrows, event markers, photos, polaroids, tape placeholders, status bar, notch, time, wifi, battery, tabs, buttons, phone frame, watermark or explanatory text. Empty material and blank grid only. Dates/photos/UI will be drawn by the app later.\nFull-bleed illustration to all 4 edges, same tall portrait ratio as input 2, about 900 x 1752 or proportionally higher resolution. High detail, beautiful texture, no outer whitespace.",
+  "commonPrompt": "Use case: production calendar background illustration, not a screenshot or UI mockup. Preserve the source illustration scene, protagonist, action and drawing style. Invent a physically distinct calendar form, material and mounting method for each scene. Themes must not share a generic board silhouette or repeated top handle. Keep the calendar face directly front-facing with no perspective. All assets use a 900x1752 portrait canvas and the exact common normalized overlay rectangles: month/year [0.100000,0.426561,0.800000,0.032811], weekdays [0.053566,0.473439,0.892855,0.023439], date grid [0.053566,0.504689,0.892855,0.304689]. Date grid contains 7 equal columns by 6 equal rows (42 blank cells). The physical calendar touches both canvas edges horizontally (x=0 through x=1), with no left or right margin. Keep the complete calendar at the exact same position and size as the approved reference for every theme. Never shift it upward or downward or resize it to make room. Recompose the scene around the fixed calendar footprint. The visible physical calendar ends at y=0.84335. These coordinates are measured from the approved 24-home-cooking artwork. Keep hands, people, props, shadows, folds, frame decorations and support hardware outside all overlay regions. Do not include any text, numbers, dates, year/month, weekday names, arrows, event marks, photographs, phone UI, tabs or watermarks. App draws all calendar content later. A reference can guide only common placement and camera direction. Never copy its calendar silhouette, handle, trim or material. After generation, measure each output and record the common rectangles plus bottom edge. Verify the outer-bottom-to-tab gap in the real aspect-preserving runtime fit across all seven supported viewports.",
   "results": [
     {
       "themeId": "01-rush-hour-commute",
@@ -10,5 +10,109 @@
       "source": "/Users/yonghee/.codex/generated_images/01a1aea7-827a-7f70-ae49-f10893c032de/exec-19bdebb6-966c-4ba2-bbaf-ecfe0f627ebd.png",
       "prompt": "Use case: precise-object-edit. Asset type: production illustration calendar background, NOT a phone screenshot or UI mockup.\nEdit the attached approved composition into a clean reusable blank background. Keep the woman descending the metro steps, skyline, warm autumn light, brushwork, LARGE near-full-width ivory metal-framed calendar board, and all composition proportions exactly as they are.\nREMOVE every single overlaid UI and calendar content: erase the top time, black notch, wifi/battery icons, header year and month, both month arrows, all weekday letters, ALL date numerals including the circled date, ALL little photographs/polaroids/tape, and the entire floating bottom navigation capsule including icons and words. Seamlessly reconstruct the underlying painted scene/blank cream paper. Keep ONLY the empty decorative month header border, empty weekday space, and blank 7-column by 6-row date grid.\nCritical geometry repair: all seven columns equal width; all SIX rows equal height. The entire grid is front-facing, rectangular, horizontal/vertical, no perspective. Maintain the grid bounding rectangle from the reference, approximately x4.5%-95.5%, y49%-82% of the portrait canvas. Header space sits above the grid. Keep calendar board large; do not shrink it. The scenic top occupies roughly 38% and board roughly 45%.\nAbsolutely NO text/letters/numerals anywhere, NO photographs, NO event circle, NO arrows, NO status bar, NO bottom controls, NO icons, NO watermark. This is a finished usable blank illustration asset. Full bleed to all four edges, same tall portrait ratio as input, high resolution. Do not include any explanatory annotations."
     }
-  ]
+  ],
+  "outputContract": {
+    "canvas": {
+      "width": 900,
+      "height": 1752,
+      "unit": "px"
+    },
+    "calendarDesign": "Distinct physical silhouette, material, mounting method and scene-specific decoration for every illustration. Never duplicate top handles.",
+    "grid": {
+      "columns": 7,
+      "rows": 6,
+      "dateCells": 42,
+      "verticalBoundaries": 8,
+      "horizontalBoundaries": 7,
+      "equalCells": true,
+      "frontFacing": true,
+      "printedInBackground": true
+    },
+    "regions": [
+      "monthHeader",
+      "weekdays",
+      "grid"
+    ],
+    "overlayCoordinates": {
+      "monthHeader": [
+        0.1,
+        0.426561,
+        0.8,
+        0.032811
+      ],
+      "weekdays": [
+        0.053566,
+        0.473439,
+        0.892855,
+        0.023439
+      ],
+      "grid": [
+        0.053566,
+        0.504689,
+        0.892855,
+        0.304689
+      ],
+      "unit": "normalized x,y,width,height on 900x1752 canvas, identical for all themes"
+    },
+    "occlusion": "no people, hands, props, shadows, frame parts or decoration may overlap any app overlay region",
+    "cellContent": "must fit a two-digit date plus photo/event content at the smallest supported viewport",
+    "minimumNormalizedSize": {
+      "monthHeader": [
+        0.8,
+        0.032811
+      ],
+      "weekdays": [
+        0.892855,
+        0.023439
+      ],
+      "grid": [
+        0.892855,
+        0.304689
+      ],
+      "unit": "fixed reference coordinates; these replace former generic minimums"
+    },
+    "cellLegibility": "at least about 38 x 31 pt per cell at 320 x 568 pt; fit a two-digit date and photo/event content without overlap",
+    "calendarBottomY": 0.84335,
+    "camera": "front-facing, zero perspective",
+    "bottomTabClearance": "match approved 24-home-cooking asset after actual fitCalendarArtwork placement; verify all seven viewport sizes, measuring physical calendar lower edge as well as date-grid bottom",
+    "calendarWidth": "outer calendar edges touch x=0 and x=1 on the canvas, with zero side margins",
+    "fixedFootprint": {
+      "reference": "24-home-cooking approved background",
+      "left": 0,
+      "right": 1,
+      "bottomY": 0.84335,
+      "positionAndSize": "immutable across themes; measure and store full bounding box from the reference",
+      "sceneComposition": "move or recompose scene elements around the calendar; never move or resize the calendar to fit the scene"
+    }
+  },
+  "prototypeAudit": {
+    "recordedAt": "2026-11-11",
+    "inputs": "protagonist-5 source illustrations 01 through 10",
+    "directories": [
+      "output/calendar-rules-first-three-v2/",
+      "output/calendar-rules-next-seven/"
+    ],
+    "intentApplied": [
+      "scene-specific calendar materials and forms",
+      "blank month/weekdays/7x6 grid",
+      "front-facing calendar face",
+      "full-width calendar edge",
+      "shared overlay and bottom-edge positions"
+    ],
+    "observed": [
+      "outputs 01-09 are 959x1640 px; output 10 is 959x1641 px, not the 900x1752 target",
+      "some calendar objects retain left and right margins",
+      "per-image overlay coordinates, cell counts, and runtime tab clearances have not been measured",
+      "some later drafts moved the calendar upward, violating the fixed-position requirement",
+      "A second image-generation attempt on 2026-11-11 still produced different calendar vertical positions across four examples. Text prompts alone did not enforce the fixed footprint."
+    ],
+    "status": "all generated batches remain drafts; exact position is not reliably enforced by generation prompts alone",
+    "nextVerification": [
+      "use a coordinate-locked composition step for calendar placement rather than trusting the generator",
+      "preserve aspect ratio while conforming to canvas",
+      "measure rendered overlay rectangles and outer calendar edges per image",
+      "verify exact 7 columns by 6 rows",
+      "compare date-grid and physical-bottom tab clearance against the approved reference across all seven viewports"
+    ]
+  }
 }

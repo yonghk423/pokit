@@ -13,10 +13,14 @@ export async function isCityCalendarPackReady() {
   if (localStorageClient.getJson(KEY) !== true) return false;
   return (await Promise.all(CITY_CALENDAR_THEMES.map(t => isIllustrationCalendarInstalled(t.themeId)))).every(Boolean);
 }
+let downloadGeneration = 0;
+
 export async function downloadCityCalendarPack(progress: (count: number) => void) {
   localStorageClient.setJson(KEY, false);
+  const generation = downloadGeneration;
   for (let i = 0; i < CITY_CALENDAR_THEMES.length; i++) {
     await downloadIllustrationCalendarAssets(CITY_CALENDAR_THEMES[i].themeId);
+    if (generation !== downloadGeneration) throw new Error('calendar_download_cancelled');
     progress(i + 1);
   }
   localStorageClient.setJson(KEY, true);
@@ -26,5 +30,10 @@ export async function removeCityCalendarPack() {
   localStorageClient.setJson(KEY, false);
   localStorageClient.setJson('pokit:city-calendar-pack:completed-v1', false);
   applyHeroCalendarDesign('bold');
+  await clearCityCalendarDownloads();
+}
+
+export async function clearCityCalendarDownloads() {
+  downloadGeneration++;
   await removeIllustrationCalendarDownloads();
 }
