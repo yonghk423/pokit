@@ -116,8 +116,11 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.map(item => {
       const previewLayoutWidth = previewWidth - 8;
       const previewLayoutHeight = previewLayoutWidth * (item.id === 'clipboard' ? 1340 / 914 : 540 / 330);
+      // The clipboard artwork starts 25 reference pixels below its canvas.
+      // Align its visible clip with the paper calendars' top clip edge.
+      const previewTop = item.id === 'clipboard' ? -(25 / 1340 * previewLayoutHeight + 3 / 330 * previewLayoutWidth) : 0;
       return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${selected === item.id ? '적용 중' : '무료'}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) { tapHaptic('select'); applyHeroCalendarDesign(item.id); } }} style={{ width: previewWidth }}>
-      <View pointerEvents="none" style={{ padding: 4, height: previewStageHeight, justifyContent: 'flex-start' }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewLayoutWidth} layoutHeight={previewLayoutHeight} /></View>
+      <View pointerEvents="none" style={{ padding: 4, height: previewStageHeight, justifyContent: 'flex-start' }}><View style={{ top: previewTop }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewLayoutWidth} layoutHeight={previewLayoutHeight} /></View></View>
       <View style={styles.caption}><ThemedText style={styles.label}>{item.name}</ThemedText><ThemedText style={[styles.free, selected === item.id && { color: '#278B77' }]}>{selected === item.id ? '적용 중' : '무료'}</ThemedText></View>
     </Pressable>;
     })}</View>
