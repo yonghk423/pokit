@@ -63,15 +63,15 @@ export function CalendarPaper({ selectedPreview = false, eventDates = [], design
   return <View testID="calendar-paper" pointerEvents={miniature ? 'none' : 'auto'} onLayout={layoutWidth == null ? e => { const next = e.nativeEvent.layout.width; if (next > 0) setWidth(current => current === next ? current : next); } : undefined} style={[styles.paper, wallpaper && { backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 }, { padding: 19 * scale, paddingTop: (wallpaper ? 0 : fitted ? 24 : 37) * scale, paddingBottom: (wallpaper ? 6 : 19) * scale, ...(fitted ? { height: layoutHeight } : {}) }]}>
     {!wallpaper && <View pointerEvents="none" style={[styles.clip, { width: (design === 'bold' ? 100 : 19) * scale, height: 10 * scale, top: -3 * scale, backgroundColor: isPhoto ? '#A79564' : '#30312F' }]} />}
     {!hideMonthHeading && <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: isPhoto ? 'center' : 'space-between', marginBottom: (wallpaper ? 8 : 22) * scale }}>
-      {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel="이전 달" onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 28, color: '#303330' }}>‹</Text></Pressable>}
-      <Text style={{ color: '#202522', fontSize: (isPhoto ? 12 : isGrid ? 26 : fitted ? 52 : 68) * scale, fontWeight: isPhoto ? '400' : '700', letterSpacing: isPhoto ? 4 * scale : -1 * scale }}>{isPhoto || isGrid ? MONTHS[month.getMonth()].toUpperCase() : MONTHS[month.getMonth()].slice(0, 3)}</Text>
-      {!isPhoto && <Text style={{ color: '#303330', fontSize: 19 * scale }}>{month.getFullYear()}</Text>}
-      {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel="다음 달" onPress={() => { tapHaptic('select'); onNextMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 28, color: '#303330' }}>›</Text></Pressable>}
+      {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel="이전 달" onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text allowFontScaling={!miniature} style={{ fontSize: 28, color: '#303330' }}>‹</Text></Pressable>}
+      <Text allowFontScaling={!miniature} style={{ color: '#202522', fontSize: (isPhoto ? 12 : isGrid ? 26 : fitted ? 52 : 68) * scale, fontWeight: isPhoto ? '400' : '700', letterSpacing: isPhoto ? 4 * scale : -1 * scale }}>{isPhoto || isGrid ? MONTHS[month.getMonth()].toUpperCase() : MONTHS[month.getMonth()].slice(0, 3)}</Text>
+      {!isPhoto && <Text allowFontScaling={!miniature} style={{ color: '#303330', fontSize: 19 * scale }}>{month.getFullYear()}</Text>}
+      {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel="다음 달" onPress={() => { tapHaptic('select'); onNextMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text allowFontScaling={!miniature} style={{ fontSize: 28, color: '#303330' }}>›</Text></Pressable>}
     </View>}
     <View style={fitted ? { flex: 1, minHeight: 0 } : undefined}>
     {isPhoto && <Pressable testID="calendar-cover-picker" accessibilityRole="button" accessibilityLabel={photo ? '달력 사진 변경' : '달력 사진 추가'} accessibilityState={{ busy, disabled: miniature || busy }} disabled={miniature || busy} onPress={() => { void pickCover(); }} style={{ width: photoWidth + 14 * scale * coverScale, height: photoHeight, alignSelf: 'center', marginBottom: 16 * scale, padding: 7 * scale * coverScale, paddingBottom: 18 * scale * coverScale, backgroundColor: '#F1F0EC', shadowColor: '#30342D', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } }}>
       <HeroPolaroidSurface />
-      <View style={{ flex: 1, backgroundColor: '#E6E7E1', justifyContent: 'center', alignItems: 'center' }}>{photo ? <View testID="calendar-cover-image" style={{ width: '100%', height: '100%' }}><HeroCalendarPhoto key={photo} uri={photo} contain /></View> : <Text style={{ color: '#747B70', fontSize: Math.max(18, 28 * scale), fontWeight: '300' }}>+</Text>}<HeroPhotoEmulsion /></View>
+      <View style={{ flex: 1, backgroundColor: '#E6E7E1', justifyContent: 'center', alignItems: 'center' }}>{photo ? <View testID="calendar-cover-image" style={{ width: '100%', height: '100%' }}><HeroCalendarPhoto key={photo} uri={photo} contain /></View> : <Text allowFontScaling={!miniature} style={{ color: '#747B70', fontSize: Math.max(18, 28 * scale), fontWeight: '300' }}>+</Text>}<HeroPhotoEmulsion /></View>
     </Pressable>}
 
     <View style={{ flex: 1, minWidth: 0, ...(isPhoto ? { minHeight: 0 } : fitted ? { height: '100%' } : {}) }}>
@@ -85,8 +85,8 @@ export function CalendarPaper({ selectedPreview = false, eventDates = [], design
         const hasRecord = grouped.has(key), isToday = key === getLocalDateKey(today);
         return <Pressable key={key} disabled={miniature || !onSelectDate} testID={miniature ? undefined : `calendar-paper-day-${key}`} accessibilityRole="button" accessibilityLabel={`${key}${hasRecord ? ', 기록 있음' : ''}${eventDates.includes(key) ? ', 이벤트 또는 연동 일정 있음' : ''}`} onPress={() => { tapHaptic('select'); onSelectDate?.(key); }} style={({ pressed }) => ({ width: '14.2857%', ...(fitted ? { height: '100%' } : { height: miniature ? (isPhoto ? 25 : isGrid ? 53 : 47) * scale : Math.max(44, (isPhoto ? 25 : isGrid ? 53 : 47) * scale) }), padding: 3 * scale, opacity: pressed ? 0.45 : 1 })}>
           <View style={{ flex: 1, borderWidth: isGrid ? StyleSheet.hairlineWidth : 0, borderColor: isIllustration ? 'rgba(83, 77, 64, 0.32)' : '#BFC3BC', padding: isGrid ? 3 * scale : 0, alignItems: isGrid ? 'flex-start' : 'center', backgroundColor: isIllustration ? 'rgba(255, 250, 240, 0.42)' : 'transparent' }}>
-            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: current ? '#252A26' : '#C7CAC4', fontSize: fitted ? Math.max(12, (isPhoto ? 12 : isIllustration ? 20 : isGrid ? 12 : 21) * scale) : (isPhoto ? 9 : isIllustration ? 20 : isGrid ? 12 : 21) * scale, fontWeight: isIllustration || design === 'bold' ? '700' : '400', textDecorationLine: isToday ? 'underline' : 'none' }}>{day.getDate()}</Text>
+            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }}>
+            <Text testID={miniature ? `calendar-preview-date-${key}` : undefined} allowFontScaling={!miniature} numberOfLines={1} style={{ color: current ? '#252A26' : '#C7CAC4', fontSize: fitted && !miniature ? Math.max(12, (isPhoto ? 12 : isIllustration ? 20 : isGrid ? 12 : 21) * scale) : (isPhoto ? 9 : isIllustration ? 20 : isGrid ? 12 : 21) * scale, fontWeight: isIllustration || design === 'bold' ? '700' : '400', textDecorationLine: isToday ? 'underline' : 'none' }}>{day.getDate()}</Text>
               {eventDates.includes(key) ? <View pointerEvents="none" testID={`calendar-event-ring-${key}`} style={{ position: 'absolute', top: -2, bottom: -2, left: -6, right: -6, borderRadius: 50, borderWidth: 1.2, borderColor: '#A5644F', transform: [{ rotate: '-8deg' }] }} /> : null}
             </View>
             {isGrid && !isIllustration && current && !thumbnail && <View pointerEvents="none" style={{ width: '100%', flex: 1, justifyContent: 'space-evenly' }}>{[0, 1, 2].map(line => <View key={line} style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E0E2DC' }} />)}</View>}
@@ -101,7 +101,7 @@ export function CalendarPaper({ selectedPreview = false, eventDates = [], design
     </View>
     </View>
     </View>
-    {isPhoto && <Text style={{ textAlign: 'center', fontSize: 9 * scale, color: '#85877F', marginTop: (wallpaper ? 6 : 12) * scale }}>{month.getFullYear()}</Text>}
+    {isPhoto && <Text allowFontScaling={!miniature} style={{ textAlign: 'center', fontSize: 9 * scale, color: '#85877F', marginTop: (wallpaper ? 6 : 12) * scale }}>{month.getFullYear()}</Text>}
     <View style={{ height: (wallpaper ? 4 : 18) * scale }} />
   </View>;
 }
@@ -110,12 +110,13 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
   const selected = useHeroCalendarDesign() ?? 'bold';
   const { width: windowWidth } = useWindowDimensions();
   const previewWidth = Math.max(1, (windowWidth - 64) / 3);
+  const previewStageHeight = (previewWidth - 8) * 540 / 330 + 8;
   return <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.map(item => {
       const previewLayoutWidth = previewWidth - 8;
       const previewLayoutHeight = previewLayoutWidth * (item.id === 'clipboard' ? 1340 / 914 : 540 / 330);
       return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${selected === item.id ? '적용 중' : '무료'}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) { tapHaptic('select'); applyHeroCalendarDesign(item.id); } }} style={{ width: previewWidth }}>
-      <View pointerEvents="none" style={{ padding: 4, height: previewLayoutHeight + 8, justifyContent: 'center' }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewLayoutWidth} layoutHeight={previewLayoutHeight} /></View>
+      <View pointerEvents="none" style={{ padding: 4, height: previewStageHeight, justifyContent: 'flex-start' }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewLayoutWidth} layoutHeight={previewLayoutHeight} /></View>
       <Text numberOfLines={2} style={styles.label}>{item.name}</Text><Text numberOfLines={1} style={[styles.free, selected === item.id && { color: '#55BFA8' }]}>{selected === item.id ? '적용 중' : '무료'}</Text>
     </Pressable>;
     })}</View>

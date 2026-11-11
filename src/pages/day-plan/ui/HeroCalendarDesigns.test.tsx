@@ -77,3 +77,19 @@ it('renders clipboard photos with a loading placeholder and preserves date taps'
   expect(tree.root.findAllByProps({ testID: 'calendar-photo-skeleton' })).toHaveLength(0);
   act(() => tree.unmount());
 });
+
+it.each(['bold', 'photo'] as const)('fits %s preview dates inside all seven columns at small widths', design => {
+  for (const width of [72, 96, 120]) {
+    let tree!: ReactTestRenderer;
+    act(() => { tree = create(<CalendarPaper design={design} month={new Date(2026, 10, 1)} today={new Date(2026, 10, 11)} diaries={[]} miniature layoutWidth={width} layoutHeight={width * 540 / 330} />); });
+    const dates = tree.root.findAll(node => typeof node.props.testID === 'string' && node.props.testID.startsWith('calendar-preview-date-') && node.props.style?.fontSize);
+    expect(dates.length).toBeGreaterThan(0);
+    for (const date of dates) {
+      const columnWidth = (width - 38 * width / 330) / 7;
+      expect(date.props.style.fontSize * 1.5).toBeLessThan(columnWidth);
+      expect(date.props.allowFontScaling).toBe(false);
+      expect(date.props.numberOfLines).toBe(1);
+    }
+    act(() => tree.unmount());
+  }
+});

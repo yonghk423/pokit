@@ -651,7 +651,7 @@ export function SettingsPage() {
                 accessibilityLabel={t('settings.a11y.reset', locale)}>
                 <View style={chrome.itemLeft}>
                   <SettingsRowIcon
-                    name="trash.fill"
+                    name="trash.outline"
                     color={p.dangerIcon}
                     boxBg={p.dangerIconBoxBg}
                     border={p.iconBorder}

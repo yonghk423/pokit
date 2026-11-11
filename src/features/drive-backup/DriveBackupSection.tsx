@@ -6,7 +6,6 @@ import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { ThemedText } from '@shared/ui/themed-text';
 import { restartAppSession } from '@shared/lib/app-session';
 import { openWebLink } from '@shared/lib/url/openWebLink';
-import { IconSymbol } from '@shared/ui/icon-symbol';
 import { buildSettingsPalette, SettingsRowIcon, SettingsSection, settingsChromeStyles as chrome } from '../../pages/settings/lib/settingsChrome';
 import { loadHeroOriginalPhotoLibrary } from '../../pages/day-plan/lib/heroOriginalPhoto';
 import { dateOf, localDates } from './dateData';
@@ -131,7 +130,7 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
               disabled={!!busy}
               onPress={() => Alert.alert('Drive 백업 삭제', `${date} 백업과 함께 저장된 사진 원본도 Google Drive에서 삭제해요. 휴대폰에 있는 원본과 기록은 유지됩니다.`, [{ text: '취소', style: 'cancel' }, { text: '백업 삭제', style: 'destructive', onPress: () => void run('Drive 백업 삭제 중', async () => { await deleteDateBackup(b, setBusy); await refresh(); Alert.alert('삭제 완료', `${date} 백업과 백업 사진을 Google Drive에서 삭제했어요.`); }) }])}
               style={[styles.deleteRow, { borderColor: p.border, opacity: busy ? 0.5 : 1 }]}>
-              <IconSymbol name="trash" size={22} color={p.desc} />
+              <ThemedText style={{ color: p.desc, fontSize: 14 }}>{t('common.delete')}</ThemedText>
             </Pressable>
           </View>)}
           </View>}
@@ -143,4 +142,4 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
     </View>}
   </SettingsSection>;
 }
-const styles = StyleSheet.create({ content: { padding: 16, gap: 12 }, quota: { padding: 12, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 }, button: { paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderRadius: 12 }, periods: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, dateList: { maxHeight: 320, borderRadius: 12 }, dateListContent: { paddingRight: 10 }, dateHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 64, paddingVertical: 10, gap: 12 }, dateActions: { gap: 8, paddingBottom: 12 }, backupRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12 }, restoreRow: { flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14 }, deleteRow: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth }, day: { borderTopWidth: StyleSheet.hairlineWidth, gap: 8 } });
+const styles = StyleSheet.create({ content: { padding: 16, gap: 12 }, quota: { padding: 12, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 }, button: { paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderRadius: 12 }, periods: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, dateList: { maxHeight: 320, borderRadius: 12 }, dateListContent: { paddingRight: 10 }, dateHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 64, paddingVertical: 10, gap: 12 }, dateActions: { gap: 8, paddingBottom: 12 }, backupRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12 }, restoreRow: { flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14 }, deleteRow: { minWidth: 60, paddingHorizontal: 10, height: 48, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth }, day: { borderTopWidth: StyleSheet.hairlineWidth, gap: 8 } });

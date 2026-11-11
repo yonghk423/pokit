@@ -30,15 +30,13 @@ import {
 } from '@shared/lib/storage';
 import { BrutalConfirmButton } from '@shared/ui/brutal-confirm-button';
 import { CityPopCardShell } from '@shared/ui/city-pop-card-shell';
-import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
+import { SettingsInkFrame } from '../../settings/lib/settingsChrome';
 import { IconSymbol } from '@shared/ui/icon-symbol';
-import { PaperGrain } from '@shared/ui/paper-grain';
 import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedView } from '@shared/ui/themed-view';
 
 const ICON = 34;
 const ICON_SHADOW = 2;
-const LIST_ROW_SHADOW = 2;
 /** 미읽음 점 — 파스텔 톤 진한 레드 */
 const BADGE = '#C45C5C';
 
@@ -104,25 +102,13 @@ function AnnouncementListCard({
   shadow: string;
   children: ReactNode;
 }) {
-  return (
-    <View style={[styles.listRowShell, { marginRight: LIST_ROW_SHADOW, marginBottom: LIST_ROW_SHADOW }]}>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.listRowShadow,
-          {
-            backgroundColor: shadow,
-            transform: [{ translateX: LIST_ROW_SHADOW }, { translateY: LIST_ROW_SHADOW }],
-          },
-        ]}
-      />
-      <View style={[styles.listRowFace, { backgroundColor: face }]}>
-        <PaperGrain opacity={0.46} />
-        <HanddrawnFrame color={frame} />
-        {children}
-      </View>
+  return <View style={styles.listRowShell}>
+    <View style={[styles.listRowFace, { backgroundColor: face }]}>
+      <SettingsInkFrame color={frame} />
+      {children}
     </View>
-  );
+  </View>;
+
 }
 
 /** 설정 → 공지사항 — 설정 행과 같은 종이 카드 */
@@ -141,8 +127,8 @@ export function AnnouncementsPage() {
   const [selected, setSelected] = useState<Announcement | null>(null);
 
   const pageBg = rf.bg;
-  const cardFace = isDark ? rf.bg : '#FFFEFA';
-  const listFrame = isDark ? 'rgba(224, 225, 215, 0.48)' : '#C8C2B4';
+  const cardFace = rf.bg;
+  const listFrame = isDark ? '#E8DEC9' : '#171510';
   const listShadow = isDark ? 'rgba(0, 0, 0, 0.30)' : 'rgba(62, 57, 47, 0.14)';
   const rowBorder = isDark ? 'rgba(241, 239, 255, 0.16)' : 'rgba(24, 26, 46, 0.12)';
   /** 설정 탭 SettingsRowIcon과 동일 — 흰 면 · 검정 테두리 · 솔리드 음영 */
@@ -231,17 +217,9 @@ export function AnnouncementsPage() {
             <ThemedText style={[styles.topPage, { color: rf.text }]}>{t('announcements.title')}</ThemedText>
           </View>
           {hasUnread ? (
-            <BrutalConfirmButton
-              compact
-              fill={isDark ? '#49665C' : '#D8EAE3'}
-              labelColor={isDark ? '#DDE8DF' : '#6A7F70'}
-              shadowColor="transparent"
-              shadowOffset={0}
-              label={t('announcements.markAllRead')}
-              accessibilityLabel={t('announcements.a11y.markAllRead')}
-              onPress={markAllRead}
-              style={styles.headerActionBtn}
-            />
+            <Pressable accessibilityRole="button" accessibilityLabel={t('announcements.a11y.markAllRead')} onPress={markAllRead} style={[styles.headerActionBtn, { minHeight: 44, alignItems: 'center', justifyContent: 'center' }]}>
+              <ThemedText style={{ color: rf.text, fontSize: 13, textDecorationLine: 'underline' }}>{t('announcements.markAllRead')}</ThemedText>
+            </Pressable>
           ) : (
             <View style={styles.headerActionSpacer} pointerEvents="none" />
           )}
@@ -436,14 +414,14 @@ const styles = StyleSheet.create({
   },
   listRowFace: {
     position: 'relative',
-    borderRadius: 4,
+    borderRadius: 0,
     zIndex: 1,
     overflow: 'hidden',
   },
   row: {
-    minHeight: 64,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    minHeight: 72,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

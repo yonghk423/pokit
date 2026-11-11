@@ -95,9 +95,9 @@ const drawings: Record<string, Line[]> = {
 
 /** Settings-specific nib drawings; never substitutes a shaded graphite illustration. */
 export function SettingsPenIcon({ name, size = 30, color }: { name: string; size?: number; color: string }) {
-  if (name === 'trash' || name.startsWith('trash.')) return <TrashIcon size={size} color={color} />;
+  if (name !== 'trash.outline' && (name === 'trash' || name.startsWith('trash.'))) return <TrashIcon size={size} color={color} />;
   if (name === 'chevron.left') return <BackChevron color={color} />;
-  const lines = drawings[name];
+  const lines = drawings[name === 'trash.outline' ? 'trash.fill' : name];
   if (!lines) return <HanddrawnControl name={name} size={size} color={color} />;
   return <Svg width={size} height={size} viewBox="0 0 32 32" accessible={false}>
     {name === 'star.fill' ? <Path d="M15.4 16L19.4 12.3 27 13 21.1 18.8 23 26.5Z" fill={color} /> : null}
