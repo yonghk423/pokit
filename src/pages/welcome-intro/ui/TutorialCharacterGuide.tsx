@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { GuideFrame } from '@shared/ui/tutorial-guide-layer';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -45,7 +45,7 @@ export function TutorialCharacterGuide({ frame, text, later, onPause, onContinue
   return <View pointerEvents="box-none" style={[s.root, { left: layout.x, top: layout.y, width: layout.width, height: layout.height }]} testID="tutorial-character-guide">
     <Pressable accessibilityRole={onContinue ? 'button' : undefined} accessibilityLabel={onContinue ? text : undefined} pointerEvents={onContinue ? 'auto' : 'none'} onPress={onContinue ? () => { tapHaptic(); onContinue(); } : undefined} onLayout={event => { const { width, height } = event.nativeEvent.layout; setBubbleSize(prior => prior.width === width && prior.height === height ? prior : { width, height }); }} style={[s.bubble, (layout.compact || place === 'above') && { width: layout.width - (place === 'above' ? 132 : 92), alignSelf: 'flex-start' }]}>
       {w > 0 && h > 0 ? <Svg width={(tailTip?.x ?? w) + 12} height={h + 24} style={{ position: 'absolute', left: 0, top: 0 }} accessible={false}><Path d={bubblePath} fill="#FCFAF3" fillOpacity={0.65} stroke="#424D56" strokeWidth={1.15} strokeLinejoin="round" /></Svg> : null}
-      <Text accessibilityLiveRegion="polite" style={s.words}>{text}</Text>
+      <ThemedText accessibilityLiveRegion="polite" style={s.words}>{text}</ThemedText>
     </Pressable>
     <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: place === 'above' ? 0 : undefined, bottom: place === 'above' ? undefined : 0, width: characterWidth, height: characterWidth*1.34 }}>
         <Animated.View style={{ flex: 1, transform: [{ rotate: gesture.interpolate({ inputRange: [0, 1], outputRange: ['0deg', pose === 'thinking' ? '0.7deg' : '0.4deg'] }) }, { translateY: gesture.interpolate({ inputRange: [0, 1], outputRange: [0, pose === 'coffee' ? -1 : -3] }) }] }}>

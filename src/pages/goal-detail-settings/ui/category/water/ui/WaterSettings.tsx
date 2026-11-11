@@ -1,7 +1,9 @@
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
+import { ThemedText as Text } from '@shared/ui/themed-text';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   MAX_WATER_QUICK_ADD_PRESETS,
@@ -348,7 +350,7 @@ export function WaterSettings({
         </View>
         {showAddPresetInput ? (
           <View style={styles.addPresetRow}>
-            <TextInput
+            <ThemedTextInput
               value={addPresetDraft}
               onChangeText={(text) => setAddPresetDraft(text.replace(/[^0-9]/g, ''))}
               keyboardType="number-pad"
@@ -392,7 +394,7 @@ export function WaterSettings({
             <Text style={styles.rowTitle}>{t('goalDetail.water.dailyGoal')}</Text>
           </View>
           <View style={styles.inlineInputWrap}>
-            <TextInput
+            <ThemedTextInput
               value={goalLStr}
               onChangeText={onChangeGoalL}
               onBlur={onBlurGoalL}

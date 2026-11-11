@@ -1,3 +1,4 @@
+import { ThemedText } from '@shared/ui/themed-text';
 import { HeroCalendarPhoto } from './HeroCalendarPhoto';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCalendarWidgetImageReady } from '../model/calendarWidgetRenderReady';
@@ -117,7 +118,7 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
       const previewLayoutHeight = previewLayoutWidth * (item.id === 'clipboard' ? 1340 / 914 : 540 / 330);
       return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${selected === item.id ? '적용 중' : '무료'}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) { tapHaptic('select'); applyHeroCalendarDesign(item.id); } }} style={{ width: previewWidth }}>
       <View pointerEvents="none" style={{ padding: 4, height: previewStageHeight, justifyContent: 'flex-start' }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewLayoutWidth} layoutHeight={previewLayoutHeight} /></View>
-      <Text numberOfLines={2} style={styles.label}>{item.name}</Text><Text numberOfLines={1} style={[styles.free, selected === item.id && { color: '#55BFA8' }]}>{selected === item.id ? '적용 중' : '무료'}</Text>
+      <View style={styles.caption}><ThemedText style={styles.label}>{item.name}</ThemedText><ThemedText style={[styles.free, selected === item.id && { color: '#278B77' }]}>{selected === item.id ? '적용 중' : '무료'}</ThemedText></View>
     </Pressable>;
     })}</View>
   </ScrollView>;
@@ -125,6 +126,7 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
 const styles = StyleSheet.create({
   paper: { backgroundColor: '#FAFAF6', shadowColor: '#34362E', shadowOpacity: 0.15, shadowRadius: 5, shadowOffset: { width: 1, height: 4 }, elevation: 3 },
   clip: { position: 'absolute', alignSelf: 'center', borderRadius: 1 },
-  label: { fontSize: 10, lineHeight: 14, height: 28, color: '#3E4439', textAlign: 'center', marginTop: 8 },
-  free: { height: 18, lineHeight: 18, fontSize: 11, color: '#73796C', textAlign: 'center', marginTop: 5 },
+  caption: { marginTop: 8, minHeight: 51, gap: 2 },
+  label: { fontSize: 10, lineHeight: 14, color: '#3E4439', textAlign: 'center' },
+  free: { minHeight: 18, lineHeight: 18, fontSize: 11, color: '#73796C', textAlign: 'center' },
 });

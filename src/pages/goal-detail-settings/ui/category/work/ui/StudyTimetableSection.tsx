@@ -1,6 +1,7 @@
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { useMemo, useState } from 'react';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   WORK_STUDY_WEEKDAY_LABELS_KO,
@@ -163,7 +164,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
         <ThemedText style={[styles.addLabel, { color: palette.onVariant }]}>
           {t('goalDetail.study.addForWeekday', { weekday: WORK_STUDY_WEEKDAY_LABELS_KO[selectedWeekday] })}
         </ThemedText>
-        <TextInput
+        <ThemedTextInput
           value={draftSubject}
           onChangeText={setDraftSubject}
           placeholder={t('goalDetail.study.subjectPlaceholder')}
@@ -173,7 +174,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
         <View style={styles.timeRow}>
           <View style={styles.timeField}>
             <ThemedText style={[styles.timeLabel, { color: palette.onVariant }]}>{t('goalDetail.study.start')}</ThemedText>
-            <TextInput
+            <ThemedTextInput
               value={startHhmm}
               onChangeText={setStartHhmm}
               onBlur={() => setStartHhmm((v) => normalizeHhmmInput(v, '09:00'))}
@@ -185,7 +186,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
           </View>
           <View style={styles.timeField}>
             <ThemedText style={[styles.timeLabel, { color: palette.onVariant }]}>{t('goalDetail.study.end')}</ThemedText>
-            <TextInput
+            <ThemedTextInput
               value={endHhmm}
               onChangeText={setEndHhmm}
               onBlur={() => setEndHhmm((v) => normalizeHhmmInput(v, '10:00'))}
@@ -196,7 +197,7 @@ export function StudyTimetableSection({ slots, onChangeSlots, defaultSubject = '
             />
           </View>
         </View>
-        <TextInput
+        <ThemedTextInput
           value={place}
           onChangeText={setPlace}
           placeholder={t('goalDetail.study.locationPlaceholder')}

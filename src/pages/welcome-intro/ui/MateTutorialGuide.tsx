@@ -1,5 +1,6 @@
+import { ThemedText as Text } from '@shared/ui/themed-text';
 import { useEffect, useId, useRef, useState } from 'react';
-import { Animated, AccessibilityInfo, Image, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, AccessibilityInfo, Image, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { setTutorialHole } from '@shared/ui/tutorial-guide-layer';

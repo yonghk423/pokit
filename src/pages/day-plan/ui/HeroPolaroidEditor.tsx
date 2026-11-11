@@ -9,7 +9,7 @@ import { HeroPolaroidToolbox } from './HeroPolaroidToolbox';
 import Svg, { Path } from 'react-native-svg';
 import { Image as PreviewImage } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Alert, Animated, Easing, Text, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppModal } from '@shared/ui/app-modal';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -106,7 +106,7 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
               <HeroPolaroidSurface />
               <View style={{ width: photoWidth, height: photoHeight }}><PreviewImage testID="polaroid-live-preview" source={previewUri ? { uri: previewUri } : source} contentFit={draft.photoFit ?? 'cover'} contentPosition="center" transition={0} cachePolicy="memory-disk" onError={() => { setImageFailed(true); }} useAppleWebpCodec={false} style={{ width: photoWidth, height: photoHeight, backgroundColor: paper }} />{draft.showDate !== false ? <View pointerEvents="none" style={{ position: 'absolute', width: photoWidth, height: photoHeight, left: 0, top: 0 }}><HeroFilmDateStamp testID="polaroid-preview-date" date={draft.date || formatHeroPolaroidDate()} /></View> : null}</View>
               <Pressable testID="polaroid-caption-write" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.write')} onPress={edit} style={{ height: captionHeight, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 8, gap: 4 }}>
-                {draft.showText !== false ? <Text testID="polaroid-preview-title" numberOfLines={2} allowFontScaling={false} style={{ flexShrink: 1, fontFamily: resolveAppFontFamily(draft.fontId ?? globalFont), color: pen, fontSize: 22 }}>{draft.title.trim() || t('polaroid.editor.tell_your_story_today')}</Text> : null}
+                {draft.showText !== false ? <ThemedText fontId={draft.fontId} testID="polaroid-preview-title" numberOfLines={2} allowFontScaling={false} style={{ flexShrink: 1, fontFamily: resolveAppFontFamily(draft.fontId ?? globalFont), color: pen, fontSize: 22 }}>{draft.title.trim() || t('polaroid.editor.tell_your_story_today')}</ThemedText> : null}
               </Pressable>
             </Animated.View>
             <Animated.View pointerEvents={back ? 'auto' : 'none'} style={{ position: 'absolute', left: (360 * printScale - 360) / 2, top: (printHeight * printScale - printHeight) / 2, width: 360, height: printHeight, backfaceVisibility: 'hidden', transform: [{ scale: printScale }, { perspective: 1200 }, { rotateY: turn.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] }) }], padding: 24, backgroundColor: paper }}>
@@ -118,11 +118,11 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
             </Animated.View>
             </View>
           </View>
-          <View style={{ position: 'absolute', top: -10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ minWidth: 66, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
+          <View style={{ position: 'absolute', top: -10, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Pressable testID="polaroid-flip" accessibilityRole="button" accessibilityLabel={back ? t('polaroid.editor.view_photo') : t('polaroid.editor.view_story')} onPress={flip} style={{ minWidth: 52, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}>
               <ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.flip')}</ThemedText>
             </Pressable>
+            {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ minWidth: 66, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
           </View>
           </View>
         <HeroPolaroidToolbox photoFit={draft.photoFit ?? 'cover'} onChangePhotoFit={photoFit => patch({ photoFit })} showText={draft.showText !== false} onToggleText={toggleText} showDate={draft.showDate !== false} onToggleDate={toggleDate} effects={effects} onChange={patch} disabled={busy || checking} />

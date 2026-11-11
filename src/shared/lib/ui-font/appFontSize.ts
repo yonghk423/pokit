@@ -1,7 +1,7 @@
 export type AppFontSizeId = 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg';
 
-/** 앱 기본 글씨 크기 — 작게 */
-export const DEFAULT_APP_FONT_SIZE_ID: AppFontSizeId = 'sm';
+/** 앱 기본 글씨 크기 — 2단계 */
+export const DEFAULT_APP_FONT_SIZE_ID: AppFontSizeId = 'smMd';
 
 export const APP_FONT_SIZE_IDS: readonly AppFontSizeId[] = ['sm', 'smMd', 'md', 'mdLg', 'lg'] as const;
 

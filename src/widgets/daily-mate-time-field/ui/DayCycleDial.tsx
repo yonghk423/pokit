@@ -1,3 +1,4 @@
+import { scaleTypeSize, useAppFontSizeScale } from '@shared/lib/ui-font';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -128,6 +129,7 @@ export function DayCycleDial({
   size: sizeProp,
 }: DayCycleDialProps) {
   const { t, locale } = useTranslation();
+  const fontSizeScale = useAppFontSizeScale();
   const { width: windowWidth } = useWindowDimensions();
   const tone = isDark ? RetroFlatColors.dark : RetroFlatColors.light;
   const dialRef = useRef<View>(null);
@@ -753,7 +755,7 @@ export function DayCycleDial({
                         x={lab.x}
                         y={lab.y}
                         fill={colors.ink}
-                        fontSize={isMajor ? 12 : 10}
+                        fontSize={scaleTypeSize(isMajor ? 12 : 10, fontSizeScale)}
                         fontWeight="500" fontFamily={cityPopFont('500').fontFamily}
                         textAnchor="middle"
                         alignmentBaseline="central"
@@ -765,7 +767,7 @@ export function DayCycleDial({
                           x={lab.x}
                           y={lab.y}
                           fill={colors.muted}
-                          fontSize={8}
+                          fontSize={scaleTypeSize(8, fontSizeScale)}
                           fontWeight="500" fontFamily={cityPopFont('500').fontFamily}
                           textAnchor="middle"
                           alignmentBaseline="central"
@@ -778,7 +780,7 @@ export function DayCycleDial({
                           x={meridiemPos.x}
                           y={meridiemPos.y}
                           fill={colors.muted}
-                          fontSize={8}
+                          fontSize={scaleTypeSize(8, fontSizeScale)}
                           fontWeight="500" fontFamily={cityPopFont('500').fontFamily}
                           textAnchor="middle"
                           alignmentBaseline="central">

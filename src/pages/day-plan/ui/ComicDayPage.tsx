@@ -1,3 +1,4 @@
+import { ThemedText as Text } from '@shared/ui/themed-text';
 import { HeroCameraPrintAnimation, heroCameraBottom } from './HeroCameraPrintAnimation';
 import { HeroCanvasNote } from './HeroCanvasNote';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +15,7 @@ import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Keyboard, Text, Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import {

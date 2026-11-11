@@ -4,7 +4,6 @@ import { CityCalendarPackCover } from '../../src/pages/day-plan/ui/CityCalendarP
 import { applyHeroDiaryClip, useHeroDiaryClip } from '../../src/pages/day-plan/model/heroDiaryClip';
 import { HeroBlueClipPreview } from '../../src/pages/day-plan/ui/HeroBlueClipPreview';
 import { useCanvasEventDates } from '../../src/pages/day-plan/model/heroCanvasEvents';
-import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { useDeviceEvents } from '@features/apple-calendar/useDeviceEvents';
 import { eventsOnDay } from '@features/apple-calendar/calendarDates';
 import { HeroTrashIcon } from '../../src/pages/day-plan/ui/HeroTrashIcon';
@@ -73,13 +72,9 @@ const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme, width
   const apply = useCallback(() => onApply(theme), [onApply, theme]);
   return <Pressable testID={`illustration-theme-${theme.themeId}`} accessibilityRole="button" accessibilityLabel={`${theme.title} 캘린더 적용`} accessibilityState={{ selected }} onPress={apply} style={{ width }}>
     <View style={{ width, height }}><ExpoImage source={{ uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ width, height, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }} />{!previewReady ? <View pointerEvents="none" style={{ position: 'absolute', width, height, borderRadius: 14, backgroundColor: '#E6E5E1' }} /> : null}</View>
-    <View style={{ padding: 16, gap: 5 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <ThemedText style={{ flex: 1, color: ink, fontSize: 18 }}>{theme.title}</ThemedText>
-        <View accessible={false} style={{ width: 26, height: 26, alignItems: 'center', justifyContent: 'center', opacity: selected ? 1 : 0 }}>
-          <HanddrawnControl name="checkmark" size={23} color={ink} />
-        </View>
-      </View>
+    <View style={{ padding: 8, minHeight: 68, gap: 2 }}>
+      <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12, lineHeight: 16 }}>{theme.title}</ThemedText>
+      <ThemedText accessible={selected} accessibilityElementsHidden={!selected} importantForAccessibility={selected ? 'auto' : 'no-hide-descendants'} style={{ minHeight: 16, color: '#278B77', fontSize: 11, lineHeight: 16, textAlign: 'center', opacity: selected ? 1 : 0 }}>적용 중</ThemedText>
       {error ? <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 12 }}>적용하지 못했어요. 사진을 눌러 다시 시도해주세요.</ThemedText> : null}
     </View>
   </Pressable>;
@@ -92,8 +87,9 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const [diaryCategory, setDiaryCategory] = useState<'clip' | 'trash' | 'camera'>('clip');
   const windowSize = useWindowDimensions();
   // Match the source artwork (853 × 1844), using one scale for both axes.
-  const previewWidth = Math.max(1, Math.min(220, windowSize.width - 48, windowSize.height * 0.55 * 853 / 1844));
-  const previewHeight = previewWidth * 1844 / 853;
+  const previewWidth = Math.max(1, Math.min(200, windowSize.width - 48, windowSize.height * 0.55 * 853 / 1844));
+  const calendarThemeWidth = Math.max(1, (windowSize.width - 40) / 3);
+  const calendarThemeHeight = calendarThemeWidth * 1844 / 853;
   const insets = useSafeAreaInsets();
   const { tabBarHeight } = useDayPlanTabBridge();
   const calendarBottomInset = Math.max(tabBarHeight, 56 + Math.max(insets.bottom, 34) + 8) + 12;
@@ -189,46 +185,48 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <ThemedText numberOfLines={1} adjustsFontSizeToFit style={{ color: ink, fontSize: 14, flexShrink: 1 }}>{clip === 'blue' ? (locale === 'ko' ? '파란 집게' : 'Blue Clip') : (locale === 'ko' ? '검은 집게' : 'Black Clip')}</ThemedText>
             </View>
-            <ThemedText style={{ color: selectedClip === clip ? '#55BFA8' : ink, opacity: selectedClip === clip ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{selectedClip === clip ? (locale === 'ko' ? '적용 중' : 'Applied') : (locale === 'ko' ? '무료' : 'Free')}</ThemedText>
-          </Pressable>) : diaryCategory === 'trash' ? <View testID="diary-item-mesh-trash" accessible accessibilityLabel={locale === 'ko' ? '메쉬 휴지통, 적용 중' : 'Mesh wastebasket, applied'} style={{ width: Math.min(160, (windowSize.width - 52) / 2), padding: 12, gap: 8, alignItems: 'center' }}>
-            <View style={{ width: '100%', height: 80, padding: 12, overflow: 'visible', justifyContent: 'center', alignItems: 'center' }}><ExpoImage source={storeArtwork.trash} contentFit="contain" transition={0} style={{ width: 40, height: 56 }} /></View>
-            <ThemedText style={{ color: ink, fontSize: 18, textAlign: 'center' }}>{locale === 'ko' ? '메쉬 휴지통' : 'Mesh wastebasket'}</ThemedText>
-            <ThemedText style={{ color: '#55BFA8', textAlign: 'center', fontSize: 13 }}>{locale === 'ko' ? '적용 중' : 'Applied'}</ThemedText>
+            <ThemedText style={{ color: selectedClip === clip ? '#278B77' : ink, opacity: selectedClip === clip ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{selectedClip === clip ? (locale === 'ko' ? '적용 중' : 'Applied') : (locale === 'ko' ? '무료' : 'Free')}</ThemedText>
+          </Pressable>) : diaryCategory === 'trash' ? <View testID="diary-item-mesh-trash" accessible accessibilityLabel={locale === 'ko' ? '메쉬 휴지통, 적용 중' : 'Mesh wastebasket, applied'} style={{ width: (windowSize.width - 64) / 3, padding: 8, gap: 6, alignItems: 'center' }}>
+            <View style={{ width: '100%', height: 56, overflow: 'visible', justifyContent: 'center', alignItems: 'center' }}><ExpoImage source={storeArtwork.trash} contentFit="contain" transition={0} style={{ width: 40, height: 48 }} /></View>
+            <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 14, textAlign: 'center' }}>{locale === 'ko' ? '메쉬 휴지통' : 'Mesh wastebasket'}</ThemedText>
+            <ThemedText style={{ color: '#278B77', textAlign: 'center', fontSize: 13 }}>{locale === 'ko' ? '적용 중' : 'Applied'}</ThemedText>
           </View> : <View testID="diary-item-classic-camera" accessible accessibilityLabel={locale === 'ko' ? '인스탁스 미니 에보, 적용 중' : 'instax mini Evo, applied'} style={{ width: (windowSize.width - 64) / 3, padding: 8, gap: 6, alignItems: 'center' }}>
             <View style={{ width: '100%', height: 56, justifyContent: 'center', alignItems: 'center' }}><ExpoImage source={storeArtwork.camera} contentFit="contain" transition={0} style={{ width: '80%', height: 48 }} /></View>
             <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 14, textAlign: 'center' }}>{locale === 'ko' ? '인스탁스 미니 에보' : 'instax mini Evo'}</ThemedText>
-            <ThemedText style={{ color: '#55BFA8', textAlign: 'center', fontSize: 13 }}>{locale === 'ko' ? '적용 중' : 'Applied'}</ThemedText>
+            <ThemedText style={{ color: '#278B77', textAlign: 'center', fontSize: 13 }}>{locale === 'ko' ? '적용 중' : 'Applied'}</ThemedText>
           </View>}
         </ScrollView>
       </View>
       : view === 'calendar'
       ? <View style={{ flex: 1, minHeight: 0 }}><HeroCalendarDesigns today={today} month={month} diaries={diaries} onSelectDate={openDate} /></View>
       : view === 'illustrationGallery'
-      ? <ScrollView testID="illustration-calendar-gallery" contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 20, alignItems: 'center', gap: 20 }}>
+      ? <ScrollView testID="illustration-calendar-gallery" contentContainerStyle={packReady && packOpen
+        ? { paddingHorizontal: 12, paddingVertical: 16, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', columnGap: 8, rowGap: 12 }
+        : { paddingHorizontal: 12, paddingVertical: 20, alignItems: 'center', gap: 20 }}>
           {!(packReady && packOpen) ? <View style={{ width: previewWidth }}>
-            <Pressable disabled={!packReady || deletingPack} onPress={() => setPackOpen(true)} accessibilityRole="button" accessibilityLabel="시티 애니메이션 캘린더 열기" style={{ borderRadius: 14, backgroundColor: '#FFFFFF', shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 }, elevation: 6 }}>
+            <Pressable disabled={!packReady || deletingPack} onPress={() => { tapHaptic('select'); setPackOpen(true); }} accessibilityRole="button" accessibilityLabel="시티 애니메이션 캘린더 열기" style={{ borderRadius: 14, backgroundColor: '#FFFFFF', shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 }, elevation: 6 }}>
               <CityCalendarPackCover width={previewWidth} month={month} />
             </Pressable>
-            <View style={{ padding: 16, gap: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <View style={{ paddingVertical: 16, gap: 10 }}>
+              <View style={{ marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <ThemedText style={{ color: ink, flexShrink: 1 }}>시티 애니메이션</ThemedText>
                 <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 13 }}>{locale === 'ko' ? '무료' : 'Free'}</ThemedText>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Pressable disabled={packProgress !== null || deletingPack} onPress={() => { if (packReady) setPackOpen(true); else void downloadPack(); }} accessibilityRole="button" style={({ pressed }) => [raisedPackAction(pressed), { flex: 1 }]}>
-                <ThemedText style={{ color: '#000000', fontSize: 14, lineHeight: 24, textAlign: 'center' }}>{packProgress !== null ? `다운로드 중 ${packProgress}/${CITY_CALENDAR_THEMES.length}` : packReady ? `다운로드 완료 ${CITY_CALENDAR_THEMES.length}/${CITY_CALENDAR_THEMES.length}` : packError ? '다운로드 다시 시도' : `캘린더 ${CITY_CALENDAR_THEMES.length}종 다운로드`}</ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Pressable disabled={packProgress !== null || deletingPack} onPress={() => { if (packReady) setPackOpen(true); else void downloadPack(); }} accessibilityRole="button" style={({ pressed }) => [raisedPackAction(pressed), { flex: 1, minWidth: 0, paddingHorizontal: 8 }]}>
+                <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: '#000000', fontSize: 13, lineHeight: 24, textAlign: 'center', flexShrink: 1 }}>{packProgress !== null ? `다운로드 중 ${packProgress}/${CITY_CALENDAR_THEMES.length}` : packReady ? `다운로드 완료 ${CITY_CALENDAR_THEMES.length}/${CITY_CALENDAR_THEMES.length}` : packError ? '다운로드 다시 시도' : `캘린더 ${CITY_CALENDAR_THEMES.length}종 다운로드`}</ThemedText>
               </Pressable>
               {packReady && <Pressable testID="delete-city-calendar-pack" accessibilityRole="button" accessibilityLabel="다운로드한 캘린더 삭제" disabled={deletingPack} onPress={() => {
                 AppAlert.alert('캘린더를 삭제할까요?', '다운로드한 시티 애니메이션 캘린더를 삭제합니다. 나중에 다시 다운로드할 수 있어요.', [
                   { text: '취소', style: 'cancel' },
                   { text: '삭제', style: 'destructive', onPress: () => { void removePack(); } },
                 ]);
-              }} style={({ pressed }) => [raisedPackAction(pressed), { width: 56, height: 48, paddingHorizontal: 0, paddingVertical: 0, opacity: deletingPack ? 0.4 : 1 }]}><HeroTrashIcon size={26} color="#000000" /></Pressable>}
+              }} style={({ pressed }) => [raisedPackAction(pressed), { width: 48, height: 48, paddingHorizontal: 0, paddingVertical: 0, opacity: deletingPack ? 0.4 : 1 }]}><HeroTrashIcon size={26} color="#000000" /></Pressable>}
               </View>
               {packProgress !== null && <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 12, textAlign: 'center' }}>다운로드가 완료될 때까지 앱을 종료하지 마세요.</ThemedText>}
             </View>
-          </View> : <Pressable onPress={() => setPackOpen(false)}><ThemedText style={{ color: ink }}>‹ 시티 애니메이션 목록으로</ThemedText></Pressable>}
-          {packReady && packOpen && CITY_CALENDAR_THEMES.map(theme => <IllustrationThemeCard key={theme.design} theme={theme} width={previewWidth} height={previewHeight} dark={isDark} selected={selectedDesign === theme.design} error={themeError === theme.themeId} onApply={applyTheme} />)}
+          </View> : <Pressable onPress={() => setPackOpen(false)} style={{ width: '100%', minHeight: 36, justifyContent: 'center' }}><ThemedText style={{ color: ink }}>‹ 일러스트 + 캘린더 목록으로</ThemedText></Pressable>}
+          {packReady && packOpen && CITY_CALENDAR_THEMES.map(theme => <IllustrationThemeCard key={theme.design} theme={theme} width={calendarThemeWidth} height={calendarThemeHeight} dark={isDark} selected={selectedDesign === theme.design} error={themeError === theme.themeId} onApply={applyTheme} />)}
         </ScrollView>
       : <View testID="illustration-diary-calendar" style={{ flex: 1, minHeight: 0, backgroundColor: '#F7F6F4' }} onLayout={({ nativeEvent: { layout } }) => setIllustrationCanvas(old => old.width === layout.width && old.height === layout.height ? old : { width: layout.width, height: layout.height })}>
         {illustrationCanvas.width > 0 && illustrationCanvas.height > 0 ? <HeroIllustrationCalendar eventDates={eventDates} month={month} today={today} diaries={diaries} width={illustrationCanvas.width} height={illustrationCanvas.height} topInset={insets.top} bottomInset={calendarBottomInset} onSelectDate={openDate} onMoveMonth={delta => setMonth(value => new Date(value.getFullYear(), value.getMonth() + delta, 1, 12))} onNavigate={tab => router.navigate(tab === 'index' ? '/(tabs)' : '/(tabs)/history')} onChangeMode={() => setView('illustrationGallery')} /> : null}

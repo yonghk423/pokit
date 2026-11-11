@@ -1,6 +1,7 @@
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { useMemo, useState } from 'react';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   buildWeekCalendarRow,
@@ -150,7 +151,7 @@ export function StudyDdaySection({ events, onChangeEvents, palette }: Props) {
           {formatDateKeyDisplayKo(selectedDateKey)} · {formatStudyDdayLabel(selectedDateKey, todayKey)}
         </ThemedText>
         <View style={styles.addRow}>
-          <TextInput
+          <ThemedTextInput
             value={draftTitle}
             onChangeText={setDraftTitle}
             onSubmitEditing={addEvent}

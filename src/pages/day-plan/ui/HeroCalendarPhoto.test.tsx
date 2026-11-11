@@ -22,3 +22,22 @@ it('keeps a displayed photo visible on rerenders and waits for the replacement t
   expect(tree.root.findAllByProps({ testID: 'calendar-photo-skeleton' })).toHaveLength(0);
   act(() => tree.unmount());
 });
+
+it('loads a local calendar thumbnail before displaying the photo and falls back if it disappears', async () => {
+  const previews = require('../lib/heroPhotoPreview') as typeof import('../lib/heroPhotoPreview');
+  const original = 'file:///Documents/hero-photos/photo-old.jpg';
+  const thumb = 'file:///Caches/hero-previews-v1/photo-old.jpg.webp';
+  const lookup = jest.spyOn(previews, 'photoPreview').mockResolvedValue(thumb);
+  let tree!: ReactTestRenderer;
+  try {
+    await act(async () => { tree = create(<HeroCalendarPhoto uri={original} />); });
+    const image = () => tree.root.findAll(node => !!node.props.onDisplay && !!node.props.source)[0];
+    expect(lookup).toHaveBeenCalledWith(original);
+    expect(image().props.source.uri).toBe(thumb);
+    act(() => image().props.onError());
+    expect(image().props.source.uri).toBe(original);
+  } finally {
+    lookup.mockRestore();
+    act(() => tree.unmount());
+  }
+});

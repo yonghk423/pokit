@@ -1,3 +1,4 @@
+import { ThemedText } from '@shared/ui/themed-text';
 import { useEffect, useState } from 'react';
 import { loadCityPopFont } from '@app/index';
 import { SettingsInkFrame } from '../lib/settingsChrome';
@@ -18,6 +19,7 @@ import {
   resolveDiaryEditorTypography,
   APP_FONT_IDS,
   APP_FONT_SIZE_IDS,
+  DEFAULT_APP_FONT_SIZE_ID,
   isSingleFaceAppFont,
   resolveAppFontFamily,
   resolveAppFontOpticalScale,
@@ -139,12 +141,12 @@ export function FontSettingsPage() {
             <IconSymbol name="chevron.left" size={20} color={rf.text} />
           </Pressable>
           <View style={styles.topTitles}>
-            <Text style={[styles.topLabel, { color: rf.textMuted }, appFontTextStyle(fontId, '700')]}>
+            <ThemedText style={[styles.topLabel, { color: rf.textMuted }, appFontTextStyle(fontId, '700')]}>
               {t('settings.title')}
-            </Text>
-            <Text style={[styles.topPage, { color: rf.text }, appFontTextStyle(fontId, '600')]}>
+            </ThemedText>
+            <ThemedText style={[styles.topPage, { color: rf.text }, appFontTextStyle(fontId, '600')]}>
               {t('settings.fontTitle')}
-            </Text>
+            </ThemedText>
           </View>
           <View style={styles.headerBtn} pointerEvents="none" />
         </View>
@@ -166,9 +168,9 @@ export function FontSettingsPage() {
             {t('settings.font.hint')}
           </Text>
 
-          <Text style={[styles.sectionLabel, { color: rf.textMuted }, appFontTextStyle(fontId, '700')]}>
+          <ThemedText style={[styles.sectionLabel, { color: rf.textMuted }, appFontTextStyle(fontId, '700')]}>
             {t('settings.font.sizeSection')}
-          </Text>
+          </ThemedText>
 
           <View style={styles.sizeRow}>
             {SIZE_OPTIONS.filter((opt) => APP_FONT_SIZE_IDS.includes(opt.key)).map((opt) => {
@@ -230,21 +232,15 @@ export function FontSettingsPage() {
           </View>
 
           <View style={styles.sizeScaleLabels}>
-            <Text style={[styles.sizeScaleLabel, { color: rf.textMuted }, sizeLabelStyle]}>
-              {t('settings.font.size.sm')}
-            </Text>
-            <Text style={[styles.sizeScaleLabel, { color: rf.textMuted }, sizeLabelStyle]}>
-              {t('settings.font.size.md')}
-            </Text>
-            <Text style={[styles.sizeScaleLabel, { color: rf.textMuted }, sizeLabelStyle]}>
-              {t('settings.font.size.lg')}
-            </Text>
+            {APP_FONT_SIZE_IDS.map(key => <ThemedText key={key} style={[styles.sizeScaleLabel, { flex: 1, textAlign: 'center', color: rf.textMuted }, sizeLabelStyle]}>
+              {key === DEFAULT_APP_FONT_SIZE_ID ? t('settings.font.size.md') : key === 'sm' ? t('settings.font.size.sm') : key === 'lg' ? t('settings.font.size.lg') : ''}
+            </ThemedText>)}
           </View>
-          <Text style={[styles.sizeSelectedLabel, { color: rf.text }, sizeLabelStyle]}>
+          <ThemedText style={[styles.sizeSelectedLabel, { color: rf.text }, sizeLabelStyle]}>
             {t(SIZE_OPTIONS.find((opt) => opt.key === sizeId)?.labelKey ?? 'settings.font.size.sm')}
-          </Text>
+          </ThemedText>
 
-          <Text
+          <ThemedText
             style={[
               styles.sectionLabel,
               styles.familySectionLabel,
@@ -252,7 +248,7 @@ export function FontSettingsPage() {
               appFontTextStyle(fontId, '700'),
             ]}>
             {t('settings.font.familySection')}
-          </Text>
+          </ThemedText>
 
           {FONT_OPTIONS.filter((opt) => APP_FONT_IDS.includes(opt.key)).map((opt) => {
             const active = fontId === opt.key;

@@ -1,3 +1,4 @@
+import { scaleTypeSize, useAppFontSizeScale } from '@shared/lib/ui-font';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import {
@@ -58,6 +59,7 @@ export function SmoothSegmentedControl<T extends string>({
   minHeight = 34,
   style,
 }: SmoothSegmentedControlProps<T>) {
+  const fontSizeScale = useAppFontSizeScale();
   const [trackW, setTrackW] = useState(0);
   const selectedIndex = options[0].value === value ? 0 : 1;
   const progress = useSharedValue(selectedIndex);
@@ -127,8 +129,8 @@ export function SmoothSegmentedControl<T extends string>({
                 pressed && !disabled && { transform: [{ translateX: 1 }, { translateY: 1 }] },
               ]}>
               <Animated.Text
-                style={[styles.label, cityPopFont('800'), textStyle]}
-                numberOfLines={1}>
+                style={[styles.label, cityPopFont('800'), { fontSize: scaleTypeSize(13, fontSizeScale), lineHeight: scaleTypeSize(20, fontSizeScale) }, textStyle]}
+                >
                 {opt.label}
               </Animated.Text>
             </Pressable>

@@ -1,3 +1,4 @@
+import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import * as Haptics from 'expo-haptics';
@@ -559,7 +560,7 @@ export function PuzzleHistoryTabPage() {
                 <Animated.View
                   pointerEvents={searchOpen ? 'auto' : 'none'}
                   style={[styles.headerSearchClip, searchFieldStyle]}>
-                  <TextInput
+                  <ThemedTextInput
                     ref={searchInputRef}
                     value={titleQuery}
                     onChangeText={setTitleQuery}

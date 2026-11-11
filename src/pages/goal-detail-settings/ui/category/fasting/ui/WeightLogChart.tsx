@@ -1,3 +1,4 @@
+import { scaleTypeSize, useAppFontSizeScale } from '@shared/lib/ui-font';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
@@ -162,6 +163,7 @@ function WeightLogChartInner({
   palette: Palette;
 }) {
   const { t } = useTranslation();
+  const fontSizeScale = useAppFontSizeScale();
   const isNote = useUiSurfacePresentation() === 'note';
   const [width, setWidth] = useState(0);
   const weeklyPoints = useMemo(
@@ -241,7 +243,7 @@ function WeightLogChartInner({
                   x={label.x}
                   y={label.y}
                   fill={WEEKLY_LINE}
-                  fontSize={10}
+                  fontSize={scaleTypeSize(10, fontSizeScale)}
                   fontWeight="400"
                   textAnchor={label.alignEnd ? 'end' : 'start'}>
                   {label.kg.toFixed(1)}
@@ -260,7 +262,7 @@ function WeightLogChartInner({
                 x={width - CHART_PAD_X}
                 y={Math.max(11, layout.targetY - 5)}
                 fill={TARGET_LINE}
-                fontSize={10}
+                fontSize={scaleTypeSize(10, fontSizeScale)}
                 fontWeight="600"
                 textAnchor="end">
                 {targetWeightKg.toFixed(1)}
