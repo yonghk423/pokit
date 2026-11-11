@@ -29,6 +29,7 @@
   "comicDay.selectAll": "Select all",
   "comicDay.clearSelection": "Clear selection",
   "comicDay.deleteSelected": "Delete {count} selected",
+  "comicDay.deleteCountAction": "Delete ({count})",
   "comicDay.deleteSelectedHint": "Delete the {count} selected scenes and their notes and tasks?",
   "dayPlan.rhythmEmptyTitle": "Shall we start the day?",
   "dayPlan.rhythmEmptyBody": "Start with one small thing",
@@ -3032,5 +3033,13 @@
   "polaroid.film.disposable": "Disposable",
   "polaroid.film.bluehour": "Blue hour",
   "polaroid.film.noir": "Noir",
-  "comicCalendar.returnHint": "Returns to the calendar screen"
+  "comicCalendar.returnHint": "Returns to the calendar screen",
+  "drive.storage.title": "Google account storage",
+  "drive.storage.remaining": "{size} available",
+  "drive.storage.used": "{size} used",
+  "drive.storage.total": "Total {size}",
+  "drive.storage.usage": "Storage used",
+  "drive.storage.percent": "{percent}% used",
+  "drive.storage.noLimit": "No storage limit.",
+  "drive.storage.description": "Storage reported by Google, not extra space provided by this app. Work or school accounts may show shared organization storage."
 }

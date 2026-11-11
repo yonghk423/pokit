@@ -1,6 +1,4 @@
-import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState } from 'react-native';
 import { calendarError, deviceEvents, useAppleCalendar } from './appleCalendar';
 import type { DeviceEvent } from './calendarDates';
 export function useDeviceEvents(year: number, month: number, ko: boolean) {
@@ -21,15 +19,8 @@ export function useDeviceEvents(year: number, month: number, ko: boolean) {
       finally { if (alive && current === revision) setLoading(false); }
     };
     void refresh();
-    let delayed: ReturnType<typeof setTimeout> | undefined;
-    const subscription = AppState.addEventListener('change', state => {
-      clearTimeout(delayed);
-      if (state === 'active') { void refresh(); delayed = setTimeout(() => void refresh(), 3000); }
-    });
-    return () => { alive = false; clearTimeout(delayed); subscription.remove(); };
+    return () => { alive = false; };
   }, [ids, year, month, ko, refreshKey]);
-  // Returning from Settings does not trigger AppState: the app stayed active.
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
   // Clear synchronously on disconnect, even before the effect runs.
   return { ...(ids.length ? result : { events: [], error: '' }), loading: ids.length > 0 && loading, refresh };
 }

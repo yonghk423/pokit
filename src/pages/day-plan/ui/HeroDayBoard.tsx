@@ -212,15 +212,25 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
       // Do not paint a square provisional photo before its actual ratio arrives.
       if (!provided && item.artworkUri && !uploadedRatios[item.artworkUri]) return null;
       const printHeight = scatter.frames[index].width * 2 * 1.2;
+      const selected = selectedKeys.includes(item.key);
       return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={0} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={height => setScatterHeights(previous => Math.abs((previous[item.key] ?? 0) - height) < 1 ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
         <HeroDraggablePrint minTop={8 - upperReach} anchorLeft={anchors[index].left} anchorTop={anchors[index].top} anchorRotation={anchors[index].rotation} onRotate={angle => setPrintPositions(savePrintPosition(item.key, scatter.frames[index].left / boardWidth, scatter.frames[index].top / boardWidth, angle))} rotation={scatter.frames[index].rotation} enabled={gridOpen && overviewSettled && !deleteMode} scrollGesture={gridNative} dismissGesture={gridDismiss} left={scatter.frames[index].left} top={scatter.frames[index].top} width={scatter.frames[index].width} boardWidth={boardWidth} bottom={scatter.height + 120} onActive={active => setDraggingPrint(active ? item.key : null)} onDrop={(x, y) => setPrintPositions(savePrintPosition(item.key, x / boardWidth, y / boardWidth))}>
         <HeroScaledPrint width={scatter.frames[index].width}>
-        <Pressable accessibilityRole="button" accessibilityLabel={title || t('comicDay.showCards')} onPress={() => { tapHaptic(); openItem(item.key); }} style={({ pressed }) => [s.polaroid, provided && { height: printHeight }, { opacity: pressed ? 0.75 : 1 }]}>
+        <Pressable accessibilityRole={deleteMode ? 'checkbox' : 'button'} accessibilityState={deleteMode ? { checked: selected } : undefined} accessibilityLabel={deleteMode ? t('comicDay.selectForDeletion', { label: title || t('comicDay.showCards') }) : title || t('comicDay.showCards')} onPress={() => {
+          tapHaptic(deleteMode ? 'select' : undefined);
+          openItem(item.key);
+        }} style={({ pressed }) => [s.polaroid, provided && { height: printHeight }, { opacity: pressed ? 0.75 : 1 }]}>
           <HeroPolaroidSurface />
           <ComicSceneImage preserveFullImage showSkeletonOnMount contentFit="contain" backgroundColor="#EEEEEC" imageKey={`history-grid:${item.artworkUri ?? scene.id}`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} style={{ width: '100%', ...(provided ? { height: Math.max(1, printHeight - 66) } : { aspectRatio: item.artworkUri ? uploadedRatios[item.artworkUri] ?? 1 : 3 / 4 }) }} />
           <View style={{ minHeight: 44, ...(provided ? { flex: 1, overflow: 'hidden' as const } : { flexGrow: 1 }), paddingTop: 7, paddingHorizontal: 2, gap: 3 }}>
             {title ? <ThemedText fontId={item.fontId} numberOfLines={2} style={{ color: item.inkColor ?? ink, fontSize: 12, lineHeight: 17 }}>{title}</ThemedText> : null}
           </View>
+          {deleteMode ? <>
+            <View pointerEvents="none" style={[s.photoSelectionOutline, selected && { borderColor: '#B95D46' }]} />
+            <View pointerEvents="none" style={[s.photoSelectionMark, selected && { backgroundColor: '#B95D46', borderColor: '#B95D46' }]}>
+              {selected ? <ThemedText style={{ color: '#FFFFFF', fontSize: 14, lineHeight: 18, fontWeight: '600' }}>✓</ThemedText> : null}
+            </View>
+          </> : null}
         </Pressable>
         </HeroScaledPrint>
         </HeroDraggablePrint>
@@ -272,15 +282,23 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const tools = !historyOverview && !(cardsFirst && gridOpen) && items.length > 0 && !(deleteMode && onRemoveMany) && !menuOpen ? <HeroCardToolsPortal><CardToolsFab compact docked={!!toolsHost} isDark={isDark} overview={gridOpen} testID="comic-card-tools-fab" concept="film" belowAction={bagAction} actions={[
     ...(cardsFirst && gridOpen ? [{ key: 'cards', testID: 'comic-show-cards', label: t('comicDay.showCards'), onPress: () => { setMenuOpen(false); setDeleteMode(false); setDeleteFromCards(false); setSelectedForDeletion([]); setGridOpen(false); }, icon: <Svg width={26} height={26} viewBox="0 0 30 30"><Path d="M10 3L25 4L26 21L12 22ZM6 7L21 6L23 25L7 26Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1} strokeLinejoin="round" /><Path d="M3 11L18 10L20 28L4 28Z" fill={isDark ? '#313632' : '#FFFFFF'} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" /></Svg> } satisfies CardToolAction] : []),
     ...(!deleteMode ? [{ key: 'layout', testID: 'comic-board-view', label: t('comicDay.boardView'), selected: menuOpen, onPress: () => { if (cardsFirst) setGridOpen(!gridOpen); else setMenuOpen(value => !value); }, icon: <LayoutDiagram mode={viewMode} ink={ink} size={26} /> } satisfies CardToolAction] : []),
-    ...(onRemove || onRemoveMany ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <HeroTrashIcon size={29} color={ink} /> } satisfies CardToolAction] : []),
+    ...(!cardsFirst && (onRemove || onRemoveMany) ? [{ key: 'delete', testID: 'comic-card-delete-mode', label: t('comicDay.toggleDelete'), selected: deleteMode, onPress: toggleDeleteMode, icon: <HeroTrashIcon size={29} color={ink} /> } satisfies CardToolAction] : []),
   ]} /></HeroCardToolsPortal> : !items.length && bagAction ? <ServiceTutorialTarget steps={['comicTools']} style={{ position: 'absolute', right: 14, bottom: 96, zIndex: 4 }}><Pressable testID={bagAction.testID} accessibilityRole="button" accessibilityLabel={bagAction.label} onPress={() => { tapHaptic(); bagAction.onPress(); }} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>{bagAction.icon}</Pressable></ServiceTutorialTarget> : null;
   const hasWallpaper = useWallpaperStore(state => !!state.wallpaper);
   const canvas = hasWallpaper ? 'transparent' : isDark ? '#262B28' : 'transparent';
-  const mainCamera = syncMainState && cardsFirst && (gridOpen || !items.length) && !historyOverview && !deleteMode && !detailOpen ? <Pressable
+  const mainCamera = syncMainState && cardsFirst && (gridOpen || !items.length) && !historyOverview && !detailOpen ? <Pressable
     testID="hero-duvet-camera" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')}
     onPress={() => { tapHaptic(); (onAddPhoto ?? onAdd)(); }}
     style={({ pressed }) => ({ position: 'absolute', right: 20, bottom: heroCameraBottom(safeInsets.bottom), width: 75, height: 53, zIndex: 3, transform: [ { translateY: pressed ? 1.5 : 0 }, { scale: pressed ? 0.985 : 1 }] })}>
     <HeroRestingCamera dark={isDark} />
+  </Pressable> : null;
+  const mainTrash = syncMainState && cardsFirst && gridOpen && items.length > 0 && !historyOverview && !detailOpen ? <Pressable
+    testID="hero-duvet-trash" accessibilityRole="button" accessibilityLabel={deleteMode ? t('common.cancel') : t('comicDay.toggleDelete')}
+    accessibilityState={{ selected: deleteMode }} onPress={() => { tapHaptic(deleteMode ? 'select' : 'warn'); toggleDeleteMode(); }}
+    style={{ position: 'absolute', right: 100, bottom: heroCameraBottom(safeInsets.bottom) + 2, width: 40, height: 49, zIndex: 4, alignItems: 'center', justifyContent: 'center' }}>
+    <Image testID="hero-duvet-trash-image" source={selectedKeys.length
+      ? require('../../../../assets/control-illustrations/mesh-trash-bin-paper.webp')
+      : require('../../../../assets/control-illustrations/mesh-trash-bin.webp')} contentFit="contain" transition={0} cachePolicy="memory-disk" accessible={false} style={{ width: '75%', height: '75%' }} />
   </Pressable> : null;
   if (!items.length && syncMainState && cardsFirst && !historyOverview) return <View style={{ flex: 1, backgroundColor: canvas }}>
     <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, paddingBottom: 180, paddingTop: safeInsets.top + 60 }}>
@@ -352,7 +370,15 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     {!items.length ? <ThemedText style={[s.empty, { color: muted }]}>{t('comicDay.empty')}</ThemedText> : null}
     {!cardsFirst ? <ServiceTutorialTarget steps={!showCards ? ['comicStart'] : []} style={s.add}><SketchPaperButton label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget> : null}
   </ScrollView></GestureDetector>
-  {deleteMode && onRemoveMany ? <View style={[s.selectionBar, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: muted }]}>
+  {deleteMode && onRemoveMany && cardsFirst ? <View testID="hero-photo-delete-actions" style={[s.photoDeleteActions, { bottom: heroCameraBottom(safeInsets.bottom) + 62 }]}>
+    <Pressable testID="hero-photo-delete-cancel" accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={() => { tapHaptic('select'); toggleDeleteMode(); }} style={({ pressed }) => [s.photoDeleteCancel, pressed && s.photoDeletePressed]}>
+      <ThemedText style={{ color: '#252529', fontSize: 14 }}>{t('common.cancel')}</ThemedText>
+    </Pressable>
+    <Pressable testID="hero-photo-delete-confirm" accessibilityRole="button" accessibilityLabel={t('comicDay.deleteCountAction', { count: selectedKeys.length })} accessibilityState={{ disabled: !selectedKeys.length }} disabled={!selectedKeys.length} onPress={() => { tapHaptic('warn'); onRemoveMany(selectedKeys); }} style={({ pressed }) => [s.photoDeleteConfirm, !selectedKeys.length && s.photoDeleteDisabled, pressed && s.photoDeleteConfirmPressed]}>
+      <ThemedText style={{ color: '#713F45', opacity: selectedKeys.length ? 1 : 0.4, fontSize: 14 }}>{t('comicDay.deleteCountAction', { count: selectedKeys.length })}</ThemedText>
+    </Pressable>
+  </View> : null}
+  {deleteMode && onRemoveMany && !cardsFirst ? <View style={[s.selectionBar, { backgroundColor: isDark ? '#262B28' : '#FFFFFF', borderColor: muted }]}>
     <View style={s.selectionActions}>
       <ThemedText style={{ color: ink, fontSize: 13 }}>{t('comicDay.selectedSceneCount', { count: selectedKeys.length })}</ThemedText>
       <Pressable accessibilityRole="button" accessibilityLabel={t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')} onPress={() => { tapHaptic('select'); setSelectedForDeletion(selectedKeys.length === items.length ? [] : items.map(item => item.key)); }} style={s.selectionTouch}><ThemedText style={{ color: ink, fontSize: 13 }}>{t(selectedKeys.length === items.length && items.length > 0 ? 'comicDay.clearSelection' : 'comicDay.selectAll')}</ThemedText></Pressable>
@@ -364,6 +390,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   </View> : null}
   </Animated.View>
   {mainCamera}
+  {mainTrash}
   {tools}
   {!cardsFirst && !showCards && toolsHost ? <View style={{ position: 'absolute', right: 18, bottom: 80 }}><HeroCardToolsOutlet /></View> : null}
   {menuOpen ? <>
@@ -397,6 +424,14 @@ export function ComicSceneDetail({ item, choices, ink, onEditTime }: Omit<Common
 const s = StyleSheet.create({
   polaroid: { flexGrow: 1, padding: 7, paddingTop: 12, paddingBottom: 7, shadowColor: '#403624', shadowOpacity: 0.22, shadowRadius: 3, shadowOffset: { width: 0, height: 3 }, elevation: 3, marginBottom: 14 },
   selectionBar: { padding: 12, gap: 8, borderTopWidth: 0.5 },
+  photoDeleteActions: { position: 'absolute', right: 24, zIndex: 5, flexDirection: 'row', alignItems: 'center', gap: 18 },
+  photoDeleteCancel: { minWidth: 76, height: 50, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#ECECEF', boxShadow: '-5px -5px 12px rgba(255,255,255,0.95), 5px 5px 12px rgba(126,127,145,0.28)' },
+  photoDeleteConfirm: { minWidth: 100, height: 50, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#EBC1C4', boxShadow: '-5px -5px 12px rgba(255,244,244,0.95), 5px 5px 12px rgba(157,104,113,0.28)' },
+  photoDeletePressed: { transform: [{ translateY: 1 }], boxShadow: '-2px -2px 5px rgba(255,255,255,0.9), 2px 2px 5px rgba(126,127,145,0.24)' },
+  photoDeleteConfirmPressed: { transform: [{ translateY: 1 }], boxShadow: '-2px -2px 5px rgba(255,244,244,0.9), 2px 2px 5px rgba(157,104,113,0.24)' },
+  photoDeleteDisabled: { backgroundColor: '#EBCDD0' },
+  photoSelectionOutline: { ...StyleSheet.absoluteFill, borderWidth: 1.4, borderColor: 'transparent', zIndex: 2 },
+  photoSelectionMark: { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12, borderWidth: 1.3, borderColor: '#9B958B', backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center', zIndex: 3 },
   selectionActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   selectionTouch: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 8 },
   bulkDelete: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },

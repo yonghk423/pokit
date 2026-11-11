@@ -109,17 +109,21 @@ export function CalendarPaper({ selectedPreview = false, eventDates = [], design
 export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: ComicDiary[]; onSelectDate: (date: string) => void }) {
   const selected = useHeroCalendarDesign() ?? 'bold';
   const { width: windowWidth } = useWindowDimensions();
-  const previewWidth = Math.min(270, (windowWidth - 40) * 0.78);
+  const previewWidth = Math.max(1, (windowWidth - 64) / 3);
   return <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-    <View style={{ gap: 28, marginTop: 22, alignItems: 'center' }}>{CALENDAR_DESIGNS.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${selected === item.id ? '적용 중' : '무료'}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) { tapHaptic('select'); applyHeroCalendarDesign(item.id); } }} style={{ width: previewWidth }}>
-      <View pointerEvents="none" style={{ padding: 4 }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewWidth - 8} /></View>
-      <Text style={styles.label}>{item.name}</Text><Text numberOfLines={1} style={[styles.free, selected === item.id && { color: '#55BFA8' }]}>{selected === item.id ? '적용 중' : '무료'}</Text>
-    </Pressable>)}</View>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.map(item => {
+      const previewLayoutWidth = previewWidth - 8;
+      const previewLayoutHeight = previewLayoutWidth * (item.id === 'clipboard' ? 1340 / 914 : 540 / 330);
+      return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${selected === item.id ? '적용 중' : '무료'}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: selected === item.id }} disabled={selected === item.id} onPress={() => { if (selected !== item.id) { tapHaptic('select'); applyHeroCalendarDesign(item.id); } }} style={{ width: previewWidth }}>
+      <View pointerEvents="none" style={{ padding: 4, height: previewLayoutHeight + 8, justifyContent: 'center' }}><CalendarPaper {...props} design={item.id} miniature layoutWidth={previewLayoutWidth} layoutHeight={previewLayoutHeight} /></View>
+      <Text numberOfLines={2} style={styles.label}>{item.name}</Text><Text numberOfLines={1} style={[styles.free, selected === item.id && { color: '#55BFA8' }]}>{selected === item.id ? '적용 중' : '무료'}</Text>
+    </Pressable>;
+    })}</View>
   </ScrollView>;
 }
 const styles = StyleSheet.create({
   paper: { backgroundColor: '#FAFAF6', shadowColor: '#34362E', shadowOpacity: 0.15, shadowRadius: 5, shadowOffset: { width: 1, height: 4 }, elevation: 3 },
   clip: { position: 'absolute', alignSelf: 'center', borderRadius: 1 },
-  label: { fontSize: 12, color: '#3E4439', textAlign: 'center', marginTop: 12 },
+  label: { fontSize: 10, lineHeight: 14, height: 28, color: '#3E4439', textAlign: 'center', marginTop: 8 },
   free: { height: 18, lineHeight: 18, fontSize: 11, color: '#73796C', textAlign: 'center', marginTop: 5 },
 });

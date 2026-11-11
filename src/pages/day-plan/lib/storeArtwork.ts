@@ -2,14 +2,16 @@ import { Image, type ImageRef } from 'expo-image';
 import { useEffect, useState } from 'react';
 
 const sources = {
+  camera: require('../../../../assets/control-illustrations/photo-camera-save.png'),
+  trash: require('../../../../assets/control-illustrations/mesh-trash-bin.png'),
   board: require('../../../../assets/control-illustrations/clipboard-calendar-v2.webp'),
   cover: require('../../../../assets/store-previews/city-animation-couch.webp'),
-  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.webp'),
-  black: require('../../../../assets/control-illustrations/black-clipboard-clip.webp'),
+  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.png'),
+  black: require('../../../../assets/control-illustrations/black-clipboard-clip.png'),
 };
 type Artwork = Record<keyof typeof sources, ImageRef>;
-// Only these four bundled products are retained, each decoded to at most 768px.
-// This bounded set uses at most 9 MB of pixels; downloaded themes are not retained.
+// Only these six bundled products are retained, each decoded to at most 768px.
+// This bounded set uses at most 14 MB of pixels; downloaded themes are not retained.
 let ready: Artwork | null = null;
 let pending: Promise<Artwork> | null = null;
 function prepare() {

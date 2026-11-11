@@ -2972,5 +2972,13 @@
   "comicDay.photo.saveError": "写真を保存できませんでした。もう一度お試しください。",
   "comicDay.gallery.originalPhotos": "自分の写真",
   "comicDiary.history": "履歴",
-  "comicCalendar.returnHint": "カレンダー画面に戻ります"
+  "comicCalendar.returnHint": "カレンダー画面に戻ります",
+  "drive.storage.title": "Google アカウントの保存容量",
+  "drive.storage.remaining": "残り {size}",
+  "drive.storage.used": "{size} 使用中",
+  "drive.storage.total": "合計 {size}",
+  "drive.storage.usage": "使用済み容量",
+  "drive.storage.percent": "{percent}% 使用中",
+  "drive.storage.noLimit": "保存容量の上限はありません。",
+  "drive.storage.description": "Google が報告した保存容量です。このアプリが提供する追加容量ではありません。職場や学校のアカウントでは組織全体の容量の場合があります。"
 }

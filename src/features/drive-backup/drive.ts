@@ -45,17 +45,27 @@ async function token() {
   if (!google.getCurrentUser()) { const result = await google.signInSilently(); if (result.type !== 'success') throw new Error('먼저 Google Drive를 연결해 주세요.'); }
   return (await google.getTokens()).accessToken;
 }
-async function request(url: string, init: RequestInit = {}): Promise<Response> {
+async function request(url: string, init: RequestInit = {}, allowNotFound = false): Promise<Response> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const accessToken = await token();
     const response = await fetch(url, { ...init, headers: { ...init.headers, Authorization: `Bearer ${accessToken}` } });
     if (response.ok) return response;
+    if (allowNotFound && response.status === 404) return response;
     if (response.status === 401 && attempt === 0) { await sdk().clearCachedAccessToken(accessToken); continue; }
     throw new Error(response.status === 403 ? 'Drive 접근 권한 또는 저장 용량을 확인해 주세요.' : `Google Drive 요청에 실패했어요 (${response.status}). 다시 시도해 주세요.`);
   }
   throw new Error('Google 계정을 다시 연결해 주세요.');
 }
 export type DriveBackup = { id: string; name: string; createdTime: string; appProperties: { date: string; kind: string } };
+export type DriveStorageQuota = { usage: number; limit: number | null };
+export async function getDriveStorageQuota(): Promise<DriveStorageQuota> {
+  const params = new URLSearchParams({ fields: 'storageQuota(usage,limit)' });
+  const result = await (await request(`https://www.googleapis.com/drive/v3/about?${params}`)).json();
+  const usage = Number(result.storageQuota?.usage);
+  const limit = result.storageQuota?.limit == null ? null : Number(result.storageQuota.limit);
+  if (!Number.isFinite(usage) || (limit !== null && !Number.isFinite(limit))) throw new Error('Google 계정 저장공간 정보를 읽지 못했어요.');
+  return { usage, limit };
+}
 export async function listBackups(): Promise<DriveBackup[]> {
   const rows: DriveBackup[] = []; let pageToken = '';
   do {
@@ -68,7 +78,7 @@ async function createFile(name: string, mimeType: string, date: string, kind: st
   return (await (await request(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, mimeType, parents: ['appDataFolder'], appProperties: { date, kind } }) })).json()).id as string;
 }
 const uploadUrl = (id: string) => `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(id)}?uploadType=media`;
-async function removeFile(id: string) { await request(`${API}/${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+async function removeFile(id: string) { await request(`${API}/${encodeURIComponent(id)}`, { method: 'DELETE' }, true); }
 function walk(value: unknown, replace: (s: string) => string): any {
   if (typeof value === 'string') return replace(value);
   if (Array.isArray(value)) return value.map(v => walk(v, replace));
@@ -101,6 +111,18 @@ export async function backupDate(date: string, progress: (s: string) => void) {
     await request(uploadUrl(id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manifest) });
     await request(`${API}/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appProperties: { date, kind: 'pokit-date-v1' } }) });
   } catch (error) { await Promise.allSettled(created.map(removeFile)); throw error; }
+}
+export async function deleteDateBackup(backup: DriveBackup, progress: (s: string) => void) {
+  const manifest = await (await request(`${API}/${encodeURIComponent(backup.id)}?alt=media`)).json() as Manifest;
+  if (manifest.format !== 'pokit-date' || manifest.version !== 1 || manifest.date !== backup.appProperties.date || !Array.isArray(manifest.assets)) throw new Error('백업 정보가 올바르지 않아 삭제할 수 없어요.');
+  const assetIds = [...new Set(manifest.assets.map(asset => asset?.id))];
+  if (assetIds.some(id => typeof id !== 'string' || !/^[\w-]+$/.test(id))) throw new Error('백업 이미지 정보가 올바르지 않아 삭제할 수 없어요.');
+  for (const [index, id] of assetIds.entries()) {
+    progress(`백업 파일 삭제 중 ${index + 1}/${assetIds.length}`);
+    await removeFile(id);
+  }
+  progress('백업 기록 삭제 중');
+  await removeFile(backup.id);
 }
 export async function restoreDate(backup: DriveBackup, progress: (s: string) => void, restorePreferences = false) {
   const manifest = await (await request(`${API}/${encodeURIComponent(backup.id)}?alt=media`)).json() as Manifest;

@@ -8,6 +8,6 @@ const read = (): DiaryClip => localStorageClient.getJson(KEY) === 'black' ? 'bla
 export function useHeroDiaryClip() { return useSyncExternalStore(subscribe, read, read); }
 export function applyHeroDiaryClip(clip: DiaryClip) { localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
 export const DIARY_CLIP_IMAGES = {
-  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.webp'),
-  black: require('../../../../assets/control-illustrations/black-clipboard-clip.webp'),
+  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.png'),
+  black: require('../../../../assets/control-illustrations/black-clipboard-clip.png'),
 };

@@ -29,6 +29,7 @@
   "comicDay.selectAll": "전체 선택",
   "comicDay.clearSelection": "선택 해제",
   "comicDay.deleteSelected": "선택한 {count}개 삭제",
+  "comicDay.deleteCountAction": "삭제 ({count})",
   "comicDay.deleteSelectedHint": "선택한 장면 {count}개와 해당 메모, 할 일을 삭제할까요?",
   "dayPlan.rhythmEmptyTitle": "오늘 하루 시작 해볼까요?",
   "dayPlan.rhythmEmptyBody": "작은 일부터 하나씩 시작해요",
@@ -3032,5 +3033,13 @@
   "polaroid.film.disposable": "일회용 필름",
   "polaroid.film.bluehour": "블루 아워",
   "polaroid.film.noir": "강한 흑백",
-  "comicCalendar.returnHint": "달력 화면으로 돌아갑니다"
+  "comicCalendar.returnHint": "달력 화면으로 돌아갑니다",
+  "drive.storage.title": "Google 계정 저장공간",
+  "drive.storage.remaining": "{size} 남았어요",
+  "drive.storage.used": "{size} 사용 중",
+  "drive.storage.total": "전체 {size}",
+  "drive.storage.usage": "사용한 저장공간",
+  "drive.storage.percent": "{percent}% 사용 중",
+  "drive.storage.noLimit": "저장 용량 제한이 없어요.",
+  "drive.storage.description": "Google에서 알려준 계정 저장공간이에요. 앱에서 별도로 제공하는 용량이 아니며, 회사·학교 계정은 조직 전체 용량일 수 있어요."
 }

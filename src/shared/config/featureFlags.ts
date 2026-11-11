@@ -2,8 +2,8 @@
  * 저장된 사진·진행 기록은 유지하며 메뉴, 가이드, 직접 접근과 자동 동기화만 중단한다.
  */
 export const FEATURE_FLAGS = {
-  /** 백업·복구 점검 동안 설정 메뉴만 숨기며 기능과 저장 데이터는 유지한다. */
-  driveBackupSettings: false,
+  /** 설정에서 Google Drive 날짜별 백업·복구를 다시 노출한다. */
+  driveBackupSettings: true,
   /** 무료 운영 중에는 구독 메뉴와 SDK 연결을 중단한다. 재개 시 이 값으로 활성화한다. */
   proSubscriptions: false,
   /** 구매 연동을 재개해도 기존 기능을 자동으로 유료화하지 않는다. */
