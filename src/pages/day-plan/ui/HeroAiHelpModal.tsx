@@ -1,4 +1,4 @@
-import { HeroAiVideoGuide } from './HeroAiVideoGuide';
+import { HeroAiVisualGuide } from './HeroAiVisualGuide';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AppModal } from '@shared/ui/app-modal';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -23,7 +23,7 @@ export function HeroAiHelpModal({ onClose }: { onClose: () => void }) {
       <View testID="hero-ai-help-modal" accessibilityViewIsModal style={s.paper}>
         <View style={s.heading}><ThemedText accessibilityRole="header" style={s.title}>{content.title}</ThemedText><Pressable testID="hero-ai-help-close" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={close} style={s.close}><HanddrawnControl name="xmark" color="#343933" size={22} /></Pressable></View>
         <ScrollView showsVerticalScrollIndicator contentContainerStyle={s.body}>
-          <HeroAiVideoGuide locale={locale} />
+          <HeroAiVisualGuide locale={locale} />
         </ScrollView>
       </View>
     </View>
