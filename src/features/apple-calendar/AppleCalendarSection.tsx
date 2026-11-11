@@ -1,3 +1,4 @@
+import { SettingsSection, buildSettingsPalette } from '../../pages/settings/lib/settingsChrome';
 import { calendarDisplayTitle } from './calendarDisplayTitle';
 import type { DeviceEvent } from './calendarDates';
 import { calendarSourceLabel } from './calendarSourceLabel';
@@ -16,6 +17,7 @@ const CalendarHeading = memo(function CalendarHeading({ ko, ink }: { ko: boolean
 });
 export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
   const { locale } = useTranslation();
+  const palette = buildSettingsPalette(isDark);
   const ko = locale === 'ko', ink = isDark ? '#EEECE6' : '#292D28';
   const ids = useAppleCalendar(state => state.ids), select = useAppleCalendar(state => state.select);
   const disconnected = useAppleCalendar(state => state.disconnected);
@@ -48,7 +50,7 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
     return () => subscription.remove();
   }, [open, ko]);
   if (Platform.OS !== 'ios') return null;
-  return <View style={{ padding: 16, gap: 10, marginBottom: 18, borderWidth: 0.5, borderColor: ink, borderRadius: 8 }}>
+  return <SettingsSection surface={palette.surface} isDark={isDark}><View style={{ padding: 16, gap: 10 }}>
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: open, busy }} onPress={() => { setOpen(value => !value); if (!open && !loaded.current && !disconnected) void load(true); }} style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <HanddrawnControl name="calendar" color={ink} size={28} />
       <CalendarHeading ko={ko} ink={ink} />
@@ -92,5 +94,5 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
       </View>
       {disconnected ? <Pressable accessibilityRole="button" onPress={() => void Linking.openSettings()} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink }}>{ko ? '아이폰에서 접근 권한 끄기' : 'Manage permission in iPhone Settings'}</ThemedText></Pressable> : null}
     </View>
-  </View>;
+  </View></SettingsSection>;
 }

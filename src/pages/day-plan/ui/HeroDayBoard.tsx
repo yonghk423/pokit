@@ -292,10 +292,10 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     style={({ pressed }) => ({ position: 'absolute', right: 20, bottom: heroCameraBottom(safeInsets.bottom), width: 75, height: 53, zIndex: 3, transform: [ { translateY: pressed ? 1.5 : 0 }, { scale: pressed ? 0.985 : 1 }] })}>
     <HeroRestingCamera dark={isDark} />
   </Pressable> : null;
-  const mainTrash = syncMainState && cardsFirst && gridOpen && items.length > 0 && !historyOverview && !detailOpen ? <Pressable
-    testID="hero-duvet-trash" accessibilityRole="button" accessibilityLabel={deleteMode ? t('common.cancel') : t('comicDay.toggleDelete')}
-    accessibilityState={{ selected: deleteMode }} onPress={() => { tapHaptic(deleteMode ? 'select' : 'warn'); toggleDeleteMode(); }}
-    style={{ position: 'absolute', right: 100, bottom: heroCameraBottom(safeInsets.bottom) + 2, width: 40, height: 49, zIndex: 4, alignItems: 'center', justifyContent: 'center' }}>
+  const mainTrash = cardsFirst && gridOpen && items.length > 0 && !detailOpen && ((syncMainState && !historyOverview) || (historyOverview && !!onRemoveMany)) ? <Pressable
+    testID="hero-duvet-trash" accessibilityRole="button" accessibilityLabel={t('comicDay.toggleDelete')}
+    accessibilityState={{ selected: deleteMode }} onPress={() => { if (!deleteMode) { tapHaptic('warn'); toggleDeleteMode(); } }}
+    style={{ position: 'absolute', ...(historyOverview ? { right: 24, top: 4 } : { right: 100, bottom: heroCameraBottom(safeInsets.bottom) + 2 }), width: 40, height: 49, zIndex: 4, alignItems: 'center', justifyContent: 'center' }}>
     <Image testID="hero-duvet-trash-image" source={selectedKeys.length
       ? require('../../../../assets/control-illustrations/mesh-trash-bin-paper.webp')
       : require('../../../../assets/control-illustrations/mesh-trash-bin.webp')} contentFit="contain" transition={0} cachePolicy="memory-disk" accessible={false} style={{ width: '75%', height: '75%' }} />
@@ -370,7 +370,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     {!items.length ? <ThemedText style={[s.empty, { color: muted }]}>{t('comicDay.empty')}</ThemedText> : null}
     {!cardsFirst ? <ServiceTutorialTarget steps={!showCards ? ['comicStart'] : []} style={s.add}><SketchPaperButton label={t('comicDay.add')} ink={ink} onPress={onAdd} /></ServiceTutorialTarget> : null}
   </ScrollView></GestureDetector>
-  {deleteMode && onRemoveMany && cardsFirst ? <View testID="hero-photo-delete-actions" style={[s.photoDeleteActions, { bottom: heroCameraBottom(safeInsets.bottom) + 62 }]}>
+  {deleteMode && onRemoveMany && cardsFirst ? <View testID="hero-photo-delete-actions" style={[s.photoDeleteActions, { bottom: historyOverview ? Math.max(24, safeInsets.bottom) : heroCameraBottom(safeInsets.bottom) + 62 }]}>
     <Pressable testID="hero-photo-delete-cancel" accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={() => { tapHaptic('select'); toggleDeleteMode(); }} style={({ pressed }) => [s.photoDeleteCancel, pressed && s.photoDeletePressed]}>
       <ThemedText style={{ color: '#252529', fontSize: 14 }}>{t('common.cancel')}</ThemedText>
     </Pressable>

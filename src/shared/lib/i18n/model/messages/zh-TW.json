@@ -2980,5 +2980,8 @@
   "drive.storage.usage": "已使用的儲存空間",
   "drive.storage.percent": "已使用 {percent}%",
   "drive.storage.noLimit": "儲存空間無上限。",
-  "drive.storage.description": "這是 Google 回報的儲存空間，並非此 App 額外提供的容量。公司或學校帳戶可能顯示整個機構共用的容量。"
+  "drive.storage.description": "這是 Google 回報的儲存空間，並非此 App 額外提供的容量。公司或學校帳戶可能顯示整個機構共用的容量。",
+  "canvas.event.deleteTitle": "刪除事件",
+  "canvas.event.deleteMessage": "要刪除此事件嗎？",
+  "canvas.event.placeholder": "記下想珍藏的事件"
 }

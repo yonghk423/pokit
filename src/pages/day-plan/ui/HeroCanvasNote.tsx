@@ -1,3 +1,5 @@
+import { HeroTrashIcon } from './HeroTrashIcon';
+import { AppAlert } from '@shared/lib/app-alert';
 import { DIARY_CLIP_IMAGES, useHeroDiaryClip } from '../model/heroDiaryClip';
 import { Image } from 'expo-image';
 import { saveCanvasEvents } from '../model/heroCanvasEvents';
@@ -12,7 +14,7 @@ import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { ThemedText } from '@shared/ui/themed-text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Animated, PanResponder, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, PanResponder, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, TextInput } from 'react-native';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker/NativeHhmmWheelPicker';
@@ -40,14 +42,16 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
   const eventKey = `pokit:canvas-events:${date}`;
   const [ownEvents, setOwnEvents] = useState<{ id: string; title: string; time?: string }[]>(() => localStorageClient.getJson(eventKey) ?? []);
   const [eventTitle, setEventTitle] = useState('');
-  const [eventTime, setEventTime] = useState<string | undefined>();
+  const eventInput = useRef<TextInput>(null);
+  const [eventTime, setEventTime] = useState<string | undefined>(() => localStorageClient.getJson<string>(`${eventKey}:draft-time`) ?? undefined);
   const [showTime, setShowTime] = useState(false);
-  useEffect(() => { setOwnEvents(localStorageClient.getJson(eventKey) ?? []); setEventTitle(''); setEventTime(undefined); setShowTime(false); }, [eventKey]);
+  useEffect(() => { setOwnEvents(localStorageClient.getJson(eventKey) ?? []); setEventTitle(''); setEventTime(localStorageClient.getJson<string>(`${eventKey}:draft-time`) ?? undefined); setShowTime(false); }, [eventKey]);
   const addEvent = () => {
     const title = eventTitle.trim();
     if (!title) return;
     const next = [...ownEvents, { id: `${Date.now()}:${Math.random().toString(36).slice(2)}`, title, ...(eventTime ? { time: eventTime } : {}) }];
     saveCanvasEvents(date, next);
+    localStorageClient.removeItem(`${eventKey}:draft-time`);
     setOwnEvents(next); setEventTitle(''); setEventTime(undefined); setShowTime(false); setEditing(false); Keyboard.dismiss();
   };
   const [editing, setEditing] = useState(false);
@@ -154,16 +158,21 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
         </View>
       </ScrollView> : null}
       {tab === 'event' ? <View testID="hero-canvas-own-events" style={{ position: 'absolute', left: 28, right: 28, top: editing ? 0 : 44, bottom: 0 }}>
-        <ThemedTextInput testID="hero-event-title" accessibilityLabel={ko ? '이벤트 이름' : 'Event name'} placeholder={ko ? '이날의 이벤트를 남겨보세요' : 'Write an event for this day'} placeholderTextColor={`${ink}66`} value={eventTitle} onChangeText={setEventTitle} onFocus={() => { setEditing(true); setShowTime(false); }} multiline maxLength={120} style={{ color: ink, fontSize: 17, lineHeight: 25, padding: 0, minHeight: 48, maxHeight: 120, textAlignVertical: 'top' }} />
+        <ThemedTextInput ref={eventInput} testID="hero-event-title" accessibilityLabel={ko ? '이벤트 이름' : 'Event name'} placeholder={t('canvas.event.placeholder')} placeholderTextColor={`${ink}66`} value={eventTitle} onChangeText={setEventTitle} onFocus={() => { setEditing(true); setShowTime(false); }} multiline maxLength={120} style={{ color: ink, fontSize: 17, lineHeight: 25, padding: 0, minHeight: 48, maxHeight: 120, textAlignVertical: 'top' }} />
         {editing ? <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-            <Pressable testID="hero-event-time" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setEventTime(value => value ?? '09:00'); setShowTime(value => !value); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 17 }}>{eventTime ?? (ko ? '+ 시간 추가' : '+ Add time')}</ThemedText></Pressable>
-            {eventTime ? <Pressable accessibilityRole="button" onPress={() => { setEventTime(undefined); setShowTime(false); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, opacity: 0.6 }}>{ko ? '시간 없이' : 'No time'}</ThemedText></Pressable> : null}
+            <Pressable testID="hero-event-time" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setEditing(true); setEventTime(value => value ?? '09:00'); setShowTime(value => !value); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 17 }}>{eventTime ?? (ko ? '+ 시간 추가' : '+ Add time')}</ThemedText></Pressable>
+            {eventTime ? <Pressable accessibilityRole="button" onPress={() => { setEventTime(undefined); localStorageClient.removeItem(`${eventKey}:draft-time`); setShowTime(false); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, opacity: 0.6 }}>{ko ? '시간 없이' : 'No time'}</ThemedText></Pressable> : null}
           </View>
           {showTime ? <NativeHhmmWheelPicker valueHhmm={eventTime ?? '09:00'} onChangeHhmm={setEventTime} isDark={dark} ink={ink} accessibilityLabelPrefix={ko ? '이벤트 시간' : 'Event time'} /> : null}
-        </ScrollView> : <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 6 }}>
-          {!ownEvents.length ? <ThemedText style={{ color: ink, opacity: 0.55, fontSize: 14 }}>{ko ? '기억하고 싶은 이벤트를 남겨보세요.' : 'Keep the events you want to remember.'}</ThemedText> : ownEvents.map(event => <View key={event.id} style={{ paddingVertical: 8, flexDirection: 'row', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>{event.time ? <ThemedText style={{ color: ink, fontSize: 15 }}>{event.time}</ThemedText> : null}<ThemedText style={{ flex: 1, color: ink, fontSize: 17 }}>{event.title}</ThemedText></View>)}
-        </ScrollView>}
+          {showTime ? <Pressable testID="hero-event-time-save" accessibilityRole="button" onPress={() => { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); }} style={{ minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' }}><ThemedText style={{ color: ink }}>{ko ? '시간 저장 후 글쓰기' : 'Save time & write'}</ThemedText></Pressable> : null}
+        </ScrollView> : null}
+        {!editing ? <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 6 }}>
+          {ownEvents.map(event => <View key={event.id} style={{ paddingVertical: 8, flexDirection: 'row', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>{event.time ? <ThemedText style={{ color: ink, fontSize: 15 }}>{event.time}</ThemedText> : null}<ThemedText style={{ flex: 1, color: ink, fontSize: 17 }}>{event.title}</ThemedText><Pressable testID={`hero-event-delete-${event.id}`} accessibilityRole="button" accessibilityLabel={t('common.delete')} onPress={() => AppAlert.alert(t('canvas.event.deleteTitle'), t('canvas.event.deleteMessage'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('common.delete'), style: 'destructive', onPress: () => { const next = ownEvents.filter(item => item.id !== event.id); saveCanvasEvents(date, next); setOwnEvents(next); } },
+          ])} style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><HeroTrashIcon size={23} color={ink} /></Pressable></View>)}
+        </ScrollView> : null}
       </View> : null}
       </Animated.View>
       {!editing ? <View accessibilityRole="tablist" style={{ position: 'absolute', left: 28, right: 28, bottom: 4, height: 44, flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
@@ -173,8 +182,8 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
         <Pressable testID="hero-canvas-dismiss-keyboard" accessibilityRole="button" accessibilityLabel="키보드 내리기" onPress={() => { Keyboard.dismiss(); setEditing(false); }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <HanddrawnControl name="keyboard.chevron.compact.down" size={26} color={ink} />
         </Pressable>
-        <Pressable accessibilityRole="button" testID="hero-canvas-edit-done" accessibilityLabel={tab === 'event' ? '이벤트 저장' : '글쓰기 완료'} disabled={tab === 'event' && !eventTitle.trim()} onPress={() => { if (tab === 'event') { addEvent(); } else { Keyboard.dismiss(); setEditing(false); } }} style={{ minWidth: 60, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <ThemedText style={{ color: ink, fontSize: 17, opacity: tab === 'event' && !eventTitle.trim() ? 0.35 : 1 }}>{tab === 'event' ? (ko ? '저장' : 'Save') : (ko ? '완료' : 'Done')}</ThemedText>
+        <Pressable accessibilityRole="button" testID="hero-canvas-edit-done" accessibilityLabel={tab === 'event' ? '이벤트 저장' : '글쓰기 완료'} disabled={tab === 'event' && !showTime && !eventTitle.trim()} onPress={() => { if (tab === 'event' && showTime) { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); } else if (tab === 'event') { addEvent(); } else { Keyboard.dismiss(); setEditing(false); } }} style={{ minWidth: 60, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <ThemedText style={{ color: ink, fontSize: 17, opacity: tab === 'event' && !showTime && !eventTitle.trim() ? 0.35 : 1 }}>{tab === 'event' ? (showTime ? (ko ? '시간 저장' : 'Save time') : (ko ? '저장' : 'Save')) : (ko ? '완료' : 'Done')}</ThemedText>
         </Pressable>
       </View>}
     </View>

@@ -58,3 +58,25 @@ it('restores the expanded panel on another date without a collapsed first render
   expect(tree.root.findByProps({ testID: 'hero-canvas-reading-panel' }).props.style.top.__getValue()).toBe(102);
   act(() => tree.unmount());
 });
+
+it('shows time controls only while editing and deletes only the confirmed event', () => {
+  const { AppAlert } = require('@shared/lib/app-alert');
+  const { saveCanvasEvents } = require('../model/heroCanvasEvents');
+  const alert = jest.spyOn(AppAlert, 'alert').mockImplementation(() => {});
+  const events = [{ id: 'one', title: 'First', time: '09:00' }, { id: 'two', title: 'Second' }];
+  jest.mocked(localStorageClient.getJson).mockImplementation(key => key === 'pokit:canvas-events:2026-11-11' ? events : undefined);
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCanvasNote date="2026-11-11" ink="#222222" />); });
+  act(() => tree.root.findByProps({ testID: 'hero-canvas-tab-event' }).props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'hero-event-time' })).toHaveLength(0);
+  act(() => tree.root.findByProps({ testID: 'hero-event-delete-one' }).props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'hero-event-delete-one' }).length).toBeGreaterThan(0);
+  const buttons = alert.mock.calls[0][2] as any[];
+  act(() => buttons.find(button => button.style === 'destructive').onPress());
+  expect(saveCanvasEvents).toHaveBeenLastCalledWith('2026-11-11', [events[1]]);
+  expect(tree.root.findAllByProps({ testID: 'hero-event-delete-one' })).toHaveLength(0);
+  act(() => tree.root.findByProps({ testID: 'hero-event-title' }).props.onFocus());
+  expect(tree.root.findAllByProps({ testID: 'hero-event-time' }).length).toBeGreaterThan(0);
+  act(() => tree.unmount());
+  alert.mockRestore();
+});

@@ -3041,5 +3041,8 @@
   "drive.storage.usage": "사용한 저장공간",
   "drive.storage.percent": "{percent}% 사용 중",
   "drive.storage.noLimit": "저장 용량 제한이 없어요.",
-  "drive.storage.description": "Google에서 알려준 계정 저장공간이에요. 앱에서 별도로 제공하는 용량이 아니며, 회사·학교 계정은 조직 전체 용량일 수 있어요."
+  "drive.storage.description": "Google에서 알려준 계정 저장공간이에요. 앱에서 별도로 제공하는 용량이 아니며, 회사·학교 계정은 조직 전체 용량일 수 있어요.",
+  "canvas.event.deleteTitle": "이벤트 삭제",
+  "canvas.event.deleteMessage": "이 이벤트를 삭제할까요?",
+  "canvas.event.placeholder": "기억하고 싶은 이벤트를 남겨 보세요"
 }

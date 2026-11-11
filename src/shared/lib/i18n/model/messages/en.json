@@ -3041,5 +3041,8 @@
   "drive.storage.usage": "Storage used",
   "drive.storage.percent": "{percent}% used",
   "drive.storage.noLimit": "No storage limit.",
-  "drive.storage.description": "Storage reported by Google, not extra space provided by this app. Work or school accounts may show shared organization storage."
+  "drive.storage.description": "Storage reported by Google, not extra space provided by this app. Work or school accounts may show shared organization storage.",
+  "canvas.event.deleteTitle": "Delete event",
+  "canvas.event.deleteMessage": "Delete this event?",
+  "canvas.event.placeholder": "Keep the events you want to remember"
 }
