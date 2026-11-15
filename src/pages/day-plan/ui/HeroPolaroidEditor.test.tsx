@@ -134,12 +134,13 @@ it('selects films inside the black toolbox without changing the print size', asy
     expect(tree.root.findAllByProps({ testID: 'polaroid-filter-list' })).toHaveLength(0);
     act(() => field('polaroid-preview-stage').props.onLayout({ nativeEvent: { layout: { width: 400, height: 600 } } }));
     const print = field('polaroid-preview-print').props.style;
+    act(() => field('polaroid-tool-film').props.onPress());
     act(() => field('polaroid-select-warm').props.onPress());
     expect(field('polaroid-select-warm').props.accessibilityState.selected).toBe(true);
     expect(field('polaroid-preview-print').props.style).toEqual(expect.objectContaining({ width: print.width, height: print.height }));
     expect(field('polaroid-preview-print').props.style.transform[0].scale).toBe(print.transform[0].scale);
     act(() => field('polaroid-tool-brightness').props.onPress());
-    expect(tree.root.findAllByProps({ testID: 'polaroid-film-options' })).toHaveLength(0);
+    expect(field('polaroid-film-overlay').props.pointerEvents).toBe('none');
     act(() => field('polaroid-tool-film').props.onPress());
     expect(field('polaroid-select-warm').props.accessibilityState.selected).toBe(true);
     expect(field('polaroid-slider-space').props.style.height).toBe(44);
@@ -246,6 +247,7 @@ it('previews paid films without showing a Pro screen or alert', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroPolaroidEditor initial={{ title: 'Preview', date: '', film: 'original' }} busy={false} onClose={jest.fn()} onExport={jest.fn()} />); });
   try {
+    act(() => tree.root.findByProps({ testID: 'polaroid-tool-film' }).props.onPress());
     act(() => tree.root.findByProps({ testID: 'polaroid-select-faded' }).props.onPress());
     expect(alert).not.toHaveBeenCalled();
     expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
@@ -264,6 +266,7 @@ it.each(['warm', 'monochrome', 'cream'] as const)('exports free %s film for save
     }
     expect(mockState.refreshCustomerInfo).not.toHaveBeenCalled();
     expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
+    act(() => tree.root.findByProps({ testID: 'polaroid-tool-film' }).props.onPress());
     expect(tree.root.findByProps({ testID: `polaroid-select-${film}` }).props.accessibilityLabel).not.toContain('Pro');
     expect(tree.root.findByProps({ testID: 'polaroid-select-faded' }).props.accessibilityLabel).toContain('Pro');
   } finally { act(() => tree.unmount()); }
@@ -295,4 +298,23 @@ it('exports a paid film immediately when the introduction was already viewed els
   expect(onExport).toHaveBeenCalledTimes(1);
   expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
   act(() => tree.unmount());
+});
+
+it('keeps the warm preview and final image selected after switching films', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPolaroidEditor uri="file:///portrait.jpg" initial={{ title: '', date: '2026.11.15' }} busy={false} onClose={jest.fn()} onExport={jest.fn()} />); });
+  try {
+    const field = (id: string) => tree.root.findAllByProps({ testID: id })[0];
+    act(() => field('polaroid-tool-film').props.onPress());
+    for (const film of ['warm', 'monochrome', 'warm']) {
+      act(() => field('polaroid-select-' + film).props.onPress());
+      const worker = tree.root.findByType('PolaroidProcessor' as never);
+      const key = JSON.stringify(worker.props.effects);
+      act(() => worker.props.onPreview('preview-' + film, key));
+      expect(field('polaroid-live-preview').props.source.uri).toBe('preview-' + film);
+      act(() => worker.props.onResult('full-' + film, key));
+      expect(field('polaroid-live-preview').props.source.uri).toBe('full-' + film);
+      expect(field('polaroid-select-' + film).props.accessibilityState.selected).toBe(true);
+    }
+  } finally { act(() => tree.unmount()); }
 });

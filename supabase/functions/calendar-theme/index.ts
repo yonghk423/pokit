@@ -1,3 +1,4 @@
+import { SEASON_COLLECTION_FILES } from './seasonCollectionFiles.ts';
 import { SEASON_WINTER_FILES } from './seasonWinterFiles.ts';
 import { TEXTURED_WATERCOLOR_FILES } from './texturedWatercolorFiles.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -18,6 +19,14 @@ Deno.serve(async request => {
       '06-angry-email', '07-after-work-run', '08-missed-deadline', '09-boxing-bag', '10-basketball-shot', '11-swimming-laps', '12-cycling-hill', '13-yoga-balance', '14-tennis-serve', '15-soccer-dribble', '16-dance-practice', '17-climbing-wall', '18-jump-rope', '19-rain-run', '20-badminton-rally', '21-couch-after-work', '22-window-tea', '23-laundry-day', '24-home-cooking', '25-lazy-morning', '26-couch-nap', '27-houseplant-care', '28-movie-night', '29-bathroom-skincare', '30-cat-on-lap', '31-frustrated-phone-call', '32-sad-bus-stop', '33-exam-results-joy', '34-interview-nerves', '35-breakup-evening', '36-concert-happiness', '37-embarrassed-spill', '38-holiday-loneliness', '39-birthday-surprise', '40-relief-after-cry', '41-spring-blossom-bicycle', '42-spring-rain-puddle', '43-spring-garden-planting', '44-summer-beach-walk', '45-summer-hill-hike', '46-autumn-leaves', '47-autumn-market', '48-autumn-bus-shelter', '49-winter-snow-play', '50-winter-bus-wait',
     ];
     const themeId = body.themeId;
+    const seasonal = typeof themeId === 'string' && Object.hasOwn(SEASON_COLLECTION_FILES, themeId) ? SEASON_COLLECTION_FILES[themeId] : null;
+    if (seasonal) {
+      const revision = `season-${seasonal.season}-v1`;
+      if (body.revision !== revision) return new Response(JSON.stringify({ error: 'calendar_update_required' }), { status: 409, headers });
+      const { data: signed, error } = await admin.storage.from('character-illustrations').createSignedUrl(`calendar-themes/season-${seasonal.season}/20261115-v1/${seasonal.file}`, 3600);
+      if (error || !signed?.signedUrl) throw error;
+      return new Response(JSON.stringify({ themeId, revision, files: [{ name: 'background.webp', url: signed.signedUrl }] }), { headers });
+    }
     const winterFile = typeof themeId === 'string' && Object.hasOwn(SEASON_WINTER_FILES, themeId) ? SEASON_WINTER_FILES[themeId] : null;
     if (winterFile) {
       if (body.revision !== 'season-winter-v2') return new Response(JSON.stringify({ error: 'calendar_update_required' }), { status: 409, headers });

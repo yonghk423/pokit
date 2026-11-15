@@ -11,7 +11,8 @@ const isWarmSepia = (themeId: string) => themeId.startsWith('warm-sepia-open-pan
 const isCitypopRetro = (themeId: string) => themeId.startsWith('citypop-retro-');
 const isTexturedWatercolor = (themeId: string) => themeId.startsWith('textured-watercolor-');
 const legacyRoot = () => `${fs.documentDirectory}calendar-themes/${CALENDAR_ASSET_REVISION}/`;
-const cacheRoot = (themeId: string) => themeId.startsWith('season-winter-') ? `${fs.documentDirectory}calendar-themes/season-winter-v2/` : themeId === 'textured-watercolor-01-fly-kite' ? `${fs.documentDirectory}calendar-themes/textured-watercolor-kite-v2/` : isEveryday(themeId)
+const collectionSeason = (id: string) => /^season-(spring|summer|autumn)-/.exec(id)?.[1];
+const cacheRoot = (themeId: string) => collectionSeason(themeId) ? `${fs.documentDirectory}calendar-themes/season-${collectionSeason(themeId)}-v1/` : themeId.startsWith('season-winter-') ? `${fs.documentDirectory}calendar-themes/season-winter-v2/` : themeId === 'textured-watercolor-01-fly-kite' ? `${fs.documentDirectory}calendar-themes/textured-watercolor-kite-v2/` : isEveryday(themeId)
   ? `${fs.documentDirectory}calendar-themes/20261112-everyday-cinema-top-only-v4/`
   : isWarmSepia(themeId) ? `${fs.documentDirectory}calendar-themes/warm-sepia-open-panel-v2/`
     : isCitypopRetro(themeId) ? `${fs.documentDirectory}calendar-themes/citypop-retro-v1/`
@@ -54,7 +55,7 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
   const warmSepia = isWarmSepia(themeId);
   const citypopRetro = isCitypopRetro(themeId);
   const texturedWatercolor = isTexturedWatercolor(themeId);
-  const revision = themeId.startsWith('season-winter-') ? 'season-winter-v2' : everyday ? 'everyday-cinema-v2' : warmSepia ? 'warm-sepia-open-panel-v2' : citypopRetro ? 'citypop-retro-v1' : texturedWatercolor ? themeId === 'textured-watercolor-01-fly-kite' ? 'textured-watercolor-v1' : 'textured-watercolor-v2' : 'fullbleed-v2';
+  const revision = collectionSeason(themeId) ? `season-${collectionSeason(themeId)}-v1` : themeId.startsWith('season-winter-') ? 'season-winter-v2' : everyday ? 'everyday-cinema-v2' : warmSepia ? 'warm-sepia-open-panel-v2' : citypopRetro ? 'citypop-retro-v1' : texturedWatercolor ? themeId === 'textured-watercolor-01-fly-kite' ? 'textured-watercolor-v1' : 'textured-watercolor-v2' : 'fullbleed-v2';
   await getHeroAiAccessToken();
   const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-theme', { body: { themeId, revision } });
   if (error || data?.themeId !== themeId || data?.revision !== revision || !Array.isArray(data?.files)) throw new Error('theme_download_unavailable');
@@ -63,7 +64,7 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
     if (!refresh && info.exists && !info.isDirectory && info.size > 0) continue;
     const file = data.files.find((item: { name: string; url: string }) => item.name === `${name}.webp`);
     if (!file?.url?.startsWith('https://')) throw new Error('invalid_theme');
-    const expectedPath = themeId.startsWith('season-winter-') ? `/calendar-themes/season-winter/20261114-v2/${themeId.replace('season-winter-', '')}.webp` : everyday
+    const expectedPath = collectionSeason(themeId) ? `/calendar-themes/season-${collectionSeason(themeId)}/20261115-v1/${themeId.replace(`season-${collectionSeason(themeId)}-`, '')}.webp` : themeId.startsWith('season-winter-') ? `/calendar-themes/season-winter/20261114-v2/${themeId.replace('season-winter-', '')}.webp` : everyday
       ? `/calendar-themes/everyday-cinema/20261112-v2/${themeId.replace('everyday-cinema-', '')}.webp`
       : warmSepia
         ? `/calendar-themes/warm-sepia-open-panel/20261112-v2/${themeId.replace('warm-sepia-open-panel-', '')}.webp`

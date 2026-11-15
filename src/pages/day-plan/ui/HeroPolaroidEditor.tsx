@@ -49,6 +49,9 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
     paywallResult.current = null;
   };
   useEffect(() => () => { paywallResult.current?.('cancelled'); paywallResult.current = null; }, []);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const receiveThumbnails = useCallback((images: Record<string, string>) => setThumbnails(current => ({ ...current, ...images })), []);
+  useEffect(() => { setThumbnails({}); }, [uri, source]);
   const effects = useMemo(() => Object.fromEntries([['film', draft.film ?? 'original'], ...adjustmentKeys.map(key => [key, draft[key] ?? 0])]), [draft.film, draft.brightness, draft.contrast, draft.saturation, draft.highlights, draft.shadows, draft.temperature, draft.fade, draft.grain]);
   const effectKey = JSON.stringify(effects);
   const [rendered, setRendered] = useState<{ key: string; uri: string }>();
@@ -57,7 +60,10 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
   const processing = needsProcessing && rendered?.key !== effectKey;
   const renderFailed = useCallback(() => setFailedKey(effectKey), [effectKey]);
   const renderComplete = useCallback((result: string, key = effectKey) => setRendered({ key, uri: result }), [effectKey]);
-  const previewUri = needsProcessing ? rendered?.uri ?? uri : uri;
+  const [quickPreview, setQuickPreview] = useState<{ key: string; uri: string }>();
+  const previewUri = needsProcessing && rendered?.key === effectKey ? rendered.uri
+    : needsProcessing && quickPreview?.key === effectKey ? quickPreview.uri
+    : needsProcessing ? rendered?.uri ?? uri : uri;
   const [checking, setChecking] = useState(false);
   const lock = useRef(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -133,9 +139,9 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
             {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ minWidth: 66, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
           </View>
           </View>
-        <HeroPolaroidToolbox filmFiltersPro={FEATURE_FLAGS.proPolaroidExport} photoFit={draft.photoFit ?? 'cover'} onChangePhotoFit={photoFit => patch({ photoFit })} showText={draft.showText !== false} onToggleText={toggleText} showDate={draft.showDate !== false} onToggleDate={toggleDate} effects={effects} onChange={patch} disabled={busy || checking} />
+        <HeroPolaroidToolbox thumbnails={thumbnails} imageUri={uri} imageSource={source} filmFiltersPro={FEATURE_FLAGS.proPolaroidExport} photoFit={draft.photoFit ?? 'cover'} onChangePhotoFit={photoFit => patch({ photoFit })} showText={draft.showText !== false} onToggleText={toggleText} showDate={draft.showDate !== false} onToggleDate={toggleDate} effects={effects} onChange={patch} disabled={busy || checking} />
         {processing && failedKey === effectKey ? <Pressable onPress={() => setFailedKey(undefined)} style={{ minHeight: 32, justifyContent: 'center' }}><ThemedText style={{ fontSize: 12, textAlign: 'center' }}>{t('polaroid.editor.adjustment_failed_tap_to_retry')}</ThemedText></Pressable> : null}
-        {needsProcessing && failedKey !== effectKey ? <HeroPolaroidProcessor uri={uri} source={source} effects={effects} onResult={renderComplete} onError={renderFailed} /> : null}
+        {(uri || source != null) && failedKey !== effectKey ? <HeroPolaroidProcessor uri={uri} source={source} effects={effects} onThumbnails={receiveThumbnails} onPreview={(uri, key) => setQuickPreview({ uri, key })} onResult={renderComplete} onError={renderFailed} /> : null}
         <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: Math.max(4, insets.bottom), flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#080808' }}>
           <ExportButton icon="share" label={t('polaroid.editor.share')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('share'); }} testID="polaroid-editor-share" />
           <ExportButton icon="download" label={t('polaroid.editor.download_to_photos')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('download'); }} testID="polaroid-editor-download" />

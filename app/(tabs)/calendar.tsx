@@ -87,9 +87,9 @@ function CalendarPackStore({ pack, width, month, dark }: {
   const [failed, setFailed] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const themes = calendarPackThemes(pack);
-  const title = pack === 'season-winter' ? translateUiText("겨울") : pack === 'city' ? translateUiText("시티 애니메이션") : pack === 'warm-sepia' ? 'Warm Sepia Open Panel' : pack === 'citypop-retro' ? translateUiText("시티팝 레트로") : pack === 'textured-watercolor' ? translateUiText("텍스처 수채화") : 'Everyday Cinema';
+  const title = pack === 'season-spring' ? translateUiText('봄') : pack === 'season-summer' ? translateUiText('여름') : pack === 'season-autumn' ? translateUiText('가을') : pack === 'season-winter' ? translateUiText("겨울") : pack === 'city' ? translateUiText("시티 애니메이션") : pack === 'warm-sepia' ? 'Warm Sepia Open Panel' : pack === 'citypop-retro' ? translateUiText("시티팝 레트로") : pack === 'textured-watercolor' ? translateUiText("텍스처 수채화") : 'Everyday Cinema';
   const ink = dark ? '#E8E5DF' : '#242321';
-  const proPack = (pack === 'season-winter' || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack);
+  const proPack = (pack.startsWith('season-') || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack);
   const isPro = useSubscriptionStore(selectCanTestProStoreItems);
   const paywall = usePremiumPackPaywall();
   useEffect(() => { let active = true; void isCityCalendarPackReady(pack).then(value => { if (active) setReady(value); }).catch(() => undefined); return () => { active = false; }; }, [pack]);

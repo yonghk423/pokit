@@ -1,0 +1,636 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-spring-01-light-footsteps",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-spring-02-first-jog",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-spring-03-riverside-bicycle",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-spring-04-roller-skating",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-spring-05-meadow-picnic",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-summer-01-shoreline-walk",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-summer-02-surfboard-morning",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-summer-03-parasol-reading",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-summer-04-pier-fishing",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-summer-05-pool-float",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-autumn-01-dog-leaf-walk",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-autumn-02-chestnut-basket",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-autumn-03-windy-bus-stop",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-autumn-04-open-air-painting",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 320,
+      "height": 568,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 375,
+      "height": 667,
+      "gridToTabPt": 28
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 375,
+      "height": 812,
+      "gridToTabPt": 28.22590361445782
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 390,
+      "height": 844,
+      "gridToTabPt": 32.71493975903604
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 393,
+      "height": 852,
+      "gridToTabPt": 34.41274698795178
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 430,
+      "height": 932,
+      "gridToTabPt": 46.019036144578195
+    },
+    {
+      "id": "season-autumn-05-bench-book",
+      "width": 440,
+      "height": 956,
+      "gridToTabPt": 50.34506024096379
+    }
+  ],
+  "scope": "app overlay and tab clearance only; not legacy printed-grid verification"
+}

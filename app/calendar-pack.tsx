@@ -23,10 +23,10 @@ export default function CalendarPackPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { pack: value } = useLocalSearchParams<{ pack?: string }>();
-  const pack = value === 'season-winter' ? 'season-winter' : value === 'city' ? 'city' : value === 'warm-sepia' ? 'warm-sepia' : value === 'citypop-retro' ? 'citypop-retro' : value === 'textured-watercolor' ? 'textured-watercolor' : 'everyday';
+  const pack = value === 'season-spring' ? 'season-spring' : value === 'season-summer' ? 'season-summer' : value === 'season-autumn' ? 'season-autumn' : value === 'season-winter' ? 'season-winter' : value === 'city' ? 'city' : value === 'warm-sepia' ? 'warm-sepia' : value === 'citypop-retro' ? 'citypop-retro' : value === 'textured-watercolor' ? 'textured-watercolor' : 'everyday';
   const themes = calendarPackThemes(pack);
-  const title = pack === 'season-winter' ? translateUiText("겨울") : pack === 'city' ? translateUiText("시티 애니메이션") : pack === 'warm-sepia' ? 'Warm Sepia Open Panel' : pack === 'citypop-retro' ? translateUiText("시티팝 레트로") : pack === 'textured-watercolor' ? translateUiText("텍스처 수채화") : 'Everyday Cinema';
-  const proPack = (pack === 'season-winter' || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack);
+  const title = pack === 'season-spring' ? translateUiText('봄') : pack === 'season-summer' ? translateUiText('여름') : pack === 'season-autumn' ? translateUiText('가을') : pack === 'season-winter' ? translateUiText("겨울") : pack === 'city' ? translateUiText("시티 애니메이션") : pack === 'warm-sepia' ? 'Warm Sepia Open Panel' : pack === 'citypop-retro' ? translateUiText("시티팝 레트로") : pack === 'textured-watercolor' ? translateUiText("텍스처 수채화") : 'Everyday Cinema';
+  const proPack = (pack.startsWith('season-') || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack);
   const isPro = useSubscriptionStore(selectCanTestProStoreItems);
   const paywall = usePremiumPackPaywall();
   const selected = useHeroCalendarDesign();

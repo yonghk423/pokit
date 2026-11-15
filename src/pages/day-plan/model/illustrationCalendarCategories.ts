@@ -6,7 +6,7 @@ export const ILLUSTRATION_CALENDAR_CATEGORIES = [
     labelKey: 'comicCalendar.categoryCharacterIllustration',
     packs: ['city', 'everyday', 'warm-sepia', 'citypop-retro', 'textured-watercolor'],
   },
-  { id: 'season', labelKey: 'comicCalendar.categorySeason', packs: ['season-winter'] },
+  { id: 'season', labelKey: 'comicCalendar.categorySeason', packs: ['season-spring', 'season-summer', 'season-autumn', 'season-winter'] },
 ] as const satisfies readonly { id: string; labelKey: string; packs: readonly CalendarPackId[] }[];
 
 export type IllustrationCalendarCategoryId = typeof ILLUSTRATION_CALENDAR_CATEGORIES[number]['id'];

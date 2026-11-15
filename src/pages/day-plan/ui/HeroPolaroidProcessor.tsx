@@ -4,15 +4,15 @@ import { WebView } from 'react-native-webview';
 import { Asset } from 'expo-asset';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { deleteAsync } from 'expo-file-system/legacy';
-import { hasProPolaroidEffects, polaroidPixelScript, type PolaroidEffects } from './HeroPolaroidEffects';
+import { POLAROID_FILMS, hasProPolaroidEffects, polaroidPixelScript, type PolaroidEffects } from './HeroPolaroidEffects';
 
 /** Local-only canvas processing: no image is uploaded. Capped to match export density. */
-export function HeroPolaroidProcessor({ uri, source, effects, onResult, onError }: {
-  uri?: string; source?: number; effects: PolaroidEffects; onResult: (uri: string, key: string) => void; onError: () => void;
+export function HeroPolaroidProcessor({ uri, source, effects, onThumbnails, onPreview, onResult, onError }: {
+  uri?: string; source?: number; effects: PolaroidEffects; onThumbnails?: (images: Record<string, string>) => void; onPreview: (uri: string, key: string) => void; onResult: (uri: string, key: string) => void; onError: () => void;
 }) {
   const web = useRef<WebView>(null);
-  const callbacks = useRef({ onResult, onError });
-  callbacks.current = { onResult, onError };
+  const callbacks = useRef({ onThumbnails, onPreview, onResult, onError });
+  callbacks.current = { onThumbnails, onPreview, onResult, onError };
   const latest = useRef(effects);
   latest.current = effects;
   const [ready, setReady] = useState(false);
@@ -28,8 +28,7 @@ export function HeroPolaroidProcessor({ uri, source, effects, onResult, onError 
   }, []);
   useEffect(() => {
     if (!ready) return;
-    const timer = setTimeout(submit, 16);
-    return () => clearTimeout(timer);
+    submit();
   }, [effects, ready, submit]);
   useEffect(() => () => clearTimeout(timeout.current), []);
   const [input, setInput] = useState<string>();
@@ -65,19 +64,45 @@ img.onload = () => { try {
  const ctx = c.getContext('2d'); ctx.drawImage(img,0,0,c.width,c.height);
  const original = ctx.getImageData(0,0,c.width,c.height);
  const pixels = ctx.createImageData(c.width,c.height);
+ const small = document.createElement('canvas'), ratio = Math.min(1, 600 / Math.max(c.width,c.height));
+ small.width = Math.max(1,Math.round(c.width*ratio)); small.height = Math.max(1,Math.round(c.height*ratio));
+ const smallCtx = small.getContext('2d'); smallCtx.drawImage(img,0,0,small.width,small.height);
+ const smallOriginal = smallCtx.getImageData(0,0,small.width,small.height);
+ const smallPixels = smallCtx.createImageData(small.width,small.height);
+ const adjust = (${polaroidPixelScript});
  window.renderCorrection = (effects,key) => { try {
+   smallPixels.data.set(smallOriginal.data);
+   adjust(smallPixels.data,effects);
+   smallCtx.putImageData(smallPixels,0,0);
+   send({preview:small.toDataURL('image/png'),key});
    pixels.data.set(original.data);
-   (${polaroidPixelScript})(pixels.data,effects);
+   adjust(pixels.data,effects);
    ctx.putImageData(pixels,0,0);
    send({uri:c.toDataURL('image/png'),key});
  } catch(e) { send({error:true}); } };
  send({ready:true});
+ const thumb = document.createElement('canvas'); thumb.width = 96; thumb.height = 96;
+ const thumbCtx = thumb.getContext('2d'), crop = Math.min(img.width,img.height);
+ thumbCtx.drawImage(img,(img.width-crop)/2,(img.height-crop)/2,crop,crop,0,0,96,96);
+ const thumbOriginal = thumbCtx.getImageData(0,0,96,96), thumbPixels = thumbCtx.createImageData(96,96);
+ const films = ${JSON.stringify(POLAROID_FILMS.map(film => film.value))};
+ let index = 0;
+ const nextThumbnail = () => {
+   try {
+     const film = films[index++];
+     thumbPixels.data.set(thumbOriginal.data); adjust(thumbPixels.data,{film});
+     thumbCtx.putImageData(thumbPixels,0,0);
+     send({thumbnail:film,uri:thumb.toDataURL('image/jpeg',0.85)});
+     if (index < films.length) setTimeout(nextThumbnail,30);
+   } catch(e) {}
+ };
+ setTimeout(nextThumbnail,30);
 } catch(e) {send({error:true});}};
 img.src = ${JSON.stringify(input)};
 </script></body></html>` : '', [input]);
   const documentSource = useMemo(() => ({ html }), [html]);
   if (!html) return null;
   return <View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}><WebView ref={web} originWhitelist={['about:*']} source={documentSource} javaScriptEnabled onError={onError} onMessage={event => {
-    try { const result = JSON.parse(event.nativeEvent.data); if (result.ready) { clearTimeout(timeout.current); setReady(true); return; } clearTimeout(timeout.current); running.current = false; if (typeof result.uri === 'string' && result.uri.startsWith('data:image/png;base64,')) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onResult(result.uri, result.key); else submit(); } else callbacks.current.onError(); } catch { onError(); }
+    try { const result = JSON.parse(event.nativeEvent.data); if (result.thumbnail) { callbacks.current.onThumbnails?.({ [result.thumbnail]: result.uri }); return; } if (result.preview) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onPreview(result.preview, result.key); return; } if (result.ready) { clearTimeout(timeout.current); setReady(true); return; } clearTimeout(timeout.current); running.current = false; if (typeof result.uri === 'string' && result.uri.startsWith('data:image/png;base64,')) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onResult(result.uri, result.key); else submit(); } else callbacks.current.onError(); } catch { onError(); }
   }} /></View>;
 }

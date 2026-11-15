@@ -2,15 +2,16 @@ import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { EVERYDAY_CINEMA_THEMES, WARM_SEPIA_OPEN_PANEL_THEMES, CITYPOP_RETRO_THEMES, TEXTURED_WATERCOLOR_THEMES, CITY_CALENDAR_THEMES, readHeroCalendarDesign, applyHeroCalendarDesign } from '../model/heroCalendarDesign';
 import { isIllustrationCalendarInstalled, downloadIllustrationCalendarAssets, removeIllustrationCalendarDownloads, removeIllustrationCalendarTheme, removeRetiredEverydayFiles } from './illustrationCalendarAssets';
 import { SEASON_WINTER_THEMES } from '../model/seasonWinterThemes';
-export type CalendarPackId = 'season-winter' | 'everyday' | 'city' | 'warm-sepia' | 'citypop-retro' | 'textured-watercolor';
+import { SEASON_COLLECTION_THEMES } from '../model/seasonCollectionThemes';
+export type CalendarPackId = 'season-spring' | 'season-summer' | 'season-autumn' | 'season-winter' | 'everyday' | 'city' | 'warm-sepia' | 'citypop-retro' | 'textured-watercolor';
 /** City Animation remains free; all additional illustration packs are Pro. */
 export const isProCalendarPack = (pack: CalendarPackId) => pack !== 'city';
 export const calendarPackThemes = (pack: CalendarPackId) => pack === 'city'
-  ? CITY_CALENDAR_THEMES.filter(t => !t.themeId.startsWith('season-winter-') && !t.themeId.startsWith('everyday-cinema-') && !t.themeId.startsWith('warm-sepia-open-panel-') && !t.themeId.startsWith('citypop-retro-') && !t.themeId.startsWith('textured-watercolor-'))
-  : pack === 'season-winter' ? SEASON_WINTER_THEMES : pack === 'warm-sepia' ? WARM_SEPIA_OPEN_PANEL_THEMES
+  ? CITY_CALENDAR_THEMES.filter(t => !t.themeId.startsWith('season-') && !t.themeId.startsWith('everyday-cinema-') && !t.themeId.startsWith('warm-sepia-open-panel-') && !t.themeId.startsWith('citypop-retro-') && !t.themeId.startsWith('textured-watercolor-'))
+  : pack === 'season-spring' ? SEASON_COLLECTION_THEMES.spring : pack === 'season-summer' ? SEASON_COLLECTION_THEMES.summer : pack === 'season-autumn' ? SEASON_COLLECTION_THEMES.autumn : pack === 'season-winter' ? SEASON_WINTER_THEMES : pack === 'warm-sepia' ? WARM_SEPIA_OPEN_PANEL_THEMES
     : pack === 'citypop-retro' ? CITYPOP_RETRO_THEMES : pack === 'textured-watercolor' ? TEXTURED_WATERCOLOR_THEMES : EVERYDAY_CINEMA_THEMES;
 const oldEverydayKey = 'pokit:everyday-cinema-pack:20261112-v1';
-const key = (pack: CalendarPackId) => pack === 'season-winter' ? 'pokit:season-winter-pack:20261114-v2' : pack === 'city' ? 'pokit:city-calendar-pack:completed-v2'
+const key = (pack: CalendarPackId) => ['season-spring', 'season-summer', 'season-autumn'].includes(pack) ? `pokit:${pack}-pack:20261115-v1` : pack === 'season-winter' ? 'pokit:season-winter-pack:20261114-v2' : pack === 'city' ? 'pokit:city-calendar-pack:completed-v2'
   : pack === 'warm-sepia' ? 'pokit:warm-sepia-open-panel-pack:20261113-100-v2'
     : pack === 'citypop-retro' ? 'pokit:citypop-retro-pack:20261112-v1'
     : pack === 'textured-watercolor' ? 'pokit:textured-watercolor-pack:20261112-v1'

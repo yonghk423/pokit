@@ -8,7 +8,7 @@ import { View } from 'react-native';
 import Svg, { Text as SvgText } from 'react-native-svg';
 
 // App-bundled cover: deliberately independent of downloaded theme files and readiness.
-export const CityCalendarPackCover = memo(function CityCalendarPackCover({ width, month, pack = 'everyday', borderRadius = 14, cropToGrid = true }: { width: number; month: Date; borderRadius?: number; cropToGrid?: boolean; pack?: 'season-winter' | 'everyday' | 'city' | 'warm-sepia' | 'citypop-retro' | 'textured-watercolor' }) {
+export const CityCalendarPackCover = memo(function CityCalendarPackCover({ width, month, pack = 'everyday', borderRadius = 14, cropToGrid = true }: { width: number; month: Date; borderRadius?: number; cropToGrid?: boolean; pack?: 'season-spring' | 'season-summer' | 'season-autumn' | 'season-winter' | 'everyday' | 'city' | 'warm-sepia' | 'citypop-retro' | 'textured-watercolor' }) {
   const { artwork } = useStoreArtwork();
   const previewSize = EVERYDAY_CINEMA_GEOMETRY.size;
   const height = pack === 'season-winter' ? width * 1912 / 823 : width * previewSize[1] / previewSize[0];
@@ -23,6 +23,8 @@ export const CityCalendarPackCover = memo(function CityCalendarPackCover({ width
   const [wx, wy, ww, wh] = layout.weekdays;
   const [gx, gy, gw, gh] = layout.grid;
   const visibleHeight = cropToGrid ? Math.min(height, width * (gy + gh + 36) / previewSize[0]) : height;
+  const seasonalCover = pack === 'season-spring' ? { source: require('../../../../assets/store-previews/season-spring.webp'), id: 'season-spring-01-light-footsteps' } : pack === 'season-summer' ? { source: require('../../../../assets/store-previews/season-summer.webp'), id: 'season-summer-01-shoreline-walk' } : pack === 'season-autumn' ? { source: require('../../../../assets/store-previews/season-autumn.webp'), id: 'season-autumn-01-dog-leaf-walk' } : null;
+  if (seasonalCover) { const h = width * 1896 / 830; return <View style={{ width, height: h, borderRadius, overflow: 'hidden' }}><Image source={seasonalCover.source} contentFit="fill" transition={0} style={{ width, height: h }} /><IllustrationCalendarThumbnailOverlay themeId={seasonalCover.id} month={month} width={width} height={h} /></View>; }
   if (pack === 'season-winter') return <View style={{ width, height, borderRadius, overflow: 'hidden' }}><Image source={require('../../../../assets/store-previews/season-winter.webp')} contentFit="fill" transition={0} style={{ width, height }} /><IllustrationCalendarThumbnailOverlay themeId="season-winter-01-snow-walk" month={month} width={width} height={height} /></View>;
   if (!artwork) return <View style={{ width, height: visibleHeight, borderRadius, backgroundColor: '#E6E5E1' }} />;
   return <View testID="city-calendar-bundled-cover" pointerEvents="none" style={{ width, height: visibleHeight, borderRadius, overflow: 'hidden' }}>

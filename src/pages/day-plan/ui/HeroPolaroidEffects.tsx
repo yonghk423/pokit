@@ -21,8 +21,8 @@ export const hasProPolaroidEffects = (value: PolaroidEffects) =>
 /** Pure, deterministic pixel transform. Also serialized into the local Canvas worker. */
 export const polaroidPixelScript = `function adjustPolaroidPixels(data, effects) {
   const amount = (key) => Math.max(-1, Math.min(1, Number(effects[key] || 0) / 100));
-  const warm = effects.film === 'warm', faded = effects.film === 'faded', noir = effects.film === 'noir', monochrome = effects.film === 'monochrome' || noir;
-  const preset = ({ cool: [-0.3, 1.02, 0.94, 0.02, 0, 0], sepia: [0.4, 0.95, 0.35, 0.08, 0, 0], pastel: [0.06, 0.82, 0.78, 0.10, 0.08, 0], vivid: [0.04, 1.18, 1.25, 0, 0.03, 0], rose: [0.10, 0.96, 0.92, 0.04, 0.03, -0.025], cinema: [-0.16, 1.22, 0.78, 0.03, -0.06, 0],
+  const faded = effects.film === 'faded', noir = effects.film === 'noir', monochrome = effects.film === 'monochrome' || noir;
+  const preset = ({ warm: [0.32, 1.045, 1.035, 0.018, 0.025, 0.009], cool: [-0.3, 1.02, 0.94, 0.02, 0, 0], sepia: [0.4, 0.95, 0.35, 0.08, 0, 0], pastel: [0.06, 0.82, 0.78, 0.10, 0.08, 0], vivid: [0.04, 1.18, 1.25, 0, 0.03, 0], rose: [0.10, 0.96, 0.92, 0.04, 0.03, -0.025], cinema: [-0.16, 1.22, 0.78, 0.03, -0.06, 0],
     cream: [0.14, 0.83, 0.85, 0.06, 0.12, 0.006],
     olive: [0.04, 0.95, 0.72, 0.06, -0.02, 0.018],
     amber: [0.42, 1.08, 0.90, 0.03, 0.03, 0.006],
@@ -31,7 +31,7 @@ export const polaroidPixelScript = `function adjustPolaroidPixels(data, effects)
   const exposure = Math.pow(2, amount('brightness') + preset[4]);
   const contrast = Math.pow(2, amount('contrast')) * (noir ? 1.5 : monochrome ? 1.1 : preset[1]);
   const saturation = monochrome ? 0 : Math.max(0, 1 + amount('saturation') - (faded ? 0.2 : 0)) * preset[2];
-  const temperature = amount('temperature') + (warm ? 0.25 : 0) + preset[0];
+  const temperature = amount('temperature') + preset[0];
   const fade = Math.max(0, amount('fade')) * 0.35 + (faded ? 0.12 : noir ? 0 : monochrome ? 0.03 : preset[3]);
   const grain = Math.max(0, amount('grain')) * 0.15 + (effects.film === 'disposable' ? 0.065 : 0);
   const shadows = amount('shadows') * 0.5, highlights = amount('highlights') * 0.5;

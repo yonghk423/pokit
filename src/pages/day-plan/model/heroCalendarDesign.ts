@@ -14,7 +14,9 @@ export { CITYPOP_RETRO_THEMES };
 import { TEXTURED_WATERCOLOR_THEMES } from './texturedWatercolorThemes';
 export { TEXTURED_WATERCOLOR_THEMES };
 import { SEASON_WINTER_THEMES } from './seasonWinterThemes';
+import { SEASON_COLLECTION_THEMES } from './seasonCollectionThemes';
 export const CITY_CALENDAR_THEMES = [
+  ...SEASON_COLLECTION_THEMES.spring, ...SEASON_COLLECTION_THEMES.summer, ...SEASON_COLLECTION_THEMES.autumn,
   ...SEASON_WINTER_THEMES,
   ...EVERYDAY_CINEMA_THEMES,
   ...WARM_SEPIA_OPEN_PANEL_THEMES,

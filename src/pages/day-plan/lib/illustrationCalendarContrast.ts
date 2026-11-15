@@ -11,3 +11,6 @@ const everydayPalette = { title: everydayInk, weekdays: Array(7).fill(everydayIn
 for (const theme of [...EVERYDAY_CINEMA_THEMES, ...WARM_SEPIA_OPEN_PANEL_THEMES, ...TEXTURED_WATERCOLOR_THEMES, ...CITYPOP_RETRO_THEMES]) {
   CALENDAR_CONTRAST[theme.themeId] = everydayPalette;
 }
+
+import { SEASON_COLLECTION_THEMES } from '../model/seasonCollectionThemes';
+for (const themes of Object.values(SEASON_COLLECTION_THEMES)) for (const theme of themes) CALENDAR_CONTRAST[theme.themeId] = { title: '#000000', weekdays: Array(7).fill('#000000'), dates: Array(42).fill('#000000') };

@@ -1,0 +1,128 @@
+{
+  "revision": "20261115-v1",
+  "source": "output/season-collection-v2",
+  "template": "city-office-open-panel-v2",
+  "totalBytes": 1736574,
+  "files": [
+    {
+      "themeId": "season-spring-01-light-footsteps",
+      "file": "output/season-collection-release/spring/01-light-footsteps.webp",
+      "storagePath": "calendar-themes/season-spring/20261115-v1/01-light-footsteps.webp",
+      "bytes": 88988,
+      "sha256": "04784082211197ddb5105c5c7e4fb39423c3d9887c203bd72f49de18e208fb5d",
+      "verified": true
+    },
+    {
+      "themeId": "season-spring-02-first-jog",
+      "file": "output/season-collection-release/spring/02-first-jog.webp",
+      "storagePath": "calendar-themes/season-spring/20261115-v1/02-first-jog.webp",
+      "bytes": 103252,
+      "sha256": "8e90de7c7a74406ffb04e66abbaa32b27b4a3ce1f0bb0dfc7973438e509c0815",
+      "verified": true
+    },
+    {
+      "themeId": "season-spring-03-riverside-bicycle",
+      "file": "output/season-collection-release/spring/03-riverside-bicycle.webp",
+      "storagePath": "calendar-themes/season-spring/20261115-v1/03-riverside-bicycle.webp",
+      "bytes": 111294,
+      "sha256": "5c5d6faf42e3d4e007b5d9c3be199e0fcdbcd2f0e9d434bf0909830baaf15587",
+      "verified": true
+    },
+    {
+      "themeId": "season-spring-04-roller-skating",
+      "file": "output/season-collection-release/spring/04-roller-skating.webp",
+      "storagePath": "calendar-themes/season-spring/20261115-v1/04-roller-skating.webp",
+      "bytes": 90510,
+      "sha256": "0b7f39f35f527082039b55f4f0e93ca4ba00fa515293e623aeb9334340ad9c3b",
+      "verified": true
+    },
+    {
+      "themeId": "season-spring-05-meadow-picnic",
+      "file": "output/season-collection-release/spring/05-meadow-picnic.webp",
+      "storagePath": "calendar-themes/season-spring/20261115-v1/05-meadow-picnic.webp",
+      "bytes": 108818,
+      "sha256": "bf25509d242750e0aaa0f3f0b01303cc14abaccce0e3c45e16659cb61eb37c91",
+      "verified": true
+    },
+    {
+      "themeId": "season-summer-01-shoreline-walk",
+      "file": "output/season-collection-release/summer/01-shoreline-walk.webp",
+      "storagePath": "calendar-themes/season-summer/20261115-v1/01-shoreline-walk.webp",
+      "bytes": 137466,
+      "sha256": "f6a544a2c26d10fccbdcabb661f231fe37088c7bae16d011c90095daa647d798",
+      "verified": true
+    },
+    {
+      "themeId": "season-summer-02-surfboard-morning",
+      "file": "output/season-collection-release/summer/02-surfboard-morning.webp",
+      "storagePath": "calendar-themes/season-summer/20261115-v1/02-surfboard-morning.webp",
+      "bytes": 94148,
+      "sha256": "c847f422016bcf462106c09785d5d12578658310e73b3cbc5f3e7f16794ac117",
+      "verified": true
+    },
+    {
+      "themeId": "season-summer-03-parasol-reading",
+      "file": "output/season-collection-release/summer/03-parasol-reading.webp",
+      "storagePath": "calendar-themes/season-summer/20261115-v1/03-parasol-reading.webp",
+      "bytes": 148758,
+      "sha256": "ba38fc5f28232a17c61a805f39b7b26bcb04815dc0ff5ec2d46148143fa3267d",
+      "verified": true
+    },
+    {
+      "themeId": "season-summer-04-pier-fishing",
+      "file": "output/season-collection-release/summer/04-pier-fishing.webp",
+      "storagePath": "calendar-themes/season-summer/20261115-v1/04-pier-fishing.webp",
+      "bytes": 188868,
+      "sha256": "9a29ca42111bb675db1d2687ac6ecb209f488c46034f57efdf5f634610912107",
+      "verified": true
+    },
+    {
+      "themeId": "season-summer-05-pool-float",
+      "file": "output/season-collection-release/summer/05-pool-float.webp",
+      "storagePath": "calendar-themes/season-summer/20261115-v1/05-pool-float.webp",
+      "bytes": 131770,
+      "sha256": "c0ebc89be5e774761945005098670e3a9799add193dd8910ffbed32744fbcea6",
+      "verified": true
+    },
+    {
+      "themeId": "season-autumn-01-dog-leaf-walk",
+      "file": "output/season-collection-release/autumn/01-dog-leaf-walk.webp",
+      "storagePath": "calendar-themes/season-autumn/20261115-v1/01-dog-leaf-walk.webp",
+      "bytes": 94892,
+      "sha256": "82b386e92b002be7bcf702bbbb398a445b387e0b5d8ebbd651e4d497a07ab0f2",
+      "verified": true
+    },
+    {
+      "themeId": "season-autumn-02-chestnut-basket",
+      "file": "output/season-collection-release/autumn/02-chestnut-basket.webp",
+      "storagePath": "calendar-themes/season-autumn/20261115-v1/02-chestnut-basket.webp",
+      "bytes": 105310,
+      "sha256": "85ef20ef6cc9b5a31195e9212db11307f445e9bb079e3550555153646e1c96eb",
+      "verified": true
+    },
+    {
+      "themeId": "season-autumn-03-windy-bus-stop",
+      "file": "output/season-collection-release/autumn/03-windy-bus-stop.webp",
+      "storagePath": "calendar-themes/season-autumn/20261115-v1/03-windy-bus-stop.webp",
+      "bytes": 93290,
+      "sha256": "f4f1f9c24d3858e2c1e97c89e82505c0e6c80364e548dcdb4be16afc69b3c19e",
+      "verified": true
+    },
+    {
+      "themeId": "season-autumn-04-open-air-painting",
+      "file": "output/season-collection-release/autumn/04-open-air-painting.webp",
+      "storagePath": "calendar-themes/season-autumn/20261115-v1/04-open-air-painting.webp",
+      "bytes": 125852,
+      "sha256": "3055d60709f953e87333ee4a5b9234e62917490e35d99bf4feab13da011a11b0",
+      "verified": true
+    },
+    {
+      "themeId": "season-autumn-05-bench-book",
+      "file": "output/season-collection-release/autumn/05-bench-book.webp",
+      "storagePath": "calendar-themes/season-autumn/20261115-v1/05-bench-book.webp",
+      "bytes": 113358,
+      "sha256": "adaa33ad6195d1433336337beafedb8c14c4705dc53c43d870694ef73dd876ff",
+      "verified": true
+    }
+  ]
+}
