@@ -24,13 +24,32 @@ const readyAssets = new Map<string, CalendarAssets>();
 // avoid concurrent migrations competing for storage and bandwidth.
 let installationQueue: Promise<unknown> = Promise.resolve();
 export function getLoadedIllustrationCalendarAssets(themeId = '01-rush-hour-commute') { return readyAssets.get(themeId) ?? null; }
+async function pruneOlderThemes(themeId: string, verified = false) {
+  const expected = CALENDAR_ARTWORK_LAYOUTS[themeId]?.md5;
+  if (!fs.documentDirectory || !expected) return;
+  const root = fs.documentDirectory + 'calendar-themes/';
+  const revisions = ['city-animation-v2', previousRevision, '20261110-fullscreen-v8'];
+  if (isEveryday(themeId)) revisions.push(CALENDAR_ASSET_REVISION, '20261112-everyday-cinema-v2', '20261112-everyday-cinema-open-panel-v3');
+  if (isTexturedWatercolor(themeId)) revisions.push('textured-watercolor-v1');
+  if (isWarmSepia(themeId)) revisions.push('warm-sepia-open-panel-v1');
+  if (themeId.startsWith('season-winter-')) revisions.push('season-winter-v1');
+  const folders = revisions.map(revision => root + revision + '/' + themeId + '/');
+  if (!verified) {
+    const old = await Promise.all(folders.map(folder => fs.getInfoAsync(folder)));
+    if (!old.some(info => info.exists)) return;
+    const current = await fs.getInfoAsync(illustrationCalendarBackgroundUri(themeId), { md5: true });
+    if (!current.exists || current.md5 !== expected) return;
+  }
+  await Promise.all(folders.map(folder => fs.deleteAsync(folder, { idempotent: true })));
+}
+
 async function installFiles(themeId = '01-rush-hour-commute', refresh = false): Promise<CalendarAssets> {
   if (!fs.documentDirectory) throw new Error('storage_unavailable');
   const folder = `${cacheRoot(themeId)}${themeId}/`;
   await fs.makeDirectoryAsync(folder, { intermediates: true });
   const assets: CalendarAssets = { background: `${folder}background.webp` };
   const existing = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
-  if (!refresh && existing.every(file => file.exists && !file.isDirectory && file.size > 0)) { await removeUnusedCalendarDecorations(); return assets; }
+  if (!refresh && existing.every(file => file.exists && !file.isDirectory && file.size > 0)) { await pruneOlderThemes(themeId).catch(() => undefined); await removeUnusedCalendarDecorations(); return assets; }
   const everyday = isEveryday(themeId);
   const warmSepia = isWarmSepia(themeId);
   const citypopRetro = isCitypopRetro(themeId);
@@ -65,11 +84,7 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
     }
     await fs.moveAsync({ from: temp, to: assets[name] });
   }
-  if (themeId.startsWith('season-winter-')) await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/season-winter-v1/${themeId}/`, { idempotent: true });
-  if (warmSepia) await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/warm-sepia-open-panel-v1/`, { idempotent: true });
-  if (everyday) await fs.deleteAsync(`${previousEverydayRoot()}${themeId}/`, { idempotent: true });
-  await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/city-animation-v2/${themeId}/`, { idempotent: true });
-  await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/${previousRevision}/${themeId}/`, { idempotent: true });
+  await pruneOlderThemes(themeId, true).catch(() => undefined);
   await removeUnusedCalendarDecorations();
   return assets;
 }
@@ -127,7 +142,7 @@ export async function isIllustrationCalendarInstalled(themeId: string): Promise<
   if (!fs.documentDirectory) return false;
   const assets: CalendarAssets = { background: `${cacheRoot(themeId)}${themeId}/background.webp` };
   const files = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
-  if (files.every(file => file.exists && !file.isDirectory && file.size > 0)) { await removeUnusedCalendarDecorations(); return true; }
+  if (files.every(file => file.exists && !file.isDirectory && file.size > 0)) { await pruneOlderThemes(themeId).catch(() => undefined); await removeUnusedCalendarDecorations(); return true; }
   if (await hasLegacyDownload(themeId)) {
     try { await install(themeId); return true; } catch { return false; }
   }
@@ -176,5 +191,5 @@ export async function removeRetiredEverydayFiles() {
   const info = await fs.getInfoAsync(folder);
   if (!info.exists || !info.isDirectory) return;
   const files = await fs.readDirectoryAsync(folder);
-  await Promise.all(files.filter(isEveryday).map(name => fs.deleteAsync(folder + name + '/', { idempotent: true })));
+  await Promise.all(files.filter(isEveryday).map(name => pruneOlderThemes(name)));
 }

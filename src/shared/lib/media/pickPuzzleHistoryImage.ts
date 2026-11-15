@@ -1,3 +1,4 @@
+import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import {
   copyAsync,
@@ -240,6 +241,7 @@ export async function pickPuzzleHistoryImage(): Promise<PickPuzzleHistoryImageRe
       asset.width,
       asset.height,
     );
+    if (pair.uri !== asset.uri && pair.thumbnailUri !== asset.uri) await removeSavedPickerFile(asset.uri);
     return { ok: true, ...pair };
   } catch (error) {
     if (

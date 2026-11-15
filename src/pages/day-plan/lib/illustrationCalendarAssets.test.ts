@@ -73,15 +73,13 @@ it('downloads and verifies an Everyday Cinema object from its versioned path', a
   }));
 });
 
-it('removes only the old Everyday pack from the cache shared with City Animation', async () => {
+it('retains older Everyday files until the current artwork checksum matches', async () => {
   const root = `file:///docs/calendar-themes/${CALENDAR_ASSET_REVISION}/`;
   (fs.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, isDirectory: true });
   (fs.readDirectoryAsync as jest.Mock).mockResolvedValue(['everyday-cinema-01-platform', 'everyday-cinema-100-city-ferry-deck', '06-angry-email', 'shared']);
   await removeRetiredEverydayFiles();
   expect(fs.readDirectoryAsync).toHaveBeenCalledWith(root);
-  expect((fs.deleteAsync as jest.Mock).mock.calls.map(([uri]) => uri)).toEqual([
-    root + 'everyday-cinema-01-platform/', root + 'everyday-cinema-100-city-ferry-deck/',
-  ]);
+  expect(fs.deleteAsync).not.toHaveBeenCalled();
 });
 
 it('migrates a previous open-panel download to the current artwork before reporting it installed', async () => {

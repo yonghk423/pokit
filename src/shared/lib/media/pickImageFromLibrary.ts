@@ -1,3 +1,4 @@
+import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import {
   copyAsync,
@@ -97,6 +98,7 @@ export async function pickImageFromLibrary(): Promise<PickImageFromLibraryResult
     }
 
     const uri = await persistLocalImageUri(result.assets[0].uri);
+    if (uri !== result.assets[0].uri) await removeSavedPickerFile(result.assets[0].uri);
     return { ok: true, uri };
   } catch (error) {
     if (isNativeModuleMissingError(error)) {

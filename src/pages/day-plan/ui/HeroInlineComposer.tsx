@@ -1,3 +1,4 @@
+import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import type { PolaroidDraft } from './HeroPolaroidEditor';
@@ -345,6 +346,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
       const { processedUri: _processedUri, ...settings } = draft ?? {} as PolaroidDraft;
       await onApply({ originalArtworkUri: originalUri, ...(draft ? { polaroidSettings: { ...settings, photoFit: settings.photoFit ?? 'cover' } } : {}), title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), paper, pen: draft?.pen ?? ink, ...(draft?.fontId ? { fontId: draft.fontId } : {}) }, uri, '');
       saveHeroOriginalPhotoMetadata({ uri, title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), createdAt: Date.now() });
+      await removeSavedPickerFile(originalPhoto.uri);
     } catch {
       if (alive.current) setError(t('comicDay.photo.saveError'));
     } finally {

@@ -1,3 +1,4 @@
+import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { isPremiumPaper, type PremiumPaper } from './premiumCalendarPapers';
 import { useSyncExternalStore } from 'react';
@@ -108,6 +109,7 @@ export async function saveHeroCalendarCover(month: string, uri: string, fileName
   const savedPrevious = localStorageClient.getJson<string>(coverKey(month));
   const previous = savedPrevious ? resolveHeroArtworkUri(savedPrevious) : null;
   localStorageClient.setJson(coverKey(month), destination);
+  await removeSavedPickerFile(uri);
   listeners.forEach(listener => listener());
   if (previous && previous !== destination && previous.startsWith(folder)) await fs.deleteAsync(previous, { idempotent: true }).catch(() => undefined);
 }
