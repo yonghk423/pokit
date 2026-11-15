@@ -1,3 +1,5 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
+import { HeroPrintBorder } from './HeroPrintBorder';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Keyboard, ScrollView, View } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -30,9 +32,10 @@ export function HeroDiaryCardSides({ children, title, memo, ink, fontId, interac
     <Animated.View testID="hero-main-card-rotating-paper" style={{ flex: 1, backgroundColor: paper, shadowColor: '#262218', shadowOpacity: 0.24, shadowRadius: 11, shadowOffset: { width: 3, height: 9 }, elevation: 8, transform: [{ perspective: 1200 }, { rotateY: turn.interpolate({ inputRange: [-90, 0, 90], outputRange: ['-90deg', '0deg', '90deg'] }) }] }}>
       {paper !== '#000000' ? <HeroPolaroidSurface /> : null}
       <View style={{ flex: 1, display: back ? 'none' : 'flex' }} accessibilityElementsHidden={back}>{children}</View>
+      {!back && paper !== '#000000' && <HeroPrintBorder />}
       {back ? <ScrollView testID="hero-main-card-back" style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 58, gap: 16 }}>
         <ThemedText fontId={fontId} style={{ color: ink, fontSize: 21, lineHeight: 30 }}>{title}</ThemedText>
-        <ThemedText fontId={fontId} style={{ color: ink, fontSize: 17, lineHeight: 28 }}>{memo?.trim() || '오늘의 이야기를 적어보세요.'}</ThemedText>
+        <ThemedText fontId={fontId} style={{ color: ink, fontSize: 17, lineHeight: 28 }}>{memo?.trim() || translateUiText("오늘의 이야기를 적어보세요.")}</ThemedText>
       </ScrollView> : null}
 
     </Animated.View>

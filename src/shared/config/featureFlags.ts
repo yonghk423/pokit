@@ -4,11 +4,11 @@
 export const FEATURE_FLAGS = {
   /** 설정에서 Google Drive 날짜별 백업·복구를 다시 노출한다. */
   driveBackupSettings: true,
-  /** 무료 운영 중에는 구독 메뉴와 SDK 연결을 중단한다. 재개 시 이 값으로 활성화한다. */
-  proSubscriptions: false,
-  /** 구매 연동을 재개해도 기존 기능을 자동으로 유료화하지 않는다. */
-  proPolaroidExport: false,
-  proIllustrationPacks: false,
+  /** RevenueCat 연결과 구독 메뉴. 무료 행사는 proPromotion에서 별도로 관리한다. */
+  proSubscriptions: true,
+  /** 유료 필름의 적용·저장·공유는 Pro. 원본·따뜻한 필름·흑백 감성·크림톤과 수동 보정은 무료다. */
+  proPolaroidExport: true,
+  proIllustrationPacks: true,
   proAiUpgrade: false,
   /** AI 생성 기능을 보류하며 하단 카메라 탭을 임시로 숨긴다. */
   heroAiCameraTab: false,

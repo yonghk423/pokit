@@ -12,6 +12,10 @@ export const APP_FONT_IDS: readonly AppFontId[] = [
   'hiMelody',
   'cafe24ShiningStar',
   'cafe24Syongsyong',
+  'schoolNalgae',
+  'schoolKkokkoma',
+  'singleDay',
+  'schoolGongryongal',
 ] as const;
 
 export function isAppFontId(value: unknown): value is AppFontId {
@@ -21,5 +25,6 @@ export function isAppFontId(value: unknown): value is AppFontId {
 /** Regular 페이스만 있는 폰트 (가짜 bold 합성 방지) */
 export function isSingleFaceAppFont(fontId: AppFontId): boolean {
   return fontId === 'hiMelody' || fontId === 'corncorn' ||
-    fontId === 'cafe24ShiningStar' || fontId === 'cafe24Syongsyong';
+    fontId === 'cafe24ShiningStar' || fontId === 'cafe24Syongsyong' ||
+    fontId === 'schoolNalgae' || fontId === 'schoolKkokkoma' || fontId === 'singleDay' || fontId === 'schoolGongryongal';
 }

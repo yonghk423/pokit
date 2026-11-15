@@ -1,4 +1,4 @@
-import { useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
+import { isIllustrationCalendarDesign, useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
 import { DayPlanCanvasContext } from '../model/dayPlanHeaderActions';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
@@ -68,7 +68,7 @@ type Props = {
  */
 export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const calendarDesign = useHeroCalendarDesign();
-  const illustrationSelected = calendarDesign === 'illustration' || calendarDesign.startsWith('city-animation-');
+  const illustrationSelected = isIllustrationCalendarDesign(calendarDesign);
   const calendarBackdrop = useCalendarBackdropVisible();
   const immersiveIllustration = tabName === 'comic-day' && illustrationSelected && calendarBackdrop;
   const { t } = useTranslation();
@@ -86,13 +86,13 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const params = useLocalSearchParams<{ planMode?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const appFontScale = useAppFontSizeScale();
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, width: windowWidth } = useWindowDimensions();
   // Reserve the date and weather together, including while weather is loading.
   const weatherHeight = Math.max(28, Math.ceil(scaleTypeSize(22, appFontScale) * fontScale))
     + Math.ceil(scaleTypeSize(20, appFontScale) * fontScale) + 2;
   const characterHeight = Math.max(26, Math.ceil(scaleTypeSize(23, appFontScale) * fontScale));
   // Keep the weather summary visible with space reserved before its data arrives.
-  const showWeatherInfo = tabName !== 'calendar';
+  const showWeatherInfo = tabName !== 'calendar' && calendarBackdrop;
   const comicHeaderHeight = showWeatherInfo ? Math.max(44 + characterHeight, 46 + weatherHeight) : 44;
   const inTabs = segments.some((segment) => segment === '(tabs)');
   const isComicTab = tabName ? tabName === 'comic-day' || tabName === 'calendar' : inTabs && segments.every(segment => segment === '(tabs)');
@@ -183,11 +183,11 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             leading={<View style={styles.trailingRow}><SettingsTopBarButton c={c} /></View>}
             trailing={
               <View testID={isComicTab ? 'comic-header-trailing' : undefined} style={isComicTab ? [styles.comicTrailing, { minHeight: shellOverride === '#FAFAF6' ? 44 : comicHeaderHeight }] : styles.trailingRow}>
-                {isComicTab ? weatherActions : null}
+                {isComicTab && !hideComicHeader ? weatherActions : null}
                 {onClose ? <View style={[styles.trailingRow, isComicTab && styles.comicHeaderButtons]}>
                   {onClose ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic(); onClose(); }} style={styles.closeButton}><ThemedText style={{ fontSize: 28, color: c.onSurface }}>×</ThemedText></Pressable> : null}
                 </View> : null}
-                {isComicTab ? <View testID="comic-header-weather-slot" accessibilityElementsHidden={!showWeatherInfo} importantForAccessibility={showWeatherInfo ? 'auto' : 'no-hide-descendants'} style={[styles.comicWeather, { minHeight: showWeatherInfo ? weatherHeight : 0, display: showWeatherInfo ? 'flex' : 'none' }]}><View style={styles.weatherControls}><View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
+                {isComicTab && showWeatherInfo ? <View testID="comic-header-weather-slot" accessibilityElementsHidden={!showWeatherInfo} importantForAccessibility={showWeatherInfo ? 'auto' : 'no-hide-descendants'} style={[styles.comicWeather, { width: Math.min(212, windowWidth - 40), minHeight: showWeatherInfo ? weatherHeight : 0, display: showWeatherInfo ? 'flex' : 'none' }]}><View style={styles.weatherControls}><View style={{ flexShrink: 1 }}><WeatherSummary ink={c.onSurface} muted={c.onVariant} /></View></View></View> : null}
               </View>
             }
           />
@@ -199,6 +199,9 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
             </InitialDeckSurface>
           ) : children}
         </DayPlanCanvasContext.Provider></View>
+        {isComicTab && composerKeyboardOpen && !cameraTabActive && !calendarBackdrop ? <View testID="diary-recording-return" pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + DAY_PLAN_TOOLBAR_TOP_PADDING, right: 16, zIndex: 30, elevation: 30 }}>
+          {weatherActions}
+        </View> : null}
       </View>
     </DayPlanHeaderCenterActionsContext.Provider>
     </DayPlanWeatherActionsContext.Provider>

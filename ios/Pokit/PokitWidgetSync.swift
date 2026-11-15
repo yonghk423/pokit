@@ -79,6 +79,11 @@ class PokitWidgetSync: NSObject {
 
   /// Copy the rendered calendar into App Group storage before releasing the JS temporary file.
   @objc func syncCalendarWidgetImage(_ uri: String, month: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    syncCalendarWidgetImageForFamily(uri, month: month, family: "small", resolver: resolve, rejecter: reject)
+  }
+
+  @objc func syncCalendarWidgetImageForFamily(_ uri: String, month: String, family: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    let widgetFamily = family == "large" ? "large" : "small"
     comicImageQueue.async {
       guard let source = self.resolveArtworkSourceURL(uri),
             let image = UIImage(contentsOfFile: source.path),
@@ -100,23 +105,24 @@ class PokitWidgetSync: NSObject {
         return
       }
       do {
-        let filename = "calendar-current.jpg"
+        let filename = "calendar-\(widgetFamily).jpg"
+        let imageKey = "pokit.calendar-widget.image.\(widgetFamily)"
         let target = container.appendingPathComponent(filename)
         // Do not spend WidgetKit reload budget on identical foreground captures.
         if (try? Data(contentsOf: target)) == data,
-           defaults.string(forKey: "pokit.calendar-widget.month") == month {
+           defaults.string(forKey: "pokit.calendar-widget.month.\(widgetFamily)") == month {
           resolve(nil)
           return
         }
         try data.write(to: target, options: .atomic)
-        defaults.set(filename, forKey: "pokit.calendar-widget.image")
-        defaults.set(month, forKey: "pokit.calendar-widget.month")
+        defaults.set(filename, forKey: imageKey)
+        defaults.set(month, forKey: "pokit.calendar-widget.month.\(widgetFamily)")
         defaults.synchronize()
         WidgetCenter.shared.reloadTimelines(ofKind: "PokitComicSceneWidget")
         // Only the current widget handoff image is retained, never a render history.
         defaults.removeObject(forKey: "pokit.calendar-widget.previous")
         if let files = try? FileManager.default.contentsOfDirectory(at: container, includingPropertiesForKeys: nil) {
-          for file in files where file.lastPathComponent.hasPrefix("calendar-") && file.pathExtension == "jpg" && file.lastPathComponent != filename {
+          for file in files where file.lastPathComponent.hasPrefix("calendar-") && file.pathExtension == "jpg" && !(["calendar-small.jpg", "calendar-large.jpg"].contains(file.lastPathComponent)) {
             try? FileManager.default.removeItem(at: file)
           }
         }

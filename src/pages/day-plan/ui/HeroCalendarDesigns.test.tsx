@@ -1,11 +1,15 @@
+jest.mock('@features/subscriptions', () => ({ useSubscriptionStore: () => false, selectCanTestProStoreItems: () => false }));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { CalendarPaper, HeroCalendarDesigns, calendarPaperDays } from './HeroCalendarDesigns';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 
+jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ useSubscriptionStore: () => false, selectIsPro: () => false }));
+jest.mock('./WeatherSummary', () => ({ WeatherSummary: () => null, getCalendarWeatherReport: () => null }));
+jest.mock('./usePremiumPackPaywall', () => ({ usePremiumPackPaywall: () => ({ present: async () => 'cancelled', modal: null }) }));
 jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { getJson: jest.fn(), setJson: jest.fn() } }));
 beforeEach(() => {
   const data = new Map();
-  jest.mocked(localStorageClient.getJson).mockImplementation(key => data.get(key));
+  jest.mocked(localStorageClient.getJson).mockImplementation(key => data.get(key) ?? null);
   jest.mocked(localStorageClient.setJson).mockImplementation((key, value) => { data.set(key, value); });
 });
 
@@ -31,10 +35,10 @@ it('applies and persists the selected free design', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroCalendarDesigns month={new Date(2026, 10, 1)} today={new Date(2026, 10, 9)} diaries={[]} onSelectDate={jest.fn()} />); });
   const button = tree.root.findByProps({ accessibilityLabel: 'Photo Paper, 무료, 한 장의 사진을 담은 달력' });
-  act(() => button.props.onPress());
+  act(() => { void button.props.onPress(); });
   expect(localStorageClient.setJson).toHaveBeenCalledWith('pokit:calendar-design', 'photo');
   expect(button.props.accessibilityState.selected).toBe(true);
-  expect(tree.root.findAllByType(CalendarPaper)).toHaveLength(3);
+  expect(tree.root.findAllByType(CalendarPaper).map(paper => paper.props.design)).toContain('emerald');
   expect(tree.root.findAllByType(CalendarPaper).every(paper => paper.props.miniature)).toBe(true);
   expect(tree.root.findAllByType(CalendarPaper).every(paper => paper.props.layoutWidth > 0)).toBe(true);
   act(() => tree.unmount());
@@ -92,4 +96,47 @@ it.each(['bold', 'photo'] as const)('fits %s preview dates inside all seven colu
     }
     act(() => tree.unmount());
   }
+});
+
+
+it('offers a weather calendar and persists it across reads', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarDesigns month={new Date(2026, 10, 1)} today={new Date(2026, 10, 13)} diaries={[]} onSelectDate={jest.fn()} />); });
+  const card = tree.root.findByProps({ accessibilityLabel: 'Weather Calendar, 무료, 현재 날씨와 날짜를 함께 보는 달력' });
+  act(() => { void card.props.onPress(); });
+  expect(localStorageClient.setJson).toHaveBeenCalledWith('pokit:calendar-design', 'weather');
+  expect(require('../model/heroCalendarDesign').readHeroCalendarDesign()).toBe('weather');
+  act(() => tree.unmount());
+});
+
+it('loads current weather only on the applied weather calendar', () => {
+  const { WeatherSummary } = require('./WeatherSummary');
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<CalendarPaper design="weather" month={new Date(2026, 10, 1)} today={new Date(2026, 10, 13)} diaries={[]} onSelectDate={jest.fn()} />); });
+  expect(tree.root.findAllByType(WeatherSummary)).toHaveLength(1);
+  expect(tree.root.findAllByProps({ testID: 'calendar-paper-day-2026-11-13' }).length).toBeGreaterThan(0);
+  act(() => tree.update(<CalendarPaper design="weather" miniature month={new Date(2026, 10, 1)} today={new Date(2026, 10, 13)} diaries={[]} />));
+  expect(tree.root.findAllByType(WeatherSummary)).toHaveLength(0);
+  act(() => tree.unmount());
+});
+
+// Widget snapshots keep record dates, but never create diary photo components.
+it.each(['bold', 'grid', 'photo', 'clipboard', 'weather'] as const)('excludes date photos from both %s widget sizes', design => {
+  const { HeroCalendarPhoto } = require('./HeroCalendarPhoto');
+  const diaries = [{ id: 'photo-day', date: '2026-11-09', createdAt: 1, scenes: [{ id: 'photo', artworkUri: 'file:///saved.jpg' }] }] as any;
+  for (const widgetSize of ['small', 'large'] as const) {
+    let tree!: ReactTestRenderer;
+    act(() => { tree = create(<CalendarPaper design={design} widgetSize={widgetSize} layoutWidth={330} layoutHeight={widgetSize === 'small' ? 330 : 346} month={new Date(2026, 10, 1)} today={new Date(2026, 10, 9)} diaries={diaries} eventDates={['2026-11-09']} />); });
+    expect(tree.root.findAllByType(HeroCalendarPhoto)).toHaveLength(0);
+    if (design === 'clipboard') {
+      const { HeroClipboardCalendar } = require('./HeroClipboardCalendar');
+      const calendar = tree.root.findByType(HeroClipboardCalendar);
+      expect(calendar.props.photos).toEqual({});
+      expect(calendar.props.recordDates).toContain('2026-11-09');
+    }
+    expect(tree.root.findAll(node => node.props.source?.uri === 'file:///saved.jpg')).toHaveLength(0);
+    if (design !== 'clipboard') expect(tree.root.findAllByProps({ testID: 'calendar-paper-day-2026-11-09' }).length).toBeGreaterThan(0);
+    act(() => tree.unmount());
+  }
+  expect(diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
 });

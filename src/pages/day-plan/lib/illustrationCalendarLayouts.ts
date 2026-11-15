@@ -1762,5 +1762,16 @@ export const CALENDAR_ARTWORK_LAYOUTS: Record<string, CalendarArtworkLayout> = {
     "md5": "786cdcbfd8dc5b5510bb163e0c567065"
   }
 };
+import { EVERYDAY_CINEMA_LAYOUTS } from './everydayCinemaLayouts';
+Object.assign(CALENDAR_ARTWORK_LAYOUTS, EVERYDAY_CINEMA_LAYOUTS);
+import { WARM_SEPIA_OPEN_PANEL_LAYOUTS } from './warmSepiaLayouts';
+Object.assign(CALENDAR_ARTWORK_LAYOUTS, WARM_SEPIA_OPEN_PANEL_LAYOUTS);
+import { CITYPOP_RETRO_LAYOUTS } from './citypopRetroLayouts';
+Object.assign(CALENDAR_ARTWORK_LAYOUTS, CITYPOP_RETRO_LAYOUTS);
+import { SEASON_WINTER_LAYOUTS } from './seasonWinterLayouts';
+Object.assign(CALENDAR_ARTWORK_LAYOUTS, SEASON_WINTER_LAYOUTS);
 export const CALENDAR_GRID_LAYOUTS: Record<string, CalendarRegion> = Object.fromEntries(Object.entries(CALENDAR_ARTWORK_LAYOUTS).map(([id, layout]) => [id, layout.grid]));
 export const CALENDAR_ARTWORK_SIZES: Record<string, readonly [number, number]> = Object.fromEntries(Object.entries(CALENDAR_ARTWORK_LAYOUTS).map(([id, layout]) => [id, layout.size]));
+
+import { TEXTURED_WATERCOLOR_LAYOUTS } from './texturedWatercolorLayouts';
+Object.assign(CALENDAR_ARTWORK_LAYOUTS, TEXTURED_WATERCOLOR_LAYOUTS);

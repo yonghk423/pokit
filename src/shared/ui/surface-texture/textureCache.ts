@@ -3,7 +3,6 @@ import { Image, type ImageRef } from 'expo-image';
 export const SURFACE_TEXTURE_SOURCES = {
   pigment: require('../../../../assets/color-textures/grain-overlay.webp'),
   paper: require('../../../../assets/color-textures/clean-paper.webp'),
-  wrinkled: require('../../../../assets/color-textures/wrinkled-paper-v1.jpg'),
 } as const;
 
 export type SurfaceTextureKind = keyof typeof SURFACE_TEXTURE_SOURCES;

@@ -1,3 +1,4 @@
+jest.mock('@features/subscriptions', () => ({ useSubscriptionStore: () => false, selectCanTestProStoreItems: () => false }));
 jest.mock('../lib/illustrationCalendarAssets', () => ({ getLoadedIllustrationCalendarAssets: () => ({ background: 'file:///background.webp', paper: 'file:///paper.webp', leaf: 'file:///leaf.webp' }), loadIllustrationCalendarAssets: jest.fn(async () => ({ background: 'file:///background.webp', paper: 'file:///paper.webp', leaf: 'file:///leaf.webp' })) }));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { HeroIllustrationCalendar, illustrationMonthCells, illustrationCellFrame } from './HeroIllustrationCalendar';
@@ -112,4 +113,16 @@ it('restores the default calendar when the selected illustration files are missi
     expect(readHeroCalendarDesign()).toBe('bold');
     expect(tree.root.findAllByProps({ testID: 'illustration-calendar-artwork' })).toHaveLength(0);
   } finally { act(() => tree?.unmount()); }
+});
+
+it('renders diary polaroids only in the app, excluding them from widget snapshots', async () => {
+  const diaries = [{ id: 'photo-day', date: '2026-11-09', createdAt: 1, scenes: [{ id: 'photo', artworkUri: 'file:///saved.jpg' }] }] as any;
+  for (const widget of [false, true]) {
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = create(<HeroIllustrationCalendar widget={widget} width={330} height={330} month={new Date(2026, 10, 1)} today={new Date(2026, 10, 9)} diaries={diaries} eventDates={['2026-11-09']} onSelectDate={jest.fn()} />); });
+    expect(tree.root.findAllByProps({ testID: 'illustration-calendar-polaroid-2026-11-09' }).length > 0).toBe(!widget);
+    expect(tree.root.findAllByProps({ testID: 'illustration-event-ring-2026-11-09' }).length).toBeGreaterThan(0);
+    expect(tree.root.findAllByProps({ testID: 'illustration-calendar-day-2026-11-09' })[0].props.accessibilityLabel).toContain('기록 있음');
+    act(() => tree.unmount());
+  }
 });

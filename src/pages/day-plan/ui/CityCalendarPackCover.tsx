@@ -1,31 +1,40 @@
+import { IllustrationCalendarThumbnailOverlay } from './IllustrationCalendarThumbnailOverlay';
 import { Image } from 'expo-image';
 import { useStoreArtwork } from '../lib/storeArtwork';
+import { EVERYDAY_CINEMA_GEOMETRY } from '../lib/everydayCinemaLayouts';
 import { memo } from 'react';
-import { Platform, Text, View } from 'react-native';
+import * as calendarTemplate from '../../../../docs/design/photo-diary/city-calendar-template.json';
+import { View } from 'react-native';
+import Svg, { Text as SvgText } from 'react-native-svg';
 
 // App-bundled cover: deliberately independent of downloaded theme files and readiness.
-export const CityCalendarPackCover = memo(function CityCalendarPackCover({ width, month }: { width: number; month: Date }) {
+export const CityCalendarPackCover = memo(function CityCalendarPackCover({ width, month, pack = 'everyday', borderRadius = 14, cropToGrid = true }: { width: number; month: Date; borderRadius?: number; cropToGrid?: boolean; pack?: 'season-winter' | 'everyday' | 'city' | 'warm-sepia' | 'citypop-retro' | 'textured-watercolor' }) {
   const { artwork } = useStoreArtwork();
-  const height = width * 1896 / 830;
-  const year = month.getFullYear(), index = month.getMonth();
-  const offset = (new Date(year, index, 1, 12).getDay() + 6) % 7;
-  const count = new Date(year, index + 1, 0, 12).getDate();
-  const ink = '#513921';
-  const fontFamily = Platform.OS === 'ios' ? 'Baskerville' : 'serif';
-  if (!artwork) return <View style={{ width, height, borderRadius: 14, backgroundColor: '#E6E5E1' }} />;
-  return <View testID="city-calendar-bundled-cover" pointerEvents="none" style={{ width, height, borderRadius: 14, overflow: 'hidden' }}>
-    <Image source={artwork.cover} contentFit="fill" transition={0} style={{ position: 'absolute', width, height }} />
-    <View style={{ position: 'absolute', left: width * .06428916, top: height * .41562236, width: width * .86785542, height: height * .04531118, justifyContent: 'center', alignItems: 'center' }}>
-      <Text allowFontScaling={false} style={{ fontFamily, color: ink, fontSize: width * .064 }}>{year}.{String(index + 1).padStart(2, '0')}</Text>
-    </View>
-    <View style={{ position: 'absolute', left: width * .06428916, top: height * .475, width: width * .86785542, height: height * .025, flexDirection: 'row', alignItems: 'center' }}>
-      {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => <Text key={day} allowFontScaling={false} style={{ width: `${100 / 7}%`, textAlign: 'center', color: ink, fontFamily, fontSize: width * .025 }}>{day}</Text>)}
-    </View>
-    {Array.from({ length: count }, (_, i) => {
-      const slot = offset + i;
-      return <View key={i} style={{ position: 'absolute', left: width * (.06428916 + slot % 7 * .86785542 / 7), top: height * (.50625 + Math.floor(slot / 7) * .34531118 / 6), width: width * .86785542 / 7, height: height * .34531118 / 6, justifyContent: 'center', alignItems: 'center' }}>
-        <Text testID={`cover-day-${i + 1}`} allowFontScaling={false} style={{ color: ink, fontFamily, fontSize: width * .045 }}>{i + 1}</Text>
-      </View>;
-    })}
+  const previewSize = EVERYDAY_CINEMA_GEOMETRY.size;
+  const height = pack === 'season-winter' ? width * 1912 / 823 : width * previewSize[1] / previewSize[0];
+  // Everyday artwork uses the same content coordinates as the downloaded calendars.
+  const layout = pack === 'city'
+    ? { month: [50, 788, 730, 84], weekdays: [50, 895, 730, 43], grid: [50, 960, 730, 654] }
+    : calendarTemplate;
+  const year = month.getFullYear(), monthIndex = month.getMonth();
+  const offset = (new Date(year, monthIndex, 1, 12).getDay() + 6) % 7;
+  const count = new Date(year, monthIndex + 1, 0, 12).getDate();
+  const [mx, my, mw, mh] = layout.month;
+  const [wx, wy, ww, wh] = layout.weekdays;
+  const [gx, gy, gw, gh] = layout.grid;
+  const visibleHeight = cropToGrid ? Math.min(height, width * (gy + gh + 36) / previewSize[0]) : height;
+  if (pack === 'season-winter') return <View style={{ width, height, borderRadius, overflow: 'hidden' }}><Image source={require('../../../../assets/store-previews/season-winter.webp')} contentFit="fill" transition={0} style={{ width, height }} /><IllustrationCalendarThumbnailOverlay themeId="season-winter-01-snow-walk" month={month} width={width} height={height} /></View>;
+  if (!artwork) return <View style={{ width, height: visibleHeight, borderRadius, backgroundColor: '#E6E5E1' }} />;
+  return <View testID="city-calendar-bundled-cover" pointerEvents="none" style={{ width, height: visibleHeight, borderRadius, overflow: 'hidden' }}>
+    <Image source={pack === 'city' ? artwork.legacyCover : pack === 'warm-sepia' ? artwork.warmSepiaCover : pack === 'citypop-retro' ? artwork.citypopRetroCover : pack === 'textured-watercolor' ? artwork.texturedWatercolorCover : artwork.cover} contentFit="fill" transition={0} style={{ position: 'absolute', width, height }} />
+    <Svg pointerEvents="none" width={width} height={height} viewBox="0 0 830 1896" style={{ position: 'absolute' }}>
+      <SvgText x={mx + mw / 2} y={my + mh * .66} textAnchor="middle" fontFamily="serif" fontSize={42} fill="#513921">{year}.{String(monthIndex + 1).padStart(2, '0')}</SvgText>
+      {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day, col) =>
+        <SvgText key={day} x={wx + (col + .5) * ww / 7} y={wy + wh * .66} textAnchor="middle" fontFamily="serif" fontSize={22} fill="#513921">{day}</SvgText>)}
+      {Array.from({ length: count }, (_, index) => {
+        const slot = offset + index;
+        return <SvgText key={index} testID={`cover-day-${index + 1}`} x={gx + (slot % 7 + .5) * gw / 7} y={gy + (Math.floor(slot / 7) + .57) * gh / 6} textAnchor="middle" fontFamily="serif" fontSize={30} fill="#513921">{index + 1}</SvgText>;
+      })}
+    </Svg>
   </View>;
 });

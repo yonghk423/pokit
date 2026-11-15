@@ -1,6 +1,6 @@
 import Svg, { Path } from 'react-native-svg';
 import { useEffect, useState, type ReactNode } from 'react';
-import { loadCityPopFont } from '@app/useCityPopFonts';
+import { loadCityPopFont, loadCityPopFontPreviews } from '@app/useCityPopFonts';
 import { Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { APP_FONT_IDS, type AppFontId } from '@shared/lib/ui-font/appFontIds';
 import { useTranslation } from '@shared/lib/i18n';
@@ -19,7 +19,7 @@ export function HeroCardAppearanceControls({ pen, fontId, onChange, fontsOnly = 
   const [fontsReady, setFontsReady] = useState(false);
   useEffect(() => {
     let mounted = true;
-    void loadCityPopFont('cafe24Syongsyong').then(() => { if (mounted) setFontsReady(true); }).catch(() => {});
+    void loadCityPopFontPreviews().then(() => { if (mounted) setFontsReady(true); }).catch(() => {});
     return () => { mounted = false; };
   }, []);
   const fontOptions = <ScrollView key={fontsReady ? 'loaded' : 'loading'} horizontal nestedScrollEnabled keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} style={[styles.fontScroller, fontsOnly && styles.inlineFontScroller]} contentContainerStyle={styles.fontOptions}>

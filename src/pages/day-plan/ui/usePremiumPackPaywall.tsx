@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppModal } from '@shared/ui/app-modal';
 import { ProPreviewPage } from '../../settings/ui/ProPreviewPage';
+import { isProFreeAccessActive } from '@shared/config/proPromotion';
+import { hasSeenProIntroduction, markProIntroductionSeen } from '@features/subscriptions/lib/proIntroduction';
 
 export function usePremiumPackPaywall() {
   const [open, setOpen] = useState(false);
@@ -9,7 +11,12 @@ export function usePremiumPackPaywall() {
   useEffect(() => () => { pending.current?.('cancelled'); pending.current = null; }, []);
   const finish = (result: string) => { setOpen(false); pending.current?.(result); pending.current = null; };
   return {
-    present: () => new Promise<string>(resolve => { pending.current = resolve; setOpen(true); }),
-    modal: open ? <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!busy) finish('cancelled'); }}><ProPreviewPage onBusyChange={setBusy} onClose={() => finish('cancelled')} onActivated={finish} /></AppModal> : null,
+    present: () => new Promise<string>(resolve => {
+      if (pending.current) { resolve('cancelled'); return; }
+      if (hasSeenProIntroduction()) { resolve(isProFreeAccessActive() ? 'promotion' : 'not_presented'); return; }
+      markProIntroductionSeen();
+      pending.current = resolve; setOpen(true);
+    }),
+    modal: open ? <AppModal visible presentationStyle="fullScreen" animationType="slide" onRequestClose={() => { if (!busy) finish('cancelled'); }}><ProPreviewPage onPromotionContinue={() => finish('promotion')} onBusyChange={setBusy} onClose={() => finish('cancelled')} onActivated={finish} /></AppModal> : null,
   };
 }

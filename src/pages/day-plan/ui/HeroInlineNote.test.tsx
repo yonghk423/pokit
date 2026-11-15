@@ -1,0 +1,45 @@
+import { act, create } from 'react-test-renderer';
+import { HeroInlineNote } from './HeroInlineNote';
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: () => true, useSubscriptionStore: { getState: () => ({}) } }));
+jest.mock('@shared/lib/ui-font', () => ({ useEffectiveAppFontId: () => 'hiMelody', useAppFontSizeScale: () => 1 }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: 'Text' }));
+jest.mock('react-native-webview', () => ({ WebView: 'WebView' }));
+jest.mock('expo-asset', () => ({ Asset: { fromModule: (source: number) => ({ downloadAsync: () => source === 999 ? new Promise(() => {}) : Promise.resolve({ localUri: 'file:///font.ttf', type: 'ttf' }) }) } }));
+jest.mock('expo-file-system/legacy', () => ({ EncodingType: { Base64: 'base64' }, readAsStringAsync: jest.fn(async () => 'font-data') }));
+jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { getJson: jest.fn(() => null), getItemRaw: jest.fn(() => ''), setJson: jest.fn(), setItemRaw: jest.fn() } }));
+jest.mock('@shared/lib/app-alert', () => ({ AppAlert: { alert: jest.fn() } }));
+it('shows guidance only for an empty, unfocused editor', () => {
+  let tree: ReturnType<typeof create>;
+  act(() => { tree = create(<HeroInlineNote storageKey="test" sources={{}} ink="#222222" placeholder="안내" onFocusChange={() => {}} onIllustrationInserted={() => {}} />); });
+  const hint = () => tree!.root.findAllByProps({ testID: 'hero-canvas-note-loading-hint' }).length;
+  const message = (value: object) => act(() => tree!.root.findByProps({ testID: 'hero-canvas-note' }).props.onMessage({ nativeEvent: { data: JSON.stringify(value) } }));
+  expect(tree!.root.findAllByProps({ testID: 'hero-note-skeleton' }).length).toBeGreaterThan(0);
+  expect(hint()).toBe(0);
+  message({ type: 'initialized' });
+  expect(tree!.root.findAllByProps({ testID: 'hero-note-skeleton' })).toHaveLength(0);
+  expect(hint()).toBeGreaterThan(0);
+  message({ type: 'focus', focused: true });
+  expect(hint()).toBe(0);
+  message({ type: 'change', document: { text: '기록', icons: [] } });
+  message({ type: 'focus', focused: false });
+  expect(hint()).toBe(0);
+  message({ type: 'change', document: { text: '', icons: [] } });
+  expect(hint()).toBeGreaterThan(0);
+  act(() => tree!.unmount());
+});
+
+it('starts displaying long text without waiting for slow decoration files', async () => {
+  const text = 'A long saved note. '.repeat(5000) + '\uFFFC';
+  jest.mocked(localStorageClient.getJson).mockImplementation(key => key.endsWith(':inline') ? { text, icons: ['star'] } : null);
+  const injectJavaScript = jest.fn();
+  let tree!: ReturnType<typeof create>;
+  await act(async () => { tree = create(<HeroInlineNote storageKey="long-note" sources={{ star: 999 }} ink="#222222" placeholder="Notes" onFocusChange={() => {}} onIllustrationInserted={() => {}} />, { createNodeMock: element => element.props.testID === 'hero-canvas-note' ? { injectJavaScript } : null }); });
+  await act(async () => tree.root.findByProps({ testID: 'hero-canvas-note' }).props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready' }) } }));
+  expect(injectJavaScript.mock.calls.some(([script]) => script.startsWith('window.note.initialize('))).toBe(true);
+  expect(injectJavaScript.mock.calls.some(([script]) => script.startsWith('window.note.images('))).toBe(false);
+  expect(tree.root.findAllByProps({ testID: 'hero-note-skeleton' }).length).toBeGreaterThan(0);
+  act(() => tree.root.findByProps({ testID: 'hero-canvas-note' }).props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'initialized' }) } }));
+  expect(tree.root.findAllByProps({ testID: 'hero-note-skeleton' })).toHaveLength(0);
+  act(() => tree.unmount());
+});

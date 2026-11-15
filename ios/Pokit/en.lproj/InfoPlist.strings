@@ -2,4 +2,12 @@
 "CFBundleDisplayName" = "Daylight";
 "NSPhotoLibraryUsageDescription" = "Photos access is needed to attach images to notes.";
 "NSPhotoLibraryAddUsageDescription" = "Allow adding photos to save completed scenes to Photos.";
-"NSMotionUsageDescription" = "Motion access may be used to check device orientation while showing the current weather. Motion activity is not saved.";
+"NSMotionUsageDescription" = "Motion access may be used to check device orientation while showing the weather. Motion activity is not saved.";
+
+"NSCameraUsageDescription" = "Camera access is needed to take photos for your characters and scenes.";
+
+"NSLocationWhenInUseUsageDescription" = "Your approximate location is used while the app is open to show local weather. It is not stored.";
+
+"NSCalendarsUsageDescription" = "Show events from your selected calendars alongside your diary.";
+
+"NSCalendarsFullAccessUsageDescription" = "Show events from your selected calendars alongside your diary.";

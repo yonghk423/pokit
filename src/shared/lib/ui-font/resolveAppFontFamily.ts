@@ -17,6 +17,10 @@ export function resolveAppFontFamily(
   if (fontId === 'corncorn') return CORNCORN;
   if (fontId === 'cafe24ShiningStar') return CAFE24_SHINING_STAR;
   if (fontId === 'cafe24Syongsyong') return CAFE24_SYONGSYONG;
+  if (fontId === 'schoolNalgae') return 'HakgyoansimNalgaeR';
+  if (fontId === 'schoolKkokkoma') return 'TTHakgyoansimKkokkomaR';
+  if (fontId === 'singleDay') return 'SingleDay-Regular';
+  if (fontId === 'schoolGongryongal') return 'HakgyoansimGongryongalR';
   return HI_MELODY;
 }
 

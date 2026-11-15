@@ -1,21 +1,29 @@
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
-import { Image } from 'react-native';
+import { Alert, Image } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { HeroPolaroidEditor } from './HeroPolaroidEditor';
+import { localStorageClient } from '@shared/lib/storage/localStorageClient';
+import { markProIntroductionSeen } from '@features/subscriptions/lib/proIntroduction';
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: 'ComicSceneImage' }));
 jest.mock('./HeroPolaroidProcessor', () => ({ HeroPolaroidProcessor: 'PolaroidProcessor' }));
 const mockState = { isHydrated: true, pro: false, hydrate: jest.fn(async () => {}), refreshCustomerInfo: jest.fn(async () => null) };
+jest.mock('@features/subscriptions/lib/entitlement', () => ({ isProEntitlementActive: () => mockState.pro }));
 jest.mock('../../settings/ui/ProPreviewPage', () => ({ ProPreviewPage: 'AppProScreen' }));
 jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ useSubscriptionStore: Object.assign((select: (s: unknown) => unknown) => select(mockState), { getState: () => mockState }), selectIsPro: (s: { pro: boolean }) => s.pro }));
 jest.mock('./HeroCardAppearanceControls', () => ({ HeroCardAppearanceControls: 'AppearanceControls' }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
 jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').View }));
 beforeEach(() => { jest.clearAllMocks(); mockState.pro = false; });
+beforeEach(() => {
+  localStorageClient.removeItem('pokit:pro-promotion-introduction'); localStorageClient.removeItem('pokit:pro-introduction-seen');
+  jest.spyOn(require('@shared/config/proPromotion'), 'isProFreeAccessActive').mockReturnValue(false);
+});
+afterEach(() => jest.restoreAllMocks());
 beforeEach(() => { FEATURE_FLAGS.proSubscriptions = true; FEATURE_FLAGS.proPolaroidExport = true; });
 afterEach(() => { FEATURE_FLAGS.proSubscriptions = false; FEATURE_FLAGS.proPolaroidExport = false; });
 it.each(['save', 'share'])('blocks premium %s when the paywall is cancelled', async action => {
   const onExport = jest.fn(); let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'hello', date: '2026. 11. 06', film: 'warm' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'hello', date: '2026. 11. 06', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
   try {
     await act(async () => tree.root.findAllByProps({ testID: `polaroid-editor-${action}` })[0].props.onPress());
     expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(1);
@@ -27,7 +35,7 @@ it.each(['save', 'share'])('blocks premium %s when the paywall is cancelled', as
 it.each([false, true])('exports basic content for free and premium content for Pro (%s)', async pro => {
   mockState.pro = pro;
   const onExport = jest.fn(async () => {}); let tree!: ReactTestRenderer;
-  const initial = { title: 'hello', date: '2026. 11. 06', film: pro ? 'warm' as const : 'original' as const };
+  const initial = { title: 'hello', date: '2026. 11. 06', film: pro ? 'faded' as const : 'original' as const };
   await act(async () => { tree = create(<HeroPolaroidEditor initial={initial} busy={false} onClose={jest.fn()} onExport={onExport} />); });
   try {
     await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
@@ -70,7 +78,7 @@ it.each(['save', 'share'] as const)('hides writing independently of the date and
 it('resumes premium export only after the app subscription screen activates Pro', async () => {
   const onExport = jest.fn(async () => {});
   let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'hello', date: '', film: 'warm' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'hello', date: '', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
   try {
     await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
     expect(onExport).not.toHaveBeenCalled();
@@ -145,7 +153,7 @@ it.each(['save', 'share'])('exports edited content without subscription checks i
   mockState.refreshCustomerInfo.mockClear();
   const onExport = jest.fn(async () => {});
   let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'hello', date: '2026. 11. 09', film: 'warm' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'hello', date: '2026. 11. 09', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
   try {
     await act(async () => tree.root.findAllByProps({ testID: `polaroid-editor-${action}` })[0].props.onPress());
     expect(onExport).toHaveBeenCalled();
@@ -219,4 +227,72 @@ it('selects a calendar date and carries it into exports, with hide and today act
     const now = new Date();
     expect(onExport).toHaveBeenLastCalledWith('save', expect.objectContaining({ date: `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${String(now.getDate()).padStart(2, '0')}`, showDate: true }));
   } finally { act(() => tree.unmount()); }
+});
+
+it('keeps manual adjustments free for non-Pro users', async () => {
+  const onExport = jest.fn(async () => {});
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'Basic edit', film: 'original', brightness: 30, contrast: 10 }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  try {
+    await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
+    expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
+    expect(onExport).toHaveBeenCalledWith('save', expect.objectContaining({ film: 'original', brightness: 30, contrast: 10 }));
+    expect(mockState.refreshCustomerInfo).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
+});
+
+it('previews paid films without showing a Pro screen or alert', () => {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroPolaroidEditor initial={{ title: 'Preview', date: '', film: 'original' }} busy={false} onClose={jest.fn()} onExport={jest.fn()} />); });
+  try {
+    act(() => tree.root.findByProps({ testID: 'polaroid-select-faded' }).props.onPress());
+    expect(alert).not.toHaveBeenCalled();
+    expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
+    expect(tree.root.findByProps({ testID: 'polaroid-select-faded' }).props.accessibilityState.selected).toBe(true);
+  } finally { act(() => tree.unmount()); alert.mockRestore(); }
+});
+
+it.each(['warm', 'monochrome', 'cream'] as const)('exports free %s film for save, share and download without checking Pro', async film => {
+  const onExport = jest.fn(async () => {});
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroPolaroidEditor initial={{ title: 'Free', date: '', film }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  try {
+    for (const action of ['save', 'share', 'download']) {
+      await act(async () => tree.root.findAllByProps({ testID: `polaroid-editor-${action}` })[0].props.onPress());
+      expect(onExport).toHaveBeenLastCalledWith(action, expect.objectContaining({ film }));
+    }
+    expect(mockState.refreshCustomerInfo).not.toHaveBeenCalled();
+    expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
+    expect(tree.root.findByProps({ testID: `polaroid-select-${film}` }).props.accessibilityLabel).not.toContain('Pro');
+    expect(tree.root.findByProps({ testID: 'polaroid-select-faded' }).props.accessibilityLabel).toContain('Pro');
+  } finally { act(() => tree.unmount()); }
+});
+
+it('continues a paid-film export after the free-promotion introduction', async () => {
+  const promotion = jest.spyOn(require('@shared/config/proPromotion'), 'isProFreeAccessActive').mockReturnValue(true);
+  const onExport = jest.fn(async () => {});
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroPolaroidEditor initial={{ title: 'Trial', date: '', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  try {
+    await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
+    expect(onExport).not.toHaveBeenCalled();
+    await act(async () => tree.root.findByType('AppProScreen' as never).props.onPromotionContinue());
+    expect(onExport).toHaveBeenCalledWith('save', expect.objectContaining({ film: 'faded' }));
+    await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
+    expect(onExport).toHaveBeenCalledTimes(2);
+    expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
+  } finally { act(() => tree.unmount()); promotion.mockRestore(); }
+});
+
+it('exports a paid film immediately when the introduction was already viewed elsewhere', async () => {
+  jest.spyOn(require('@shared/config/proPromotion'), 'isProFreeAccessActive').mockReturnValue(true);
+  markProIntroductionSeen();
+  const onExport = jest.fn(async () => {});
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'Trial', date: '', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
+  expect(onExport).toHaveBeenCalledTimes(1);
+  expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
+  act(() => tree.unmount());
 });

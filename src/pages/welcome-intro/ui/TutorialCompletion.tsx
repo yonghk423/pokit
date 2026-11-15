@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Modal, Platform, StyleSheet, View } from 'react-native';
@@ -125,7 +126,7 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
         <ThemedText accessibilityRole="header" style={s.title}>{title}</ThemedText>
         <ThemedText style={s.body}>{body}</ThemedText>
         <View style={s.rule} />
-        <ThemedText style={s.count}>{ko ? '주인공의 하루를 채워가요' : ja ? '主人公の一日をつくりましょう' : 'Make your character’s day your own'}</ThemedText>
+        <ThemedText style={s.count}>{translateUiText("주인공의 하루를 채워가요")}</ThemedText>
       </Animated.View>
       <Animated.View pointerEvents="none" style={[s.bridge, { opacity: bridge }]} testID="tutorial-completion-bridge">
         <PaperGrain opacity={0.3} />
@@ -136,12 +137,12 @@ export function TutorialCompletion({ mode, completedCount, onComplete }: {
               <PenCheckMark size={32} animate={presented} />
             </View>
           </View>
-          <ThemedText style={s.bridgeTitle}>{ko ? '좋아요, 하나 해냈어요.' : ja ? 'いいですね、ひとつできました。' : 'You did it. One lovely start.'}</ThemedText>
+          <ThemedText style={s.bridgeTitle}>{translateUiText("좋아요, 하나 해냈어요.")}</ThemedText>
           <ThemedText style={s.body}>{completedCount < 2
             ? (mode === 'rhythm'
-              ? (ko ? '오늘의 주인공도 만나볼까요?' : ja ? '今日の主人公も体験してみませんか？' : 'Shall we meet Today’s Protagonist, too?')
-              : (ko ? '이제 주인공 화면의 수납장 도구를 열어볼까요?' : ja ? '主人公画面の収納トレイを開いてみましょう。' : 'Now let’s open the tray tool on your character’s screen.'))
-            : (ko ? '이제 나만의 하루를 채워가요.' : ja ? '自分らしい一日をつくりましょう。' : 'Now, make the day your own.')}</ThemedText>
+              ? (translateUiText("오늘의 주인공도 만나볼까요?"))
+              : (translateUiText("이제 주인공 화면의 수납장 도구를 열어볼까요?")))
+            : (translateUiText("이제 나만의 하루를 채워가요."))}</ThemedText>
         </Animated.View>
       </Animated.View>
     </View>

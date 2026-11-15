@@ -17,7 +17,7 @@ it('renders the selected design with diary dates and copies the image before rel
   const sync = jest.fn(async () => undefined);
   NativeModules.PokitWidgetSync = { syncCalendarWidgetImage: sync };
   act(() => { tree = create(<HeroCalendarWidgetSync {...props} />); });
-  expect(tree!.root.findByType(CalendarPaper).props).toEqual(expect.objectContaining({ design: 'photo', month: props.month, eventDates: props.eventDates }));
+  expect(tree!.root.findAllByType(CalendarPaper)[0].props).toEqual(expect.objectContaining({ design: 'photo', month: props.month, eventDates: props.eventDates }));
   await act(async () => { jest.advanceTimersByTime(400); });
   expect(captureRef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ useRenderInContext: true }));
   expect(sync).toHaveBeenCalledWith('file:///widget.png', '2026-11');
@@ -47,4 +47,12 @@ it('captures a settled calendar once and refreshes when its content changes', as
   act(() => { tree!.update(<HeroCalendarWidgetSync {...props} eventDates={['2026-11-11']} />); });
   await act(async () => { jest.advanceTimersByTime(400); });
   expect(captureRef).toHaveBeenCalledTimes(2);
+});
+
+it('prepares separate small and large calendars with size-specific layouts', () => {
+  NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: jest.fn() };
+  act(() => { tree = create(<HeroCalendarWidgetSync {...props} />); });
+  const calendars = tree!.root.findAllByType(CalendarPaper);
+  expect(calendars.map(calendar => calendar.props.widgetSize)).toEqual(['small', 'large']);
+  expect(calendars.map(calendar => calendar.props.layoutHeight)).toEqual([330, 346]);
 });

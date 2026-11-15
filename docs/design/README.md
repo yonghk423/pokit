@@ -1,8 +1,9 @@
 # 오늘의 주인공 디자인
 
-갱신일: 2026-10-27
+갱신일: 2026-11-12
 
 - [캘린더 테마 배치 기준](photo-diary/calendar-layout.md): 노치·하단 탭 안전 영역, 표 좌표, 화면 크기별 검증
+- [일러스트 캘린더 제작 절차](photo-diary/calendar-large-board-production.md) · [공통 좌표 JSON](photo-diary/city-calendar-template.json) · [빈 SVG 골격](photo-diary/city-calendar-template.svg)
 - [종이와 만년필 디자인](paper-and-ink.md): 화면·색·선·글꼴·모션·반응형 기준
 - [일러스트와 아이콘](illustrations-and-icons.md): 장면 이미지, 작은 아이콘, 생성과 에셋 관리
 - [제품 정체성과 용어](../product/identity.md): 기능이 전달할 경험과 문구

@@ -5,8 +5,8 @@ import { AppModal } from '@shared/ui/app-modal';
 import { ThemedText } from '@shared/ui/themed-text';
 import { formatHeroPolaroidDate } from './HeroPolaroidExport';
 
-export function HeroPolaroidDatePicker({ date, showDate, onSelect, onHide, onClose }: {
-  date: string; showDate: boolean; onSelect: (date: string) => void; onHide: () => void; onClose: () => void;
+export function HeroPolaroidDatePicker({ date, showDate, onSelect, onHide, onClose, title }: {
+  date: string; showDate: boolean; onSelect: (date: string) => void; title?: string; onHide?: () => void; onClose: () => void;
 }) {
   const { t, locale } = useTranslation();
   // Parse local calendar components explicitly: dotted dates are not portable Date inputs.
@@ -20,7 +20,7 @@ export function HeroPolaroidDatePicker({ date, showDate, onSelect, onHide, onClo
     <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#00000066' }}>
       <Pressable accessibilityLabel={t('polaroid.editor.close_date_picker')} onPress={onClose} style={{ position: 'absolute', inset: 0 }} />
       <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 380, alignSelf: 'center', backgroundColor: '#F9F9F6', borderRadius: 20, padding: 16 }}>
-        <ThemedText style={{ fontSize: 20, textAlign: 'center', marginBottom: 8 }}>{t('polaroid.editor.date_on_photo')}</ThemedText>
+        <ThemedText style={{ fontSize: 20, textAlign: 'center', marginBottom: 8 }}>{title ?? t('polaroid.editor.date_on_photo')}</ThemedText>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Pressable testID="polaroid-date-previous" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.previous_month')} onPress={() => setMonth(new Date(year, m - 1, 1))} style={{ ...action, width: 44 }}><ThemedText>‹</ThemedText></Pressable>
           <ThemedText>{month.toLocaleDateString(locale, { year: 'numeric', month: 'long' })}</ThemedText>
@@ -38,7 +38,7 @@ export function HeroPolaroidDatePicker({ date, showDate, onSelect, onHide, onClo
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 8 }}>
           <Pressable testID="polaroid-date-today" accessibilityRole="button" onPress={() => onSelect(formatHeroPolaroidDate())} style={action}><ThemedText>{t('polaroid.editor.today')}</ThemedText></Pressable>
-          <Pressable testID="polaroid-date-hide" accessibilityRole="button" onPress={onHide} style={action}><ThemedText>{t('polaroid.editor.hide_date')}</ThemedText></Pressable>
+          {onHide && <Pressable testID="polaroid-date-hide" accessibilityRole="button" onPress={onHide} style={action}><ThemedText>{t('polaroid.editor.hide_date')}</ThemedText></Pressable>}
           <Pressable accessibilityRole="button" onPress={onClose} style={action}><ThemedText>{t('polaroid.editor.close')}</ThemedText></Pressable>
         </View>
       </View>

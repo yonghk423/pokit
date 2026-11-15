@@ -1,5 +1,5 @@
 /** Detailed graphite illustrations matching the app header artwork. */
-const images = {
+export const controlIllustrationArtwork = {
   keyboard: require('../../../../assets/control-illustrations/keyboard.webp'),
   save: require('../../../../assets/control-illustrations/save.webp'),
   photos: require('../../../../assets/control-illustrations/photos.webp'),
@@ -37,6 +37,7 @@ const images = {
   'sun': require('../../../../assets/control-illustrations/sun.webp'),
   'moon': require('../../../../assets/control-illustrations/moon.webp'),
 } as const;
+const images = controlIllustrationArtwork;
 export const controlIllustrationSources: Record<string, number> = {
   'keyboard.chevron.compact.down': images.keyboard,
   'square.and.arrow.down': images.save,

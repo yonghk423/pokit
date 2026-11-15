@@ -1,17 +1,19 @@
+import { DIARY_CLIP_IMAGES } from '../model/heroDiaryClip';
 import { Image, type ImageRef } from 'expo-image';
 import { useEffect, useState } from 'react';
 
 const sources = {
-  camera: require('../../../../assets/control-illustrations/photo-camera-save.png'),
+  legacyCover: require('../../../../assets/store-previews/city-animation-couch.webp'),
   trash: require('../../../../assets/control-illustrations/mesh-trash-bin.png'),
   board: require('../../../../assets/control-illustrations/clipboard-calendar-v2.webp'),
-  cover: require('../../../../assets/store-previews/city-animation-couch.webp'),
-  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.png'),
-  black: require('../../../../assets/control-illustrations/black-clipboard-clip.png'),
+  cover: require('../../../../assets/store-previews/everyday-cinema-top-only.webp'),
+  warmSepiaCover: require('../../../../assets/store-previews/warm-sepia-open-panel.webp'),
+  texturedWatercolorCover: require('../../../../assets/store-previews/textured-watercolor.webp'),
+  citypopRetroCover: require('../../../../assets/store-previews/citypop-retro.webp'),
+  ...DIARY_CLIP_IMAGES,
 };
 type Artwork = Record<keyof typeof sources, ImageRef>;
-// Only these six bundled products are retained, each decoded to at most 768px.
-// This bounded set uses at most 14 MB of pixels; downloaded themes are not retained.
+// Retain the bounded bundled product set, decoded to at most 768px per edge.
 let ready: Artwork | null = null;
 let pending: Promise<Artwork> | null = null;
 function prepare() {

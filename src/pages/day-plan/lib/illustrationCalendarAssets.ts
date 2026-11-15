@@ -3,9 +3,19 @@ import { Image } from 'expo-image';
 import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
 export type CalendarAssets = { background: string };
-export const CALENDAR_ASSET_REVISION = '20261110-fullscreen-v8';
+export const CALENDAR_ASSET_REVISION = '20261112-everyday-cinema-v1';
 const previousRevision = '20261109-fullbleed-v2';
-const cacheRoot = () => `${fs.documentDirectory}calendar-themes/${CALENDAR_ASSET_REVISION}/`;
+const isEveryday = (themeId: string) => themeId.startsWith('everyday-cinema-');
+const previousEverydayRoot = () => `${fs.documentDirectory}calendar-themes/20261112-everyday-cinema-open-panel-v3/`;
+const isWarmSepia = (themeId: string) => themeId.startsWith('warm-sepia-open-panel-');
+const isCitypopRetro = (themeId: string) => themeId.startsWith('citypop-retro-');
+const isTexturedWatercolor = (themeId: string) => themeId.startsWith('textured-watercolor-');
+const legacyRoot = () => `${fs.documentDirectory}calendar-themes/${CALENDAR_ASSET_REVISION}/`;
+const cacheRoot = (themeId: string) => themeId.startsWith('season-winter-') ? `${fs.documentDirectory}calendar-themes/season-winter-v2/` : themeId === 'textured-watercolor-01-fly-kite' ? `${fs.documentDirectory}calendar-themes/textured-watercolor-kite-v2/` : isEveryday(themeId)
+  ? `${fs.documentDirectory}calendar-themes/20261112-everyday-cinema-top-only-v4/`
+  : isWarmSepia(themeId) ? `${fs.documentDirectory}calendar-themes/warm-sepia-open-panel-v2/`
+    : isCitypopRetro(themeId) ? `${fs.documentDirectory}calendar-themes/citypop-retro-v1/`
+  : isTexturedWatercolor(themeId) ? `${fs.documentDirectory}calendar-themes/textured-watercolor-v2/` : legacyRoot();
 const names = ['background'] as const;
 const installing = new Map<string, Promise<CalendarAssets>>();
 const pending = new Map<string, Promise<CalendarAssets>>();
@@ -16,20 +26,32 @@ let installationQueue: Promise<unknown> = Promise.resolve();
 export function getLoadedIllustrationCalendarAssets(themeId = '01-rush-hour-commute') { return readyAssets.get(themeId) ?? null; }
 async function installFiles(themeId = '01-rush-hour-commute', refresh = false): Promise<CalendarAssets> {
   if (!fs.documentDirectory) throw new Error('storage_unavailable');
-  const folder = `${cacheRoot()}${themeId}/`;
+  const folder = `${cacheRoot(themeId)}${themeId}/`;
   await fs.makeDirectoryAsync(folder, { intermediates: true });
   const assets: CalendarAssets = { background: `${folder}background.webp` };
   const existing = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
   if (!refresh && existing.every(file => file.exists && !file.isDirectory && file.size > 0)) { await removeUnusedCalendarDecorations(); return assets; }
+  const everyday = isEveryday(themeId);
+  const warmSepia = isWarmSepia(themeId);
+  const citypopRetro = isCitypopRetro(themeId);
+  const texturedWatercolor = isTexturedWatercolor(themeId);
+  const revision = themeId.startsWith('season-winter-') ? 'season-winter-v2' : everyday ? 'everyday-cinema-v2' : warmSepia ? 'warm-sepia-open-panel-v2' : citypopRetro ? 'citypop-retro-v1' : texturedWatercolor ? themeId === 'textured-watercolor-01-fly-kite' ? 'textured-watercolor-v1' : 'textured-watercolor-v2' : 'fullbleed-v2';
   await getHeroAiAccessToken();
-  const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-theme', { body: { themeId, revision: 'fullbleed-v2' } });
-  if (error || data?.themeId !== themeId || data?.revision !== 'fullbleed-v2' || !Array.isArray(data?.files)) throw new Error('theme_download_unavailable');
+  const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-theme', { body: { themeId, revision } });
+  if (error || data?.themeId !== themeId || data?.revision !== revision || !Array.isArray(data?.files)) throw new Error('theme_download_unavailable');
   for (const name of names) {
     const info = await fs.getInfoAsync(assets[name]);
     if (!refresh && info.exists && !info.isDirectory && info.size > 0) continue;
     const file = data.files.find((item: { name: string; url: string }) => item.name === `${name}.webp`);
     if (!file?.url?.startsWith('https://')) throw new Error('invalid_theme');
-    const expectedPath = `/calendar-themes/city-animation/${themeId}/${name}.webp`;
+    const expectedPath = themeId.startsWith('season-winter-') ? `/calendar-themes/season-winter/20261114-v2/${themeId.replace('season-winter-', '')}.webp` : everyday
+      ? `/calendar-themes/everyday-cinema/20261112-v2/${themeId.replace('everyday-cinema-', '')}.webp`
+      : warmSepia
+        ? `/calendar-themes/warm-sepia-open-panel/20261112-v2/${themeId.replace('warm-sepia-open-panel-', '')}.webp`
+        : citypopRetro
+          ? `/calendar-themes/citypop-retro/20261112-v1/${themeId.replace('citypop-retro-', '')}.webp`
+          : texturedWatercolor ? themeId === 'textured-watercolor-01-fly-kite' ? `/calendar-themes/textured-watercolor/20261112-v1/01-fly-kite-v2.webp` : `/calendar-themes/textured-watercolor/20261113-v2/${themeId.replace('textured-watercolor-', '')}.webp`
+          : `/calendar-themes/city-animation/${themeId}/${name}.webp`;
     if (!decodeURIComponent(new URL(file.url).pathname).endsWith(expectedPath)) throw new Error('theme_mismatch');
     const temp = assets[name] + '.part';
     const result = await fs.downloadAsync(file.url, temp, { headers: { 'Cache-Control': 'no-store' } });
@@ -43,6 +65,9 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
     }
     await fs.moveAsync({ from: temp, to: assets[name] });
   }
+  if (themeId.startsWith('season-winter-')) await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/season-winter-v1/${themeId}/`, { idempotent: true });
+  if (warmSepia) await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/warm-sepia-open-panel-v1/`, { idempotent: true });
+  if (everyday) await fs.deleteAsync(`${previousEverydayRoot()}${themeId}/`, { idempotent: true });
   await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/city-animation-v2/${themeId}/`, { idempotent: true });
   await fs.deleteAsync(`${fs.documentDirectory}calendar-themes/${previousRevision}/${themeId}/`, { idempotent: true });
   await removeUnusedCalendarDecorations();
@@ -73,6 +98,25 @@ export function loadIllustrationCalendarAssets(themeId = '01-rush-hour-commute')
 
 async function hasLegacyDownload(themeId: string) {
   if (!fs.documentDirectory) return false;
+  if (themeId.startsWith('season-winter-')) {
+    const old = await fs.getInfoAsync(`${fs.documentDirectory}calendar-themes/season-winter-v1/${themeId}/background.webp`);
+    return old.exists && !old.isDirectory && old.size > 0;
+  }
+  if (themeId === 'textured-watercolor-01-fly-kite') {
+    const old = await fs.getInfoAsync(`${fs.documentDirectory}calendar-themes/textured-watercolor-v1/${themeId}/background.webp`);
+    return old.exists && !old.isDirectory && old.size > 0;
+  }
+  if (isEveryday(themeId)) {
+    const previous = await fs.getInfoAsync(`${previousEverydayRoot()}${themeId}/background.webp`);
+    if (previous.exists && !previous.isDirectory && previous.size > 0) return true;
+    const old = await fs.getInfoAsync(`${legacyRoot()}${themeId}/background.webp`);
+    return old.exists && !old.isDirectory && old.size > 0;
+  }
+  if (isTexturedWatercolor(themeId)) {
+    const previousWatercolor = await fs.getInfoAsync(`${fs.documentDirectory}calendar-themes/textured-watercolor-v1/${themeId}/background.webp`);
+    return previousWatercolor.exists && !previousWatercolor.isDirectory && previousWatercolor.size > 0;
+  }
+  if (isWarmSepia(themeId) || isCitypopRetro(themeId)) return false;
   const previous = await fs.getInfoAsync(`${fs.documentDirectory}calendar-themes/${previousRevision}/${themeId}/background.webp`);
   if (previous.exists && !previous.isDirectory && previous.size > 0) return true;
   const files = await Promise.all(names.map(name => fs.getInfoAsync(`${fs.documentDirectory}calendar-themes/city-animation-v2/${themeId}/${name}.webp`)));
@@ -81,7 +125,7 @@ async function hasLegacyDownload(themeId: string) {
 
 export async function isIllustrationCalendarInstalled(themeId: string): Promise<boolean> {
   if (!fs.documentDirectory) return false;
-  const assets: CalendarAssets = { background: `${cacheRoot()}${themeId}/background.webp` };
+  const assets: CalendarAssets = { background: `${cacheRoot(themeId)}${themeId}/background.webp` };
   const files = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
   if (files.every(file => file.exists && !file.isDirectory && file.size > 0)) { await removeUnusedCalendarDecorations(); return true; }
   if (await hasLegacyDownload(themeId)) {
@@ -97,7 +141,7 @@ export async function downloadIllustrationCalendarAssets(themeId: string) {
   return assets;
 }
 export function illustrationCalendarBackgroundUri(themeId: string) {
-  return `${cacheRoot()}${themeId}/background.webp`;
+  return `${cacheRoot(themeId)}${themeId}/background.webp`;
 }
 
 export async function removeIllustrationCalendarDownloads() {
@@ -114,7 +158,23 @@ export async function removeIllustrationCalendarDownloads() {
 async function removeUnusedCalendarDecorations() {
   if (!fs.documentDirectory) return;
   for (const name of ['paper.webp', 'leaf.webp']) {
-    await fs.deleteAsync(`${cacheRoot()}shared/${name}`, { idempotent: true });
-    await fs.deleteAsync(`${cacheRoot()}shared/${name}.part`, { idempotent: true });
+    await fs.deleteAsync(`${legacyRoot()}shared/${name}`, { idempotent: true });
+    await fs.deleteAsync(`${legacyRoot()}shared/${name}.part`, { idempotent: true });
   }
+}
+
+export async function removeIllustrationCalendarTheme(themeId: string) {
+  await Promise.allSettled([pending.get(themeId), installing.get(themeId)].filter(Boolean));
+  pending.delete(themeId); readyAssets.delete(themeId);
+  if (fs.documentDirectory) await fs.deleteAsync(`${cacheRoot(themeId)}${themeId}/`, { idempotent: true });
+}
+
+/** City Animation and the retired Everyday pack shared a cache directory in v1. */
+export async function removeRetiredEverydayFiles() {
+  if (!fs.documentDirectory) return;
+  const folder = legacyRoot();
+  const info = await fs.getInfoAsync(folder);
+  if (!info.exists || !info.isDirectory) return;
+  const files = await fs.readDirectoryAsync(folder);
+  await Promise.all(files.filter(isEveryday).map(name => fs.deleteAsync(folder + name + '/', { idempotent: true })));
 }

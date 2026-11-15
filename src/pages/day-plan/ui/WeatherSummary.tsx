@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { DayPlanTabFocusContext } from '../model/dayPlanTabFocus';
 import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { useTranslation } from '@shared/lib/i18n';
@@ -10,6 +11,8 @@ import { Animated, AppState, Easing, Linking, Modal, Pressable, ScrollView, Styl
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { syncWeatherToWidget } from '../lib/weatherWidgetSync';
+import { weatherForecastDays, type ForecastDay } from '../lib/weatherForecast';
+import { WeatherCalendarHeader } from './WeatherCalendarHeader';
 import { nextWeatherOutfit, selectWeatherOutfit, weatherOutfitCandidates } from '../lib/weatherOutfit';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { ServiceTutorialTarget } from '../../welcome-intro/ui/ServiceTutorialTarget';
@@ -27,6 +30,7 @@ const GPS_RETRY_MS = 8_000;
 const GPS_RETRY_LIMIT = 1;
 
 type WeatherReport = {
+  forecast?: ForecastDay[];
   city: string;
   temperature: number;
   description: string;
@@ -96,6 +100,7 @@ function publishWeather(report: WeatherReport, fetchedAt: number) {
 }
 
 let cachedReport: { report: WeatherReport; fetchedAt: number } | null = null;
+export function getCalendarWeatherReport() { return cachedReport?.report ?? null; }
 
 function gridCell(lat: number, lon: number) {
   return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 };
@@ -181,7 +186,7 @@ async function resolveCoords(): Promise<{ lat: number; lon: number } | null> {
   return watchFirstFix(GPS_WATCH_MS);
 }
 
-export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
+export function WeatherSummary({ ink, muted, showUnavailable = false, presentation = 'summary', scale = 1 }: { ink: string; muted: string; showUnavailable?: boolean; presentation?: 'summary' | 'calendar'; scale?: number }) {
   const { locale } = useTranslation();
   const focused = useContext(DayPlanTabFocusContext);
   const focusedRef = useRef(focused);
@@ -261,7 +266,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
       const cachedCity = cachedReport?.report.city ?? '';
       const cachedDescription = cachedReport?.report.description ?? '';
       const cachedInEnglish = !isNeighborhoodName(cachedCity) && !isLocalizedWeatherText(`${cachedCity} ${cachedDescription}`);
-      if (!force && cachedReport && cachedInEnglish && Date.now() - cachedReport.fetchedAt < CACHE_MS) {
+      if (!force && cachedReport && cachedInEnglish && (presentation !== 'calendar' || cachedReport.report.forecast) && Date.now() - cachedReport.fetchedAt < CACHE_MS) {
         if (alive.current) setReport(cachedReport.report);
         publishWeather(cachedReport.report, cachedReport.fetchedAt);
         retryCount.current = 0;
@@ -333,6 +338,12 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
         timezoneOffset: optionalNumber(data.timezone) ?? 0,
         hemisphere: coords.lat >= 0 ? 'north' : 'south',
       };
+      if (presentation === 'calendar') {
+        try {
+          const forecast = await fetch(`https://api.openweathermap.org/data/2.5/forecast?${query.toString()}`);
+          if (forecast.ok) nextReport.forecast = weatherForecastDays(await forecast.json());
+        } catch { /* Current conditions remain available when forecast fails. */ }
+      }
       const fetchedAt = Date.now();
       cachedReport = { report: nextReport, fetchedAt };
       publishWeather(nextReport, fetchedAt);
@@ -346,7 +357,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
       requestInFlight.current = false;
       if (alive.current) setLoading(false);
     }
-  }, [clearRetry]);
+  }, [clearRetry, presentation]);
 
   useEffect(() => {
     const returned = !focusedRef.current && focused;
@@ -383,7 +394,9 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
     if (weatherTutorialActive) useServiceTutorial.getState().advance('comicWeather', 'comicTools');
   }, [weatherTutorialActive]);
 
-  if (!report) return null;
+  if (!report) return showUnavailable ? <Pressable accessibilityRole="button" accessibilityLabel={translateUiText("날씨 다시 불러오기")} disabled={loading} onPress={() => { if (permissionBlocked) void Linking.openSettings(); else void loadWeather(true); }}>
+    {presentation === 'calendar' ? <WeatherCalendarHeader scale={scale} statusMessage={loading ? translateUiText("날씨 불러오는 중…") : permissionBlocked ? translateUiText("위치 권한을 허용하면 날씨를 볼 수 있어요") : translateUiText("눌러서 현재 날씨 불러오기")} /> : <ThemedText style={{ color: muted, fontSize: 14 }}>{loading ? translateUiText("날씨 불러오는 중…") : permissionBlocked ? translateUiText("위치 권한을 허용하면 날씨를 볼 수 있어요") : translateUiText("날씨를 불러오려면 눌러주세요")}</ThemedText>}
+  </Pressable> : null;
 
   const labels = locale === 'zh-TW'
     ? weatherDetailCopy['zh-TW']
@@ -422,7 +435,7 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
   return (
     <View style={styles.container}>
       <ServiceTutorialCoach steps={['comicWeather']} />
-      <View style={styles.weatherRow}>
+      {presentation === 'calendar' ? <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={openDetails}><WeatherCalendarHeader report={report} scale={scale} /></Pressable> : <View style={styles.weatherRow}>
         <ServiceTutorialTarget steps={weatherTutorialActive ? ['comicWeather'] : []}>
         <Pressable
           accessibilityRole="button"
@@ -430,10 +443,10 @@ export function WeatherSummary({ ink, muted }: { ink: string; muted: string }) {
           onPress={openDetails}
           style={styles.weatherButton}>
           <WeatherMark color={muted} />
-          <ThemedText numberOfLines={1} style={[styles.weatherText, { color: ink }]}>{label}</ThemedText>
+          <ThemedText testID="weather-summary-label" style={[styles.weatherText, { color: ink }]}>{label}</ThemedText>
         </Pressable>
         </ServiceTutorialTarget>
-      </View>
+      </View>}
       <Modal visible={detailsVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={closeDetails}>
         <View style={styles.modalRoot}>
           <Pressable accessibilityRole="button" accessibilityLabel={labels.close} onPress={closeDetails} style={styles.modalScrim} />
@@ -551,7 +564,7 @@ const styles = StyleSheet.create({
   container: { minHeight: 26, maxWidth: '100%' },
   weatherRow: { minHeight: 26, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: '100%' },
   weatherButton: { minWidth: 0, minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '100%' },
-  weatherText: { fontSize: 15, lineHeight: 22, flexShrink: 1 },
+  weatherText: { fontSize: 15, lineHeight: 22, flexShrink: 1, textAlign: 'right' },
   modalRoot: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   modalScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(25, 23, 20, 0.38)' },
   modalCard: { width: '100%', maxWidth: 420, maxHeight: '84%', padding: 20, gap: 13, borderWidth: 1.2, borderRadius: 5, backgroundColor: '#F7F4EC' },

@@ -9,6 +9,7 @@ export { restorePurchases } from './lib/restorePurchases';
 export type { RestorePurchasesResult } from './lib/restorePurchases';
 export {
   selectIsPro,
+  selectCanTestProStoreItems,
   selectProExpirationDate,
   useSubscriptionStore,
 } from './model/subscriptionStore';

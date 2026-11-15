@@ -9,6 +9,11 @@ export function calendarRegionFrame([left, top, width, height]: CalendarRegion, 
 /** Fill the screen with one aspect-preserving image; overlay coordinates use this same frame. */
 export function fitCalendarArtwork(themeId: string, width: number, height: number, topInset = 0, bottomInset = 0) {
   const [sourceWidth, sourceHeight] = ARTWORK_SIZES[themeId] ?? [852, 1846];
+  // Snow is an unframed background: cover the complete screen, while dates use
+  // viewport coordinates so narrow devices never crop a calendar column.
+  if (themeId.startsWith('season-winter-')) {
+    return { width, height, left: 0, top: 0 };
+  }
   const scale = Math.max(width / sourceWidth, height / sourceHeight);
   const frameWidth = sourceWidth * scale, frameHeight = sourceHeight * scale;
   const layout = CALENDAR_ARTWORK_LAYOUTS[themeId];
@@ -23,7 +28,7 @@ export function fitCalendarArtwork(themeId: string, width: number, height: numbe
 /** One shared layout for every day, regardless of whether a photo/event exists. */
 export function calendarCellContents(width: number, height: number) {
   const inset = Math.min(width, height) * .06;
-  const numberSize = Math.min(width * .29, height * .29, 22);
+  const numberSize = Math.min(width * .40, height * .40, 26);
   const numberHeight = numberSize * 1.18;
   const numberTop = inset;
   const photoTop = numberTop + numberHeight + height * .06;

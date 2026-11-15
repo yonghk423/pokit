@@ -1,4 +1,6 @@
-import { useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
+import { DiaryItemImage } from './DiaryItemImage';
+import { useDiaryTheme } from '../model/diaryTheme';
+import { isIllustrationCalendarDesign, useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
 import { useIllustrationCalendarMode } from '../model/illustrationCalendarMode';
 import { ThemedText } from '@shared/ui/themed-text';
 import { HeroCharacterPickerActionContext } from '../model/heroCharacterPickerAction';
@@ -60,7 +62,8 @@ function TabButton({ children, ...props }: PressableProps & { children: React.Re
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const calendarDesign = useHeroCalendarDesign();
-  const selectedIllustration = calendarDesign === 'illustration' || calendarDesign.startsWith('city-animation-');
+  const theme = useDiaryTheme('tab');
+  const selectedIllustration = isIllustrationCalendarDesign(calendarDesign);
   const calendarBackdrop = useCalendarBackdropVisible();
   const illustrationMode = useIllustrationCalendarMode();
   const { width } = useWindowDimensions();
@@ -140,7 +143,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
             styles.container,
             { backgroundColor: colors.containerBg, borderWidth: 0.7, borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.65)' },
           ]}>
-          {selectedSlot >= 0 && <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 6.7, top: '50%', marginTop: -22, width: itemWidth, height: 44, borderRadius: 22, backgroundColor: colors.activeBg }, indicatorStyle]} />}
+          {selectedSlot >= 0 && <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 6.7, top: '50%', marginTop: -22, width: itemWidth, height: 44, borderRadius: 22, backgroundColor: theme ? 'transparent' : colors.activeBg }, indicatorStyle]}>{theme && <DiaryItemImage source={theme.source} contentFit={theme.id === 'classic-tab' ? 'fill' : 'contain'} style={{ width: '100%', height: '100%' }} />}</Animated.View>}
           {visibleTabs.map((tab) => {
             const isFocused =
               focusedRoute === tab.route ||
@@ -167,7 +170,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   { width: itemWidth },
                   pressed && { opacity: 0.8 },
                 ]}>
-                {tab.route === 'calendar' || tab.route === 'history' || tab.route === 'index' ? <ThemedText numberOfLines={1} style={{ fontSize: tab.route === 'calendar' ? 16 : 20, lineHeight: 28, color: isFocused && !photoSelected ? colors.selectedText : colors.text, textAlign: 'center' }}>{tab.route === 'history' ? 'Photo' : tab.route === 'calendar' ? 'Store' : 'Diary'}</ThemedText> : <Image source={tab.icon!} style={[styles.icon, { tintColor: isFocused ? colors.selectedIcon : colors.icon }]} resizeMode="contain" />}
+                {tab.route === 'calendar' || tab.route === 'history' || tab.route === 'index' ? <ThemedText numberOfLines={1} style={{ fontSize: tab.route === 'calendar' ? 16 : 20, lineHeight: 28, color: isFocused && !photoSelected ? (theme ? '#412D27' : colors.selectedText) : colors.text, textAlign: 'center' }}>{tab.route === 'history' ? 'Photo' : tab.route === 'calendar' ? 'Store' : 'Diary'}</ThemedText> : <Image source={tab.icon!} style={[styles.icon, { tintColor: isFocused ? colors.selectedIcon : colors.icon }]} resizeMode="contain" />}
               </TabButton>{tab.route === 'index' && FEATURE_FLAGS.heroAiCameraTab ? <>
                 <TabButton
                   testID="hero-ai-mode-tab"

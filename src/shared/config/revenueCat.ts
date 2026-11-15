@@ -3,7 +3,7 @@ import { FEATURE_FLAGS } from '@shared/config/featureFlags';
  * RevenueCat 공개 SDK 키·엔타이틀먼트·상품 식별자.
  *
  * 대시보드 Entitlement Identifier 는 반드시 `yourday_pro` 로 맞춘다.
- * 표시 이름은 `yourday pro`, 내부 식별자는 `yourday_pro`이다.
+ * 앱 표시 이름은 `Daylight Pro`, 기존 결제 내부 식별자는 `yourday_pro`이다.
  *
  * Offering 패키지:
  * - monthly → Product: monthly

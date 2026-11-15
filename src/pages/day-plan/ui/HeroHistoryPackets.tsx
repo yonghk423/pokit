@@ -1,4 +1,7 @@
+import { HeroCanvasNote } from './HeroCanvasNote';
+import { HeroPolaroidDatePicker } from './HeroPolaroidDatePicker';
 import { HeroTrashIcon } from './HeroTrashIcon';
+import { useHeroTrashBinStyle } from '../model/heroTrashBinStyle';
 import { getClockNow } from '@shared/lib/time/appClock';
 import { comicDiaryDate } from '../lib/heroCalendar';
 import { polaroidScatter } from '../lib/polaroidScatter';
@@ -62,8 +65,9 @@ function Packet({ date, diaries, width, onPress }: { date: string; diaries: Comi
     <View style={[s.label, { minHeight: 46, padding: 4, gap: 2 }]}><PaperGrain opacity={0.65} /><ThemedText numberOfLines={1} adjustsFontSizeToFit style={[s.date, { fontSize: 9, lineHeight: 13 }]}>{dateLabel(date)}</ThemedText><ThemedText style={[s.count, { fontSize: 9, lineHeight: 12 }]}>{countLabel}</ThemedText><View style={[s.staple, { left: 12 }]} /><View style={[s.staple, { right: 12 }]} /></View>
   </Pressable>;
 }
-export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveScenes, onUpdateScene }: { diaries: ComicDiary[]; onRemoveScenes?: (entries: { diaryId: string; sceneId: string }[]) => void; onCreate: () => void; onDeleteMany: (ids: string[]) => void; onUpdateScene: (diaryId: string, sceneId: string, text: HeroCardText) => void }) {
+export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveScenes, onUpdateScene }: { diaries: ComicDiary[]; onRemoveScenes?: (entries: { diaryId: string; sceneId: string }[]) => void; onCreate: (date?: string) => void; onDeleteMany: (ids: string[]) => void; onUpdateScene: (diaryId: string, sceneId: string, text: HeroCardText) => void }) {
   const { t } = useTranslation();
+  const trashBinStyle = useHeroTrashBinStyle();
   const confirmDelete = (ids: string[]) => {
     if (!ids.length) return;
     tapHaptic('warn');
@@ -74,7 +78,8 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
   };
   const hasWallpaper = useWallpaperStore(state => !!state.wallpaper);
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const [albumContentTop, setAlbumContentTop] = useState(0);
   const groups = groupDiaryLibrary(diaries, 'month');
   const [year, setYear] = useState(() => Number(groups.find(g => g.date !== 'undated')?.date.slice(0, 4) ?? getClockNow().getFullYear()));
   const [selecting, setSelecting] = useState(false);
@@ -82,6 +87,7 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
   const [opened, setOpened] = useState<string | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
   const [dateGridOpen, setDateGridOpen] = useState(false);
+  const [pickingDate, setPickingDate] = useState(false);
   const [sceneDetail, setSceneDetail] = useState<string | null>(null);
   const group = groups.find(g => g.date === opened);
   const entries = group?.diaries.flatMap<{ key: string; diary: ComicDiary; scene: ComicDayScene | undefined; index: number }>(diary => diary.scenes.length ? diary.scenes.map((scene, index) => ({ key: `${diary.id}:${scene.id}`, diary, scene, index })) : [{ key: diary.id, diary, scene: undefined, index: 0 }]) ?? [];
@@ -104,7 +110,7 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
   const moveYear = (delta: number) => { tapHaptic('select'); setYear(value => value + delta); setSelected([]); };
   const close = () => { if (sceneDetail) setSceneDetail(null); else { setOpened(null); setDetail(null); setDateGridOpen(false); } };
   return <View style={{ flex: 1, paddingTop: insets.top }}>
-    <View style={s.month}><Pressable testID="history-previous-year" accessibilityRole="button" accessibilityLabel={t('comicDiary.previousYear')} onPress={() => moveYear(-1)} style={s.touch}><BackChevron color="#000000" /></Pressable><View style={{ width: 180, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ textAlign: 'center' }}>{year}</ThemedText></View><Pressable testID="history-next-year" accessibilityRole="button" accessibilityLabel={t('comicDiary.nextYear')} onPress={() => moveYear(1)} style={s.touch}><View style={{ transform: [{ rotate: '180deg' }] }}><BackChevron color="#000000" /></View></Pressable><Pressable testID="history-selection-toggle" accessibilityRole="button" accessibilityLabel={t('comicDiary.delete')} accessibilityState={{ selected: selecting }} onPress={() => { if (!selecting) { setSelecting(true); setSelected([]); } }} style={[s.touch, { position: 'absolute', right: 4 }]}><Image testID="history-trash-image" source={selected.length ? require('../../../../assets/control-illustrations/mesh-trash-bin-paper.webp') : require('../../../../assets/control-illustrations/mesh-trash-bin.webp')} contentFit="contain" transition={0} cachePolicy="memory-disk" accessible={false} style={{ width: 28, height: 28 }} /></Pressable></View>
+    <View style={s.month}><Pressable testID="history-previous-year" accessibilityRole="button" accessibilityLabel={t('comicDiary.previousYear')} onPress={() => moveYear(-1)} style={s.touch}><BackChevron color="#000000" /></Pressable><View style={{ width: 180, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ textAlign: 'center' }}>{year}</ThemedText></View><Pressable testID="history-next-year" accessibilityRole="button" accessibilityLabel={t('comicDiary.nextYear')} onPress={() => moveYear(1)} style={s.touch}><View style={{ transform: [{ rotate: '180deg' }] }}><BackChevron color="#000000" /></View></Pressable><Pressable testID="history-selection-toggle" accessibilityRole="button" accessibilityLabel={t('comicDiary.delete')} accessibilityState={{ selected: selecting }} onPress={() => { if (!selecting) { setSelecting(true); setSelected([]); } }} style={[s.touch, { position: 'absolute', right: 4 }]}><View testID="history-trash-image"><HeroTrashIcon size={28} variant={trashBinStyle} filled={selected.length > 0} /></View></Pressable></View>
     <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}><View style={{ alignSelf: 'center', width: packetCanvasWidth, height: packetLayout.height }}>
       {visible.map((g, i) => <View key={g.date} style={{ position: 'absolute', left: packetLayout.frames[i].left, top: packetLayout.frames[i].top, width: packetLayout.frames[i].width, zIndex: packetLayout.frames[i].zIndex, transform: [{ rotate: `${packetLayout.frames[i].rotation}deg` }] }}><Packet date={g.date} diaries={g.diaries} width={packetLayout.frames[i].width} onPress={() => { tapHaptic(); if (selecting) setSelected(current => current.includes(g.date) ? current.filter(date => date !== g.date) : [...current, g.date]); else { setOpened(g.date); setDetail(null); setDateGridOpen(true); } }} />{selecting ? <><View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderWidth: 1.4, borderColor: selected.includes(g.date) ? '#B95D46' : 'transparent' }} /><View pointerEvents="none" style={{ position: 'absolute', right: 8, top: 8, width: 24, height: 24, borderRadius: 12, borderWidth: 1.3, borderColor: selected.includes(g.date) ? '#B95D46' : '#9B958B', backgroundColor: selected.includes(g.date) ? '#B95D46' : 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }}>{selected.includes(g.date) ? <ThemedText style={{ color: '#FFFFFF', fontSize: 14, lineHeight: 18 }}>✓</ThemedText> : null}</View></> : null}</View>)}
     </View></ScrollView>
@@ -114,7 +120,7 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
       <Pressable testID="history-delete-selected" accessibilityRole="button" disabled={!selected.length} onPress={() => confirmDelete(groups.filter(g => selected.includes(g.date)).flatMap(g => g.diaries.map(d => d.id)))} style={[s.deleteConfirm, { opacity: selected.length ? 1 : 0.4 }]}><ThemedText style={{ color: '#713F45', fontSize: 14 }}>{t('comicDay.deleteCountAction', { count: selected.length })}</ThemedText></Pressable>
     </View> : null}
     {group ? <AppModal visible animationType="none" onRequestClose={close}><View style={{ flex: 1, backgroundColor: '#F7F6F4', paddingTop: insets.top, paddingBottom: insets.bottom }}>
-      {hasWallpaper ? <AppWallpaperBackground /> : <SurfaceTexture kind="wrinkled" opacity={0.18} />}
+      {hasWallpaper ? <AppWallpaperBackground /> : <SurfaceTexture kind="paper" opacity={0.18} />}
       <View style={s.header}>
         <View style={{ width: 88, alignItems: 'flex-start' }}><Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={close} style={s.touch}><BackChevron color="#202020" /></Pressable></View>
         <ThemedText testID="history-detail-date" style={{ flex: 1, textAlign: 'center', color: '#292E28', fontSize: 18 }}>{dateLabel(group.date)}</ThemedText>
@@ -122,12 +128,18 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
           <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { setOpened(null); setDetail(null); setDateGridOpen(false); }} style={[s.touch, { minWidth: 52 }]}><ThemedText style={{ color: '#292E28', fontSize: 15 }}>{t('common.close')}</ThemedText></Pressable>
         </View>
       </View>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} onLayout={({ nativeEvent }) => setAlbumContentTop(nativeEvent.layout.y)}>
       <View style={StyleSheet.absoluteFill}>
-        <HeroCardToolsProvider><ComicDayBoard syncMainState={false} focusSceneId={detail} diaryTitle={dateLabel(group.date)} hideEntryActions hideCharacterHeading onAdd={onCreate} historyOverview overviewOpen={dateGridOpen} onOverviewChange={setDateGridOpen} onRemove={key => removeScenes([key])} onRemoveMany={removeScenes} items={entries.map(item => ({ key: item.key, icon: 'photo' as const, label: item.scene?.title ?? '', memo: item.scene?.memo, artworkUri: item.scene?.artworkUri, exportDate: comicDiaryDate(item.diary) ?? item.diary.createdAt, faceColor: item.scene?.paper, inkColor: item.scene?.pen, fontId: item.scene?.fontId }))} ink="#292E28" muted="#73796C" isDark={false} choices={Object.fromEntries(entries.filter(item => item.scene).map(item => [item.key, item.scene!.image]))} onOpen={key => { const item = entries.find(entry => entry.key === key); if (item?.scene) setSceneDetail(key); }} onEditCard={(key, text) => { const item = entries.find(entry => entry.key === key); if (item?.scene) onUpdateScene(item.diary.id, item.scene.id, text); }} /></HeroCardToolsProvider>
+        <HeroCardToolsProvider><ComicDayBoard syncMainState={false} focusSceneId={detail} diaryTitle={dateLabel(group.date)} hideEntryActions hideCharacterHeading onAdd={() => setPickingDate(true)} historyOverview overviewOpen={dateGridOpen} onOverviewChange={setDateGridOpen} onRemove={key => removeScenes([key])} onRemoveMany={removeScenes} items={entries.map(item => ({ key: item.key, icon: 'photo' as const, label: item.scene?.title ?? '', memo: item.scene?.memo, artworkUri: item.scene?.artworkUri, exportDate: comicDiaryDate(item.diary) ?? item.diary.createdAt, faceColor: item.scene?.paper, inkColor: item.scene?.pen, fontId: item.scene?.fontId, photoFit: item.scene?.polaroidSettings?.photoFit }))} ink="#292E28" muted="#73796C" isDark={false} choices={Object.fromEntries(entries.filter(item => item.scene).map(item => [item.key, item.scene!.image]))} onOpen={key => { const item = entries.find(entry => entry.key === key); if (item?.scene) setSceneDetail(key); }} onEditCard={(key, text) => { const item = entries.find(entry => entry.key === key); if (item?.scene) onUpdateScene(item.diary.id, item.scene.id, text); }} /></HeroCardToolsProvider>
 
       </View>
+      {dateGridOpen && !selectedEntry && !pickingDate && group.date !== 'undated' && <HeroCanvasNote key={group.date} date={group.date + '-01'} ink="#292E28" keyboardVerticalOffset={albumContentTop} monthlyHeight={Math.round((height - insets.top - insets.bottom) * 0.32) - 12} />}
       </View>
+      {pickingDate ? <HeroPolaroidDatePicker date={group.date + '-01'} showDate={false} title={t('comicDiary.photoRecordDate')} onClose={() => setPickingDate(false)} onSelect={value => {
+        setPickingDate(false);
+        setOpened(null);
+        onCreate(value.replace(/\.\s*/g, '-'));
+      }} /> : null}
       {selectedEntry?.scene ? <HeroHistorySceneDetail onSaveText={text => onUpdateScene(selectedEntry.diary.id, selectedEntry.scene!.id, text)} scene={selectedEntry.scene} source={source(selectedEntry.diary, selectedEntry.index)} date={selectedEntry.diary.createdAt} onDelete={() => removeScenes([selectedEntry.key])} onClose={() => setSceneDetail(null)} /> : null}
     </View></AppModal> : null}
   </View>;

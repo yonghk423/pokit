@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroTrashIcon } from './HeroTrashIcon';
 import type { HeroCardText } from './HeroCardCaption';
 import type { PolaroidDraft } from './HeroPolaroidEditor';
@@ -113,7 +114,7 @@ export function HeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, so
         {action === 'save' ? <Path d="M5 3.3q11-.4 22-.1l-.2 26.1-21.5.1Zm3.5 3.5 15-.2-.1 15-14.7.2Z" stroke={pen ?? '#343B32'} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" fill="none" /> : <Path d={action === 'share' ? 'M14 18Q14.3 10 14 3M9 8L14 3 19 8M8 12L5 12 5.5 25 23 24.5 23 12 20 12M6 24L11 24.4' : 'M5 14L11 21Q17 12 24 6M5.5 14L10.5 20'} stroke={pen ?? '#343B32'} strokeWidth={action === 'share' ? 1.1 : 1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />}
       </Svg>
     </Pressable>)}
-    {directDownload ? <Pressable testID="hero-image-direct-download" accessibilityRole="button" accessibilityLabel="폴라로이드 다운로드" disabled={busy} onPress={() => void run('save', { title, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate) })} style={[s.button, busy && { opacity: 0.45 }]}>
+    {directDownload ? <Pressable testID="hero-image-direct-download" accessibilityRole="button" accessibilityLabel={translateUiText("폴라로이드 다운로드")} disabled={busy} onPress={() => void run('save', { title, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate) })} style={[s.button, busy && { opacity: 0.45 }]}>
       <Svg width={30} height={30} viewBox="0 0 28 28" accessible={false}><Path testID={saved ? "hero-download-complete" : "hero-download-arrow"} d={saved ? "M5 14L11 21Q17 12 24 6M5.5 14L10.5 20" : "M14 3v15m-5-5 5 5 5-5M6 17v6h16v-6"} stroke={pen ?? '#343B32'} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>
     </Pressable> : null}
     </> : null}

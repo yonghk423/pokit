@@ -1,50 +1,59 @@
-# 큰 달력판 테마 제작 기준
+# 일러스트 캘린더 제작 기준
 
-갱신일: 2026-11-11
+갱신일 2026-11-12
 
-각 배경은 원본 장면에 맞춰 달력의 실루엣, 재료, 설치 방식을 독창적으로 디자인한다. 타일 벽화, 천 주머니, 기계식 행선표처럼 테마마다 물리적 형태가 분명히 달라야 한다. 한 디자인을 복제하거나 상단 손잡이를 반복하지 않는다. 달력판의 바깥 좌우 끝은 캔버스 양 끝(x=0과 x=1)에 닿게 해 좌우 여백 없이 화면 폭을 채운다. 기준 캘린더의 전체 위치와 크기를 고정하고, 장면에 맞추려고 위나 아래로 옮기거나 크기를 바꾸지 않는다. 인물과 장면을 달력 주변으로 재구성한다. 날짜 overlay 좌표와 달력 바깥 밑변도 모든 테마에서 공통으로 고정한다.
+## 최신 추가 규격 — 밝은 면을 이미지 하단 끝까지 연장
 
-## 이미지에 포함할 요소
+- 상단 장식선 아래의 밝은 달력 면을 좌우 끝과 이미지 맨 아래 끝까지 하나로 이어지게 만든다. 하단 탭 뒤에도 같은 면을 유지한다. 달력 면 아래에 바닥·배경 장면·가로 경계선이 다시 나오면 안 된다.
+- 830×1896 기준 밝은 면은 y=790부터 y=1896까지 이어진다. 상단 장식만 유지하고 좌우·하단 테두리는 제거한다. 연월·요일·날짜의 앱 좌표와 탭 안전 여백은 공통 JSON을 따른다.
+- 과거의 하단 296px 바닥 배경 지시는 폐기한다. 해당 구간도 같은 밝은 달력 면으로 채운다.
 
-- 기존 테마의 인물, 장면, 재질, 조명과 장식.
-- 장면에 자연스럽게 어울리는 빈 달력. 실루엣, 재료, 부착 방식과 장식은 테마별로 독창적으로 디자인한다.
-- 7개의 같은 너비 열과 6개의 같은 높이 행으로 이루어진, 얇고 반듯한 빈 격자선.
-- 글자가 없는 월/연도 머리글, 별도의 요일 띠, 날짜 격자. 세 영역의 정규화 좌표와 크기는 기준 캘린더와 똑같이 맞춘다.
-- 테마 연출에 어울리는 빈 표면과 장식. 날짜 칸으로 쓰는 메모지나 칸막이 소품은 좌표를 규칙적으로 배치할 수 있다.
-- 화면 네 변까지 이어지는 배경. 휴대전화 프레임이나 흰 외곽 여백은 없다.
+## 최신 추가 규격 — 상단 장식만 유지
 
-## 앱에서만 렌더링할 요소
+- 좌우 세로 테두리와 하단 가로 테두리를 모두 제거한다. 선·레일·마감선·테두리 그림자도 포함한다. 상단 장식선만 장면별 재료와 형태로 디자인한다.
+- 상단 장식은 원본 830×1896 기준 y=760–784에 두고, 밝은 빈 면은 y=790 이전에 시작해 연월·양쪽 화살표·요일·마지막 날짜 영역까지 이어진다. 앱 month/weekdays/grid 좌표는 공통 JSON을 사용한다.
+- 밝은 면은 좌우 끝까지 이어진다. 배경도 상태 표시줄 뒤부터 하단 탭 아래 화면 끝까지 채운다. 하단 배경 구간 296px를 유지한다.
+- 아래에 남은 양옆 프레임 지시와 기존 승인 이미지의 세로 레일은 이 추가 규격으로 대체한다. 생성 시안은 좌표 측정 전까지 규격 통과로 보고하지 않는다.
 
-- 연도, 월, 월 이동 화살표.
-- 요일, 날짜, 오늘/선택한 날짜의 강조.
-- 실제 기록 사진과 사진 장식.
-- 연동 일정 표시와 날짜 터치 영역.
-- 상태바, 노치, 설정 아이콘, 하단 탭과 모든 조작 버튼.
+## 현행 규격 — 2026-11-12 빈 면 v2
 
-배경 파일에는 숫자, 글자, 가짜 사진, 사진 자리표시자, 이벤트 원, 앱 UI를 절대로 합성하지 않는다. 배경에는 정확히 7열 × 6행, 총 42칸의 빈 격자선을 그린다. 달력 전체는 앱에서 검증된 24-home-cooking 원본의 위치와 크기를 고정 기준으로 따른다. 장면이 겹치거나 공간이 부족하면 인물, 소품, 배경을 재구성하며 달력을 이동하지 않는다. 기준 좌표는 900×1752 캔버스에서 월/연도 머리글 [0.100000, 0.426561, 0.800000, 0.032811], 요일 띠 [0.053566, 0.473439, 0.892855, 0.023439], 날짜 격자 [0.053566, 0.504689, 0.892855, 0.304689]로 고정한다. 달력판 바깥의 아래 끝은 y=0.84335에 둔다. 모든 이미지 manifest에 같은 좌표를 기록하고, 앱은 이 좌표에 월/요일/날짜 텍스트·기록 사진·인터랙션을 맞춘다. 격자 경계는 세로 8개, 가로 7개이며 앱에서 선을 다시 그리지 않는다.
+최신 승인 기준은 [승강장 빈 면 이미지](references/platform-open-panel-approved.png)와 [좌표 JSON](city-calendar-template.json)의 artwork 정책이다. 이 절은 아래의 과거 격자·요일칸 인쇄 지시보다 우선한다.
 
-## 제작 프롬프트 공통 제약
+- 그림에는 날짜 격자, 요일 7칸, 월·연도 영역 바로 밑 가로 구분선, 판 맨 아래 가로 테두리를 넣지 않는다. 월·요일·날짜를 넣을 공간은 하나로 이어진 깨끗한 빈 면으로 남긴다.
+- 상단 장식과 양옆 프레임은 각 일러스트의 장소·행동·재료에 맞춰 새로 설계한다. 승강장 금속 프레임을 다른 장면에 복제하지 않는다. 색만 바꾼 결과는 허용하지 않는다. 예: 도예는 유약·도자 마감, 세탁소는 천·바느질, 미술관은 전시 액자 소재. 장식이 앱 콘텐츠 영역 안으로 들어오면 안 된다.
+- 기존 830×1896 캔버스, 판 영역 [21,798,790,802], 아래 배경 296px 및 앱 month/weekdays/grid 좌표는 유지한다. 날짜 7열×6행은 앱의 보이지 않는 배치 좌표이며 이미지에 인쇄하지 않는다. monthPlate/weekdayPlate는 과거 측정값이다.
+- 승인 이미지는 시각 디자인 기준이다. 생성 이미지의 실제 크기·좌표가 이 JSON과 일치한다고 측정·검증한 것은 아니다.
+- 기존 제작기와 verify-city-calendar-preview.cjs는 인쇄된 칸 경계를 만들거나 검사하는 구형 규격이다. 빈 면 v2에 맞춘 수정 전에는 신규 제작·통과 보고에 사용하지 않는다. 앱 좌표와 7개 화면의 탭 간격은 계속 검증해야 한다.
 
-Production illustration background asset, NOT a screenshot or UI mockup. Use an exact 900 x 1752 px canvas for every theme.
-Preserve the specific scene, character and illustration style. Invent a calendar silhouette, material, mounting method and decoration that belong to that scene. Make the physical design clearly different across themes. Do not repeat a generic framed board or top handle. A reference image may guide the immutable full calendar bounds, shared overlay coordinates and bottom-edge position, never the calendar form, handle, trim or material. Do not move or resize the calendar to make room for the scene. Recompose the scene around the fixed calendar area.
-Draw a blank grid with exactly seven equal-width columns and six equal-height rows: exactly eight vertical boundaries and seven horizontal boundaries forming 42 cells. Use thin, straight, continuous lines. Use exactly the same normalized rectangles on every image: month/year [0.100000, 0.426561, 0.800000, 0.032811], weekdays [0.053566, 0.473439, 0.892855, 0.023439], date grid [0.053566, 0.504689, 0.892855, 0.304689]. Keep all 42 cells front-facing and unobstructed.
-The physical calendar must reach both canvas edges horizontally, x=0 to x=1, with no empty side margins. Keep the complete calendar in the same fixed position and at the same size as the approved reference. Its top and bottom must not drift between themes. The usable header and date grid retain their shared inset coordinates. The visible outer calendar must end at normalized y=0.84335 on every image. Never move it upward to create more room below. Preserve this shared bottom edge so the calendar-to-tab spacing matches after the app applies its common aspect-preserving placement. Do not move or resize the shared overlay regions for a theme.
-The calendar object shape and styling vary by theme inside the fixed calendar footprint while overlay coordinates, full position, size and bottom edge stay fixed. Recompose the scene around that footprint. Its outer left and right edges touch the canvas edges. Keep the face front-facing and free of perspective. No person, hand, prop, rope, fold, shadow or decoration may enter overlay areas. Measure the rendered output and record the common rectangles and bottom edge in each manifest. Do not include text, letters, numerals, dates, year or month, weekday names, arrows, event markers, photographs, polaroid thumbnails, photo placeholders, status bar, notch, app controls, tabs, phone frame, or watermark. The app overlays content using the recorded geometry and must not draw a second set of grid lines.
-Extend the illustration naturally to all four canvas edges. Keep decorations and shadows outside the usable calendar areas.
+[시티 사무실 골격](city-calendar-template.json)의 좌표로 원본 일러스트와 달력 재질을 합성한다. 기준 이미지의 실제 픽셀, 앱 영역, 화면별 하단 간격은 [캘린더 배치 기준](calendar-layout.md)에 있다. 디자인 도구에서는 [빈 벡터 골격](city-calendar-template.svg)을 100% 크기로 불러온다.
 
-## 산출물 확인
+## 고정 좌표 조판
 
-- 생성 지시만으로 좌표가 정확하다고 간주하지 않는다. 실제 산출물에서 분리된 빈 머리글/요일 영역, 경계선 8×7개, 42칸, 최소 정규화 크기, 가림/겹침 없음, 날짜와 사진을 놓을 충분한 셀 안쪽 공간을 확인하고 이미지별 정규화 좌표를 기록한다.
-- 모든 산출물을 정확히 900×1752 px로 정규화하고, 리사이즈나 가장자리 보정이 장면을 자르거나 왜곡하지 않았는지 확인한다.
-- 사진이나 글자가 들어간 시안은 런타임 배경으로 사용하거나 업로드하지 않는다.
-- 배경 격자선과 앱의 글자/사진/터치 영역은 동일한 좌표 변환을 사용한다. 화면 크기에 따라 배경만 확대하고 좌표를 별도로 배치하지 않는다.
-- 날짜 격자 각 칸은 모든 1–31 날짜 숫자와 해당 날짜의 사진/일정 표시를 겹치지 않고 담아야 한다. 최소 지원 화면 크기에서 앱의 실제 `calendarCellContents` 배치를 적용해 확인한다.
-- 이미지 원본 비율을 유지한다. 화면을 채우고 탭 높이를 반영하는 fitCalendarArtwork의 실제 배치로 날짜 격자와 달력 바깥 밑변을 모두 7개 화면 크기에서 계산한다. 각 테마의 밑변과 탭 상단 간격은 기준 캘린더와 같아야 하며, 검사에 이 밑변 간격 항목을 포함한다.
+생성 결과를 그대로 납품하지 않는다. 상단 일러스트와 장식 재질을 분리해 830×1896 캔버스에 조판한다. 장면은 원본 비율을 유지해 830×760으로 채우고 필요하면 배경 일부를 자른다. 상단 장식은 [0,760,830,24]에 놓고, 밝은 면은 [0,784,830,1112]로 이미지 하단까지 채운다. 최종 파일에 연월·요일·날짜를 올린 별도 검토 화면을 만들어 실제 가독성을 확인한다.
 
-## 폐기할 목업
+## 제작 순서
 
-앞선 생성 배치에는 고정 날짜, 예시 사진, 상태바, 하단 탭이 포함된 잘못된 지시가 들어갔다. 해당 결과는 디자인 참고용일 뿐 실제 적용 대상이 아니다. 이번 수정 조건을 충족하는 새 산출물만 채택한다.
+1. 원본 인물과 장면에 맞는 달력 재질을 고른다. 승강장의 행선판, 도예 작업실의 유약, 세탁소의 천 주머니, 수영장의 타일처럼 장면에서 재질을 가져온다. 이미지 생성으로 소재를 준비할 때는 [공통 프롬프트](calendar-large-board-generation.json)를 사용한다.
+2. 장면을 원본 비율로 배치하고 재질을 고정 골격에 합성한다. 프레임 및 칸을 그리는 단계에서 연월, 요일 글자, 날짜, 사진, 탭, 모형 휴대전화는 비워 둔다. 완성 이미지에는 하나로 이어진 빈 면을 두며 월·요일·날짜 칸의 구분선을 넣지 않는다.
+3. 에브리데이 시네마 1–10번 제작기는 원본 p5 장면과 이전 일러스트의 장식 테두리·재질 샘플을 입력받는다. 장면별 마감과 빈 칸을 다시 조판한다. 새 검토 폴더를 지정해 PNG 10장, 기준 SVG, 입력과 출력 해시를 기록한 manifest를 만든다.
+4. 검증기는 PNG를 다시 열어 칸 경계, 밝기, 외곽선과 SHA-256을 확인한다. 앱의 실제 배치 함수로 7개 화면에서 월·요일·날짜, 마지막 줄 사진과 하단 버튼 간격을 검사한다. 검수 화면에만 날짜·사진·탭을 올려 최종 PNG와 구분한다.
 
+프로젝트 루트에서 Node.js와 `sharp`를 사용한다. 인수는 순서대로 원본 장면 폴더, 재질 샘플 폴더, 검토 출력 폴더다.
+
+이 Mac에서 Codex에 포함된 `sharp`를 사용하려면 같은 셸에서 다음 경로를 설정한다.
+
+```sh
+export NODE_PATH="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules${NODE_PATH:+:$NODE_PATH}"
+```
+
+```sh
+node scripts/compose-city-calendar.cjs "$SCENE_DIR" "$MATERIAL_DIR" "$REVIEW_DIR"
+node scripts/verify-city-calendar-preview.cjs "$REVIEW_DIR"
+```
+
+## 이전 제작 기록
+
+아래 기록은 2026-11-11 당시 시안과 검증 결과다. 신규 제작의 현재 규격은 위의 시티 사무실 골격이다.
 
 ## 2026-11-11 원본 1–10 시안 실행 기록
 

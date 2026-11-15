@@ -1,3 +1,5 @@
+import { isProFreeAccessActive } from '@shared/config/proPromotion';
+jest.mock('@shared/config/proPromotion', () => ({ isProFreeAccessActive: jest.fn(() => false) }));
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useLayoutEffect } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -12,6 +14,7 @@ jest.mock('@features/subscriptions', () => ({
   useSubscriptionStore: Object.assign((selector: (state: typeof mockState) => unknown) => selector(mockState), { getState: () => mockState }),
   getActiveProEntitlement: (info: { entitlement?: unknown } | null) => info?.entitlement ?? null,
   manageSubscription: jest.fn(),
+  isProEntitlementActive: (info: {pro?: boolean} | null) => !!info?.pro,
   selectIsPro: (state: typeof mockState) => !!(state.customerInfo as { pro?: boolean } | null)?.pro,
   restorePurchases: (...args: unknown[]) => mockRestore(...args),
 }));
@@ -24,6 +27,7 @@ function Harness() {
 }
 const monthly = { product: { identifier: 'monthly', priceString: '₩3,000' } };
 beforeEach(() => {
+  (isProFreeAccessActive as jest.Mock).mockReturnValue(false);
   FEATURE_FLAGS.proSubscriptions = true;
   jest.clearAllMocks();
   mockState.isConfigured = true;
@@ -119,4 +123,12 @@ it('does not load products or purchase while subscriptions are paused', async ()
   expect(Purchases.getOfferings).not.toHaveBeenCalled();
   expect(await hook.transact('monthly')).toBe('unavailable');
   expect(Purchases.purchasePackage).not.toHaveBeenCalled();
+});
+
+it('blocks purchases and offerings during the free promotion', async () => {
+  (isProFreeAccessActive as jest.Mock).mockReturnValue(true);
+  await act(async () => { tree = create(<Harness />); });
+  await act(async () => { expect(await hook.transact('monthly')).toBe('unavailable'); });
+  expect(Purchases.purchasePackage).not.toHaveBeenCalled();
+  expect(Purchases.getOfferings).not.toHaveBeenCalled();
 });

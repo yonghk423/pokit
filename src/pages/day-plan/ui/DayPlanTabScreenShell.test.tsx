@@ -208,3 +208,49 @@ it('keeps calendar collection controls below the notch in normal layout flow', a
     expect(StyleSheet.flatten(header.parent!.props.style).paddingTop).toBe(59);
   } finally { act(() => tree.unmount()); mockSafeTop = 0; mockSegments = ['(tabs)', 'day-plan']; }
 });
+
+it('shows weather on the main calendar and removes it when entering a diary', async () => {
+  const { setCalendarBackdropVisible } = require('../model/heroCalendarDesign');
+  mockWeatherAvailable = true;
+  mockSegments = ['(tabs)'];
+  act(() => setCalendarBackdropVisible(true));
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<DayPlanTabScreenShell tabName="comic-day"><View /></DayPlanTabScreenShell>); });
+  try {
+    expect(tree.root.findAllByProps({ testID: 'comic-header-weather-slot' }).length).toBeGreaterThan(0);
+    act(() => setCalendarBackdropVisible(false));
+    expect(tree.root.findAllByProps({ testID: 'comic-header-weather-slot' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'weather-guide-owner' })).toHaveLength(0);
+    act(() => setCalendarBackdropVisible(true));
+    expect(tree.root.findAllByProps({ testID: 'weather-guide-owner' }).length).toBeGreaterThan(0);
+  } finally { act(() => tree.unmount()); act(() => setCalendarBackdropVisible(true)); }
+});
+
+it('keeps only the calendar return action visible over the diary while recording', async () => {
+  const { DayPlanComposerKeyboardContext, DayPlanWeatherActionsContext } = require('../model/dayPlanHeaderActions');
+  const { setCalendarBackdropVisible } = require('../model/heroCalendarDesign');
+  const back = jest.fn();
+  function Recording({ open }: { open: boolean }) {
+    const React = require('react');
+    const setOpen = React.useContext(DayPlanComposerKeyboardContext);
+    const setActions = React.useContext(DayPlanWeatherActionsContext);
+    useLayoutEffect(() => {
+      setOpen?.(open);
+      setActions?.(<Pressable testID="recording-calendar-back" onPress={back} />);
+      return () => { setOpen?.(false); setActions?.(null); };
+    }, [open, setOpen, setActions]);
+    return <View />;
+  }
+  act(() => setCalendarBackdropVisible(false));
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<DayPlanTabScreenShell tabName="comic-day"><Recording open /></DayPlanTabScreenShell>); });
+  try {
+    const overlay = tree.root.findAllByProps({ testID: 'diary-recording-return' })[0];
+    expect(overlay).toBeDefined();
+    act(() => overlay.findAllByProps({ testID: 'recording-calendar-back' })[0].props.onPress());
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(tree.root.findAllByProps({ testID: 'weather-guide-owner' })).toHaveLength(0);
+    await act(async () => tree.update(<DayPlanTabScreenShell tabName="comic-day"><Recording open={false} /></DayPlanTabScreenShell>));
+    expect(tree.root.findAllByProps({ testID: 'diary-recording-return' })).toHaveLength(0);
+  } finally { act(() => tree.unmount()); act(() => setCalendarBackdropVisible(true)); }
+});

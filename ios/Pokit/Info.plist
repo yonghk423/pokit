@@ -13,7 +13,8 @@
       <string>en</string>
       <string>ko</string>
       <string>ja</string>
-    </array>
+    	<string>zh-TW</string>
+	</array>
     <key>CFBundleDisplayName</key>
     <string>Daylight</string>
     <key>CFBundleExecutable</key>

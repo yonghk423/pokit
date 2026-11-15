@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroImageActions } from './HeroImageActions';
 import type { PolaroidDraft } from './HeroPolaroidEditor';
 import { ActivityIndicator, Alert, View } from 'react-native';
@@ -14,7 +15,7 @@ export function fitImportedPhoto(width: number, height: number, ratio: number) {
 
 export function HeroPhotoImportPending() {
   // Remain opaque while iOS dismisses the album and resolves its selected asset.
-  return <View testID="hero-camera-import-pending" style={{ flex: 1, backgroundColor: '#F8F8F4', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#73796C" accessibilityLabel="사진 불러오는 중" /></View>;
+  return <View testID="hero-camera-import-pending" style={{ flex: 1, backgroundColor: '#F8F8F4', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#73796C" accessibilityLabel={translateUiText("사진 불러오는 중")} /></View>;
 }
 
 export function HeroPhotoImportPreview({ embedded = false, photo, visible, busy, error, onSave, onClose, title, memo, ink, onTitleChange, onMemoChange }: {

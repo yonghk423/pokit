@@ -1,3 +1,5 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
+import { ProDiaryDecoration } from './ProDiaryDecoration';
 import { ThemedText as Text } from '@shared/ui/themed-text';
 import { HeroCameraPrintAnimation, heroCameraBottom } from './HeroCameraPrintAnimation';
 import { HeroCanvasNote } from './HeroCanvasNote';
@@ -16,7 +18,7 @@ import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
   AnnouncementHomeOverlay,
@@ -29,13 +31,15 @@ import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentHer
 
 /** 하단 탭 — 오늘의 주인공(만화 일기) 전용 화면 */
 export function ComicDayPage() {
+  const diaryFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useTranslation();
   const [printingUri, setPrintingUri] = useState<string | null>(null);
   const finishPrinting = useCallback(() => setPrintingUri(null), []);
+  const [canvasHeight, setCanvasHeight] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(true);
-  const { generationJob, historyCreate, historyEntry, diaryDate, calendarWidget } = useLocalSearchParams<{ generationJob?: string; historyCreate?: string; historyEntry?: string; diaryDate?: string; calendarWidget?: string }>();
+  const { generationJob, historyCreate, historyPhotoDate, historyEntry, diaryDate, calendarWidget } = useLocalSearchParams<{ generationJob?: string; historyCreate?: string; historyPhotoDate?: string; historyEntry?: string; diaryDate?: string; calendarWidget?: string }>();
   const isDark = useColorScheme() === 'dark';
   const today = useTodayDate();
   const todayKey = getLocalDateKey(today);
@@ -56,6 +60,7 @@ export function ComicDayPage() {
   }, [calendarWidget, photoActive, router]));
   const selectCalendarDate = useCallback((date: string) => {
     setChosenDate(date);
+    setCalendarBackdropVisible(false);
     setCalendarVisible(false);
   }, []);
   const characterPicker = useContext(HeroCharacterPickerActionContext);
@@ -71,6 +76,18 @@ export function ComicDayPage() {
     setCalendarMonth(new Date(year, month - 1, 1, 12));
     router.setParams({ diaryDate: undefined });
   }, [diaryDate, router, selectCalendarDate]));
+  useFocusEffect(useCallback(() => {
+    if (!historyPhotoDate) return;
+    if (calendarVisible || selectedDate !== historyPhotoDate) {
+      selectCalendarDate(historyPhotoDate);
+      const [year, month] = historyPhotoDate.split('-').map(Number);
+      setCalendarMonth(new Date(year, month - 1, 1, 12));
+      return;
+    }
+    // The planner is keyed by date. Open the album after the target day's planner mounts.
+    plannerRef.current?.openNewDiary();
+    router.setParams({ historyPhotoDate: undefined });
+  }, [calendarVisible, historyPhotoDate, router, selectCalendarDate, selectedDate]));
   const registerPhoto = characterPicker?.registerPhoto;
   // Other tabs queue the camera intent before navigating. Consume it only
   // after the main screen has focus and its planner ref is mounted again.
@@ -119,10 +136,10 @@ export function ComicDayPage() {
 
   // Calendar designs own their month heading. Only the open photo list uses day navigation.
   const todayButton = useMemo(() => calendarVisible || photoActive ? null : <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <Pressable testID="comic-previous-day" accessibilityRole="button" accessibilityLabel="이전 날짜" onPress={() => movePhotoDate(-1)} style={styles.monthArrow}><Text style={{ color: ink, fontSize: 28 }}>‹</Text></Pressable>
-    <View testID="comic-date-navigation" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: ink, fontSize: DIARY_DATE_FONT_SIZE, lineHeight: 36 }}>{selectedDate.replace(/-/g, '.')}</Text></View>
-    <Pressable testID="comic-next-day" accessibilityRole="button" accessibilityLabel="다음 날짜" onPress={() => movePhotoDate(1)} style={styles.monthArrow}><Text style={{ color: ink, fontSize: 28 }}>›</Text></Pressable>
-  </View>, [ink, selectedDate, calendarVisible, photoActive, movePhotoDate]);
+    <Pressable testID="comic-previous-day" accessibilityRole="button" accessibilityLabel={translateUiText("이전 날짜")} onPress={() => movePhotoDate(-1)} style={styles.monthArrow}><Text style={{ color: ink, fontSize: 28 }}>‹</Text></Pressable>
+    <View testID="comic-date-navigation" style={{ minWidth: 156, paddingHorizontal: 20, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>{diaryFocused && !photoActive && !calendarVisible ? <ProDiaryDecoration slot="date" style={{ left: 0, top: 0, width: '100%', height: 44 }} /> : null}<Text style={{ color: ink, fontSize: DIARY_DATE_FONT_SIZE, lineHeight: 36 }}>{selectedDate.replace(/-/g, '.')}</Text></View>
+    <Pressable testID="comic-next-day" accessibilityRole="button" accessibilityLabel={translateUiText("다음 날짜")} onPress={() => movePhotoDate(1)} style={styles.monthArrow}><Text style={{ color: ink, fontSize: 28 }}>›</Text></Pressable>
+  </View>, [ink, selectedDate, calendarVisible, photoActive, movePhotoDate, diaryFocused]);
   useLayoutEffect(() => { registerCenterActions?.(todayButton); return () => registerCenterActions?.(null); }, [registerCenterActions, todayButton, calendarVisible]);
   const leadingActions = useMemo(() => <View style={{ flexDirection: 'row', alignItems: 'center' }}>
     {!photoActive && !calendarVisible ? <Pressable testID="comic-return-calendar" accessibilityRole="button" accessibilityLabel={t('comicCalendar.open')} accessibilityHint={t('comicCalendar.returnHint')} onPress={() => { tapHaptic('select'); Keyboard.dismiss(); setCalendarBackdropVisible(true); setCalendarVisible(true); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: -8 }] }}>
@@ -147,7 +164,7 @@ export function ComicDayPage() {
   useLayoutEffect(() => () => registerHeaderActions?.(null), [registerHeaderActions]);
 
   return (
-    <View style={[styles.root, { backgroundColor: surface }]}>
+    <View style={[styles.root, { backgroundColor: surface }]} onLayout={event => setCanvasHeight(event.nativeEvent.layout.height)}>
       <AnnouncementHomeOverlay
         announcement={announcementHome.notice}
         onDismiss={announcementHome.dismiss}
@@ -173,7 +190,7 @@ export function ComicDayPage() {
         isDark={isDark}
       />
       {printingUri && !calendarVisible ? <HeroCameraPrintAnimation key={printingUri} uri={printingUri} bottom={heroCameraBottom(insets.bottom)} dark={isDark} onComplete={finishPrinting} /> : null}
-      {!calendarVisible && !photoActive && overviewOpen ? <HeroCanvasNote key={selectedDate} date={selectedDate} ink={ink} /> : null}
+      {!calendarVisible && !photoActive && overviewOpen ? <HeroCanvasNote key={selectedDate} initialHeight={canvasHeight} date={selectedDate} ink={ink} returnAction={leadingActions} /> : null}
     </View>
   );
 }

@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroPrintStaple } from './HeroPrintStaple';
 import { HeroPolaroidSurface } from './HeroPolaroidSurface';
 import { loadPremiumPack, premiumSceneTitle, PREMIUM_CHARACTER_ID } from '../lib/heroPremiumPack';
@@ -117,9 +118,9 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
               <ThemedText numberOfLines={1} adjustsFontSizeToFit style={s.characterLabel}>{label}</ThemedText>
             </Pressable>;
           })}
-          {premium.length > 0 ? <Pressable testID="comic-scene-picker-premium" accessibilityRole="tab" accessibilityLabel={nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')} accessibilityState={{ selected: selectedCharacterId === PREMIUM_CHARACTER_ID }} onPress={() => { tapHaptic('select'); setChosenCharacterId(PREMIUM_CHARACTER_ID); }} style={[s.characterChoice, selectedCharacterId === PREMIUM_CHARACTER_ID && s.selectedCharacter]}>
+          {premium.length > 0 ? <Pressable testID="comic-scene-picker-premium" accessibilityRole="tab" accessibilityLabel={nameFor(PREMIUM_CHARACTER_ID, translateUiText("시티팝 레트로"))} accessibilityState={{ selected: selectedCharacterId === PREMIUM_CHARACTER_ID }} onPress={() => { tapHaptic('select'); setChosenCharacterId(PREMIUM_CHARACTER_ID); }} style={[s.characterChoice, selectedCharacterId === PREMIUM_CHARACTER_ID && s.selectedCharacter]}>
             <View style={s.characterPortrait}><ComicSceneImage source={{ uri: premium[0].uri }} imageKey={`scene-picker-premium:${premium[0].uri}`} contentFit="contain" backgroundColor="#F3F0E8" style={s.characterImage} /></View>
-            <ThemedText numberOfLines={1} adjustsFontSizeToFit style={s.characterLabel}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText>
+            <ThemedText numberOfLines={1} adjustsFontSizeToFit style={s.characterLabel}>{nameFor(PREMIUM_CHARACTER_ID, translateUiText("시티팝 레트로"))}</ThemedText>
           </Pressable> : null}
           {([{ id: 'generated-illustrations' , images: generated, label: 'comicDay.gallery.generated', testID: 'hero-generated-collection-card' }, { id: 'original-photos', images: originals, label: 'comicDay.gallery.originalPhotos', testID: 'hero-original-collection-card' }] as const).filter(collection => collection.images.length > 0).map(collection => {
             const selected = selectedCharacterId === collection.id;

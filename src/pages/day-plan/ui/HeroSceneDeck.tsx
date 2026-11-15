@@ -1,4 +1,4 @@
-import { POLAROID_PHOTO_WIDTH, POLAROID_PHOTO_HEIGHT } from '../lib/heroPolaroidFraming';
+import { POLAROID_PHOTO_WIDTH, POLAROID_PHOTO_HEIGHT, getPolaroidPrintLayout } from '../lib/heroPolaroidFraming';
 import { HeroDiaryCardSides } from './HeroDiaryCardSides';
 import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
 import type { AppFontId } from '@shared/lib/ui-font';
@@ -20,7 +20,7 @@ import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 
-export type ComicDeckItem = { key: string; label: string; artworkUri?: string; exportDate?: string | number; memo?: string; faceColor?: string; inkColor?: string; fontId?: AppFontId };
+export type ComicDeckItem = { photoFit?: 'cover' | 'contain'; key: string; label: string; artworkUri?: string; exportDate?: string | number; memo?: string; faceColor?: string; inkColor?: string; fontId?: AppFontId };
 
 /** Artwork paper. A pure white card plus grain reads as a second sheet behind the drawing. */
 const ILLUSTRATION_PAPER = '#F9F9F6';
@@ -121,6 +121,11 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   const maximumCardHeight = Math.max(1, availableHeight - originalCardTop + 8);
   const frameForItem = (item: ComicDeckItem | undefined) => {
     if (!item) return { width: cardWidth, height: Math.min(cardWidth * 1.55, maximumCardHeight) };
+    if (item.photoFit) {
+      const layout = getPolaroidPrintLayout(item.photoFit);
+      const width = Math.min(cardWidth, maximumCardHeight * 360 / layout.printHeight);
+      return { width, height: width * layout.printHeight / 360 };
+    }
     const ratio = POLAROID_PHOTO_WIDTH / POLAROID_PHOTO_HEIGHT;
     const caption = 56;
     const imageWidth = Math.max(1, Math.min(cardWidth - 24, (maximumCardHeight - caption - 40) * ratio));
@@ -162,7 +167,7 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
         const face = scenePaper(item.faceColor, isDark);
         if (paperBack) return <View testID="hero-paper-back" style={[s.card, { width: pageWidth, height: pageHeight, alignSelf: 'center', backgroundColor: face }]}><HeroPolaroidSurface /></View>;
         const captionBudget = 56;
-        const imageFrameHeight = Math.max(1, pageHeight - captionBudget - 40);
+        const imageFrameHeight = item.photoFit ? pageWidth * getPolaroidPrintLayout(item.photoFit).photoHeight / 360 : Math.max(1, pageHeight - captionBudget - 40);
         const cardInk = item.inkColor ?? ink;
         return <CardArrival animate={syncMainState && trackNative && item.key === arrivalKey}><View collapsable={false} ref={pageInteractive || trackNative ? node => { if (node) cardRefs.current.set(item.key, node); else cardRefs.current.delete(item.key); } : undefined} style={[{ width: pageWidth, height: pageHeight, alignSelf: 'center', opacity: trackNative && detailOpen && index === safeActive ? 0 : 1 }]}>
           <HeroDiaryCardSides paper={face} key={item.key} title={item.label} memo={item.memo} ink={cardInk} fontId={item.fontId} interactive={pageInteractive && index === safeActive}>
@@ -184,7 +189,7 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
               onOpen(item.key, { frame: { left, top, width, height }, front: renderPage(index, false), readCurrent: complete => readCurrentCard.current(item.key, complete) });
             });
           }} style={{ flexShrink: 0 }}>
-            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={0} contentFit="cover" contentPosition="center" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
+            {(Math.abs(index - active) <= ARTWORK_WINDOW || !pageInteractive) ? <ComicSceneImage transitionDuration={0} preserveFullImage={item.photoFit === 'contain'} contentFit={item.photoFit ?? 'cover'} contentPosition="center" backgroundColor={face} imageKey={`${item.artworkUri ?? scene.id}:960`}
               source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} fallbackSource={item.artworkUri ? undefined : scene.source}
               priority={index === active ? 'high' : 'normal'} style={{ width: '100%', height: imageFrameHeight }} /> : <View style={{ width: '100%', height: imageFrameHeight }} />}
             <HeroPhotoEmulsion />

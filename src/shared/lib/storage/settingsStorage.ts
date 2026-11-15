@@ -64,7 +64,11 @@ export type AppFontId =
   | 'hiMelody'
   | 'corncorn'
   | 'cafe24ShiningStar'
-  | 'cafe24Syongsyong';
+  | 'cafe24Syongsyong'
+  | 'schoolNalgae'
+  | 'schoolKkokkoma'
+  | 'singleDay'
+  | 'schoolGongryongal';
 
 /** 글씨 크기 — 작게부터 크게까지 5단계 */
 export type AppFontSizeId = 'sm' | 'smMd' | 'md' | 'mdLg' | 'lg';
@@ -388,7 +392,8 @@ export function saveAppearanceMode(mode: AppearanceMode): void {
 function parseAppFontId(value: unknown): AppFontId {
   if (
     value === 'hiMelody' || value === 'corncorn' ||
-    value === 'cafe24ShiningStar' || value === 'cafe24Syongsyong'
+    value === 'cafe24ShiningStar' || value === 'cafe24Syongsyong' ||
+    value === 'schoolNalgae' || value === 'schoolKkokkoma' || value === 'singleDay' || value === 'schoolGongryongal'
   ) return value;
   // 미설정·중단한 폰트·hanken·sebangGothic2 등 레거시 → 기본(온글잎 콘콘체)
   return 'corncorn';

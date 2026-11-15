@@ -1,3 +1,4 @@
+import { HeroTrashIcon } from './HeroTrashIcon';
 import { BackChevron } from '@shared/ui/icon-symbol';
 import { AppAlert } from '@shared/lib/app-alert';
 import { groupDiaryLibrary, groupedDiaryTitle } from '../lib/heroDiaryGroups';
@@ -77,7 +78,7 @@ function AnimatedDiaryDateAction({ date, mode, reduceMotion, onDelete, onSelect,
   const label = mode === 'cancel' ? cancelLabel : mode === 'select' ? selectLabel : mode === 'delete' ? deleteLabel : '';
   return <Animated.View style={[s.dateAction, containerStyle]} pointerEvents={mode ? 'auto' : 'none'}>
     <Pressable testID={mode === 'cancel' ? `comic-diary-day-cancel-${date}` : mode ? `comic-diary-day-delete-${date}` : undefined} accessibilityElementsHidden={!mode} accessibilityRole={mode ? 'button' : undefined} accessibilityLabel={label} onPress={onPress} style={s.dateActionPressable}>
-      <Animated.View pointerEvents="none" style={[s.dateActionIcon, trashStyle]}><SettingsPenIcon name="trash.fill" size={21} color="#555A4F" /></Animated.View>
+      <Animated.View pointerEvents="none" style={[s.dateActionIcon, trashStyle]}><HeroTrashIcon size={21} /></Animated.View>
       <Animated.View pointerEvents="none" style={[s.dateActionText, cancelStyle]}><ThemedText style={s.selectionText}>{cancelLabel}</ThemedText></Animated.View>
     </Pressable>
   </Animated.View>;
@@ -90,7 +91,7 @@ function AnimatedSelectionFooter({ visible, reduceMotion, label, disabled, onPre
   }, [progress, reduceMotion, visible]);
   const animatedStyle = useAnimatedStyle(() => ({ height: 48 * progress.value, opacity: progress.value, transform: [{ translateY: 8 * (1 - progress.value) }] }));
   return <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]} pointerEvents={visible ? 'auto' : 'none'} accessibilityElementsHidden={!visible}>
-    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} accessibilityState={{ disabled }} onPress={onPress} style={[s.deleteSelected, disabled && { opacity: 0.35 }]}><SettingsPenIcon name="trash.fill" size={22} color="#303030" /><ThemedText style={s.selectionText}>{label}</ThemedText></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} accessibilityState={{ disabled }} onPress={onPress} style={[s.deleteSelected, disabled && { opacity: 0.35 }]}><HeroTrashIcon size={22} /><ThemedText style={s.selectionText}>{label}</ThemedText></Pressable>
   </Animated.View>;
 }
 
@@ -193,7 +194,7 @@ export function ComicDiaryLibrary({ diaries, activeId, initialRenameId, onClose,
       </View>
       {menuId === item.id && renamingId !== item.id ? <View style={s.actions}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.rename')} onPress={() => { tapHaptic(); setDraft(item.title); setRenamingId(item.id); }} style={s.menuButton}><SettingsPenIcon name="pencil" size={25} color="#303030" /></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.delete')} onPress={() => { tapHaptic('warn'); onDelete(item.id); }} style={s.menuButton}><SettingsPenIcon name="trash.fill" size={25} color="#303030" /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('comicDiary.delete')} onPress={() => { tapHaptic('warn'); onDelete(item.id); }} style={s.menuButton}><HeroTrashIcon size={25} /></Pressable>
       </View> : null}
       {renamingId === item.id ? <View style={s.rename}>
         <ThemedTextInput accessibilityLabel={t('comicDiary.rename')} value={draft} onChangeText={setDraft} maxLength={60} autoFocus selectTextOnFocus onSubmitEditing={save} returnKeyType="done" style={s.renameInput} />

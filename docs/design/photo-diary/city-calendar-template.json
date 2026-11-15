@@ -1,0 +1,91 @@
+{
+  "id": "city-office-open-panel-v2",
+  "reference": "06-angry-email",
+  "referenceSha256": "51d6c41f0d60983b21e186986aa687de100059dfada9991f8fe662ffa9357027",
+  "units": "source pixels, [left, top, width, height], origin at top left",
+  "size": [
+    830,
+    1896
+  ],
+  "board": [
+    21,
+    798,
+    790,
+    802
+  ],
+  "monthPlate": [
+    44.46,
+    818,
+    741.07,
+    81
+  ],
+  "weekdayPlate": [
+    44.46,
+    912,
+    741.07,
+    43
+  ],
+  "month": [
+    44.46,
+    799.88,
+    741.07,
+    91.84
+  ],
+  "weekdays": [
+    44.46,
+    906.52,
+    741.07,
+    53.32
+  ],
+  "grid": [
+    44.46,
+    968.74,
+    741.07,
+    616.2
+  ],
+  "columns": 7,
+  "dateRows": 6,
+  "artwork": {
+    "mode": "top-decoration-only",
+    "approvedReference": "references/platform-open-panel-approved.png",
+    "referenceStatus": "legacy reference for scene and blank surface only; side rails in this image are superseded by top-decoration-only policy",
+    "dateGridPrinted": false,
+    "weekdayCellsPrinted": false,
+    "monthBottomDividerPrinted": false,
+    "boardBottomBorderPrinted": false,
+    "continuousBlankSurface": true,
+    "fullBleed": true,
+    "surfaceCoverage": "One uninterrupted readable pale surface from y790 through y1896, full width, behind year/month, arrows, weekdays, dates and the bottom tab bar. No floor, scene, seam or transition below the calendar surface. App content and tab safety coordinates remain governed by month/weekdays/grid.",
+    "retain": [
+      "scene-specific top decoration above the entire year/month and navigation arrows",
+      "continuous readable light surface extending edge to edge behind all app content"
+    ],
+    "prohibit": [
+      "date cell borders or seams",
+      "weekday boxes or separators",
+      "horizontal line below month/year area",
+      "bottom horizontal rail",
+      "left vertical rail, border, seam or edge shadow",
+      "right vertical rail, border, seam or edge shadow",
+      "bottom rim, border, seam, bevel or edge shadow",
+      "floor or scenery returning beneath the calendar surface",
+      "horizontal seam or material transition beneath the calendar surface"
+    ],
+    "geometryMeaning": "month, weekdays and grid are invisible app overlay and touch coordinates; monthPlate and weekdayPlate are legacy measurement bounds, not printed borders",
+    "styleRule": "Design frame and material for each illustration; color-only variants are not sufficient",
+    "sideBordersPrinted": false,
+    "topDecorationBounds": [
+      0,
+      760,
+      830,
+      24
+    ],
+    "blankSurfaceBounds": [
+      0,
+      784,
+      830,
+      1112
+    ],
+    "surfaceExtendsToCanvasBottom": true
+  }
+}

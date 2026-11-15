@@ -1,3 +1,5 @@
+jest.mock('./HeroPolaroidProcessor', () => ({ HeroPolaroidProcessor: () => null }));
+jest.mock('../model/heroCameraStyle', () => ({ useHeroCameraStyle: () => 'mini-evo', HERO_CAMERA_IMAGES: { 'mini-evo': 1 } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 import { AppAlert } from '@shared/lib/app-alert';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -700,4 +702,22 @@ it.each([0.4, 2 / 3, 1, 16 / 9, 4])('fits the whole imported print without cropp
     expect(frame.height).toBeLessThanOrEqual(height - 48 + 1e-6);
     expect(frame.photoWidth / frame.photoHeight).toBeCloseTo(ratio);
   }
+});
+
+
+it.each(['contain', 'cover'] as const)('preserves the selected upload layout %s in the saved diary card', async photoFit => {
+  jest.mocked(saveHeroOriginalPhoto).mockResolvedValue('file:///Documents/hero-photos/upload.jpg');
+  const onApply = jest.fn(async () => undefined);
+  const { HeroPhotoImportPreview } = require('./HeroPhotoImportPreview');
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer photoOnly initialMode="original" initialOriginalPhoto={{ uri: 'file:///album/upload.jpg' }} sceneId="05-work" ink="#222" onApply={onApply} onClose={jest.fn()} />); });
+  try {
+    const draft = { title: 'Upload', memo: 'Story', date: '2026.11.13', photoFit, showDate: false, film: 'original' as const };
+    await act(async () => { await tree.root.findByType(HeroPhotoImportPreview).props.onSave(draft); });
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
+      originalArtworkUri: 'file:///Documents/hero-photos/upload.jpg',
+      polaroidSettings: draft,
+    }), 'file:///Documents/hero-photos/upload.jpg', '');
+    expect(generateHeroImages).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
 });

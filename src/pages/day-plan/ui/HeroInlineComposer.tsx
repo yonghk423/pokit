@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import type { PolaroidDraft } from './HeroPolaroidEditor';
 import { HeroPhotoImportPreview, type ImportedHeroPhoto } from './HeroPhotoImportPreview';
@@ -121,9 +122,11 @@ function DrawingProgress({ elapsed, complete, submitted }: { elapsed: number; co
   </View>;
 }
 
+export type HeroImportedCardText = HeroCardText & { originalArtworkUri?: string; polaroidSettings?: PolaroidDraft };
+
 export function HeroInlineComposer({ visible = true, sceneId, title = '', memo = '', paper: cardPaper, ink: cardInk, targetDiaryId, targetSceneId, recoveryJob, initialMode = 'character', initialOriginalPhoto, importedPhotoEmbedded = false, fullScreen = false, photoOnly = false, hideClose = false, onApply, onClose }: {
   importedPhotoEmbedded?: boolean; initialOriginalPhoto?: ImportedHeroPhoto; hideClose?: boolean; photoOnly?: boolean; fullScreen?: boolean; visible?: boolean; sceneId: ComicSceneId; title?: string; memo?: string; paper?: string; ink: string; targetDiaryId?: string; targetSceneId?: string; recoveryJob?: PendingHeroAiJob; initialMode?: 'character' | 'photo' | 'original';
-  onApply: (text: HeroCardText, uri: string, jobId: string) => Promise<void>; onClose: () => void;
+  onApply: (text: HeroImportedCardText, uri: string, jobId: string) => Promise<void>; onClose: () => void;
 }) {
   const { t, locale } = useTranslation();
   const isDark = useColorScheme() === 'dark';
@@ -323,22 +326,24 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
     if (locked.current || job || !originalPhoto) return;
     locked.current = true; setImportingPhoto(true); setError(null); Keyboard.dismiss();
     try {
-      let photoUri = originalPhoto.uri;
+      const originalUri = await saveHeroOriginalPhoto(originalPhoto.uri, originalPhoto.fileName);
+      let photoUri = originalUri;
       if (draft?.processedUri) {
         const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
         const processed = await manipulateAsync(draft.processedUri, [], { format: SaveFormat.JPEG, compress: 0.9 });
         photoUri = processed.uri;
       }
       let uri: string;
-      try { uri = await saveHeroOriginalPhoto(photoUri, originalPhoto.fileName); }
+      try { uri = photoUri === originalUri ? originalUri : await saveHeroOriginalPhoto(photoUri, originalPhoto.fileName); }
       finally {
-        if (photoUri !== originalPhoto.uri) {
+        if (photoUri !== originalUri) {
           const fs = await import('expo-file-system/legacy');
           await fs.deleteAsync(photoUri, { idempotent: true }).catch(() => undefined);
         }
       }
       if (!alive.current) return;
-      await onApply({ title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), paper, pen: draft?.pen ?? ink, ...(draft?.fontId ? { fontId: draft.fontId } : {}) }, uri, '');
+      const { processedUri: _processedUri, ...settings } = draft ?? {} as PolaroidDraft;
+      await onApply({ originalArtworkUri: originalUri, ...(draft ? { polaroidSettings: { ...settings, photoFit: settings.photoFit ?? 'cover' } } : {}), title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), paper, pen: draft?.pen ?? ink, ...(draft?.fontId ? { fontId: draft.fontId } : {}) }, uri, '');
       saveHeroOriginalPhotoMetadata({ uri, title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), createdAt: Date.now() });
     } catch {
       if (alive.current) setError(t('comicDay.photo.saveError'));
@@ -463,7 +468,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
         </Animated.View> : null}
         </>}
         </Animated.View>
-        <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : '키보드 내리기'} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={uiInk} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy && !photoOnly ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} disabled={importingPhoto} accessibilityState={{ selected: mode === value, disabled: importingPhoto }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={uiInk} paper={paper} selected={mode === value} /></Pressable>)}</View> : <View style={{ flex: 1 }} />}{mode !== 'original' ? <Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={uiInk} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable> : <View style={{ width: 32 }} />}</View>
+        <View testID="hero-inline-bottom-toolbar" style={s.bottomToolbar}><Pressable testID="hero-inline-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={locale === 'en' ? 'Hide keyboard' : locale === 'ja' ? 'キーボードを閉じる' : locale === 'zh-TW' ? '收起鍵盤' : translateUiText("키보드 내리기")} onPress={() => { tapHaptic(); editing.current = false; Keyboard.dismiss(); }} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><Svg width={25} height={25} viewBox="0 0 28 28" accessible={false}><Path d="M4 4.5q10-.5 20 0v13H4ZM7 8h1m4 0h1m4 0h1m4 0h.2M7 11.5h1m4 0h1m4 0h1m4 0h.2M9 15h10m-9 7 4 3.5 4-3.5" fill="none" stroke={uiInk} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" /></Svg></Pressable>{!busy && !photoOnly ? <View pointerEvents={job ? 'none' : 'auto'} style={[s.row, { flex: 1, justifyContent: 'center' }]}>{(['character', 'photo'] as const).map(value => <Pressable key={value} testID={`hero-inline-mode-${value}`} accessibilityRole="button" accessibilityLabel={t(value === 'character' ? 'comicDay.inline.fromText' : 'comicDay.inline.fromPhoto')} disabled={importingPhoto} accessibilityState={{ selected: mode === value, disabled: importingPhoto }} onPress={() => { tapHaptic('select'); setMode(value); setError(null); setStylesOpen(false); }} style={s.tab}><StoryModeIcon mode={value} ink={uiInk} paper={paper} selected={mode === value} /></Pressable>)}</View> : <View style={{ flex: 1 }} />}{mode !== 'original' ? <Pressable testID="hero-inline-help" accessibilityRole="button" accessibilityLabel={heroAiHelpLabel(locale)} onPress={() => { tapHaptic(); completeHeroInfoHint('ai'); Keyboard.dismiss(); setHelpOpen(true); }} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}><HeroInfoHint kind="ai" enabled={visible && !busy}><Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}><Path d="M12 2.2C6.6 1.9 2 6.4 2.1 12c-.2 5.4 4.3 10 9.9 9.8 5.5.2 10-4.3 9.8-9.8.2-5.5-4.2-10-9.8-9.8Z" stroke={uiInk} strokeWidth={1.2} fill="#9FCAD8" /><Path d="M12 10.5v6.2M12 7.3v.3" stroke={uiInk} strokeWidth={1.6} strokeLinecap="round" /></Svg></HeroInfoHint></Pressable> : <View style={{ width: 32 }} />}</View>
       </View>
     </View>
     {visible && photoPickerOpen ? <AppModal transparent animationType="none" onRequestClose={() => setPhotoPickerOpen(false)}>

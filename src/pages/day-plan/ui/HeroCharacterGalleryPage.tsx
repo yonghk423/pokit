@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroHistorySceneDetail } from './HeroHistorySceneDetail';
 import { HeroPremiumPackDeleteButton } from './HeroPremiumPackDeleteButton';
 import { premiumSceneTitle, PREMIUM_CHARACTER_ID, loadPremiumPack } from '../lib/heroPremiumPack';
@@ -117,7 +118,7 @@ export function HeroCharacterGalleryPage({ initialGenerated = false, onExit, onS
   const originals: GalleryCharacter = { id: ORIGINAL_ID, name: 'comicDay.gallery.originalPhotos', scenes: originalScenes, preview: originalScenes };
   const [characterOrder, setCharacterOrder] = useState(() => readHeroCharacterOrder(undefined, [GENERATED_ID, ORIGINAL_ID]));
   const premium: GalleryCharacter = { id: PREMIUM_CHARACTER_ID, name: 'comicDay.character.one', scenes: premiumScenes, preview: premiumScenes };
-  const galleryCharacters = [...SELECTABLE_COMIC_CHARACTERS, ...(premiumScenes.length ? [premium] : []), ...(generatedScenes.length ? [generated] : []), ...(originalScenes.length ? [originals] : [])].map(person => ({ ...person, displayName: nameFor(person.id, person.id === PREMIUM_CHARACTER_ID ? '시티팝 레트로' : t(person.name)) })).sort((a, b) => (characterOrder.indexOf(a.id) < 0 ? 6 : characterOrder.indexOf(a.id)) - (characterOrder.indexOf(b.id) < 0 ? 6 : characterOrder.indexOf(b.id)));
+  const galleryCharacters = [...SELECTABLE_COMIC_CHARACTERS, ...(premiumScenes.length ? [premium] : []), ...(generatedScenes.length ? [generated] : []), ...(originalScenes.length ? [originals] : [])].map(person => ({ ...person, displayName: nameFor(person.id, person.id === PREMIUM_CHARACTER_ID ? translateUiText("시티팝 레트로") : t(person.name)) })).sort((a, b) => (characterOrder.indexOf(a.id) < 0 ? 6 : characterOrder.indexOf(a.id)) - (characterOrder.indexOf(b.id) < 0 ? 6 : characterOrder.indexOf(b.id)));
   const covers = useMemo(() => Object.fromEntries(SELECTABLE_COMIC_CHARACTERS.map(person => [person.id, person.preview[0]])), []);
   const cardWidth = Math.max(74, (width - 48 - 20) / 3);
   const printImageHeight = (cardWidth - 20) * 1.18;
@@ -158,7 +159,7 @@ export function HeroCharacterGalleryPage({ initialGenerated = false, onExit, onS
     onPanResponderTerminationRequest: () => false,
   }));
 
-  const name = (person: GalleryCharacter) => nameFor(person.id, person.id === PREMIUM_CHARACTER_ID ? '시티팝 레트로' : t(person.name));
+  const name = (person: GalleryCharacter) => nameFor(person.id, person.id === PREMIUM_CHARACTER_ID ? translateUiText("시티팝 레트로") : t(person.name));
   const closeDetail = () => { if (onExit) { tapHaptic(); onExit(); return; } tapHaptic(); cancelDeletion(); setCharacter(null); };
   useEffect(() => {
     if (!character || !focused) return;
@@ -183,7 +184,7 @@ export function HeroCharacterGalleryPage({ initialGenerated = false, onExit, onS
     <PaperGrain opacity={0.14} />
     <View style={s.fill}>
     {character ? <View style={s.header}>
-      <View accessible accessibilityLabel={`사진 ${character.id === ORIGINAL_ID ? originalScenes.length : character.id === GENERATED_ID ? generatedScenes.length : character.scenes.length}장`} style={{ position: 'absolute', left: 64, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+      <View accessible accessibilityLabel={translateUiText("사진 {count}장", { count: character.id === ORIGINAL_ID ? originalScenes.length : character.id === GENERATED_ID ? generatedScenes.length : character.scenes.length })} style={{ position: 'absolute', left: 64, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
         <Svg width={18} height={20} viewBox="0 0 24 26" accessible={false}><Path d="M5 4H2v20h17v-3M6 2h16v19H6zM9 5h10v11H9z" fill="none" stroke={ink} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
         <ThemedText testID="hero-gallery-scene-count" numberOfLines={1} style={{ color: ink, fontSize: 13 }}>{character.id === ORIGINAL_ID ? originalScenes.length : character.id === GENERATED_ID ? generatedScenes.length : character.scenes.length}</ThemedText>
       </View>

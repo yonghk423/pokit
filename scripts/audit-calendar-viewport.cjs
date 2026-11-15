@@ -12,7 +12,8 @@ function load(relative) {
   const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText;
-  new Function('exports', 'require', compiled)(exports, name => name.startsWith('.')
+  new Function('exports', 'require', compiled)(exports, name => name.endsWith('.json')
+    ? require(path.resolve(path.dirname(file), name)) : name.startsWith('.')
     ? load(path.relative(root, path.resolve(path.dirname(file), name + '.ts'))) : require(name));
   return exports;
 }

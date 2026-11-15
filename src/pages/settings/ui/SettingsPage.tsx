@@ -1,3 +1,5 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
+import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import { AppleCalendarSection } from '@features/apple-calendar/AppleCalendarSection';
 import { DriveBackupSection } from '@features/drive-backup/DriveBackupSection';
 import { resetServiceTutorialSession } from '../../welcome-intro/model/serviceTutorial';
@@ -379,10 +381,10 @@ export function SettingsPage() {
                   <SettingsRowIcon name="pro.crown" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
                   <View style={chrome.itemTextWrap}>
                     <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                      {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
+                      {isProFreeAccessActive() ? t('proPromotion.title', locale) : isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
                     </ThemedText>
                     <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                      {POKIT_PRO_PREVIEW
+                      {isProFreeAccessActive() ? t('proPromotion.settingsDesc', locale) : POKIT_PRO_PREVIEW
                         ? t('settings.pro.previewDesc', locale)
                         : !subscriptionConfigured
                         ? t('settings.pro.moduleMissing', locale)
@@ -492,6 +494,19 @@ export function SettingsPage() {
           ) : null}
 
 
+
+          <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
+            <Pressable style={[chrome.item, { borderTopColor: p.border }]} onPress={tap(() => router.push('/layout-settings'))} accessibilityRole="button" accessibilityLabel={translateUiText("레이아웃 설정")}>
+              <View style={chrome.itemLeft}>
+                <SettingsRowIcon name="square.grid.2x2" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
+                <View style={chrome.itemTextWrap}>
+                  <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{translateUiText("레이아웃 설정")}</ThemedText>
+                  <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{translateUiText("메인 달력의 사진 표시를 설정해요.")}</ThemedText>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={14} color={p.chevron} />
+            </Pressable>
+          </SettingsSection>
 
           <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
             <Pressable

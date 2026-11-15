@@ -1,3 +1,4 @@
+import { googleSdk as sdk } from '../googleSignin';
 import { loadHeroOriginalPhotoLibrary } from '../../pages/day-plan/lib/heroOriginalPhoto';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,18 +9,6 @@ import { loadHeroAiLibrary } from '../../pages/day-plan/lib/heroAiLibrary';
 import { dateOf, collectDate, mergeDate, type DateData, validDate } from './dateData';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const API = 'https://www.googleapis.com/drive/v3/files';
-let configured = false;
-function sdk() {
-  if (Platform.OS === 'web') throw new Error('Google Drive 백업은 iPhone과 Android 앱에서 사용할 수 있어요.');
-  // Lazy loading allows the settings screen to work in builds without the native module.
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- native module may be absent in an older installed build
-    const { GoogleSignin } = require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
-    if (!configured) GoogleSignin.configure({ scopes: [SCOPE], iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID });
-    configured = true;
-    return GoogleSignin;
-  } catch { throw new Error('Google Drive 연결 모듈을 포함해 앱을 다시 빌드해 주세요.'); }
-}
 export async function connectDrive() {
   if (Platform.OS === 'ios' && !process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) throw new Error('Google Drive 연결을 위한 iOS OAuth 설정이 필요해요.');
   const google = sdk();
@@ -39,7 +28,7 @@ export async function restoreDriveConnection(): Promise<string | null> {
   return result.type === 'success' && result.data.scopes.includes(SCOPE) ? result.data.user.email : null;
 }
 export async function disconnectDrive() { await sdk().signOut(); }
-export function driveEmail() { try { return sdk().getCurrentUser()?.user.email ?? null; } catch { return null; } }
+export function driveEmail() { try { const user = sdk().getCurrentUser(); return user?.scopes.includes(SCOPE) ? user.user.email : null; } catch { return null; } }
 async function token() {
   const google = sdk();
   if (!google.getCurrentUser()) { const result = await google.signInSilently(); if (result.type !== 'success') throw new Error('먼저 Google Drive를 연결해 주세요.'); }
@@ -163,11 +152,11 @@ export async function restoreDate(backup: DriveBackup, progress: (s: string) => 
     storage.setJson('pokit:drive-restore-rollback', { date: manifest.date, previous }); await flushLocalStorageClientWrites();
     await AsyncStorage.setItem('pokit:drive-restore-pending', JSON.stringify(previous));
     try {
-      for (const [key, value] of Object.entries(writes)) { if (key.startsWith('pokit:canvas-note:')) storage.setItemRaw(key, String(value)); else storage.setJson(key, value); }
+      for (const [key, value] of Object.entries(writes)) { if ((key.startsWith('pokit:canvas-note:') || key.startsWith('pokit:monthly-album-note:'))) storage.setItemRaw(key, String(value)); else storage.setJson(key, value); }
       await flushLocalStorageClientWrites();
       if (Platform.OS !== 'web') {
         const persisted = await AsyncStorage.multiGet(Object.keys(writes));
-        for (const [key, value] of persisted) if (value !== (key.startsWith('pokit:canvas-note:') ? String(writes[key]) : JSON.stringify(writes[key]))) throw new Error('기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.');
+        for (const [key, value] of persisted) if (value !== ((key.startsWith('pokit:canvas-note:') || key.startsWith('pokit:monthly-album-note:')) ? String(writes[key]) : JSON.stringify(writes[key]))) throw new Error('기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.');
       }
       await AsyncStorage.removeItem('pokit:drive-restore-pending');
     }

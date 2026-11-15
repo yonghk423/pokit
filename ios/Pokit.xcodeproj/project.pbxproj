@@ -119,6 +119,7 @@
 		F1E2D3C5D4E5F60011223344 /* QuickMemoModeLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMemoModeLiveActivityView.swift; sourceTree = "<group>"; };
 		FA12BEEFE001000000000001 /* Ownglyph_corncorn-Rg.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Ownglyph_corncorn-Rg.ttf"; path = "../assets/fonts/ownglyph-corncorn/Ownglyph_corncorn-Rg.ttf"; sourceTree = SOURCE_ROOT; };
 		FA12BEEFE003000000000001 /* HiMelody_400Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = HiMelody_400Regular.ttf; path = "../node_modules/@expo-google-fonts/hi-melody/400Regular/HiMelody_400Regular.ttf"; sourceTree = SOURCE_ROOT; };
+		2A7C1E06D4E5F60011223344 /* zh-TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-TW"; path = "Pokit/zh-TW.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -346,6 +347,7 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				"zh-TW",
 				en,
 				ko,
 				ja,
@@ -669,6 +671,7 @@
 				2A7C1E02D4E5F60011223344 /* en */,
 				2A7C1E03D4E5F60011223344 /* ko */,
 				2A7C1E05D4E5F60011223344 /* ja */,
+				2A7C1E06D4E5F60011223344 /* zh-TW */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";

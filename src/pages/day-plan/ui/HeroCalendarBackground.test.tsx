@@ -1,3 +1,9 @@
+import { HeroCalendarWidgetSync } from './HeroCalendarWidgetSync';
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('../model/heroCanvasEvents', () => ({ useCanvasEventDates: () => [] }));
+jest.mock('@features/apple-calendar/useDeviceEvents', () => ({ useDeviceEvents: () => ({ events: [] }) }));
+jest.mock('./usePremiumPackPaywall', () => ({ usePremiumPackPaywall: () => ({ present: async () => 'cancelled', modal: null }) }));
+jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ useSubscriptionStore: () => true, selectIsPro: () => true }));
 import { launchImageLibraryAsync } from 'expo-image-picker';
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPresentationStyle: { FULL_SCREEN: 'fullScreen' } }));
 jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///documents/', makeDirectoryAsync: jest.fn(async () => {}), copyAsync: jest.fn(async () => {}), deleteAsync: jest.fn(async () => {}) }));
@@ -80,4 +86,24 @@ it('keeps month navigation inside the selected calendar design', () => {
     expect(previous).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledTimes(1);
   } finally { act(() => tree.unmount()); }
+});
+
+it('hides only main calendar thumbnails while preserving records and restoring photos when enabled', () => {
+  const { setCalendarPhotosHidden } = require('@shared/lib/calendarLayoutPreferences');
+  const diaries = [{ id: 'record', title: 'Diary', date: '2026-11-09', createdAt: 1, updatedAt: 1, characterId: 'protagonist-1', scenes: [{ id: 'scene', image: '05-work', title: 'Title', memo: 'Writing', artworkUri: 'file:///photo.jpg' }] }] as any;
+  let tree!: ReactTestRenderer;
+  act(() => { setCalendarPhotosHidden(false); tree = create(<HeroCalendarBackground date={new Date(2026, 10, 9)} month={new Date(2026, 10, 1)} isDark={false} diaries={diaries} onSelectDate={jest.fn()} />); });
+  try {
+    act(() => tree.root.findByProps({ testID: 'hero-calendar-applied-design' }).props.onLayout({ nativeEvent: { layout: { width: 375, height: 580 } } }));
+    expect(tree.root.findByType(CalendarPaper).props.diaries[0].scenes[0].artworkUri).toBe('file:///photo.jpg');
+    act(() => setCalendarPhotosHidden(true));
+    const displayed = tree.root.findByType(CalendarPaper).props.diaries;
+    expect(displayed[0].scenes[0].artworkUri).toBeUndefined();
+    expect(displayed[0].scenes[0].memo).toBe('Writing');
+    expect(tree.root.findByType(HeroCalendarWidgetSync).props.diaries).toBe(displayed);
+    expect(diaries[0].scenes[0].artworkUri).toBe('file:///photo.jpg');
+    act(() => setCalendarPhotosHidden(false));
+    expect(tree.root.findByType(CalendarPaper).props.diaries).toBe(diaries);
+    expect(tree.root.findByType(HeroCalendarWidgetSync).props.diaries).toBe(diaries);
+  } finally { act(() => { tree.unmount(); setCalendarPhotosHidden(false); }); }
 });

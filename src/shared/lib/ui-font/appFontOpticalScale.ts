@@ -13,6 +13,10 @@ export const APP_FONT_OPTICAL_SCALE: Record<AppFontId, number> = {
   /** 가는 기울임 손글씨 */
   cafe24ShiningStar: 1.10,
   cafe24Syongsyong: 1.08,
+  schoolNalgae: 0.95,
+  schoolKkokkoma: 1.15,
+  singleDay: 1.01,
+  schoolGongryongal: 0.97,
 };
 
 export function resolveAppFontOpticalScale(fontId: AppFontId): number {

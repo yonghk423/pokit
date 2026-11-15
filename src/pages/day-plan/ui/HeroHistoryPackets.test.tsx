@@ -1,3 +1,4 @@
+jest.mock('@shared/ui/native-hhmm-wheel-picker/NativeHhmmWheelPicker', () => ({ NativeHhmmWheelPicker: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { AppAlert } from '@shared/lib/app-alert';
@@ -70,4 +71,17 @@ it('shows monthly packets within a year and moves a full year with the header ar
   act(() => tree.root.findAllByProps({ testID: 'history-next-year' })[0].props.onPress());
   expect(packets()).toEqual(['NOVEMBER 2026, 0 entries', 'OCTOBER 2026, 0 entries']);
   act(() => tree.unmount());
+});
+
+it('starts an upload for the day picked in the open month, including days without an entry', () => {
+  const onCreate = jest.fn();
+  const diary = { id: 'one', date: '2026-11-18', title: '', characterId: 'protagonist-1', scenes: [], createdAt: 1, updatedAt: 1 };
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroHistoryPackets diaries={[diary]} onCreate={onCreate} onDeleteMany={jest.fn()} onUpdateScene={jest.fn()} />); });
+  try {
+    act(() => tree.root.findAllByProps({ accessibilityLabel: 'NOVEMBER 2026, 0 entries' })[0].props.onPress());
+    act(() => tree.root.findByType('SceneDeck' as never).props.onAdd());
+    act(() => tree.root.findAllByProps({ testID: 'polaroid-date-day-7' })[0].props.onPress());
+    expect(onCreate).toHaveBeenCalledWith('2026-11-07');
+  } finally { act(() => tree.unmount()); }
 });

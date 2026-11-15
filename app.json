@@ -2,7 +2,7 @@
   "expo": {
     "name": "Daylight",
     "slug": "pokit",
-    "version": "2.2.2",
+    "version": "2.2.3",
     "orientation": "portrait",
     "icon": "./assets/app-icon4-inset.png",
     "scheme": "pokit",
@@ -15,12 +15,13 @@
     "locales": {
       "en": "./locales/en.json",
       "ko": "./locales/ko.json",
-      "ja": "./locales/ja.json"
+      "ja": "./locales/ja.json",
+      "zh-TW": "./locales/zh-TW.json"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "129",
+      "buildNumber": "130",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -46,8 +47,8 @@
       }
     },
     "android": {
-      "version": "2.2.2",
-      "versionCode": 129,
+      "version": "2.2.3",
+      "versionCode": 130,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/app-icon4-inset.png"

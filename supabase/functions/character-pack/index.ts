@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requiresDownloadSubscription } from '../_shared/subscriptionPolicy.ts';
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Content-Type': 'application/json' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
 Deno.serve(async request => {
@@ -11,7 +12,7 @@ Deno.serve(async request => {
     if (error || !data.user) return json({ error: 'unauthorized' }, 401);
     const { action } = await request.json();
     if (action !== 'preview' && action !== 'download') return json({ error: 'invalid_action' }, 400);
-    if (action === 'download') {
+    if (action === 'download' && requiresDownloadSubscription()) {
       const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
       if (!secret) return json({ error: 'subscription_verification_unavailable' }, 503);
       // Identity comes exclusively from the verified Supabase JWT.

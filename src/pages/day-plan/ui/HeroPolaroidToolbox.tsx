@@ -3,8 +3,8 @@ import { memo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { ThemedText } from '@shared/ui/themed-text';
-import { POLAROID_FILMS, adjustmentKeys, type AdjustmentKey, type PolaroidEffects } from './HeroPolaroidEffects';
-export const HeroPolaroidToolbox = memo(function HeroPolaroidToolbox({ photoFit = 'cover', onChangePhotoFit, effects, onChange, showText = true, onToggleText, showDate = true, onToggleDate, disabled = false }: { photoFit?: 'cover' | 'contain'; onChangePhotoFit?: (fit: 'cover' | 'contain') => void; showText?: boolean; onToggleText?: () => void; showDate?: boolean; onToggleDate?: () => void; effects: PolaroidEffects; onChange: (patch: PolaroidEffects) => void; disabled?: boolean }) {
+import { POLAROID_FILMS, isProPolaroidFilm, adjustmentKeys, type AdjustmentKey, type PolaroidEffects } from './HeroPolaroidEffects';
+export const HeroPolaroidToolbox = memo(function HeroPolaroidToolbox({ filmFiltersPro = false, photoFit = 'cover', onChangePhotoFit, effects, onChange, showText = true, onToggleText, showDate = true, onToggleDate, disabled = false }: { filmFiltersPro?: boolean; photoFit?: 'cover' | 'contain'; onChangePhotoFit?: (fit: 'cover' | 'contain') => void; showText?: boolean; onToggleText?: () => void; showDate?: boolean; onToggleDate?: () => void; effects: PolaroidEffects; onChange: (patch: PolaroidEffects) => void; disabled?: boolean }) {
   const { t } = useTranslation();
   const tools = [
     { key: 'film', label: t('polaroid.editor.film'), path: 'M4 3h16v18H4ZM7 6h10v10H7Z' },
@@ -56,8 +56,8 @@ export const HeroPolaroidToolbox = memo(function HeroPolaroidToolbox({ photoFit 
     {/* Reserve the slider row so selecting a tool never resizes the print. */}
     <View testID="polaroid-slider-space" style={{ height: 44, overflow: 'hidden' }}>
     {selected === 'film' ? <ScrollView testID="polaroid-film-options" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', gap: 22, paddingHorizontal: 12 }}>
-      {films.map(option => <Pressable key={option.value} testID={`polaroid-select-${option.value}`} disabled={disabled} accessibilityRole="button" accessibilityLabel={option.label} accessibilityState={{ selected: film === option.value, disabled }} onPress={() => onChange({ film: option.value })} style={{ minHeight: 44, justifyContent: 'center' }}>
-        <ThemedText style={{ fontSize: 13, color: film === option.value ? '#FFFFFF' : '#B8B8B1', paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: film === option.value ? '#FFFFFF' : 'transparent' }}>{option.label}</ThemedText>
+      {films.map(option => <Pressable key={option.value} testID={`polaroid-select-${option.value}`} disabled={disabled} accessibilityRole="button" accessibilityLabel={`${option.label}${filmFiltersPro && isProPolaroidFilm(option.value) ? ' · Pro' : ''}`} accessibilityState={{ selected: film === option.value, disabled }} onPress={() => onChange({ film: option.value })} style={{ minHeight: 44, justifyContent: 'center' }}>
+        <ThemedText style={{ fontSize: 13, color: film === option.value ? '#FFFFFF' : '#B8B8B1', paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: film === option.value ? '#FFFFFF' : 'transparent' }}>{option.label}{filmFiltersPro && isProPolaroidFilm(option.value) ? <ThemedText style={{ color: '#DBC59B', fontSize: 10 }}>  Pro</ThemedText> : null}</ThemedText>
       </Pressable>)}
     </ScrollView> : null}
     {selected && selected !== 'film' ? <View testID="polaroid-adjustment-panel" style={{ minHeight: 44, justifyContent: 'center' }}>

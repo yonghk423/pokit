@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -36,8 +37,8 @@ export async function deviceEvents(ids: string[], start: Date, end: Date): Promi
 }
 export function calendarError(error: unknown, ko: boolean) {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'permission_denied') return ko ? '아이폰 설정에서 캘린더 전체 접근을 허용해주세요.' : 'Allow full calendar access in iPhone Settings.';
-  if (code === 'calendar_selection_expired') return ko ? '선택한 캘린더를 아이폰에서 찾을 수 없어요. 설정에서 목록을 새로고침하고 다시 선택해주세요.' : 'Selected calendars are no longer available. Refresh and select them again in Settings.';
-  if (code === 'rebuild_required') return ko ? '캘린더 연결을 사용하려면 앱 업데이트가 필요해요.' : 'Update the app to connect your calendar.';
-  return ko ? '캘린더를 불러오지 못했어요. 다시 시도해주세요.' : 'Could not load calendars. Please try again.';
+  if (code === 'permission_denied') return translateUiText("아이폰 설정에서 캘린더 전체 접근을 허용해주세요.");
+  if (code === 'calendar_selection_expired') return translateUiText("선택한 캘린더를 아이폰에서 찾을 수 없어요. 설정에서 목록을 새로고침하고 다시 선택해주세요.");
+  if (code === 'rebuild_required') return translateUiText("캘린더 연결을 사용하려면 앱 업데이트가 필요해요.");
+  return translateUiText("캘린더를 불러오지 못했어요. 다시 시도해주세요.");
 }

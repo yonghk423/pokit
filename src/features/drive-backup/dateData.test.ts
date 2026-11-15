@@ -68,3 +68,12 @@ it('rejects malformed new events and cross-date diary IDs', () => {
   expect(() => mergeDate({ ...data, events: [{ id: 'a' }] })).toThrow();
   expect(() => mergeDate({ ...data, diaries: [{ id: 'a', date: '2026-11-05', scenes: [] }] })).toThrow();
 });
+
+it('includes the selected month in the date backup and preserves notes when restoring older backups', () => {
+  const key = 'pokit:monthly-album-note:2026-11';
+  storage.setItemRaw(key, '이달의 기록');
+  const data = collectDate('2026-11-13');
+  expect(mergeDate(data)[key]).toBe('이달의 기록');
+  expect(mergeDate({ ...data, monthlyNote: undefined })).not.toHaveProperty(key);
+  expect(mergeDate({ ...data, monthlyNote: '' })[key]).toBe('');
+});

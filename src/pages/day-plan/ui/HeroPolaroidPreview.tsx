@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { POLAROID_PHOTO_HEIGHT } from '../lib/heroPolaroidFraming';
 import { formatHeroPolaroidDate } from './HeroPolaroidExport';
 import { HeroPolaroidSurface } from './HeroPolaroidSurface';
@@ -33,7 +34,7 @@ export function HeroPolaroidPreview({ source, title, memo, pen, fontId, date }: 
     const { width, height } = e.nativeEvent.layout;
     setSpace(previous => previous.width === width && previous.height === height ? previous : { width, height });
   }} style={{ flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-    <Pressable testID="detail-polaroid-flip" accessibilityRole="button" accessibilityLabel={flipped ? '사진 보기' : '작성한 글 보기'} onPress={flip} style={{ alignSelf: 'flex-end', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+    <Pressable testID="detail-polaroid-flip" accessibilityRole="button" accessibilityLabel={flipped ? translateUiText("사진 보기") : translateUiText("작성한 글 보기")} onPress={flip} style={{ alignSelf: 'flex-end', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
       <Svg width={30} height={30} viewBox="0 0 32 32" accessible={false}>
         <Path d="M4 11.5 13 10l2.5 17-9 1.5Z M6.3 14l4.8-.8 1.2 8.3-4.8.8Z" fill="none" stroke={pen ?? '#292D28'} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
         <Path d="m19 10 9 1.5-2.5 17-9-1.5Z m1.6 5 4.5.7 m-5 3 4.5.7 m-5 3 3 .5" fill="none" stroke={pen ?? '#292D28'} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
@@ -54,7 +55,7 @@ export function HeroPolaroidPreview({ source, title, memo, pen, fontId, date }: 
         <HeroPolaroidSurface />
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 18, paddingVertical: 12 }}>
           <ThemedText fontId={fontId} style={{ fontSize: 24, lineHeight: 34, color: pen ?? '#292D28' }}>{title.trim()}</ThemedText>
-          <ThemedText testID="detail-polaroid-memo" fontId={fontId} style={{ fontSize: 19, lineHeight: 32, color: pen ?? '#292D28' }}>{memo?.trim() || '오늘의 이야기를 적어보세요.'}</ThemedText>
+          <ThemedText testID="detail-polaroid-memo" fontId={fontId} style={{ fontSize: 19, lineHeight: 32, color: pen ?? '#292D28' }}>{memo?.trim() || translateUiText("오늘의 이야기를 적어보세요.")}</ThemedText>
         </ScrollView>
         <ThemedText fontId={fontId} style={{ textAlign: 'right', fontSize: 15, color: pen ?? '#565A52' }}>{formatHeroPolaroidDate(date)}</ThemedText>
       </Animated.View>

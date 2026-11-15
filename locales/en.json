@@ -1,11 +1,15 @@
 {
   "ios": {
-    "CFBundleDisplayName": "YOUR DAY",
+    "CFBundleDisplayName": "Daylight",
     "NSPhotoLibraryUsageDescription": "Photos access is needed to attach images to notes.",
     "NSPhotoLibraryAddUsageDescription": "Allow adding photos to save completed scenes to Photos.",
-    "NSLocationWhenInUseUsageDescription": "Your approximate location is used only while the app is open to show local weather. It is not stored."
+    "NSLocationWhenInUseUsageDescription": "Your approximate location is used while the app is open to show local weather. It is not stored.",
+    "NSCameraUsageDescription": "Camera access is needed to take photos for your characters and scenes.",
+    "NSCalendarsUsageDescription": "Show events from your selected calendars alongside your diary.",
+    "NSCalendarsFullAccessUsageDescription": "Show events from your selected calendars alongside your diary.",
+    "NSMotionUsageDescription": "Motion access may be used to check device orientation while showing the weather. Motion activity is not saved."
   },
   "android": {
-    "app_name": "YOUR DAY"
+    "app_name": "Daylight"
   }
 }

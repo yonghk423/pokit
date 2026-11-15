@@ -9,7 +9,7 @@ import { loadHeroAiLibrary, type HeroAiLibraryImage } from '../lib/heroAiLibrary
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { HeroCharacterPickerOverlay } from './HeroCharacterPickerOverlay';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
-import { HeroInlineComposer } from './HeroInlineComposer';
+import { HeroInlineComposer, type HeroImportedCardText } from './HeroInlineComposer';
 import { flushLocalStorageClientWrites, getDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import type { HeroCardText } from './HeroCardCaption';
 import { COMIC_SCENES, type ComicSceneId } from '../lib/heroSceneImages';
@@ -373,7 +373,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     image: inlineRecovery.scenes[0] ?? COMIC_CHARACTERS[0].scenes[0].id,
     text: { title: '', memo: inlineRecovery.story!.text } as HeroCardText,
   } : inlineTarget;
-  const applyInline = async (text: HeroCardText, uri: string) => {
+  const applyInline = async (text: HeroImportedCardText, uri: string) => {
     // Read the latest library: generation can finish after other local edits.
     let next = loadComicDiaryLibrary(props.date, number => t('comicDiary.defaultTitle', { number }));
     const duplicate = next.diaries.find(value => comicDiaryDate(value) === props.date && value.scenes.some(scene => scene.artworkUri === uri));
@@ -551,7 +551,7 @@ function CharacterComicPlanner({ pendingPrintUri, overviewOpen, onOverviewChange
   return <View style={{ flex: 1, backgroundColor: !hasWallpaper && isDark ? '#262B28' : 'transparent' }}>
     {photo ? <HeroImageActions initialDraft={photo.polaroidSettings} onSaveDraft={async draft => { patch(photo.id, await applyPolaroidDraft(draft, photo.originalArtworkUri ?? photo.artworkUri)); }} onDelete={() => removeScene(photo.id)} key={photo.id} onSaveText={text => patch(photo.id, text)} editorOnly onEditorClose={() => setPhotoId(null)} uri={photo.originalArtworkUri ?? photo.artworkUri} source={(COMIC_SCENES.find(scene => scene.id === photo.image) ?? character.scenes[0]).source} title={photo.title} memo={photo.memo} paper={photo.paper} pen={photo.pen} fontId={photo.fontId} exportDate={comicDiaryDate(diary) ?? date} /> : null}
     {!selected ? <ServiceTutorialCoach steps={['comicTools', 'comicOpen', 'comicMemo', 'comicTask', 'comicCheck', 'comicSuccess']} /> : null}
-    <ComicDayBoard overviewOpen={overviewOpen} onOverviewChange={onOverviewChange} focusSceneId={focusSceneId} onActiveSceneChange={onActiveSceneChange} onOpenBag={onOpenBag} character={character} sceneLibrary={character.scenes} detailOpen={!!selected} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} onSelectCharacter={onSelectCharacter} items={scenes.filter(scene => !pendingPrintUri || scene.artworkUri !== pendingPrintUri).map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, artworkUri: scene.artworkUri, exportDate: comicDiaryDate(diary) ?? date, icon: '', faceColor: scene.paper, inkColor: scene.pen, fontId: scene.fontId }))}
+    <ComicDayBoard overviewOpen={overviewOpen} onOverviewChange={onOverviewChange} focusSceneId={focusSceneId} onActiveSceneChange={onActiveSceneChange} onOpenBag={onOpenBag} character={character} sceneLibrary={character.scenes} detailOpen={!!selected} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} onSelectCharacter={onSelectCharacter} items={scenes.filter(scene => !pendingPrintUri || scene.artworkUri !== pendingPrintUri).map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, artworkUri: scene.artworkUri, exportDate: comicDiaryDate(diary) ?? date, icon: '', faceColor: scene.paper, inkColor: scene.pen, fontId: scene.fontId, photoFit: scene.polaroidSettings?.photoFit }))}
       ink={ink} muted={muted} isDark={isDark} choices={Object.fromEntries(scenes.map(scene => [scene.id, scene.image]))}
       onOpen={open}
       onEditCard={(id, text) => patch(id, text)}

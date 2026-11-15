@@ -1,0 +1,15 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Daylight",
+    "NSCameraUsageDescription": "需要相機權限，才能拍攝用於主角與場景的照片。",
+    "NSPhotoLibraryUsageDescription": "需要照片權限，才能從相簿選擇附加至紀錄的照片。",
+    "NSPhotoLibraryAddUsageDescription": "請允許新增照片，以將完成的場景儲存至照片 App。",
+    "NSLocationWhenInUseUsageDescription": "僅在使用 App 時取得大略位置以顯示當地天氣，不會儲存位置資訊。",
+    "NSCalendarsUsageDescription": "將所選日曆的行程與日記一併顯示。",
+    "NSCalendarsFullAccessUsageDescription": "將所選日曆的行程與日記一併顯示。",
+    "NSMotionUsageDescription": "顯示天氣時，可能使用動作感測器確認裝置方向，不會儲存動作紀錄。"
+  },
+  "android": {
+    "app_name": "Daylight"
+  }
+}

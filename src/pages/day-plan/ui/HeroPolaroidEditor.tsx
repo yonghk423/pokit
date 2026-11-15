@@ -1,3 +1,6 @@
+import { isProFreeAccessActive } from '@shared/config/proPromotion';
+import { hasSeenProIntroduction, markProIntroductionSeen } from '@features/subscriptions/lib/proIntroduction';
+import { isProEntitlementActive } from '@features/subscriptions/lib/entitlement';
 import { useTranslation } from '@shared/lib/i18n';
 import { POLAROID_PHOTO_WIDTH, getPolaroidPrintLayout } from '../lib/heroPolaroidFraming';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -17,7 +20,7 @@ import { useSubscriptionStore, selectIsPro } from '@features/subscriptions/model
 import { ProPreviewPage } from '../../settings/ui/ProPreviewPage';
 import { resolveAppFontFamily, useEffectiveAppFontId } from '@shared/lib/ui-font';
 import { formatHeroPolaroidDate, type HeroPolaroidContent } from './HeroPolaroidExport';
-import { hasProPolaroidEffects, adjustmentKeys } from './HeroPolaroidEffects';
+import { hasProPolaroidEffects, isProPolaroidFilm, adjustmentKeys } from './HeroPolaroidEffects';
 import { HeroPolaroidProcessor } from './HeroPolaroidProcessor';
 export type PolaroidDraft = Omit<HeroPolaroidContent, 'uri'>;
 export function HeroPolaroidEditor({ embedded = false, uri, source, initial, busy, children, onExport, onClose, onSaveText, onDelete }: {
@@ -39,8 +42,8 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
 
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallBusy, setPaywallBusy] = useState(false);
-  const paywallResult = useRef<((result: 'purchased' | 'restored' | 'cancelled') => void) | null>(null);
-  const finishPaywall = (result: 'purchased' | 'restored' | 'cancelled') => {
+  const paywallResult = useRef<((result: 'purchased' | 'restored' | 'cancelled' | 'promotion') => void) | null>(null);
+  const finishPaywall = (result: 'purchased' | 'restored' | 'cancelled' | 'promotion') => {
     setPaywallOpen(false);
     paywallResult.current?.(result);
     paywallResult.current = null;
@@ -66,7 +69,10 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
   const { photoHeight, printHeight, captionHeight } = getPolaroidPrintLayout(draft.photoFit);
   const printScale = Math.max(0, Math.min((stage.width - 40) / 360, Math.max(0, stage.height * 0.9 - 24) / printHeight));
   const paper = '#F9F9F6', pen = draft.pen ?? '#292D28';
-  const patch = useCallback((next: Partial<PolaroidDraft>) => setDraft(current => ({ ...current, ...next })), []);
+  // Film selection is always a preview; access is checked only on export/apply.
+  const patch = useCallback((next: Partial<PolaroidDraft>) => {
+    setDraft(current => ({ ...current, ...next }));
+  }, []);
   const toggleText = useCallback(() => setDraft(current => ({ ...current, showText: current.showText === false })), []);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const toggleDate = useCallback(() => setDatePickerOpen(true), []);
@@ -74,16 +80,18 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
     if (lock.current || busy || processing) return;
     lock.current = true; setChecking(true);
     try {
-      if (FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && hasProPolaroidEffects(draft)) {
+      if (FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && isProPolaroidFilm(draft.film)) {
         const store = useSubscriptionStore.getState();
         if (!store.isHydrated) await store.hydrate();
         await useSubscriptionStore.getState().refreshCustomerInfo();
-        if (!selectIsPro(useSubscriptionStore.getState())) {
-          const result = await new Promise<'purchased' | 'restored' | 'cancelled'>(resolve => { paywallResult.current = resolve; setPaywallOpen(true); });
+        const promotion = isProFreeAccessActive();
+        if ((!selectIsPro(useSubscriptionStore.getState()) && !promotion) || (promotion && !isProEntitlementActive(useSubscriptionStore.getState().customerInfo) && !hasSeenProIntroduction())) {
+          if (hasSeenProIntroduction()) return;
+          markProIntroductionSeen();
+          const result = await new Promise<'purchased' | 'restored' | 'cancelled' | 'promotion'>(resolve => { paywallResult.current = resolve; setPaywallOpen(true); });
           if (result === 'cancelled') return;
           await useSubscriptionStore.getState().refreshCustomerInfo();
-          if (!selectIsPro(useSubscriptionStore.getState())) {
-            Alert.alert('Daylight Pro', t('polaroid.editor.film_filters_require_pro_check_your_subscription_or_save_a_basic_polaroid'));
+          if (!selectIsPro(useSubscriptionStore.getState()) && !(result === 'promotion' && isProFreeAccessActive())) {
             return;
           }
         }
@@ -125,20 +133,20 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
             {onDelete ? <Pressable testID="polaroid-delete" accessibilityRole="button" accessibilityLabel={t('polaroid.editor.delete_photo')} disabled={busy || checking} onPress={onDelete} style={{ minWidth: 66, height: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: pen, fontSize: 17 }}>{t('polaroid.editor.delete')}</ThemedText></Pressable> : null}
           </View>
           </View>
-        <HeroPolaroidToolbox photoFit={draft.photoFit ?? 'cover'} onChangePhotoFit={photoFit => patch({ photoFit })} showText={draft.showText !== false} onToggleText={toggleText} showDate={draft.showDate !== false} onToggleDate={toggleDate} effects={effects} onChange={patch} disabled={busy || checking} />
+        <HeroPolaroidToolbox filmFiltersPro={FEATURE_FLAGS.proPolaroidExport} photoFit={draft.photoFit ?? 'cover'} onChangePhotoFit={photoFit => patch({ photoFit })} showText={draft.showText !== false} onToggleText={toggleText} showDate={draft.showDate !== false} onToggleDate={toggleDate} effects={effects} onChange={patch} disabled={busy || checking} />
         {processing && failedKey === effectKey ? <Pressable onPress={() => setFailedKey(undefined)} style={{ minHeight: 32, justifyContent: 'center' }}><ThemedText style={{ fontSize: 12, textAlign: 'center' }}>{t('polaroid.editor.adjustment_failed_tap_to_retry')}</ThemedText></Pressable> : null}
         {needsProcessing && failedKey !== effectKey ? <HeroPolaroidProcessor uri={uri} source={source} effects={effects} onResult={renderComplete} onError={renderFailed} /> : null}
         <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: Math.max(4, insets.bottom), flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#080808' }}>
           <ExportButton icon="share" label={t('polaroid.editor.share')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('share'); }} testID="polaroid-editor-share" />
           <ExportButton icon="download" label={t('polaroid.editor.download_to_photos')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('download'); }} testID="polaroid-editor-download" />
-          <ExportButton icon="save" label={checking || busy ? t('polaroid.editor.preparing') : FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && !isPro && hasProPolaroidEffects(draft) ? t('polaroid.editor.apply_with_pro') : t('polaroid.editor.apply_to_photo')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('save'); }} testID="polaroid-editor-save" />
+          <ExportButton icon="save" label={checking || busy ? t('polaroid.editor.preparing') : FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && !isPro && isProPolaroidFilm(draft.film) ? t('polaroid.editor.apply_with_pro') : t('polaroid.editor.apply_to_photo')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('save'); }} testID="polaroid-editor-save" />
           <Pressable accessibilityRole="button" accessibilityLabel={t('polaroid.editor.close')} disabled={busy || checking} onPress={onClose} style={{ marginLeft: 'auto', minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: busy || checking ? 0.5 : 1 }}><ThemedText style={{ color: '#F3F2ED' }}>{t('polaroid.editor.close')}</ThemedText></Pressable>
         </View>
         {writing ? <HeroCardEditor number={1} ink={pen} muted="#73796C" paper={draft.paper ?? paper} draft={textDraft} onChange={setTextDraft} onCancel={() => setWriting(false)} onSave={() => { if (!textDraft.title.trim()) return; const text = { ...textDraft, title: textDraft.title.trim(), memo: textDraft.memo.trim() }; patch(text); onSaveText?.(text); setWriting(false); }} /> : null}
         {datePickerOpen ? <HeroPolaroidDatePicker date={draft.date} showDate={draft.showDate !== false} onSelect={date => { patch({ date, showDate: true }); setDatePickerOpen(false); }} onHide={() => { patch({ showDate: false }); setDatePickerOpen(false); }} onClose={() => setDatePickerOpen(false)} /> : null}
         {children}
         {paywallOpen ? <AppModal visible presentationStyle="fullScreen" animationType="none" onRequestClose={() => { if (!paywallBusy) finishPaywall('cancelled'); }}>
-          <ProPreviewPage onBusyChange={setPaywallBusy} onClose={() => finishPaywall('cancelled')} onActivated={finishPaywall} />
+          <ProPreviewPage onPromotionContinue={() => finishPaywall('promotion')} onBusyChange={setPaywallBusy} onClose={() => finishPaywall('cancelled')} onActivated={finishPaywall} />
         </AppModal> : null}
       </Animated.View>
       {imageFailed ? <View style={{ position: 'absolute', top: insets.top + 52, left: 24, right: 24 }}><ThemedText style={{ color: '#934C3C', textAlign: 'center' }}>{t('polaroid.editor.could_not_load_the_photo_close_and_reopen_it')}</ThemedText></View> : null}

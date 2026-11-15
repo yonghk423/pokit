@@ -18,9 +18,8 @@ export function HeroCameraPrintAnimation({ uri, bottom, dark, onComplete }: { ur
         <Image source={{ uri }} resizeMode="contain" style={{ flex: 1, width: '100%' }} />
       </Animated.View>
     </View>
-    <Animated.View style={{ width: 75, height: 53, transform: [{ translateY: progress.interpolate({ inputRange: [0, 0.15, 0.3, 0.45, 1], outputRange: [0, 1, 0, 0.7, 0] }) }] }}>
-      <HeroRestingCamera dark={dark} />
-      <View testID="hero-camera-print-light" style={{ position: 'absolute', right: 9, top: 7, width: 4, height: 4, borderRadius: 2, backgroundColor: '#FF3B30', shadowColor: '#FF3B30', shadowOpacity: 1, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } }} />
+    <Animated.View style={{ width: 75, height: 53, transform: [{ translateY: progress.interpolate({ inputRange: [0, 0.15, 0.3, 0.45, 1], outputRange: [0, 2.5, -1, 1.5, 0] }) }, { scale: progress.interpolate({ inputRange: [0, 0.12, 0.25, 1], outputRange: [1, 0.96, 1.02, 1] }) }] }}>
+      <HeroRestingCamera dark={dark} active />
     </Animated.View>
   </View>;
 }

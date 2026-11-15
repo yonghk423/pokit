@@ -8,6 +8,9 @@ import { Animated, View } from 'react-native';
 import { ComicDayBoard } from './HeroDayBoard';
 import { COMIC_BOARD_MODES, loadComicBoardMode, saveComicBoardMode } from '../lib/heroBoardLayout';
 import { ComicSceneImage } from './HeroSceneImage';
+import { applyHeroPhotoWall } from '../model/heroPhotoWall';
+import { HeroDraggablePrint } from './HeroDraggablePrint';
+import { loadPrintPositions, savePrintPosition } from '../lib/heroPrintPositions';
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 it.each(COMIC_BOARD_MODES)('keeps whole figures visible in every panel of the %s overview layout', mode => {
@@ -364,4 +367,68 @@ it('closes the horizontal carousel with X and hides X in the overview', () => {
   expect(close()).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'comic-card-grid-layer' })[0].props.pointerEvents).toBe('auto');
   act(() => tree.unmount());
+});
+
+it('opens dated photo addition and deletion from the monthly overview dock', () => {
+  const add = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<SafeAreaInsetsContext.Provider value={{ top: 0, right: 0, bottom: 34, left: 0 }}>
+    <ComicDayBoard historyOverview syncMainState={false} diaryTitle="November" overviewOpen items={[{ key: 'one', label: 'Photo', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={add} onRemoveMany={jest.fn()} />
+  </SafeAreaInsetsContext.Provider>); });
+  try {
+    const button = (testID: string) => tree.root.findAllByProps({ testID })[0];
+    const camera = button('hero-duvet-camera');
+    const trash = button('hero-duvet-trash');
+    expect(trash.props.style.right).toBeGreaterThan(camera.props.style({ pressed: false }).right);
+    expect(trash.props.style.bottom).toBeGreaterThan(0);
+    act(() => camera.props.onPress());
+    expect(add).toHaveBeenCalledTimes(1);
+    act(() => trash.props.onPress());
+    expect(button('hero-photo-delete-actions')).toBeDefined();
+  } finally { act(() => tree.unmount()); }
+});
+
+it('applies the photo wall to existing album photos and restores their free positions on removal', () => {
+  savePrintPosition('wall-photo', 0.24, 0.42, 8);
+  const savedPositions = loadPrintPositions();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<SafeAreaInsetsContext.Provider value={{ top: 0, bottom: 0, left: 0, right: 0 }}><ComicDayBoard diaryTitle="Photo album" items={[{ key: 'wall-photo', label: 'A memory', icon: '' }]} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} /></SafeAreaInsetsContext.Provider>); });
+  try {
+    act(() => applyHeroPhotoWall('black'));
+    expect(tree.root.findAllByProps({ testID: 'photo-wall-hardware' }).length).toBeGreaterThan(0);
+    const print = tree.root.findByType(HeroDraggablePrint);
+    expect(print.props.rotation).toBe(0);
+    expect(print.props.enabled).toBe(false);
+    expect(tree.root.findAllByProps({ testID: 'comic-card-grid-layer' })[0].props.pointerEvents).toBe('auto');
+    expect(loadPrintPositions()).toEqual(savedPositions);
+    act(() => applyHeroPhotoWall('none'));
+    expect(tree.root.findAllByProps({ testID: 'photo-wall-hardware' })).toHaveLength(0);
+    expect(tree.root.findByType(HeroDraggablePrint).props.rotation).toBe(8);
+    expect(loadPrintPositions()).toEqual(savedPositions);
+  } finally {
+    act(() => { tree.unmount(); applyHeroPhotoWall('none'); });
+  }
+});
+
+it('mounts later wall rows on scroll while the camera and trash controls stay outside the scroll view', () => {
+  const items = Array.from({ length: 240 }, (_, i) => ({ key: String(i), label: String(i), icon: '' }));
+  let tree!: ReactTestRenderer;
+  act(() => {
+    applyHeroPhotoWall('black');
+    tree = create(<SafeAreaInsetsContext.Provider value={{ top: 0, bottom: 0, left: 0, right: 0 }}><ComicDayBoard diaryTitle="Album" historyOverview overviewOpen onRemoveMany={jest.fn()} items={items} ink="#222" muted="#888" isDark={false} choices={{}} onOpen={jest.fn()} onAdd={jest.fn()} /></SafeAreaInsetsContext.Provider>);
+  });
+  try {
+    const scroll = tree.root.findAllByProps({ testID: 'comic-card-overview' })[0];
+    const visible = () => scroll.findAllByType(HeroDraggablePrint);
+    const first = visible()[0].props.top;
+    expect(visible().length).toBeLessThan(items.length);
+    for (const testID of ['hero-duvet-trash', 'hero-duvet-camera']) {
+      expect(tree.root.findAllByProps({ testID }).length).toBeGreaterThan(0);
+      expect(scroll.findAllByProps({ testID })).toHaveLength(0);
+    }
+    act(() => scroll.props.onScroll({ nativeEvent: { contentOffset: { y: 2200 } } }));
+    expect(visible()[0].props.top).toBeGreaterThan(first);
+    act(() => scroll.props.onScroll({ nativeEvent: { contentOffset: { y: 0 } } }));
+    expect(visible()[0].props.top).toBe(first);
+  } finally { act(() => { tree.unmount(); applyHeroPhotoWall('none'); }); }
 });

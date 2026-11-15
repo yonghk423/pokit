@@ -89,7 +89,7 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
       <ThemedText style={{ color: p.desc }}>{open ? '−' : '+'}</ThemedText>
     </Pressable>
     {open && <View style={styles.content}>
-      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>일정 계획 기록, 직접 추가한 이벤트, 업로드한 사진 원본과 사진에 저장한 글을 날짜별로 백업해요. 글꼴 등 앱 설정은 제외하며, 내 Google Drive의 앱 전용 공간에 보관해요.</ThemedText>
+      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>일정 계획 기록, 직접 추가한 이벤트, 업로드한 사진 원본과 사진에 저장한 글을 날짜별로 백업해요. 해당 월의 월간 기록도 함께 저장해요. 내 Google Drive의 앱 전용 공간에 보관해요.</ThemedText>
       {!email ? <BackupButton label={'Google Drive 연결하기'} onPress={() => void run('Google 연결 중', async () => { setEmail(await connectDrive()); await refresh(); })} disabled={!!busy} p={p} /> : <>
         <View style={[styles.quota, { borderColor: p.border, backgroundColor: p.surface }]}>
           <ThemedText style={{ color: p.title }}>{t('drive.storage.title')}</ThemedText>
@@ -120,7 +120,7 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
               accessibilityRole="button"
               accessibilityLabel={`${date} ${new Date(b.createdTime).toLocaleString()} 백업 복구`}
               disabled={!!busy}
-              onPress={() => Alert.alert(`${date} 복구`, `이 날짜의 기록을 선택한 백업으로 교체해요. 다른 날짜의 기록은 유지돼요.`, [{ text: '취소', style: 'cancel' }, { text: '복구하기', style: 'destructive', onPress: () => void run('백업 확인 중', async () => { await restoreDate(b, setBusy); Alert.alert('복구 완료', `${date}의 기록과 이미지를 가져왔어요.`, [{ text: '확인', onPress: restartAppSession }]); }) }])}
+              onPress={() => Alert.alert(`${date} 복구`, `이 날짜의 기록을 복구해요. 백업에 월간 기록이 있으면 해당 월의 글도 함께 복구해요.`, [{ text: '취소', style: 'cancel' }, { text: '복구하기', style: 'destructive', onPress: () => void run('백업 확인 중', async () => { await restoreDate(b, setBusy); Alert.alert('복구 완료', `${date} 기록을 가져왔어요.`, [{ text: '확인', onPress: restartAppSession }]); }) }])}
               style={styles.restoreRow}>
               <ThemedText numberOfLines={1} style={{ color: p.title, flexShrink: 1 }}>복구 · {new Date(b.createdTime).toLocaleString()}</ThemedText>
             </Pressable>
@@ -128,7 +128,7 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
               accessibilityRole="button"
               accessibilityLabel={`${date} Drive 백업 삭제`}
               disabled={!!busy}
-              onPress={() => Alert.alert('Drive 백업 삭제', `${date} 백업과 함께 저장된 사진 원본도 Google Drive에서 삭제해요. 휴대폰에 있는 원본과 기록은 유지됩니다.`, [{ text: '취소', style: 'cancel' }, { text: '백업 삭제', style: 'destructive', onPress: () => void run('Drive 백업 삭제 중', async () => { await deleteDateBackup(b, setBusy); await refresh(); Alert.alert('삭제 완료', `${date} 백업과 백업 사진을 Google Drive에서 삭제했어요.`); }) }])}
+              onPress={() => Alert.alert('Drive 백업 삭제', `${date} 백업을 Google Drive에서 삭제해요. 휴대폰에 있는 원본과 기록은 유지됩니다.`, [{ text: '취소', style: 'cancel' }, { text: '백업 삭제', style: 'destructive', onPress: () => void run('Drive 백업 삭제 중', async () => { await deleteDateBackup(b, setBusy); await refresh(); Alert.alert('삭제 완료', `${date} 백업을 Google Drive에서 삭제했어요.`); }) }])}
               style={[styles.deleteRow, { borderColor: p.border, opacity: busy ? 0.5 : 1 }]}>
               <ThemedText style={{ color: p.desc, fontSize: 14 }}>{t('common.delete')}</ThemedText>
             </Pressable>

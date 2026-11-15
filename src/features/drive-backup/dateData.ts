@@ -6,13 +6,14 @@ export function dateOf(value: unknown): string {
   const d = new Date(value as string | number);
   return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-export type DateData = { contentVersion?: 2; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null; puzzles: Row[] };
+export type DateData = { contentVersion?: 2; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null; puzzles: Row[] };
 const read = (key: string): Row => storage.getJson<Row>(key) ?? {};
 const diaryDate = (diary: Row): string => validDate(diary.date) ? diary.date : /^legacy:.+:(\d{4}-\d{2}-\d{2})$/.exec(diary.id ?? '')?.[1] ?? dateOf(diary.createdAt);
 export function collectDate(date: string): DateData {
   if (!validDate(date)) throw new Error('올바른 날짜를 선택해 주세요.');
   return {
     contentVersion: 2, date,
+    monthlyNote: storage.getItemRaw(`pokit:monthly-album-note:${date.slice(0, 7)}`),
     story: storage.getItemRaw(`pokit:canvas-note:${date}`),
     events: storage.getJson<Row[]>(`pokit:canvas-events:${date}`) ?? [],
     diaries: (read('pokit:comic-diaries:v1').diaries ?? []).filter((diary: Row) => diaryDate(diary) === date),
@@ -30,6 +31,7 @@ export function localDates(): string[] {
 }
 function mergePhotoDate(data: DateData): Record<string, unknown> {
   if (!validDate(data.date) || !Array.isArray(data.diaries) || !Array.isArray(data.events) || !Array.isArray(data.originals)
+    || (data.monthlyNote != null && typeof data.monthlyNote !== 'string')
     || (data.story !== null && typeof data.story !== 'string')
     || data.diaries.some(diary => !diary || typeof diary.id !== 'string' || diaryDate(diary) !== data.date || !Array.isArray(diary.scenes))
     || data.events.some(event => !event || typeof event.id !== 'string' || typeof event.title !== 'string')
@@ -40,6 +42,7 @@ function mergePhotoDate(data: DateData): Record<string, unknown> {
   const diaries = [...others, ...data.diaries];
   return {
     'pokit:comic-diaries:v1': { ...library, version: 1, diaries, activeId: diaries.some(value => value.id === library.activeId) ? library.activeId : null },
+    ...(typeof data.monthlyNote === 'string' ? { [`pokit:monthly-album-note:${data.date.slice(0, 7)}`]: data.monthlyNote } : {}),
     [`pokit:canvas-note:${data.date}`]: data.story ?? '',
     [`pokit:canvas-events:${data.date}`]: data.events,
     'pokit:drive-original-gallery:v1': [...(storage.getJson<Row[]>('pokit:drive-original-gallery:v1') ?? []).filter(image => dateOf(image.createdAt) !== data.date), ...data.originals],

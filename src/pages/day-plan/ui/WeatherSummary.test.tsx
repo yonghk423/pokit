@@ -26,7 +26,7 @@ it('retries hidden weather on tab return, avoids background-tab requests, and re
     return { remove: jest.fn() };
   });
   const originalFetch = global.fetch;
-  const fetchWeather = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ main: { temp: 16 }, weather: [{ description: 'clear sky', icon: '01d' }] }) });
+  const fetchWeather = jest.fn().mockImplementation(async (url: string) => ({ ok: true, json: async () => url.includes('/geo/') ? [{ name: 'Seoul Metropolitan City' }] : ({ main: { temp: 16 }, weather: [{ description: 'clear sky', icon: '01d' }] }) }));
   global.fetch = fetchWeather;
   jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({ granted: false, canAskAgain: false } as never);
   jest.mocked(Location.getProviderStatusAsync).mockResolvedValue({ locationServicesEnabled: true } as never);
@@ -43,7 +43,10 @@ it('retries hidden weather on tab return, avoids background-tab requests, and re
     expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
     await act(async () => { tree.update(render(true)); });
     expect(tree.root.findAllByProps({ testID: 'weather-retry' })).toHaveLength(0);
-    expect(JSON.stringify(tree.toJSON())).toContain('16°');
+    expect(JSON.stringify(tree.toJSON())).toContain('16°'); 
+    const label = tree.root.findByProps({ testID: 'weather-summary-label' });
+    expect(label.props.numberOfLines).toBeUndefined();
+    expect(JSON.stringify(label.props.children)).toContain('Seoul Metropolitan City');
     fetchWeather.mockRejectedValue(new Error('offline'));
     await act(async () => { active('active'); });
     expect(JSON.stringify(tree.toJSON())).toContain('16°');

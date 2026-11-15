@@ -1,6 +1,6 @@
 import { ThemedText } from '@shared/ui/themed-text';
 import { useEffect, useState } from 'react';
-import { loadCityPopFont } from '@app/index';
+import { loadCityPopFont, loadCityPopFontPreviews } from '@app/index';
 import { SettingsInkFrame } from '../lib/settingsChrome';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -69,6 +69,10 @@ const FONT_OPTIONS: {
     labelKey: 'settings.font.cafe24Syongsyong',
     descKey: 'settings.font.cafe24SyongsyongDesc',
   },
+  { key: 'schoolNalgae', labelKey: 'settings.font.schoolNalgae', descKey: 'settings.font.schoolNalgaeDesc' },
+  { key: 'schoolKkokkoma', labelKey: 'settings.font.schoolKkokkoma', descKey: 'settings.font.schoolKkokkomaDesc' },
+  { key: 'singleDay', labelKey: 'settings.font.singleDay', descKey: 'settings.font.singleDayDesc' },
+  { key: 'schoolGongryongal', labelKey: 'settings.font.schoolGongryongal', descKey: 'settings.font.schoolGongryongalDesc' },
 ];
 
 const SIZE_OPTIONS: { key: AppFontSizeId; labelKey: I18nKey }[] = [
@@ -83,7 +87,7 @@ const SIZE_OPTIONS: { key: AppFontSizeId; labelKey: I18nKey }[] = [
 export function FontSettingsPage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   useEffect(() => {
-    void loadCityPopFont('cafe24Syongsyong').then(() => setFontsLoaded(true));
+    void loadCityPopFontPreviews().then(() => setFontsLoaded(true)).catch(() => {});
   }, []);
   const { t } = useTranslation();
   const router = useRouter();
@@ -252,7 +256,7 @@ export function FontSettingsPage() {
 
           {FONT_OPTIONS.filter((opt) => APP_FONT_IDS.includes(opt.key)).map((opt) => {
             const active = fontId === opt.key;
-            const previewReady = opt.key !== 'cafe24Syongsyong' || fontsLoaded;
+            const previewReady = ['corncorn', 'hiMelody', 'cafe24ShiningStar'].includes(opt.key) || fontsLoaded;
             const sampleFamily = previewReady ? resolveAppFontFamily(opt.key, '700') : undefined;
             const sampleWeight = isSingleFaceAppFont(opt.key) ? ('400' as const) : ('700' as const);
             const previewScale =

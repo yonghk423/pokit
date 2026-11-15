@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
 import { premiumSceneTitle, loadPremiumPack, PREMIUM_CHARACTER_ID } from '../lib/heroPremiumPack';
 import { HeroGeneratedCollectionCard, useHeroGeneratedImages } from './HeroGeneratedCollectionCard';
@@ -171,7 +172,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(25,30,25,0.14)', opacity: progress }]} />
       <Pressable testID="hero-character-picker-backdrop" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => close()} style={StyleSheet.absoluteFill} />
       <Animated.View testID="hero-character-picker-overlay" {...pan.panHandlers} accessibilityViewIsModal style={{ width: '100%', maxWidth: 440, alignSelf: 'center', backgroundColor: paper, padding: 8, overflow: 'hidden', opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
-        {isDark ? <PaperGrain opacity={0.3} /> : <SurfaceTexture kind="wrinkled" opacity={0.35} />}
+        {isDark ? <PaperGrain opacity={0.3} /> : <SurfaceTexture kind="paper" opacity={0.35} />}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 8 }}>
           <ThemedText numberOfLines={1} style={{ flex: 1, color: ink, fontSize: 17 }}>{t('tabs.comicDay')}</ThemedText>
           <Pressable testID="hero-character-picker-close" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => close()} style={{ width: 44, height: 40, alignItems: 'center', justifyContent: 'center' }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable>
@@ -184,10 +185,10 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
                 : dragging.target <= index && index < dragging.start ? stride : 0
               : 0;
             return <PickerCardSlot key={character.id} id={character.id} width={cardWidth} height={cardHeight} active={active} offset={active ? dragOffset : shift}>
-                {character.id === PREMIUM_CHARACTER_ID ? <Pressable testID="hero-character-picker-premium" accessibilityRole="button" accessibilityLabel="시티팝 레트로 선택" onPress={() => { void openPremium(); }} style={cardStyle}>
+                {character.id === PREMIUM_CHARACTER_ID ? <Pressable testID="hero-character-picker-premium" accessibilityRole="button" accessibilityLabel={translateUiText("시티팝 레트로 선택")} onPress={() => { void openPremium(); }} style={cardStyle}>
                   <HeroPolaroidSurface />
                   {premiumImages[0]?.uri ? <Image source={{ uri: premiumImages[0]?.uri }} contentFit="contain" style={{ width: cardWidth * 0.9, height: imageHeight }} /> : <View style={{ width: cardWidth * 0.9, height: imageHeight, backgroundColor: isDark ? '#363B37' : '#E9E6DF', alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink }}>Pro</ThemedText></View>}
-                  <View style={{ height: cardWidth * 0.24, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText></View>
+                  <View style={{ height: cardWidth * 0.24, alignItems: 'center', justifyContent: 'center' }}><ThemedText numberOfLines={1} style={{ color: ink, fontSize: 14 }}>{nameFor(PREMIUM_CHARACTER_ID, translateUiText("시티팝 레트로"))}</ThemedText></View>
                 </Pressable> : character.id === 'generated-illustrations' || character.id === 'original-photos' ? <HeroGeneratedCollectionCard original={character.id === 'original-photos'} images={character.id === 'original-photos' ? originalImages : generatedImages} compact width={cardWidth} height={cardHeight} ink={ink} paper={paper} onChoose={onChooseGenerated} onChooseScene={id => { const owner = SELECTABLE_COMIC_CHARACTERS.find(item => item.scenes.some(scene => scene.id === id)); if (owner) close(() => onSelect({ ...owner, scenes: owner.scenes.filter(scene => scene.id === id) })); }}
                   delayLongPress={350}
                   onPressIn={() => { if (!drag.current) suppressPress.current = false; }}
@@ -232,7 +233,7 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
     </View>
     {premiumOpen ? <AppModal visible animationType="none" onRequestClose={() => setPremiumOpen(false)}>
       <View style={{ flex: 1, backgroundColor: paper, paddingTop: insets.top, paddingBottom: insets.bottom }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}><ThemedText style={{ flex: 1, color: ink }}>{nameFor(PREMIUM_CHARACTER_ID, '시티팝 레트로')}</ThemedText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPremiumOpen(false)} style={{ padding: 16 }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable></View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}><ThemedText style={{ flex: 1, color: ink }}>{nameFor(PREMIUM_CHARACTER_ID, translateUiText("시티팝 레트로"))}</ThemedText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPremiumOpen(false)} style={{ padding: 16 }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable></View>
         <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 10 }}>
           {premiumImages.map((image, index) => <Pressable key={image.id} accessibilityRole="button" accessibilityLabel={`${premiumSceneTitle(image.id)} 선택`} onPress={() => { tapHaptic('select'); setPremiumOpen(false); close(() => onChooseGenerated?.({ uri: image.uri, title: premiumSceneTitle(image.id) })); }} style={{ width: (width - 44) / 3, padding: 5, backgroundColor: paper }}><Image source={{ uri: image.uri }} contentFit="contain" style={{ width: '100%', aspectRatio: 0.75 }} /><ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12 }}>{premiumSceneTitle(image.id)}</ThemedText></Pressable>)}
         </ScrollView>

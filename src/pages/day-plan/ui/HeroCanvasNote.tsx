@@ -1,3 +1,19 @@
+import { hasSeenProIntroduction } from '@features/subscriptions/lib/proIntroduction';
+import { HeroContentSkeleton } from './HeroContentSkeleton';
+import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
+import { HeroInlineNote, type HeroInlineNoteHandle } from './HeroInlineNote';
+import { routineIllustrationSources } from '@shared/ui/icon-symbol/routineIllustrationSources';
+import { ROUTINE_ILLUSTRATIONS, routineIllustrationLabel } from '@shared/lib/routineIllustrationCatalog';
+import { controlIllustrationArtwork } from '@shared/ui/icon-symbol/controlIllustrationSources';
+import { PaperGrain } from '@shared/ui/paper-grain';
+import { PostItColorGrid } from '@shared/ui/post-it-color-palette';
+import { router } from 'expo-router';
+import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
+import { HeroMiniMemo } from './HeroMiniMemo';
+import { useDiaryTheme } from '../model/diaryTheme';
+import { HeroMovablePocket } from './HeroMovablePocket';
+import { diaryImage } from '../lib/calendarStoreDownload';
 import { HeroTrashIcon } from './HeroTrashIcon';
 import { AppAlert } from '@shared/lib/app-alert';
 import { DIARY_CLIP_IMAGES, useHeroDiaryClip } from '../model/heroDiaryClip';
@@ -7,65 +23,109 @@ import { calendarDisplayTitle } from '@features/apple-calendar/calendarDisplayTi
 import { calendarSourceLabel } from '@features/apple-calendar/calendarSourceLabel';
 import { useDeviceEvents } from '@features/apple-calendar/useDeviceEvents';
 import { eventsOnDay } from '@features/apple-calendar/calendarDates';
-import { useAppleCalendar } from '@features/apple-calendar/appleCalendar';
 import { parseLocalDateKeyToDate } from '@entities/day-plan/lib/localDateKey';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { ThemedText } from '@shared/ui/themed-text';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Animated, PanResponder, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, TextInput } from 'react-native';
+import { Animated, PanResponder, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, TextInput } from 'react-native';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker/NativeHhmmWheelPicker';
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
+import { setMonthlyCanvasExpanded } from '../model/monthlyCanvasExpansion';
+
+const notePalette = [
+  '#FFF8E8', '#F6E3E6', '#FFD6BA', '#FFF0AE', '#E4EFE4', '#BBE4DB', '#E3EEF6', '#D4DBFF', '#E4D4F4', '#F3C8DF',
+  '#E44251', '#FF7344', '#EDA420', '#E7CF28', '#62AD42', '#179E84', '#208EC4', '#3056C8', '#8553BD', '#BC2780',
+  '#302D2A', '#763849', '#855037', '#706031', '#365444', '#285E64', '#234C67', '#35395E', '#604264', '#814E70',
+  '#FFFFFF', '#D4D0C9', '#9C9691', '#625F5D', '#222222',
+];
+type NoteColor = 'pen' | 'paper';
+const noteIllustrationSources: Record<string, number> = { ...controlIllustrationArtwork, ...routineIllustrationSources };
+const noteIllustrations = Object.keys(noteIllustrationSources);
+const noteIllustrationLabels = new Map(ROUTINE_ILLUSTRATIONS.map(item => [item.id as string, item.labels]));
+
+function paperInk(paper: string) {
+  const [red, green, blue] = [1, 3, 5].map(start => parseInt(paper.slice(start, start + 2), 16) / 255);
+  return 0.299 * red + 0.587 * green + 0.114 * blue < 0.52 ? '#FFFFFF' : '#302D2A';
+}
+
+type OwnCanvasEvent = { id: string; title: string; time?: string };
+const CanvasEventRow = memo(function CanvasEventRow({ event, ink, onDelete }: { event: OwnCanvasEvent; ink: string; onDelete: (id: string) => void }) {
+  const { t } = useTranslation();
+  return <View style={{ paddingVertical: 8, flexDirection: 'row', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>
+    {event.time ? <ThemedText style={{ color: ink, fontSize: 15 }}>{event.time}</ThemedText> : null}
+    <ThemedText style={{ flex: 1, color: ink, fontSize: 17 }}>{event.title}</ThemedText>
+    <Pressable testID={`hero-event-delete-${event.id}`} accessibilityRole="button" accessibilityLabel={t('common.delete')} onPress={() => onDelete(event.id)} style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><HeroTrashIcon size={23} color={ink} /></Pressable>
+  </View>;
+});
 
 /** An independent canvas annotation; it never changes the photo layout bounds. */
-export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
+export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, keyboardVerticalOffset = 0, returnAction }: { date: string; ink: string; initialHeight?: number; monthlyHeight?: number; keyboardVerticalOffset?: number; returnAction?: ReactNode }) {
   const { locale, t } = useTranslation();
+  const proClip = useDiaryTheme('clip');
   const diaryClip = useHeroDiaryClip();
   const insets = useSafeAreaInsets();
   const ko = locale === 'ko';
   const [tab, setTab] = useState<'story' | 'calendar' | 'event'>('story');
+  const monthly = monthlyHeight !== undefined;
   const day = parseLocalDateKeyToDate(date)!;
-  const linked = useDeviceEvents(day.getFullYear(), day.getMonth(), ko);
-  const ids = useAppleCalendar(state => state.ids);
-  const events = eventsOnDay(linked.events, day);
+  const linked = useDeviceEvents(day.getFullYear(), day.getMonth(), ko, !monthly);
+  const events = useMemo(() => eventsOnDay(linked.events, day), [linked.events, date]);
   const calendarTab = tab === 'calendar';
   const [calendarSections, setCalendarSections] = useState({ google: true, apple: true });
   const openCalendarSectionCount = Number(calendarSections.google) + Number(calendarSections.apple);
   const calendarColumns = [
-    { id: 'google', title: ko ? 'Google 캘린더' : 'Google Calendar', events: events.filter(event => calendarSourceLabel(event.sourceName, event.sourceType, false) === 'Google Calendar') },
-    { id: 'apple', title: ko ? 'Apple 캘린더' : 'Apple Calendar', events: events.filter(event => calendarSourceLabel(event.sourceName, event.sourceType, false).startsWith('Apple Calendar')) },
+    { id: 'google', title: translateUiText("Google 캘린더"), events: events.filter(event => calendarSourceLabel(event.sourceName, event.sourceType, false) === 'Google Calendar') },
+    { id: 'apple', title: translateUiText("Apple 캘린더"), events: events.filter(event => calendarSourceLabel(event.sourceName, event.sourceType, false).startsWith('Apple Calendar')) },
   ];
   const visibleCalendarColumns = calendarColumns.filter(column => calendarSections[column.id as 'google' | 'apple']);
   const eventKey = `pokit:canvas-events:${date}`;
-  const [ownEvents, setOwnEvents] = useState<{ id: string; title: string; time?: string }[]>(() => localStorageClient.getJson(eventKey) ?? []);
+  const [ownEvents, setOwnEvents] = useState<OwnCanvasEvent[]>([]);
+  const [loadedEventKey, setLoadedEventKey] = useState<string | null>(null);
+  const eventsReady = loadedEventKey === eventKey;
+  const ownEventsRef = useRef(ownEvents);
+  ownEventsRef.current = ownEvents;
   const [eventTitle, setEventTitle] = useState('');
   const eventInput = useRef<TextInput>(null);
   const [eventTime, setEventTime] = useState<string | undefined>(() => localStorageClient.getJson<string>(`${eventKey}:draft-time`) ?? undefined);
   const [showTime, setShowTime] = useState(false);
-  useEffect(() => { setOwnEvents(localStorageClient.getJson(eventKey) ?? []); setEventTitle(''); setEventTime(localStorageClient.getJson<string>(`${eventKey}:draft-time`) ?? undefined); setShowTime(false); }, [eventKey]);
+  useEffect(() => {
+    setEventTitle(''); setEventTime(localStorageClient.getJson<string>(`${eventKey}:draft-time`) ?? undefined); setShowTime(false);
+    const task = scheduleIdleTask(() => {
+      const saved = localStorageClient.getJson<OwnCanvasEvent[]>(eventKey);
+      setOwnEvents(Array.isArray(saved) ? saved : []);
+      setLoadedEventKey(eventKey);
+    });
+    return () => task.cancel();
+  }, [eventKey]);
+  const deleteEvent = useCallback((id: string) => AppAlert.alert(t('canvas.event.deleteTitle'), t('canvas.event.deleteMessage'), [
+    { text: t('common.cancel'), style: 'cancel' },
+    { text: t('common.delete'), style: 'destructive', onPress: () => { const next = ownEventsRef.current.filter(item => item.id !== id); saveCanvasEvents(date, next); setOwnEvents(next); } },
+  ]), [date, t]);
   const addEvent = () => {
     const title = eventTitle.trim();
-    if (!title) return;
+    if (!title || !eventsReady) return;
     const next = [...ownEvents, { id: `${Date.now()}:${Math.random().toString(36).slice(2)}`, title, ...(eventTime ? { time: eventTime } : {}) }];
     saveCanvasEvents(date, next);
     localStorageClient.removeItem(`${eventKey}:draft-time`);
     setOwnEvents(next); setEventTitle(''); setEventTime(undefined); setShowTime(false); setEditing(false); Keyboard.dismiss();
   };
   const [editing, setEditing] = useState(false);
-  const [canvasHeight, setCanvasHeight] = useState(0);
+  const [canvasHeight, setCanvasHeight] = useState(initialHeight);
   const dark = useColorScheme() === 'dark';
   const [expanded, setExpanded] = useState(() => localStorageClient.getJson<boolean>('pokit:canvas-panel-expanded') === true);
+  useEffect(() => { if (monthly) setMonthlyCanvasExpanded(expanded); }, [monthly, expanded]);
   const expansion = useRef(new Animated.Value(expanded ? 1 : 0)).current;
   const currentExpansion = useRef(expanded ? 1 : 0);
   const dragStart = useRef(0);
   const dragDistance = useRef(0);
-  const collapsedTop = Math.max(0, canvasHeight - 218);
-  // The date occupies the first 44-point header row. Weather below it must
-  // not push the expanded story panel down.
-  const expandedTop = Math.min(collapsedTop, insets.top + 44 + 4);
+  const collapsedTop = Math.max(0, canvasHeight - (monthlyHeight ?? 218));
+  const headerHeight = insets.top + 54;
+  const expandedTop = monthly ? 0 : Math.min(collapsedTop, returnAction ? headerHeight : insets.top + 4);
+  const clipOffset = proClip ? 30 : 25;
   const travel = Math.max(1, collapsedTop - expandedTop);
   useEffect(() => {
     const listener = expansion.addListener(({ value }) => { currentExpansion.current = value; });
@@ -73,6 +133,7 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
   }, [expansion]);
   const settlePanel = useCallback((open: boolean) => {
     setExpanded(open);
+    if (monthly) setMonthlyCanvasExpanded(open);
     localStorageClient.setJson('pokit:canvas-panel-expanded', open);
     Animated.spring(expansion, { toValue: open ? 1 : 0, stiffness: 240, damping: 28, mass: 1, useNativeDriver: false }).start();
   }, [expansion]);
@@ -83,6 +144,7 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
     onPanResponderMove: (_, gesture) => {
       dragDistance.current = gesture.dy;
       currentExpansion.current = Math.max(0, Math.min(1, dragStart.current - gesture.dy / travel));
+      if (monthly) setMonthlyCanvasExpanded(currentExpansion.current > 0.03);
       expansion.setValue(currentExpansion.current);
     },
     onPanResponderRelease: (_, gesture) => {
@@ -99,38 +161,73 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
   }), [expansion, travel, settlePanel]);
 
   useEffect(() => {
-    const hide = Keyboard.addListener('keyboardDidHide', () => { if (tab === 'story') setEditing(false); });
-    return () => { hide.remove(); };
+    if (tab !== 'story') return;
+    const syncFocus = () => inlineNote.current?.reportFocus();
+    const show = Keyboard.addListener('keyboardDidShow', syncFocus);
+    const hide = Keyboard.addListener('keyboardDidHide', syncFocus);
+    return () => { show.remove(); hide.remove(); };
   }, [tab]);
-  const storageKey = `pokit:canvas-note:${date}`;
-  const [text, setText] = useState(() => localStorageClient.getItemRaw(storageKey) ?? '');
-  return <KeyboardAvoidingView pointerEvents="box-none" behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[StyleSheet.absoluteFill, { zIndex: editing ? 20 : 2 }]}>
+  const storageKey = monthly ? `pokit:monthly-album-note:${date.slice(0, 7)}` : `pokit:canvas-note:${date}`;
+  const isPro = useSubscriptionStore(selectIsPro);
+  const [picker, setPicker] = useState<NoteColor | null>(null);
+  const paletteProgress = useRef(new Animated.Value(0)).current;
+  useLayoutEffect(() => {
+    if (!picker) return;
+    paletteProgress.setValue(0);
+    const animation = Animated.timing(paletteProgress, { toValue: 1, duration: 180, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [picker, paletteProgress]);
+  const colorKey = storageKey + ':colors';
+  const [colors, setColors] = useState(() => localStorageClient.getJson<Partial<Record<NoteColor, string>>>(colorKey) ?? {});
+  function chooseColor(color?: string) {
+    if (!picker || !selectIsPro(useSubscriptionStore.getState())) return;
+    const next = { ...colors, [picker]: color };
+    localStorageClient.setJson(colorKey, next);
+    setColors(next);
+    setPicker(null);
+  }
+  const notePaper = colors.paper;
+  const panelPaper = calendarTab ? undefined : notePaper;
+  const noteInk = colors.pen ?? (notePaper ? paperInk(notePaper) : ink);
+  const renderOwnEvent = useCallback(({ item }: { item: OwnCanvasEvent }) => <CanvasEventRow event={item} ink={noteInk} onDelete={deleteEvent} />, [noteInk, deleteEvent]);
+  useEffect(() => { if (!editing) setPicker(null); }, [editing]);
+  const [illustrationsOpen, setIllustrationsOpen] = useState(false);
+  const inlineNote = useRef<HeroInlineNoteHandle>(null);
+  const [recentIllustration, setRecentIllustration] = useState(() => {
+    const saved = localStorageClient.getItemRaw('pokit:note-recent-illustration');
+    return saved && noteIllustrationSources[saved] ? saved : 'checklist';
+  });
+  const rememberIllustration = useCallback((id: string) => {
+    localStorageClient.setItemRaw('pokit:note-recent-illustration', id);
+    setRecentIllustration(id);
+  }, []);
+  return <KeyboardAvoidingView enabled={editing} keyboardVerticalOffset={Platform.OS === 'ios' ? keyboardVerticalOffset : 0} pointerEvents="box-none" behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[StyleSheet.absoluteFill, { zIndex: editing ? 20 : 2 }]}>
     <View pointerEvents={editing ? 'auto' : 'box-none'} onLayout={({ nativeEvent: { layout } }) => setCanvasHeight(previous => previous === layout.height ? previous : layout.height)} style={{ flex: 1, backgroundColor: editing ? (dark ? '#262B28' : '#F7F6F4') : 'transparent' }}>
-      <Animated.View testID="hero-canvas-reading-panel" pointerEvents="auto" style={{ position: 'absolute', left: 0, right: 0, bottom: editing ? 64 : 52, top: editing ? insets.top + 28 : expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop, expandedTop] }) }}>
-        {!editing ? <>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: dark ? '#262B28' : '#F7F6F4', opacity: expansion, borderTopLeftRadius: 16, borderTopRightRadius: 16 }]} />
-          <View testID="hero-canvas-clip-handle" {...clipGesture.panHandlers} accessible accessibilityRole="button" accessibilityLabel={ko ? '내용 영역 펼치기 또는 접기' : 'Expand or collapse content'} accessibilityHint={ko ? '위로 끌면 펼쳐지고 아래로 끌면 접힙니다' : 'Drag up to expand, down to collapse'} accessibilityState={{ expanded }} accessibilityActions={[{ name: 'activate' }]} onAccessibilityAction={() => settlePanel(!expanded)} style={{ position: 'absolute', left: 20, top: 0, width: 76, height: 44, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}>
-            <Image testID="hero-canvas-blue-clip" source={DIARY_CLIP_IMAGES[diaryClip]} contentFit="contain" transition={0} cachePolicy="memory-disk" useAppleWebpCodec={false} accessible={false} pointerEvents="none" style={{ width: 60, height: 20 }} />
-          </View>
-        </> : null}
-      <ThemedTextInput
-        testID="hero-canvas-note"
-        accessibilityLabel={t('comicDay.memo')}
-        placeholder={t('comicDay.memoHint')}
-        placeholderTextColor={`${ink}66`}
-        value={text}
-        multiline
-        scrollEnabled
-        onFocus={() => setEditing(true)}
-        style={{ display: tab === 'story' ? 'flex' : 'none', position: 'absolute', left: 28, right: 28, top: editing ? 0 : 44, bottom: 0, padding: 0, color: ink, fontSize: 17, lineHeight: 25, textAlignVertical: 'top', backgroundColor: 'transparent' }}
-        onChangeText={value => { setText(value); localStorageClient.setItemRaw(storageKey, value); }}
-      />
-      {!editing && calendarTab ? <ScrollView testID="hero-canvas-calendar-events" nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator style={{ position: 'absolute', left: 28, right: 28, top: 44, bottom: 0 }} contentContainerStyle={{ paddingTop: 6, paddingBottom: 24 }}>
-        {ids.length ? <Pressable accessibilityRole="button" accessibilityLabel="캘린더 일정 새로고침" disabled={linked.loading} onPress={linked.refresh} style={{ alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center', paddingRight: 12 }}><ThemedText style={{ color: ink, fontSize: 13 }}>{linked.loading ? (ko ? '일정 확인 중…' : 'Checking events…') : (ko ? '일정 새로고침' : 'Refresh events')}</ThemedText></Pressable> : null}
-        {linked.error ? <ThemedText style={{ color: ink, fontSize: 14 }}>{linked.error}</ThemedText> : !ids.length ? <ThemedText style={{ color: ink, fontSize: 14 }}>{ko ? '설정에서 캘린더를 연결해주세요.' : 'Connect a calendar in Settings.'}</ThemedText> : null}
+      {monthly && !editing && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#F7F6F4', opacity: expansion }]} />}
+      {!editing ? <Animated.View
+        testID="hero-canvas-decoration-overlays"
+        pointerEvents={expanded ? 'none' : 'box-none'}
+        style={[StyleSheet.absoluteFill, { zIndex: 4, opacity: expansion.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 0, 0] }) }]}
+      >
+        <HeroMiniMemo key={storageKey} storageKey={monthly ? `pokit:monthly-mini-memo:${date.slice(0, 7)}` : `pokit:mini-memo:${date}`} ko={ko} defaultTop={collapsedTop} />
+        <HeroMovablePocket defaultTop={collapsedTop} ko={ko} />
+      </Animated.View> : null}
+      <Animated.View testID="hero-canvas-reading-panel" pointerEvents="auto" style={{ position: 'absolute', left: 0, right: 0, backgroundColor: panelPaper, bottom: editing ? 64 : 52, top: editing ? (monthly ? 0 : returnAction ? headerHeight : insets.top + 28) : expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop, expandedTop] }) }}>
+        {panelPaper ? <PaperGrain opacity={0.68} /> : null}
+        {!editing && !monthly && !panelPaper && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: dark ? '#262B28' : '#F7F6F4', opacity: expansion, borderTopLeftRadius: 16, borderTopRightRadius: 16 }]} />}
+
+      <View style={{ display: tab === 'story' ? 'flex' : 'none', position: 'absolute', left: 20, right: 28, top: editing ? 0 : 8, bottom: 0 }}>
+        <HeroInlineNote key={storageKey} ref={inlineNote} storageKey={storageKey} sources={noteIllustrationSources} ink={noteInk} onIllustrationInserted={rememberIllustration}
+          placeholder={monthly ? (translateUiText("이달의 이야기를 적어보세요.")) : t('comicDay.memoHint')}
+          onFocusChange={setEditing} />
+      </View>
+      {!editing && calendarTab ? <ScrollView testID="hero-canvas-calendar-events" nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator style={{ position: 'absolute', left: 28, right: 28, top: 8, bottom: 0 }} contentContainerStyle={{ paddingBottom: 24 }}>
+        {linked.connected ? <Pressable accessibilityRole="button" accessibilityLabel={translateUiText("캘린더 일정 새로고침")} disabled={linked.loading} onPress={linked.refresh} style={{ alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center', paddingRight: 12 }}><ThemedText style={{ color: ink, fontSize: 13 }}>{linked.loading ? (translateUiText("일정 확인 중…")) : (translateUiText("일정 새로고침"))}</ThemedText></Pressable> : null}
+        {linked.error ? <ThemedText style={{ color: ink, fontSize: 14 }}>{linked.error}</ThemedText> : !linked.connected ? <ThemedText style={{ color: ink, fontSize: 14 }}>{translateUiText("설정에서 캘린더를 연결해주세요.")}</ThemedText> : null}
         {openCalendarSectionCount === 1 ? (() => {
           const hidden = calendarColumns.find(column => !calendarSections[column.id as 'google' | 'apple'])!;
-          return <Pressable testID={`hero-canvas-calendar-restore-${hidden.id}`} accessibilityRole="button" accessibilityLabel={`${hidden.title}${ko ? ' 펼치기' : ' expand'}`} onPress={() => setCalendarSections(previous => ({ ...previous, [hidden.id]: true }))} style={{ minHeight: 36, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 10, marginBottom: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: `${ink}44`, borderRadius: 12 }}><ThemedText style={{ color: ink, fontSize: 13 }}>{`+ ${hidden.title}`}</ThemedText></Pressable>;
+          return <Pressable testID={`hero-canvas-calendar-restore-${hidden.id}`} accessibilityRole="button" accessibilityLabel={`${hidden.title}${translateUiText(" 펼치기")}`} onPress={() => setCalendarSections(previous => ({ ...previous, [hidden.id]: true }))} style={{ minHeight: 36, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 10, marginBottom: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: `${ink}44`, borderRadius: 12 }}><ThemedText style={{ color: ink, fontSize: 13 }}>{`+ ${hidden.title}`}</ThemedText></Pressable>;
         })() : null}
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           {visibleCalendarColumns.map((column, columnIndex) => {
@@ -141,15 +238,16 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
               hasBothCalendarsOpen && columnIndex === 0 ? { paddingRight: 14 } : null,
               hasBothCalendarsOpen && columnIndex === 1 ? { paddingLeft: 14, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: `${ink}55` } : null,
             ]}>
-              <Pressable testID={`hero-canvas-calendar-toggle-${column.id}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} accessibilityLabel={`${column.title}${isExpanded ? (ko ? ' 접기' : ' collapse') : (ko ? ' 펼치기' : ' expand')}`} onPress={() => { if (openCalendarSectionCount > 1) setCalendarSections(previous => ({ ...previous, [column.id]: false })); }} style={{ minHeight: 42, marginBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+              <Pressable testID={`hero-canvas-calendar-toggle-${column.id}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} accessibilityLabel={`${column.title}${isExpanded ? (translateUiText(" 접기")) : (translateUiText(" 펼치기"))}`} onPress={() => { if (openCalendarSectionCount > 1) setCalendarSections(previous => ({ ...previous, [column.id]: false })); }} style={{ minHeight: 42, marginBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
                 <ThemedText accessibilityRole="header" numberOfLines={isExpanded ? 1 : 2} style={{ flex: 1, color: ink, fontSize: 15 }}>{column.title}</ThemedText>
                 <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 16 }}>{isExpanded ? '⌄' : '›'}</ThemedText>
               </Pressable>
               {isExpanded ? <View>
-                {ids.length > 0 && !linked.loading && !linked.error && !column.events.length ? <ThemedText style={{ color: ink, opacity: 0.6, fontSize: 13 }}>{ko ? '이날의 일정이 없어요.' : 'No events for this day.'}</ThemedText> : null}
+                {linked.loading && !column.events.length ? <HeroContentSkeleton ink={ink} testID={`hero-calendar-skeleton-${column.id}`} /> : null}
+                {linked.connected && !linked.loading && !linked.error && !column.events.length ? <ThemedText style={{ color: ink, opacity: 0.6, fontSize: 13 }}>{translateUiText("이날의 일정이 없어요.")}</ThemedText> : null}
                 {column.events.map((event, index) => <View key={`${event.id}:${index}`} style={{ paddingVertical: 8, gap: 3, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>
                   {event.calendarTitle ? <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 12 }}>{calendarDisplayTitle(event.calendarTitle, ko)}</ThemedText> : null}
-                  <ThemedText style={{ color: ink, opacity: 0.7, fontSize: 13 }}>{event.allDay ? (ko ? '종일' : 'All day') : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+                  <ThemedText style={{ color: ink, opacity: 0.7, fontSize: 13 }}>{event.allDay ? (translateUiText("종일")) : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
                   <ThemedText style={{ color: ink, fontSize: 16, flexShrink: 1 }}>{event.title}</ThemedText>
                 </View>)}
               </View> : null}
@@ -157,33 +255,72 @@ export function HeroCanvasNote({ date, ink }: { date: string; ink: string }) {
           })}
         </View>
       </ScrollView> : null}
-      {tab === 'event' ? <View testID="hero-canvas-own-events" style={{ position: 'absolute', left: 28, right: 28, top: editing ? 0 : 44, bottom: 0 }}>
-        <ThemedTextInput ref={eventInput} testID="hero-event-title" accessibilityLabel={ko ? '이벤트 이름' : 'Event name'} placeholder={t('canvas.event.placeholder')} placeholderTextColor={`${ink}66`} value={eventTitle} onChangeText={setEventTitle} onFocus={() => { setEditing(true); setShowTime(false); }} multiline maxLength={120} style={{ color: ink, fontSize: 17, lineHeight: 25, padding: 0, minHeight: 48, maxHeight: 120, textAlignVertical: 'top' }} />
+      {tab === 'event' ? <View testID="hero-canvas-own-events" style={{ position: 'absolute', left: 28, right: 28, top: editing ? 0 : 8, bottom: 0 }}>
+        <ThemedTextInput ref={eventInput} editable={eventsReady} testID="hero-event-title" accessibilityLabel={translateUiText("이벤트 이름")} placeholder={t('canvas.event.placeholder')} placeholderTextColor={`${noteInk}8C`} value={eventTitle} onChangeText={setEventTitle} onFocus={() => { setEditing(true); setShowTime(false); }} multiline maxLength={120} style={{ color: noteInk, fontSize: 17, lineHeight: 25, padding: 0, minHeight: 48, maxHeight: 120, textAlignVertical: 'top' }} />
         {editing ? <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-            <Pressable testID="hero-event-time" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setEditing(true); setEventTime(value => value ?? '09:00'); setShowTime(value => !value); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 17 }}>{eventTime ?? (ko ? '+ 시간 추가' : '+ Add time')}</ThemedText></Pressable>
-            {eventTime ? <Pressable accessibilityRole="button" onPress={() => { setEventTime(undefined); localStorageClient.removeItem(`${eventKey}:draft-time`); setShowTime(false); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, opacity: 0.6 }}>{ko ? '시간 없이' : 'No time'}</ThemedText></Pressable> : null}
+            <Pressable testID="hero-event-time" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setEditing(true); setEventTime(value => value ?? '09:00'); setShowTime(value => !value); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: noteInk, fontSize: 17 }}>{eventTime ?? (translateUiText("+ 시간 추가"))}</ThemedText></Pressable>
+            {eventTime ? <Pressable accessibilityRole="button" onPress={() => { setEventTime(undefined); localStorageClient.removeItem(`${eventKey}:draft-time`); setShowTime(false); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: noteInk, opacity: 0.6 }}>{translateUiText("시간 없이")}</ThemedText></Pressable> : null}
           </View>
-          {showTime ? <NativeHhmmWheelPicker valueHhmm={eventTime ?? '09:00'} onChangeHhmm={setEventTime} isDark={dark} ink={ink} accessibilityLabelPrefix={ko ? '이벤트 시간' : 'Event time'} /> : null}
-          {showTime ? <Pressable testID="hero-event-time-save" accessibilityRole="button" onPress={() => { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); }} style={{ minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' }}><ThemedText style={{ color: ink }}>{ko ? '시간 저장 후 글쓰기' : 'Save time & write'}</ThemedText></Pressable> : null}
+          {showTime ? <NativeHhmmWheelPicker valueHhmm={eventTime ?? '09:00'} onChangeHhmm={setEventTime} isDark={dark} ink={noteInk} textColor={noteInk} surface={notePaper} accessibilityLabelPrefix={translateUiText("이벤트 시간")} /> : null}
+          {showTime ? <Pressable testID="hero-event-time-save" accessibilityRole="button" onPress={() => { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); }} style={{ minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' }}><ThemedText style={{ color: noteInk }}>{translateUiText("시간 저장 후 글쓰기")}</ThemedText></Pressable> : null}
         </ScrollView> : null}
-        {!editing ? <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 6 }}>
-          {ownEvents.map(event => <View key={event.id} style={{ paddingVertical: 8, flexDirection: 'row', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: `${ink}33` }}>{event.time ? <ThemedText style={{ color: ink, fontSize: 15 }}>{event.time}</ThemedText> : null}<ThemedText style={{ flex: 1, color: ink, fontSize: 17 }}>{event.title}</ThemedText><Pressable testID={`hero-event-delete-${event.id}`} accessibilityRole="button" accessibilityLabel={t('common.delete')} onPress={() => AppAlert.alert(t('canvas.event.deleteTitle'), t('canvas.event.deleteMessage'), [
-            { text: t('common.cancel'), style: 'cancel' },
-            { text: t('common.delete'), style: 'destructive', onPress: () => { const next = ownEvents.filter(item => item.id !== event.id); saveCanvasEvents(date, next); setOwnEvents(next); } },
-          ])} style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><HeroTrashIcon size={23} color={ink} /></Pressable></View>)}
-        </ScrollView> : null}
+        {!editing ? eventsReady ? <FlatList testID="hero-canvas-event-list" data={ownEvents} keyExtractor={event => event.id} renderItem={renderOwnEvent} extraData={noteInk} initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} updateCellsBatchingPeriod={32} removeClippedSubviews={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 6 }} style={{ flex: 1, minHeight: 0 }} /> : <HeroContentSkeleton ink={noteInk} testID="hero-events-skeleton" /> : null}
       </View> : null}
       </Animated.View>
-      {!editing ? <View accessibilityRole="tablist" style={{ position: 'absolute', left: 28, right: 28, bottom: 4, height: 44, flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-        {(['story', 'calendar', 'event'] as const).map(value => <Pressable key={value} testID={`hero-canvas-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => { Keyboard.dismiss(); setTab(value); }} style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 15, textAlign: 'center', opacity: tab === value ? 1 : 0.5, textDecorationLine: tab === value ? 'underline' : 'none' }}>{value === 'story' ? (ko ? '일정 계획 기록' : 'Plans & notes') : value === 'calendar' ? (ko ? '캘린더' : 'Calendar') : (ko ? '이벤트' : 'Events')}</ThemedText></Pressable>)}
+      {!editing && !monthly ? <View accessibilityRole="tablist" style={{ position: 'absolute', left: 28, right: 28, bottom: 4, height: 44, flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+        {(monthly ? ['story'] as const : ['story', 'calendar', 'event'] as const).map(value => <Pressable key={value} testID={`hero-canvas-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => { Keyboard.dismiss(); setTab(value); }} style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 15, textAlign: 'center', opacity: tab === value ? 1 : 0.5, textDecorationLine: tab === value ? 'underline' : 'none' }}>{value === 'story' ? (monthly ? (translateUiText("월간 기록")) : (translateUiText("일정 계획 기록"))) : value === 'calendar' ? (translateUiText("캘린더")) : (translateUiText("이벤트"))}</ThemedText></Pressable>)}
       </View> : null}
+      {(editing || expanded) && returnAction ? <View pointerEvents="auto" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: headerHeight, backgroundColor: dark ? '#262B28' : '#F7F6F4', zIndex: 30 }}>
+        <View testID={editing ? 'hero-canvas-recording-return' : 'hero-canvas-expanded-return'} style={{ position: 'absolute', right: 20, top: insets.top + 10, zIndex: 30 }}>{returnAction}</View>
+      </View> : null}
+      {!editing ? <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 20, width: 76, height: 44, top: expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop - clipOffset, expandedTop - clipOffset] }), zIndex: 31, elevation: 31 }}>
+          <View testID="hero-canvas-clip-handle"  {...clipGesture.panHandlers} accessible accessibilityRole="button" accessibilityLabel={translateUiText("내용 영역 펼치기 또는 접기")} accessibilityHint={translateUiText("위로 끌면 펼쳐지고 아래로 끌면 접힙니다")} accessibilityState={{ expanded }} accessibilityActions={[{ name: 'activate' }]} onAccessibilityAction={() => settlePanel(!expanded)} style={{ width: 76, height: 44, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}>
+            <Image testID="hero-canvas-blue-clip" source={proClip?.source ?? diaryImage('clip-' + diaryClip, 'image', DIARY_CLIP_IMAGES[diaryClip])} contentFit="contain" transition={0} cachePolicy="memory-disk" useAppleWebpCodec={false} accessible={false} pointerEvents="none" style={{ width: 60, height: proClip ? 36 : 20 }} />
+          </View>
+      </Animated.View> : null}
+      {editing && tab === 'story' && illustrationsOpen && isPro ? <FlatList
+        testID="hero-canvas-illustration-picker"
+        data={noteIllustrations}
+        numColumns={8}
+        keyExtractor={id => id}
+        keyboardShouldPersistTaps="always"
+        initialNumToRender={40}
+        maxToRenderPerBatch={40}
+        windowSize={3}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 54, height: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}
+        contentContainerStyle={{ padding: 8 }}
+        renderItem={({ item: id }) => <Pressable accessibilityRole="button" accessibilityLabel={`${translateUiText("이모티콘 추가")} ${routineIllustrationLabel(noteIllustrationLabels.get(id), locale) ?? id}`} onPress={() => inlineNote.current?.insertIllustration(id)} style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+          <Image source={noteIllustrationSources[id]} contentFit="contain" style={{ width: 28, height: 28 }} />
+        </Pressable>}
+      /> : null}
+      {editing && tab === 'story' && picker && isPro ? <Animated.ScrollView key={picker} keyboardShouldPersistTaps="always" style={{ position: 'absolute', left: 0, right: 0, bottom: 54, opacity: paletteProgress, transform: [{ translateY: paletteProgress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }], maxHeight: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}>
+        <PostItColorGrid texture="pigment" isDark={dark}
+          label={picker === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}
+          clearLabel={translateUiText("기본색")}
+          onClear={() => chooseColor()}
+          choices={notePalette.map(color => ({
+            id: color, color, label: color, labelKey: 'catalog.postItColorTitle',
+            selected: colors[picker] === color, onSelect: () => chooseColor(color),
+          }))}
+        />
+      </Animated.ScrollView> : null}
       {editing && <View style={{ position: 'absolute', left: 20, right: 20, bottom: 0, height: 52, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: `${ink}33`, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable testID="hero-canvas-dismiss-keyboard" accessibilityRole="button" accessibilityLabel="키보드 내리기" onPress={() => { Keyboard.dismiss(); setEditing(false); }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable testID="hero-canvas-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={translateUiText("키보드 내리기")} onPress={() => { inlineNote.current?.blur(); Keyboard.dismiss(); setEditing(false); }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <HanddrawnControl name="keyboard.chevron.compact.down" size={26} color={ink} />
         </Pressable>
-        <Pressable accessibilityRole="button" testID="hero-canvas-edit-done" accessibilityLabel={tab === 'event' ? '이벤트 저장' : '글쓰기 완료'} disabled={tab === 'event' && !showTime && !eventTitle.trim()} onPress={() => { if (tab === 'event' && showTime) { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); } else if (tab === 'event') { addEvent(); } else { Keyboard.dismiss(); setEditing(false); } }} style={{ minWidth: 60, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <ThemedText style={{ color: ink, fontSize: 17, opacity: tab === 'event' && !showTime && !eventTitle.trim() ? 0.35 : 1 }}>{tab === 'event' ? (showTime ? (ko ? '시간 저장' : 'Save time') : (ko ? '저장' : 'Save')) : (ko ? '완료' : 'Done')}</ThemedText>
+        {tab === 'story' && (['pen', 'paper'] as const).map(kind => <Pressable key={kind} accessibilityRole="button" onPress={() => {
+          if (!isPro) { if (!hasSeenProIntroduction()) router.push('/pro-preview'); return; }
+          setIllustrationsOpen(false);
+          setPicker(current => current === kind ? null : kind);
+        }} style={{ minHeight: 44, justifyContent: 'center' }}>
+          <ThemedText style={{ color: ink, fontSize: 15 }}>{kind === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}{isPro ? '' : ' · Pro'}</ThemedText>
+        </Pressable>)}
+        {tab === 'story' ? <Pressable testID="hero-canvas-illustrations" accessibilityRole="button" accessibilityLabel={translateUiText("이모티콘 모음")} accessibilityState={{ expanded: illustrationsOpen }} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { if (!hasSeenProIntroduction()) router.push('/pro-preview'); return; } setPicker(null); setIllustrationsOpen(value => !value); }} style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <Image source={noteIllustrationSources[recentIllustration]} contentFit="contain" style={{ width: 28, height: 30 }} />
+        </Pressable> : null}
+        <Pressable accessibilityRole="button" testID="hero-canvas-edit-done" accessibilityLabel={tab === 'event' ? translateUiText("이벤트 저장") : translateUiText("글쓰기 완료")} disabled={tab === 'event' && !showTime && !eventTitle.trim()} onPress={() => { if (tab === 'event' && showTime) { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); } else if (tab === 'event') { addEvent(); } else { inlineNote.current?.blur(); Keyboard.dismiss(); setEditing(false); } }} style={{ minWidth: 60, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <ThemedText style={{ color: ink, fontSize: 17, opacity: tab === 'event' && !showTime && !eventTitle.trim() ? 0.35 : 1 }}>{tab === 'event' ? (showTime ? (translateUiText("시간 저장")) : (translateUiText("저장"))) : (translateUiText("완료"))}</ThemedText>
         </Pressable>
       </View>}
     </View>

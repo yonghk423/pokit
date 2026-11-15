@@ -1,3 +1,7 @@
+jest.mock('../model/diaryTheme', () => ({ useDiaryTheme: () => undefined }));
+jest.mock('./HeroMiniMemo', () => ({ HeroMiniMemo: () => null }));
+jest.mock('./HeroMovablePocket', () => ({ HeroMovablePocket: () => null }));
+jest.mock('./HeroTrashIcon', () => ({ HeroTrashIcon: () => null }));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Animated, PanResponder, View, type PanResponderCallbacks } from 'react-native';
 import { HeroCanvasNote } from './HeroCanvasNote';
@@ -79,4 +83,28 @@ it('shows time controls only while editing and deletes only the confirmed event'
   expect(tree.root.findAllByProps({ testID: 'hero-event-time' }).length).toBeGreaterThan(0);
   act(() => tree.unmount());
   alert.mockRestore();
+});
+
+
+it('places the return action inside the editing canvas and keeps it tappable above the input', () => {
+  const back = jest.fn();
+  const { Pressable } = require('react-native');
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCanvasNote date="2026-11-14" ink="#222222" returnAction={<Pressable testID="note-back" onPress={back} />} />); });
+  try {
+    expect(tree.root.findAllByProps({ testID: 'hero-canvas-recording-return' })).toHaveLength(0);
+    act(() => tree.root.findByProps({ testID: 'hero-canvas-clip-handle' }).props.onAccessibilityAction());
+    const expandedAction = tree.root.findByProps({ testID: 'hero-canvas-expanded-return' });
+    expect(expandedAction.props.style.right).toBe(20);
+    expect(expandedAction.props.style.top).toBe(64);
+    act(() => expandedAction.findAllByProps({ testID: 'note-back' })[0].props.onPress());
+    expect(back).toHaveBeenCalledTimes(1);
+    back.mockClear();
+    act(() => tree.root.findByProps({ testID: 'hero-canvas-note' }).props.onFocus());
+    const action = tree.root.findByProps({ testID: 'hero-canvas-recording-return' });
+    expect(action.props.style.top).toBe(64);
+    expect(action.props.style.zIndex).toBe(30);
+    act(() => action.findAllByProps({ testID: 'note-back' })[0].props.onPress());
+    expect(back).toHaveBeenCalledTimes(1);
+  } finally { act(() => tree.unmount()); }
 });

@@ -1,3 +1,4 @@
+import { HeroTrashIcon } from './HeroTrashIcon';
 import { MateGridCard } from './MateGridCard';
 import { captureMateCardFront } from '../lib/captureMateCardFront';
 import { HeroCardFlip, type HeroCardFlipHandle, type HeroCardOpen } from './HeroCardFlip';
@@ -201,7 +202,7 @@ export function OverlayRhythmCards({ items, width, height, ink, muted, isDark, r
         }} style={[s.deleteToolbarButton, { opacity: pickedKeys.length ? 1 : 0.4 }]}><ThemedText style={{ color: ink }}>{t('common.delete')} ({pickedKeys.length})</ThemedText></PaperControl>
       </View> : <CardToolsFab isDark={isDark} overview={true} concept="bag" actions={[
         { key: 'add', testID: 'rhythm-card-add', label: t('dayPlan.addMoreRoutine'), onPress: onAdd, icon: <RoutineCardAddIcon size={26} ink={ink} /> },
-        ...(items.length && onRemoveMany ? [{ key: 'delete', testID: 'rhythm-card-delete-mode', label: t('todo.deleteModeOn'), onPress: () => { setSelectedKeys([]); setDeleteMode(true); }, icon: <IconSymbol name="trash" size={27} color={ink} /> } satisfies CardToolAction] : []),
+        ...(items.length && onRemoveMany ? [{ key: 'delete', testID: 'rhythm-card-delete-mode', label: t('todo.deleteModeOn'), onPress: () => { setSelectedKeys([]); setDeleteMode(true); }, icon: <HeroTrashIcon size={27} color={ink} /> } satisfies CardToolAction] : []),
         ...(onSchedule ? [{ key: 'schedule', testID: 'rhythm-card-schedule', label: t('dayPlan.scheduledRoutine.calendarA11y'), onPress: onSchedule, icon: <HeaderIcon name="calendar" size={22} /> } satisfies CardToolAction] : []),
       ]} />}
     </View>

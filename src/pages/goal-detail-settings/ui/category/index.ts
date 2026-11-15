@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import {
   isCustomFlowCategoryKey,
   resolveCustomFlowTemplateKey,
@@ -36,43 +37,43 @@ import { WorkSettings, getInitialWorkDataConfig } from './work';
 const registry: Record<Exclude<GoalDetailCategoryKey, CustomFlowCategoryKey>, GoalDetailCategoryModule> = {
   work: {
     key: 'work',
-    titleKo: '노트',
+    titleKo: translateUiText("노트"),
     getInitialDataConfig: getInitialWorkDataConfig,
     Settings: WorkSettings,
   },
   reading: {
     key: 'reading',
-    titleKo: '책읽기',
+    titleKo: translateUiText("책읽기"),
     getInitialDataConfig: getInitialReadingDataConfig,
     Settings: ReadingSettings,
   },
   fasting: {
     key: 'fasting',
-    titleKo: '체중 관리',
+    titleKo: translateUiText("체중 관리"),
     getInitialDataConfig: getInitialFastingDataConfig,
     Settings: FastingSettings,
   },
   healthIntake: {
     key: 'healthIntake',
-    titleKo: '영양 챙기기',
+    titleKo: translateUiText("영양 챙기기"),
     getInitialDataConfig: getInitialHealthIntakeDataConfig,
     Settings: HealthIntakeSettings,
   },
   water: {
     key: 'water',
-    titleKo: '수분섭취',
+    titleKo: translateUiText("수분섭취"),
     getInitialDataConfig: getInitialWaterDataConfig,
     Settings: WaterSettings,
   },
   medicine: {
     key: 'medicine',
-    titleKo: '약 복용',
+    titleKo: translateUiText("약 복용"),
     getInitialDataConfig: getInitialMedicineDataConfig,
     Settings: MedicineSettings,
   },
   other: {
     key: 'other',
-    titleKo: '오늘의 주인공 직접 설정',
+    titleKo: translateUiText("오늘의 주인공 직접 설정"),
     getInitialDataConfig: getInitialOtherDataConfig,
     Settings: OtherSettings,
   },
@@ -83,47 +84,47 @@ const customFlowTemplateModules: Record<
   Omit<GoalDetailCategoryModule, 'key'>
 > = {
   measurement: {
-    titleKo: '값 기록',
+    titleKo: translateUiText("값 기록"),
     getInitialDataConfig: getInitialMeasurementDataConfig,
     Settings: MeasurementSettings,
   },
   healthIntake: {
-    titleKo: '영양 챙기기',
+    titleKo: translateUiText("영양 챙기기"),
     getInitialDataConfig: getInitialHealthIntakeDataConfig,
     Settings: HealthIntakeSettings,
   },
   fasting: {
-    titleKo: '체중 관리',
+    titleKo: translateUiText("체중 관리"),
     getInitialDataConfig: getInitialFastingDataConfig,
     Settings: FastingSettings,
   },
   habit: {
-    titleKo: '오늘 했/안 했',
+    titleKo: translateUiText("오늘 했/안 했"),
     getInitialDataConfig: getInitialHabitDataConfig,
     Settings: HabitSettings,
   },
   counter: {
-    titleKo: '횟수 채우기',
+    titleKo: translateUiText("횟수 채우기"),
     getInitialDataConfig: getInitialCounterDataConfig,
     Settings: CounterSettings,
   },
   focus: {
-    titleKo: '집중 시간',
+    titleKo: translateUiText("집중 시간"),
     getInitialDataConfig: getInitialFocusDataConfig,
     Settings: FocusSettings,
   },
   journal: {
-    titleKo: '한 줄 기록',
+    titleKo: translateUiText("한 줄 기록"),
     getInitialDataConfig: getInitialJournalDataConfig,
     Settings: JournalSettings,
   },
   memo: {
-    titleKo: '간단한 메모',
+    titleKo: translateUiText("간단한 메모"),
     getInitialDataConfig: getInitialMemoDataConfig,
     Settings: MemoSettings,
   },
   reminder: {
-    titleKo: '시간 알림',
+    titleKo: translateUiText("시간 알림"),
     getInitialDataConfig: getInitialReminderDataConfig,
     Settings: ReminderSettings,
   },

@@ -1,10 +1,16 @@
+import { HeroCameraMotion } from './HeroCameraMotion';
+import { DiaryItemImage } from './DiaryItemImage';
+import { useDiaryTheme } from '../model/diaryTheme';
+import { diaryImage } from '../lib/calendarStoreDownload';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
-
-const camera = require('../../../../assets/control-illustrations/photo-camera-save.png');
+import { HERO_CAMERA_IMAGES, useHeroCameraStyle } from '../model/heroCameraStyle';
+import { HeroCameraPrintLight } from './HeroCameraPrintLight';
 
 /** Play the instant-camera print before committing the photo diary. */
 export function HeroShutterSave({ disabled, busy, label, photoUri, onPress }: { disabled: boolean; busy: boolean; label: string; photoUri?: string; onPress: () => void }) {
+  const theme = useDiaryTheme('camera');
+  const cameraStyle = useHeroCameraStyle();
   const [printing, setPrinting] = useState(false);
   const locked = useRef(false);
   const progress = useRef(new Animated.Value(0)).current;
@@ -33,8 +39,7 @@ export function HeroShutterSave({ disabled, busy, label, photoUri, onPress }: { 
           {photoUri ? <Image source={{ uri: photoUri }} resizeMode="contain" style={s.printPhoto} /> : <View style={[s.printPhoto, s.blankPhoto]} />}
         </Animated.View>
       </View> : null}
-      <Image source={camera} style={s.camera} resizeMode="contain" accessible={false} />
-      {printing ? <View pointerEvents="none" style={s.redLight} /> : null}
+      <HeroCameraMotion active={printing || pressed} cameraId={theme?.id ?? cameraStyle}><DiaryItemImage source={theme?.source ?? diaryImage('camera-' + cameraStyle, 'image', HERO_CAMERA_IMAGES[cameraStyle])} style={s.camera} contentFit="contain" accessible={false} />{printing ? <HeroCameraPrintLight width={60} height={48} /> : null}</HeroCameraMotion>
       {busy ? <View style={s.progress}><ActivityIndicator color="#F6F3EA" /></View> : null}
     </View>}
   </Pressable>;
@@ -47,6 +52,5 @@ const s = StyleSheet.create({
   print: { width: 32, height: 40, padding: 3, paddingBottom: 8, backgroundColor: '#FFFEF8', borderWidth: 0.5, borderColor: '#D5D2C9' },
   printPhoto: { width: '100%', height: '100%' },
   blankPhoto: { backgroundColor: '#D5E4DE' },
-  redLight: { position: 'absolute', left: 46, top: 7, width: 3, height: 4, borderRadius: 2, backgroundColor: '#FF403B', shadowColor: '#FF211D', shadowOpacity: 1, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
   progress: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
 });

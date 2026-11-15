@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { useDeviceEvents } from '@features/apple-calendar/useDeviceEvents';
 import { eventsOnDay } from '@features/apple-calendar/calendarDates';
 import { BackChevron } from '@shared/ui/icon-symbol';
@@ -117,8 +118,8 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
             <ThemedText accessibilityRole="header" style={[s.detailDate, { color: ink }]}>{selectedDate.toLocaleDateString(locale ?? 'ko', { month: 'long', day: 'numeric', weekday: 'long' })}</ThemedText>
             {linked.error ? <ThemedText accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 13 }}>{linked.error}</ThemedText> : null}
             {selectedEvents.map((event, index) => <View key={`${event.id}:${event.startDate}:${index}`} style={{ flexDirection: 'row', gap: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: muted }}>
-              <ThemedText style={{ color: muted, fontSize: 13, width: 56 }}>{event.allDay ? (locale === 'ko' ? '종일' : 'All day') : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
-              <ThemedText style={{ color: ink, flex: 1, fontSize: 16 }}>{event.title || (locale === 'ko' ? '제목 없는 일정' : 'Untitled event')}</ThemedText>
+              <ThemedText style={{ color: muted, fontSize: 13, width: 56 }}>{event.allDay ? (translateUiText("종일")) : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+              <ThemedText style={{ color: ink, flex: 1, fontSize: 16 }}>{event.title || (translateUiText("제목 없는 일정"))}</ThemedText>
             </View>)}
             {!selectedDiaries.length ? <View style={s.empty} accessible accessibilityRole="image" accessibilityLabel={t('comicCalendar.empty')}><EmptyDiaryIcon ink={muted} /></View> : <ScrollView key={selected} ref={diaryScroll} testID="comic-calendar-diary-scroll" nestedScrollEnabled showsVerticalScrollIndicator={false} scrollEventThrottle={16} onScroll={({ nativeEvent }) => { diaryOffset.current = nativeEvent.contentOffset.y; setAtEnd(nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >= nativeEvent.contentSize.height - 4); }} style={{ maxHeight: diaryRowHeight }} contentContainerStyle={{ paddingBottom: 0 }}>
               {selectedDiaries.map((diary, diaryIndex) => <View key={diary.id} onLayout={diaryIndex === 0 ? event => { const height = Math.ceil(event.nativeEvent.layout.height); if (height > 0) setDiaryRowHeight(height); } : undefined}>

@@ -1,3 +1,4 @@
+import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
 import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
@@ -23,7 +24,12 @@ export async function configurePurchases(): Promise<boolean> {
     if (__DEV__) {
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
     }
-    Purchases.configure({ apiKey });
+    await getHeroAiAccessToken();
+    const session = await getHeroAiAuthClient().auth.getSession();
+    const userId = session.data.session?.user.id;
+    if (!userId) return false;
+    if (configured) return true;
+    Purchases.configure({ apiKey, appUserID: userId });
     configured = true;
     return true;
   } catch (error) {

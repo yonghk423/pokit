@@ -19,8 +19,11 @@ function TabWallpaper() {
   const photoActive = useContext(HeroCharacterPickerActionContext)?.photoActive;
   const segments = useSegments();
   const home = segments.every(segment => segment === '(tabs)');
-  if (home && calendarVisible && !photoActive) return <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: '#FAFAF6' }} />;
-  return photoActive && home ? null : <AppWallpaperBackground />;
+  if (photoActive && home) return null;
+  return <>
+    <AppWallpaperBackground />
+    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: '#FAFAF6' }} /> : null}
+  </>;
 }
 
 export default function TabLayout() {

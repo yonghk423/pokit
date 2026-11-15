@@ -1,21 +1,37 @@
+import { hasSeenProIntroduction } from '@features/subscriptions/lib/proIntroduction';
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
+import { isProFreeAccessActive } from '@shared/config/proPromotion';
+import { resetDiaryItem } from '../../src/pages/day-plan/model/resetDiaryItem';
+import { proDiaryCatalog } from '../../src/pages/day-plan/model/proDiaryCatalog';
+import { DiaryThemeGallery } from '../../src/pages/day-plan/ui/DiaryThemeGallery';
+import { categoryNames, type ThemeSlot, useDiaryTheme } from '../../src/pages/day-plan/model/diaryTheme';
+import { PhotoWallStorePreview } from '../../src/pages/day-plan/ui/PhotoWallStorePreview';
+import { installDiaryItem, diaryImages, storeDownloadErrorMessage } from '../../src/pages/day-plan/lib/calendarStoreDownload';
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { ILLUSTRATION_CALENDAR_CATEGORIES, type IllustrationCalendarCategoryId } from '../../src/pages/day-plan/model/illustrationCalendarCategories';
+import { applyHeroPhotoWall, useHeroPhotoWall } from '../../src/pages/day-plan/model/heroPhotoWall';
 import { Image as ExpoImage } from 'expo-image';
 import { useStoreArtwork } from '../../src/pages/day-plan/lib/storeArtwork';
 import { CityCalendarPackCover } from '../../src/pages/day-plan/ui/CityCalendarPackCover';
-import { applyHeroDiaryClip, useHeroDiaryClip } from '../../src/pages/day-plan/model/heroDiaryClip';
+import { DIARY_CLIPS, applyHeroDiaryClip, useHeroDiaryClip } from '../../src/pages/day-plan/model/heroDiaryClip';
+import { isProTrashBinStyle, applyHeroTrashBinStyle, HERO_TRASH_BIN_ITEMS, HERO_TRASH_BIN_PREVIEWS, useHeroTrashBinStyle } from '../../src/pages/day-plan/model/heroTrashBinStyle';
+import { isProCameraStyle, applyHeroCameraStyle, HERO_CAMERA_STORE_ITEMS, useHeroCameraStyle } from '../../src/pages/day-plan/model/heroCameraStyle';
 import { HeroBlueClipPreview } from '../../src/pages/day-plan/ui/HeroBlueClipPreview';
+import { CameraStoreIcon } from '../../src/pages/day-plan/ui/CameraStoreIcon';
 import { useCanvasEventDates } from '../../src/pages/day-plan/model/heroCanvasEvents';
 import { useDeviceEvents } from '@features/apple-calendar/useDeviceEvents';
 import { eventsOnDay } from '@features/apple-calendar/calendarDates';
 import { HeroTrashIcon } from '../../src/pages/day-plan/ui/HeroTrashIcon';
 import { AppAlert } from '@shared/lib/app-alert';
 import { illustrationCalendarBackgroundUri } from '../../src/pages/day-plan/lib/illustrationCalendarAssets';
-import { isCityCalendarPackReady, downloadCityCalendarPack, removeCityCalendarPack } from '../../src/pages/day-plan/lib/cityCalendarPack';
-import { applyHeroCalendarDesign, CITY_CALENDAR_THEMES, useHeroCalendarDesign } from '../../src/pages/day-plan/model/heroCalendarDesign';
+import { isCityCalendarPackReady, downloadCityCalendarPack, removeCityCalendarPack, calendarPackThemes, isProCalendarPack, type CalendarPackId } from '../../src/pages/day-plan/lib/cityCalendarPack';
+import { applyHeroCalendarDesign, CITY_CALENDAR_THEMES, EVERYDAY_CINEMA_THEMES, useHeroCalendarDesign } from '../../src/pages/day-plan/model/heroCalendarDesign';
 import { SettingsTopBarButton } from '../../src/pages/day-plan/ui/SettingsTopBarButton';
 import { palette } from '../../src/pages/day-plan/lib/dayPlanPalette';
 import { HeroIllustrationCalendar } from '../../src/pages/day-plan/ui/HeroIllustrationCalendar';
 import { loadIllustrationCalendarAssets, isIllustrationCalendarInstalled } from '../../src/pages/day-plan/lib/illustrationCalendarAssets';
-import { memo, useMemo, useCallback, useContext, useLayoutEffect, useState, useEffect } from 'react';
+import { memo, useRef, useMemo, useCallback, useContext, useLayoutEffect, useState, useEffect } from 'react';
 import { Image, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { NativeTabContent } from '@shared/ui/native-tab-content';
@@ -34,6 +50,7 @@ import { setIllustrationCalendarMode } from '../../src/pages/day-plan/model/illu
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDayPlanTabBridge } from '../../src/pages/day-plan/model/dayPlanTabBridge';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
+import { usePremiumPackPaywall } from '../../src/pages/day-plan/ui/usePremiumPackPaywall';
 
 type CalendarView = 'diary' | 'calendar' | 'illustrationGallery' | 'illustrationDiary';
 
@@ -59,36 +76,101 @@ const raisedPackAction = (pressed: boolean) => ({
   elevation: pressed ? 2 : 6,
 });
 
-type CityTheme = typeof CITY_CALENDAR_THEMES[number];
-const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme, width, height, dark, selected, error, onApply }: {
-  theme: CityTheme; width: number; height: number; dark: boolean; selected: boolean; error: boolean; onApply: (theme: CityTheme) => void;
+
+function CalendarPackStore({ pack, width, month, dark }: {
+  pack: CalendarPackId; width: number; month: Date; dark: boolean;
 }) {
-  const [previewReady, setPreviewReady] = useState(false);
-  const today = useTodayDate();
-  const month = useMemo(() => new Date(today.getFullYear(), today.getMonth(), 1, 12), [today]);
-  const previewScale = width / 390;
-  const canvasHeight = height / previewScale;
+  const [ready, setReady] = useState(false);
+  const router = useRouter();
+  const openPack = () => router.push({ pathname: '/calendar-pack', params: { pack } });
+  const [progress, setProgress] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const themes = calendarPackThemes(pack);
+  const title = pack === 'season-winter' ? translateUiText("겨울") : pack === 'city' ? translateUiText("시티 애니메이션") : pack === 'warm-sepia' ? 'Warm Sepia Open Panel' : pack === 'citypop-retro' ? translateUiText("시티팝 레트로") : pack === 'textured-watercolor' ? translateUiText("텍스처 수채화") : 'Everyday Cinema';
   const ink = dark ? '#E8E5DF' : '#242321';
-  const apply = useCallback(() => onApply(theme), [onApply, theme]);
-  return <Pressable testID={`illustration-theme-${theme.themeId}`} accessibilityRole="button" accessibilityLabel={`${theme.title} 캘린더 적용`} accessibilityState={{ selected }} onPress={apply} style={{ width }}>
-    <View style={{ width, height }}><ExpoImage source={{ uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ width, height, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }} />{!previewReady ? <View pointerEvents="none" style={{ position: 'absolute', width, height, borderRadius: 14, backgroundColor: '#E6E5E1' }} /> : null}</View>
-    <View style={{ padding: 8, minHeight: 68, gap: 2 }}>
-      <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12, lineHeight: 16 }}>{theme.title}</ThemedText>
-      <ThemedText accessible={selected} accessibilityElementsHidden={!selected} importantForAccessibility={selected ? 'auto' : 'no-hide-descendants'} style={{ minHeight: 16, color: '#278B77', fontSize: 11, lineHeight: 16, textAlign: 'center', opacity: selected ? 1 : 0 }}>적용 중</ThemedText>
-      {error ? <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 12 }}>적용하지 못했어요. 사진을 눌러 다시 시도해주세요.</ThemedText> : null}
-    </View>
-  </Pressable>;
-});
+  const proPack = (pack === 'season-winter' || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack);
+  const isPro = useSubscriptionStore(selectCanTestProStoreItems);
+  const paywall = usePremiumPackPaywall();
+  useEffect(() => { let active = true; void isCityCalendarPackReady(pack).then(value => { if (active) setReady(value); }).catch(() => undefined); return () => { active = false; }; }, [pack]);
+  const unlockPack = async () => {
+    if (proPack && !ready && isProFreeAccessActive()) return (await paywall.present()) === 'promotion' && isProFreeAccessActive();
+    if (!proPack || isPro) return true;
+    const result = await paywall.present();
+    return (result === 'purchased' || result === 'restored') && selectCanTestProStoreItems(useSubscriptionStore.getState());
+  };
+  const download = async () => {
+    if (progress !== null || deleting) return;
+    if (!(await unlockPack())) return;
+    if (ready) { openPack(); return; }
+    setProgress(0); setFailed(false);
+    try { await downloadCityCalendarPack(setProgress, pack); setReady(true); }
+    catch { setFailed(true); }
+    finally { setProgress(null); }
+  };
+  const remove = async () => {
+    setDeleting(true);
+    try { await removeCityCalendarPack(pack); setReady(false); }
+    catch { AppAlert.alert(translateUiText("삭제 실패"), translateUiText("다시 시도해주세요.")); }
+    finally { setDeleting(false); }
+  };
+  return <View testID={`calendar-pack-${pack}`} style={{ width, gap: 12 }}>
+      <Pressable disabled={!ready || deleting} onPress={() => void download()} accessibilityLabel={translateUiText("{title} 캘린더 열기", { title })}><CityCalendarPackCover width={width} month={month} pack={pack} /></Pressable>
+      <View style={{ minHeight: 28, justifyContent: 'center', paddingHorizontal: 30 }}>
+        <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12, textAlign: 'center' }}>{title}</ThemedText>
+        <ThemedText style={{ position: 'absolute', right: 0, color: proPack ? '#278B77' : ink, fontSize: 11 }}>{proPack ? 'Pro' : translateUiText("무료")}</ThemedText>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Pressable disabled={progress !== null || deleting} onPress={() => void download()} style={({ pressed }) => [raisedPackAction(pressed), { flex: 1, minWidth: 0, paddingHorizontal: 4 }]}><ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: '#000', fontSize: 12, textAlign: 'center' }}>{progress !== null ? translateUiText("다운로드 중 {count}/{total}", { count: progress, total: themes.length }) : ready ? translateUiText("다운로드 완료 {count}/{total}", { count: themes.length, total: themes.length }) : failed ? translateUiText("다운로드 다시 시도") : proPack && !isPro ? translateUiText("Pro 구독 후 다운로드") : translateUiText("캘린더 {count}종 다운로드", { count: themes.length })}</ThemedText></Pressable>
+        {ready && <Pressable disabled={deleting || progress !== null} accessibilityLabel={translateUiText("{title} 다운로드 삭제", { title })} onPress={() => AppAlert.alert(translateUiText("캘린더를 삭제할까요?"), translateUiText("{title} 다운로드만 삭제합니다.", { title }), [{ text: translateUiText("취소"), style: 'cancel' }, { text: translateUiText("삭제"), style: 'destructive', onPress: () => void remove() }])} style={({ pressed }) => ({ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', opacity: pressed ? 0.65 : 1 })}><HeroTrashIcon size={26} color="#000" /></Pressable>}
+      </View>
+      {paywall.modal}
+  </View>;
+}
 
 function CalendarContent({ view, setView }: { view: CalendarView; setView: (value: CalendarView) => void }) {
   const { artwork: storeArtwork, failed: storeArtworkFailed, retry: retryStoreArtwork } = useStoreArtwork();
   const selectedDesign = useHeroCalendarDesign();
+  const themedClip = useDiaryTheme('clip');
+  const themedWall = useDiaryTheme('photoWall');
   const selectedClip = useHeroDiaryClip();
-  const [diaryCategory, setDiaryCategory] = useState<'clip' | 'trash' | 'camera'>('clip');
+  const isPro = useSubscriptionStore(selectCanTestProStoreItems);
+  const themedTrash = useDiaryTheme('trash');
+  const themedCamera = useDiaryTheme('camera');
+  const selectedTrashBinStyle = useHeroTrashBinStyle();
+  const selectedCameraStyle = useHeroCameraStyle();
+  const photoWall = useHeroPhotoWall();
+  const [loadingItem, setLoadingItem] = useState<string | null>(null);
+  const itemPaywall = usePremiumPackPaywall();
+  const installLock = useRef(false);
+  async function chooseItem(id: string, pro: boolean, apply: () => void) {
+    if (installLock.current) return;
+    tapHaptic('select');
+    if (pro && !isPro) { if (!hasSeenProIntroduction()) router.push('/pro-preview'); return; }
+    installLock.current = true;
+    try {
+      if (pro && !diaryImages(id)) {
+        if (isProFreeAccessActive() && ((await itemPaywall.present()) !== 'promotion' || !isProFreeAccessActive())) return;
+        setLoadingItem(id); await installDiaryItem(id); }
+      apply();
+    } catch (error) { AppAlert.alert(translateUiText("다운로드 실패"), storeDownloadErrorMessage(error, locale === 'ko')); }
+    finally { installLock.current = false; setLoadingItem(null); }
+  }
+  function itemStatus(id: string) {
+    if (loadingItem === id) return translateUiText("다운로드 중");
+    return diaryImages(id) ? 'Pro' : translateUiText("Pro · 다운로드");
+  }
+  const [diaryCategory, setDiaryCategory] = useState<ThemeSlot | 'wall'>('clip');
+  const [wallCategory, setWallCategory] = useState<'photo-wall' | null>(null);
+  const [illustrationCategory, setIllustrationCategory] = useState<IllustrationCalendarCategoryId>('character');
+  const illustrationPacks = ILLUSTRATION_CALENDAR_CATEGORIES.find(category => category.id === illustrationCategory)?.packs ?? [];
   const windowSize = useWindowDimensions();
+  const [diaryGalleryWidth, setDiaryGalleryWidth] = useState<number | null>(null);
+  const diaryItemWidth = Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 40 - 24) / 3));
   // Match the source artwork (853 × 1844), using one scale for both axes.
   const previewWidth = Math.max(1, Math.min(200, windowSize.width - 48, windowSize.height * 0.55 * 853 / 1844));
-  const calendarThemeWidth = Math.max(1, (windowSize.width - 40) / 3);
+  const [illustrationGalleryWidth, setIllustrationGalleryWidth] = useState<number | null>(null);
+  const calendarThemeWidth = Math.max(1, ((illustrationGalleryWidth ?? windowSize.width) - 32) / 2);
   const calendarThemeHeight = calendarThemeWidth * 1844 / 853;
   const insets = useSafeAreaInsets();
   const { tabBarHeight } = useDayPlanTabBridge();
@@ -104,46 +186,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const localEventDates = useCanvasEventDates(month.getFullYear(), month.getMonth());
   const eventDates = [...new Set([...localEventDates, ...Array.from({ length: new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate() }, (_, index) => new Date(month.getFullYear(), month.getMonth(), index + 1)).filter(day => eventsOnDay(linkedEvents.events, day).length).map(getLocalDateKey)])];
 
-  const [packOpen, setPackOpen] = useState(false);
-  useFocusEffect(useCallback(() => { setPackOpen(false); }, []));
-  const [packReady, setPackReady] = useState(false);
-  const [packProgress, setPackProgress] = useState<number | null>(null);
-  const [packError, setPackError] = useState(false);
-  const [deletingPack, setDeletingPack] = useState(false);
-  const removePack = async () => {
-    if (deletingPack) return;
-    setDeletingPack(true); setPackOpen(false);
-    try {
-      await removeCityCalendarPack();
-      setPackReady(false); setPackError(false); setPackProgress(null);
-    } catch { AppAlert.alert('삭제 실패', '달력 파일을 삭제하지 못했어요. 다시 시도해주세요.'); }
-    finally { setDeletingPack(false); }
-  };
-  useEffect(() => {
-    let active = true;
-    isCityCalendarPackReady()
-      .then(ready => { if (active) setPackReady(ready); }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
-  const downloadPack = async () => {
-    if (packProgress !== null) return;
-    setPackOpen(false); setPackReady(false); setPackProgress(0); setPackError(false);
-    try {
-      await downloadCityCalendarPack(setPackProgress);
-      setPackReady(true);
-    } catch { setPackError(true); }
-    finally { setPackProgress(null); }
-  };
   const [illustrationCanvas, setIllustrationCanvas] = useState({ width: 0, height: 0 });
-  const [themeError, setThemeError] = useState<string | null>(null);
-  const applyTheme = useCallback((theme: CityTheme) => {
-    tapHaptic('select');
-    // The pack is already installed. Verify its local files without a download state.
-    void loadIllustrationCalendarAssets(theme.themeId).then(() => {
-      setThemeError(null);
-      applyHeroCalendarDesign(theme.design);
-    }).catch(() => setThemeError(theme.themeId));
-  }, []);
   const [diaries, setDiaries] = useState<ComicDiary[]>(() => loadComicDiaryLibrary(todayKey, number => t('comicDiary.defaultTitle', { number })).diaries);
   const registerCenter = useContext(DayPlanHeaderCenterActionsContext);
   useFocusEffect(useCallback(() => {
@@ -165,69 +208,108 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
     {([
       ['calendar', t('comicCalendar.viewCalendar')],
       ['illustrationGallery', t('comicCalendar.viewIllustrationDiary')],
-      ['diary', locale === 'ko' ? '다이어리' : 'Diary'],
-    ] as const).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: view === key }} onPress={() => { tapHaptic('select'); setPackOpen(false); setView(key); }} style={({ pressed }) => ({ minHeight: 40, minWidth: 0, paddingHorizontal: 14, flexShrink: 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: view === key || pressed ? '#FFFFFF' : 'transparent', borderWidth: 1, borderColor: view === key || pressed ? '#FFFFFF' : 'transparent', borderBottomColor: view === key || pressed ? '#DCDCDC' : 'transparent', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: view === key ? (pressed ? 0.10 : 0.18) : 0, shadowRadius: pressed ? 3 : 7, elevation: view === key ? (pressed ? 2 : 6) : 0 })}>
+      ['diary', translateUiText("다이어리")],
+    ] as const).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: view === key }} onPress={() => { tapHaptic('select'); setView(key); }} style={({ pressed }) => ({ minHeight: 40, minWidth: 0, paddingHorizontal: 14, flexShrink: 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: view === key || pressed ? '#FFFFFF' : 'transparent', borderWidth: 1, borderColor: view === key || pressed ? '#FFFFFF' : 'transparent', borderBottomColor: view === key || pressed ? '#DCDCDC' : 'transparent', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: view === key ? (pressed ? 0.10 : 0.18) : 0, shadowRadius: pressed ? 3 : 7, elevation: view === key ? (pressed ? 2 : 6) : 0 })}>
       <ThemedText numberOfLines={1} style={{ color: '#000000', fontSize: 13 }}>{label}</ThemedText>
     </Pressable>)}
   </View>;
-  return <View style={{ flex: 1, minHeight: 0 }}>
-    {view !== 'illustrationDiary' ? selector : null}
-    {!storeArtwork ? <Pressable disabled={!storeArtworkFailed} onPress={retryStoreArtwork} accessibilityLabel={storeArtworkFailed ? '이미지 다시 불러오기' : '상품 준비 중'} style={{ margin: 24, height: 320, borderRadius: 20, backgroundColor: '#E6E5E1', justifyContent: 'center', alignItems: 'center' }}>{storeArtworkFailed ? <ThemedText>이미지 다시 불러오기</ThemedText> : null}</Pressable> : view === 'diary'
-      ? <View style={{ flex: 1, minHeight: 0 }}>
-        <View accessibilityRole="tablist" style={{ alignSelf: 'center', flexDirection: 'row', gap: 12, paddingVertical: 12 }}>
-          {([['clip', locale === 'ko' ? '집게' : 'Clips'], ['trash', locale === 'ko' ? '휴지통' : 'Trash cans'], ['camera', locale === 'ko' ? '카메라' : 'Cameras']] as const).map(([category, label]) => <Pressable key={category} testID={`diary-category-${category}`} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: diaryCategory === category }} onPress={() => { tapHaptic('select'); setDiaryCategory(category); }} style={{ minWidth: 74, minHeight: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: diaryCategory === category ? '#F8F8FA' : 'transparent', boxShadow: diaryCategory === category ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : 'none' }}>
-            <ThemedText style={{ color: ink, fontSize: 14, opacity: diaryCategory === category ? 1 : 0.55 }}>{label}</ThemedText>
-          </Pressable>)}
-        </View>
-        <ScrollView key={diaryCategory} testID="diary-items-gallery" contentContainerStyle={{ padding: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 12 }}>
-          {diaryCategory === 'clip' ? (['blue', 'black'] as const).map(clip => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: selectedClip === clip, disabled: selectedClip === clip }} disabled={selectedClip === clip} onPress={() => { tapHaptic('select'); applyHeroDiaryClip(clip); }} style={{ width: (windowSize.width - 64) / 3, padding: 8, gap: 6 }}>
+  const renderLegacyItems = (paidItems: boolean) => (diaryCategory === 'clip' ? DIARY_CLIPS.filter(item => item.pro === paidItems).map(({ id: clip, name, english, pro }) => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: !themedClip && selectedClip === clip }} onPress={() => { if (!themedClip && selectedClip === clip) { tapHaptic('select'); resetDiaryItem('clip'); } else void chooseItem('clip-' + clip, pro, () => applyHeroDiaryClip(clip)); }} style={{ width: diaryItemWidth, padding: 8, gap: 6 }}>
             <HeroBlueClipPreview dark={isDark} clip={clip} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <ThemedText numberOfLines={1} adjustsFontSizeToFit style={{ color: ink, fontSize: 14, flexShrink: 1 }}>{clip === 'blue' ? (locale === 'ko' ? '파란 집게' : 'Blue Clip') : (locale === 'ko' ? '검은 집게' : 'Black Clip')}</ThemedText>
+              <ThemedText numberOfLines={1} adjustsFontSizeToFit style={{ color: ink, fontSize: 14, flexShrink: 1 }}>{locale === 'en' ? english : translateUiText(name)}</ThemedText>
             </View>
-            <ThemedText style={{ color: selectedClip === clip ? '#278B77' : ink, opacity: selectedClip === clip ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{selectedClip === clip ? (locale === 'ko' ? '적용 중' : 'Applied') : (locale === 'ko' ? '무료' : 'Free')}</ThemedText>
-          </Pressable>) : diaryCategory === 'trash' ? <View testID="diary-item-mesh-trash" accessible accessibilityLabel={locale === 'ko' ? '메쉬 휴지통, 적용 중' : 'Mesh wastebasket, applied'} style={{ width: (windowSize.width - 64) / 3, padding: 8, gap: 6, alignItems: 'center' }}>
-            <View style={{ width: '100%', height: 56, overflow: 'visible', justifyContent: 'center', alignItems: 'center' }}><ExpoImage source={storeArtwork.trash} contentFit="contain" transition={0} style={{ width: 40, height: 48 }} /></View>
-            <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 14, textAlign: 'center' }}>{locale === 'ko' ? '메쉬 휴지통' : 'Mesh wastebasket'}</ThemedText>
-            <ThemedText style={{ color: '#278B77', textAlign: 'center', fontSize: 13 }}>{locale === 'ko' ? '적용 중' : 'Applied'}</ThemedText>
-          </View> : <View testID="diary-item-classic-camera" accessible accessibilityLabel={locale === 'ko' ? '인스탁스 미니 에보, 적용 중' : 'instax mini Evo, applied'} style={{ width: (windowSize.width - 64) / 3, padding: 8, gap: 6, alignItems: 'center' }}>
-            <View style={{ width: '100%', height: 56, justifyContent: 'center', alignItems: 'center' }}><ExpoImage source={storeArtwork.camera} contentFit="contain" transition={0} style={{ width: '80%', height: 48 }} /></View>
-            <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 14, textAlign: 'center' }}>{locale === 'ko' ? '인스탁스 미니 에보' : 'instax mini Evo'}</ThemedText>
-            <ThemedText style={{ color: '#278B77', textAlign: 'center', fontSize: 13 }}>{locale === 'ko' ? '적용 중' : 'Applied'}</ThemedText>
+            <ThemedText style={{ color: !themedClip && selectedClip === clip ? '#278B77' : ink, opacity: !themedClip && selectedClip === clip ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{!themedClip && selectedClip === clip && (!pro || !!diaryImages('clip-' + clip)) ? (translateUiText("적용 중")) : pro ? itemStatus('clip-' + clip) : (translateUiText("무료"))}</ThemedText>
+          </Pressable>) : diaryCategory === 'trash' ? HERO_TRASH_BIN_ITEMS.filter(item => isProTrashBinStyle(item.id) === paidItems).map(item => {
+            const style = item.id;
+            const selected = !themedTrash && selectedTrashBinStyle === style;
+            const pro = isProTrashBinStyle(style);
+            const status = selected ? (translateUiText("적용 중")) : pro ? itemStatus('trash-' + style) : (translateUiText("선택하기"));
+            const title = locale === 'en' ? item.en : translateUiText(item.ko);
+            const previewSize = style === 'mesh'
+              ? { width: 40, height: 48 }
+              : style === 'ivory'
+                ? { width: 48, height: 52, transform: [{ scaleX: 1.26 }, { scaleY: 1.11 }] }
+                : style === 'sage'
+                  ? { width: 44, height: 48, transform: [{ scaleX: 1.04 }, { scaleY: 0.89 }] }
+                  : { width: 44, height: 54 };
+            return <Pressable key={style} testID={`diary-item-${style}-trash`} accessibilityRole="button" accessibilityLabel={`${title}, ${status}`} accessibilityState={{ selected }} onPress={() => { if (selected) { tapHaptic('select'); resetDiaryItem('trash'); } else void chooseItem('trash-' + style, pro, () => applyHeroTrashBinStyle(style)); }} style={{ width: Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 24 - 16) / 3)), minHeight: 124, padding: 7, gap: 6, alignItems: 'center', borderRadius: 12, backgroundColor: selected ? '#F8F8FA' : 'transparent' }}>
+              <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 0 }}>
+                {(['empty', 'filled'] as const).map(state => <View key={state} style={{ width: previewSize.width, flexShrink: 1, alignItems: 'center' }}>
+                  <ExpoImage source={HERO_TRASH_BIN_PREVIEWS[style][state]} contentFit="contain" transition={0} style={previewSize} />
+                </View>)}
+              </View>
+              <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 13, textAlign: 'center' }}>{title}</ThemedText>
+              <ThemedText style={{ color: selected ? '#278B77' : ink, opacity: selected ? 1 : 0.6, textAlign: 'center', fontSize: 12 }}>{status}</ThemedText>
+            </Pressable>;
+          }) : diaryCategory === 'camera' ? HERO_CAMERA_STORE_ITEMS.filter(item => isProCameraStyle(item.id) === paidItems).map(camera => {
+            const selected = !themedCamera && selectedCameraStyle === camera.id;
+            const pro = isProCameraStyle(camera.id);
+            const status = selected ? (translateUiText("적용 중")) : pro ? itemStatus('camera-' + camera.id) : (translateUiText("무료"));
+            const name = locale === 'en' ? camera.name.en : translateUiText(camera.name.ko);
+            return <Pressable key={camera.id} testID={`diary-item-${camera.id}-camera`} accessibilityRole="button" accessibilityLabel={`${name}, ${status}`} accessibilityState={{ selected }} onPress={() => { if (selected) { tapHaptic('select'); resetDiaryItem('camera'); } else void chooseItem('camera-' + camera.id, pro, () => applyHeroCameraStyle(camera.id)); }} style={{ width: diaryItemWidth, minHeight: 108, padding: 7, gap: 5, alignItems: 'center', borderRadius: 12, backgroundColor: selected ? '#F8F8FA' : 'transparent' }}>
+              <View style={{ width: '100%', height: 56, justifyContent: 'center', alignItems: 'center' }}><CameraStoreIcon camera={camera.id} /></View>
+              <ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12, lineHeight: 16, height: 32, textAlign: 'center' }}>{name}</ThemedText>
+              <ThemedText style={{ color: selected ? '#278B77' : ink, opacity: selected ? 1 : 0.6, textAlign: 'center', fontSize: 13, lineHeight: 20 }}>{status}</ThemedText>
+            </Pressable>;
+          }) : null);
+  return <View style={{ flex: 1, minHeight: 0 }}>
+    {itemPaywall.modal}
+    {view !== 'illustrationDiary' ? selector : null}
+    {!storeArtwork ? <Pressable disabled={!storeArtworkFailed} onPress={retryStoreArtwork} accessibilityLabel={storeArtworkFailed ? translateUiText("이미지 다시 불러오기") : translateUiText("상품 준비 중")} style={{ margin: 24, height: 320, borderRadius: 20, backgroundColor: '#E6E5E1', justifyContent: 'center', alignItems: 'center' }}>{storeArtworkFailed ? <ThemedText>{translateUiText("이미지 다시 불러오기")}</ThemedText> : null}</Pressable> : view === 'diary'
+      ? <View style={{ flex: 1, minHeight: 0 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ gap: 10, paddingHorizontal: 12, paddingVertical: 12 }}>
+          {([['clip', categoryNames.clip], ['trash', categoryNames.trash], ['camera', categoryNames.camera], ['wall', ['벽장식', 'Wall decor']], ...Object.entries(categoryNames).filter(([key]) => !['clip','trash','camera','photoWall'].includes(key) && proDiaryCatalog.some(item => item.category === key))] as [ThemeSlot | 'wall', string[]][]).map(([category, labels]) => <Pressable key={category} testID={`diary-category-${category}`} accessibilityRole="tab" accessibilityLabel={locale === 'en' ? labels[1] : translateUiText(labels[0])} accessibilityState={{ selected: diaryCategory === category }} onPress={() => { tapHaptic('select'); setDiaryCategory(category); }} style={{ minWidth: 74, minHeight: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: diaryCategory === category ? '#F8F8FA' : 'transparent', boxShadow: diaryCategory === category ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : 'none' }}>
+            <ThemedText style={{ color: ink, fontSize: 14, opacity: diaryCategory === category ? 1 : 0.55 }}>{locale === 'en' ? labels[1] : translateUiText(labels[0])}</ThemedText>
+          </Pressable>)}
+        </ScrollView>
+        <ScrollView key={diaryCategory} testID="diary-items-gallery" onLayout={event => setDiaryGalleryWidth(event.nativeEvent.layout.width)} contentContainerStyle={diaryCategory === 'trash'
+          ? { paddingHorizontal: 12, paddingVertical: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }
+          : { padding: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 12 }}>
+          {renderLegacyItems(false)}
+          {diaryCategory !== 'wall' ? null : <View testID="diary-wall-decor-category" style={{ width: '100%', gap: 16 }}>
+            {wallCategory === null ? <Pressable testID="wall-category-photo-wall" accessibilityRole="button" accessibilityLabel={translateUiText("포토월 카테고리 열기")} onPress={() => { tapHaptic('select'); setWallCategory('photo-wall'); }} style={{ width: '48%', maxWidth: 220, padding: 10, gap: 10 }}>
+              <PhotoWallStorePreview variant="black" square />
+              <ThemedText style={{ color: ink, fontSize: 15, textAlign: 'center' }}>{translateUiText("포토월")}</ThemedText>
+            </Pressable> : <View testID="wall-photo-wall-gallery" style={{ gap: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Pressable testID="wall-category-back" accessibilityRole="button" accessibilityLabel={translateUiText("벽장식 카테고리로 돌아가기")} onPress={() => { tapHaptic('select'); setWallCategory(null); }} style={{ minHeight: 44, justifyContent: 'center', paddingRight: 8 }}><ThemedText style={{ color: ink, fontSize: 14 }}>{translateUiText("‹ 벽장식")}</ThemedText></Pressable>
+              <ThemedText accessibilityRole="header" style={{ color: ink, fontSize: 16 }}>{translateUiText("포토월")}</ThemedText>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 12 }}>
+              {(['none', 'black'] as const).map(style => {
+                const selected = !themedWall && photoWall === style;
+                const name = style === 'none' ? (translateUiText("자유 배치")) : (translateUiText("월넛 포토월"));
+                return <Pressable key={style} testID={style === 'none' ? 'diary-item-no-photo-wall' : 'diary-item-black-photo-wall'} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); if (selected) resetDiaryItem('photoWall'); else applyHeroPhotoWall(style); }} style={{ width: diaryItemWidth, padding: 7, gap: 5, borderRadius: 12, backgroundColor: selected ? '#F8F8FA' : 'transparent' }}>
+                  <View style={{ height: 58, width: '100%', alignItems: 'center' }}><View style={{ width: 58, height: 58 }}><PhotoWallStorePreview variant={style} square /></View></View>
+                  <ThemedText numberOfLines={2} style={{ color: ink, textAlign: 'center', fontSize: 12, lineHeight: 16, minHeight: 32 }}>{name}</ThemedText>
+                  <ThemedText style={{ color: selected ? '#278B77' : ink, opacity: selected ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{selected ? (translateUiText("적용 중")) : (translateUiText("무료"))}</ThemedText>
+                </Pressable>;
+              })}
+              <DiaryThemeGallery itemWidth={diaryItemWidth} choose={chooseItem} status={itemStatus} category="photoWall" ko={locale === 'ko'} ink={ink} />
+            </View>
+            </View>}
           </View>}
+          {diaryCategory !== 'wall' && <DiaryThemeGallery itemWidth={diaryCategory === 'trash' ? Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 24 - 16) / 3)) : diaryItemWidth} choose={chooseItem} status={itemStatus} category={diaryCategory} ko={locale === 'ko'} ink={ink} />}
+          {renderLegacyItems(true)}
         </ScrollView>
       </View>
       : view === 'calendar'
       ? <View style={{ flex: 1, minHeight: 0 }}><HeroCalendarDesigns today={today} month={month} diaries={diaries} onSelectDate={openDate} /></View>
       : view === 'illustrationGallery'
-      ? <ScrollView testID="illustration-calendar-gallery" contentContainerStyle={packReady && packOpen
-        ? { paddingHorizontal: 12, paddingVertical: 16, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', columnGap: 8, rowGap: 12 }
-        : { paddingHorizontal: 12, paddingVertical: 20, alignItems: 'center', gap: 20 }}>
-          {!(packReady && packOpen) ? <View style={{ width: previewWidth }}>
-            <Pressable disabled={!packReady || deletingPack} onPress={() => { tapHaptic('select'); setPackOpen(true); }} accessibilityRole="button" accessibilityLabel="시티 애니메이션 캘린더 열기" style={{ borderRadius: 14, backgroundColor: '#FFFFFF', shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 }, elevation: 6 }}>
-              <CityCalendarPackCover width={previewWidth} month={month} />
-            </Pressable>
-            <View style={{ paddingVertical: 16, gap: 10 }}>
-              <View style={{ marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <ThemedText style={{ color: ink, flexShrink: 1 }}>시티 애니메이션</ThemedText>
-                <ThemedText style={{ color: ink, opacity: 0.65, fontSize: 13 }}>{locale === 'ko' ? '무료' : 'Free'}</ThemedText>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Pressable disabled={packProgress !== null || deletingPack} onPress={() => { if (packReady) setPackOpen(true); else void downloadPack(); }} accessibilityRole="button" style={({ pressed }) => [raisedPackAction(pressed), { flex: 1, minWidth: 0, paddingHorizontal: 8 }]}>
-                <ThemedText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: '#000000', fontSize: 13, lineHeight: 24, textAlign: 'center', flexShrink: 1 }}>{packProgress !== null ? `다운로드 중 ${packProgress}/${CITY_CALENDAR_THEMES.length}` : packReady ? `다운로드 완료 ${CITY_CALENDAR_THEMES.length}/${CITY_CALENDAR_THEMES.length}` : packError ? '다운로드 다시 시도' : `캘린더 ${CITY_CALENDAR_THEMES.length}종 다운로드`}</ThemedText>
-              </Pressable>
-              {packReady && <Pressable testID="delete-city-calendar-pack" accessibilityRole="button" accessibilityLabel="다운로드한 캘린더 삭제" disabled={deletingPack} onPress={() => {
-                AppAlert.alert('캘린더를 삭제할까요?', '다운로드한 시티 애니메이션 캘린더를 삭제합니다. 나중에 다시 다운로드할 수 있어요.', [
-                  { text: '취소', style: 'cancel' },
-                  { text: '삭제', style: 'destructive', onPress: () => { void removePack(); } },
-                ]);
-              }} style={({ pressed }) => [raisedPackAction(pressed), { width: 48, height: 48, paddingHorizontal: 0, paddingVertical: 0, opacity: deletingPack ? 0.4 : 1 }]}><HeroTrashIcon size={26} color="#000000" /></Pressable>}
-              </View>
-              {packProgress !== null && <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 12, textAlign: 'center' }}>다운로드가 완료될 때까지 앱을 종료하지 마세요.</ThemedText>}
-            </View>
-          </View> : <Pressable onPress={() => setPackOpen(false)} style={{ width: '100%', minHeight: 36, justifyContent: 'center' }}><ThemedText style={{ color: ink }}>‹ 일러스트 + 캘린더 목록으로</ThemedText></Pressable>}
-          {packReady && packOpen && CITY_CALENDAR_THEMES.map(theme => <IllustrationThemeCard key={theme.design} theme={theme} width={calendarThemeWidth} height={calendarThemeHeight} dark={isDark} selected={selectedDesign === theme.design} error={themeError === theme.themeId} onApply={applyTheme} />)}
+      ? <View style={{ flex: 1, minHeight: 0 }}>
+        <View testID="illustration-calendar-categories" accessibilityRole="tablist" style={{ alignSelf: 'center', flexDirection: 'row', gap: 12, paddingVertical: 12 }}>
+          {ILLUSTRATION_CALENDAR_CATEGORIES.map(category => {
+            const selected = illustrationCategory === category.id;
+            const label = t(category.labelKey);
+            return <Pressable key={category.id} testID={`illustration-category-${category.id}`} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); setIllustrationCategory(category.id); }} style={{ minWidth: 74, minHeight: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: selected ? '#F8F8FA' : 'transparent', boxShadow: selected ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : 'none' }}>
+              <ThemedText style={{ color: ink, fontSize: 14, opacity: selected ? 1 : 0.55 }}>{label}</ThemedText>
+            </Pressable>;
+          })}
+        </View>
+        <ScrollView key={illustrationCategory} testID="illustration-calendar-gallery" onLayout={({ nativeEvent: { layout } }) => setIllustrationGalleryWidth(previous => previous === layout.width ? previous : layout.width)} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 20, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }}>
+          {illustrationGalleryWidth !== null && illustrationPacks.map(pack => <CalendarPackStore key={pack} pack={pack} width={calendarThemeWidth} month={month} dark={isDark} />)}
         </ScrollView>
+      </View>
       : <View testID="illustration-diary-calendar" style={{ flex: 1, minHeight: 0, backgroundColor: '#F7F6F4' }} onLayout={({ nativeEvent: { layout } }) => setIllustrationCanvas(old => old.width === layout.width && old.height === layout.height ? old : { width: layout.width, height: layout.height })}>
         {illustrationCanvas.width > 0 && illustrationCanvas.height > 0 ? <HeroIllustrationCalendar eventDates={eventDates} month={month} today={today} diaries={diaries} width={illustrationCanvas.width} height={illustrationCanvas.height} topInset={insets.top} bottomInset={calendarBottomInset} onSelectDate={openDate} onMoveMonth={delta => setMonth(value => new Date(value.getFullYear(), value.getMonth() + delta, 1, 12))} onNavigate={tab => router.navigate(tab === 'index' ? '/(tabs)' : '/(tabs)/history')} onChangeMode={() => setView('illustrationGallery')} /> : null}
         <View style={{ position: 'absolute', top: insets.top + 8, left: 20, zIndex: 30 }}><SettingsTopBarButton c={palette(isDark)} /></View>

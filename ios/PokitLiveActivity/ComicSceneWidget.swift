@@ -499,21 +499,22 @@ private struct CalendarDesignEntry: TimelineEntry {
 }
 
 private struct CalendarDesignProvider: TimelineProvider {
-  func placeholder(in context: Context) -> CalendarDesignEntry { entry() }
-  private func entry() -> CalendarDesignEntry {
+  func placeholder(in context: Context) -> CalendarDesignEntry { entry(family: context.family) }
+  private func entry(family: WidgetFamily) -> CalendarDesignEntry {
     let defaults = UserDefaults(suiteName: PokitAppGroup.identifier)
     var data: Data?
-    if let name = defaults?.string(forKey: "pokit.calendar-widget.image"),
+    let size = family == .systemLarge ? "large" : "small"
+    if let name = defaults?.string(forKey: "pokit.calendar-widget.image.\(size)") ?? defaults?.string(forKey: "pokit.calendar-widget.image"),
        name.hasPrefix("calendar-"),
        let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PokitAppGroup.identifier) {
       data = try? Data(contentsOf: container.appendingPathComponent(name))
     }
     return CalendarDesignEntry(date: .now, imageData: data)
   }
-  func getSnapshot(in context: Context, completion: @escaping (CalendarDesignEntry) -> Void) { completion(entry()) }
+  func getSnapshot(in context: Context, completion: @escaping (CalendarDesignEntry) -> Void) { completion(entry(family: context.family)) }
   func getTimeline(in context: Context, completion: @escaping (Timeline<CalendarDesignEntry>) -> Void) {
     // Recover if iOS coalesces an explicit reload while the app is active.
-    completion(Timeline(entries: [entry()], policy: .after(Date().addingTimeInterval(15 * 60))))
+    completion(Timeline(entries: [entry(family: context.family)], policy: .after(Date().addingTimeInterval(15 * 60))))
   }
 }
 

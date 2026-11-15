@@ -1,12 +1,14 @@
+import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { REVENUECAT_ENABLED } from '@shared/config/revenueCat';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
-import { getActiveProEntitlement, manageSubscription, restorePurchases, selectIsPro, useSubscriptionStore } from '@features/subscriptions';
+import { getActiveProEntitlement, manageSubscription, restorePurchases, isProEntitlementActive, useSubscriptionStore } from '@features/subscriptions';
 
 export type ProPlan = 'monthly' | 'yearly';
-async function refreshAfterManagement() {
-  if (!FEATURE_FLAGS.proSubscriptions) return;
+async function refreshAfterManagement(enabled: boolean) {
+  if (!enabled) return;
   try {
     await Purchases.invalidateCustomerInfoCache();
   } catch {
@@ -14,13 +16,14 @@ async function refreshAfterManagement() {
   }
   await useSubscriptionStore.getState().refreshCustomerInfo();
 }
-export function useProSubscription() {
+export function useProSubscription(storeItems = false) {
+  const enabled = FEATURE_FLAGS.proSubscriptions || (storeItems && REVENUECAT_ENABLED);
   const [packages, setPackages] = useState<Partial<Record<ProPlan, PurchasesPackage>>>({});
   const [status, setStatus] = useState<'loading' | 'ready' | 'unavailable' | 'error'>('loading');
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const mounted = useRef(true);
-  const isPro = useSubscriptionStore(selectIsPro);
+  const isPro = useSubscriptionStore(state => isProEntitlementActive(state.customerInfo));
   const customerInfo = useSubscriptionStore(s => s.customerInfo);
   const entitlement = getActiveProEntitlement(customerInfo);
   const currentPlan = (['monthly', 'yearly'] as const).find(key => {
@@ -30,7 +33,7 @@ export function useProSubscription() {
     return id === entitlement.productIdentifier && (!basePlan || basePlan === entitlement.productPlanIdentifier);
   }) ?? null;
   const load = useCallback(async () => {
-    if (!FEATURE_FLAGS.proSubscriptions) { setStatus('unavailable'); return; }
+    if (!enabled || isProFreeAccessActive()) { setStatus('unavailable'); return; }
     if (lock.current) return;
     lock.current = true;
     try {
@@ -48,23 +51,23 @@ export function useProSubscription() {
     } catch {
       if (mounted.current) { setPackages({}); setStatus('error'); }
     } finally { lock.current = false; }
-  }, []);
+  }, [enabled]);
   useEffect(() => {
     mounted.current = true;
     void Promise.resolve().then(() => {
       if (mounted.current) return load();
     });
     const listener = AppState.addEventListener('change', state => {
-      if (state === 'active') void refreshAfterManagement();
+      if (state === 'active') void refreshAfterManagement(enabled);
     });
     return () => { mounted.current = false; listener.remove(); };
-  }, [load]);
+  }, [load, enabled]);
 
   const transact = async (plan?: ProPlan): Promise<'active' | 'none' | 'cancelled' | 'error' | 'unavailable'> => {
-    if (!FEATURE_FLAGS.proSubscriptions) return 'unavailable';
+    if (!enabled || (plan && isProFreeAccessActive())) return 'unavailable';
     if (lock.current) return 'cancelled';
     // Existing subscribers change plans in the purchasing store, never through a second new purchase.
-    if (plan && selectIsPro(useSubscriptionStore.getState())) return 'unavailable';
+    if (plan && isProEntitlementActive(useSubscriptionStore.getState().customerInfo)) return 'unavailable';
     if (!useSubscriptionStore.getState().isConfigured || (plan && !packages[plan])) return 'unavailable';
     lock.current = true;
     setBusy(true);
@@ -77,7 +80,7 @@ export function useProSubscription() {
         if (!result.ok) return result.reason === 'skipped' ? 'unavailable' : 'error';
         useSubscriptionStore.getState().applyCustomerInfo(result.customerInfo);
       }
-      return selectIsPro(useSubscriptionStore.getState()) ? 'active' : 'none';
+      return isProEntitlementActive(useSubscriptionStore.getState().customerInfo) ? 'active' : 'none';
     } catch (error) {
       if (error && typeof error === 'object' && 'userCancelled' in error && error.userCancelled) return 'cancelled';
       return 'error';
@@ -87,12 +90,12 @@ export function useProSubscription() {
     }
   };
   const manage = async () => {
-    if (!FEATURE_FLAGS.proSubscriptions || lock.current) return 'unavailable' as const;
+    if (!enabled || lock.current) return 'unavailable' as const;
     lock.current = true;
     setBusy(true);
     try {
       const result = await manageSubscription(useSubscriptionStore.getState().customerInfo);
-      if (result === 'opened') await refreshAfterManagement();
+      if (result === 'opened') await refreshAfterManagement(enabled);
       return result;
     } finally {
       lock.current = false;

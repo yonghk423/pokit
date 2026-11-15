@@ -1,3 +1,4 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { Image } from 'expo-image';
 import { useStoreArtwork } from '../lib/storeArtwork';
 import { HeroCalendarPhoto } from './HeroCalendarPhoto';
@@ -28,9 +29,9 @@ export function HeroClipboardCalendar({ width, height, month, today, miniature, 
       {/* Clip the source photograph to the board and metal clip; no tabletop is painted. */}
       {[{ x: 55, y: 153, width: 914, height: 1298, radius: 62 }, { x: 385, y: 137, width: 252, height: 78, radius: 14 }, { x: 326, y: 184, width: 371, height: 76, radius: 20 }].map((part, index) => <View key={index} pointerEvents="none" style={{ position: 'absolute', left: part.x * s, top: part.y * s, width: part.width * s, height: part.height * s, borderRadius: part.radius * s, overflow: 'hidden' }}><Image onLoad={widgetImageReady} source={artwork.board} contentFit="fill" transition={0} style={{ position: 'absolute', left: -part.x * s, top: -part.y * s, width: 1024 * s, height: 1536 * s }} /></View>)}
       <View style={{ position: 'absolute', left: 115 * s, top: 280 * s, width: 792 * s, height: 155 * s, flexDirection: 'row', alignItems: 'center' }}>
-        <Pressable disabled={miniature} accessibilityLabel="이전 달" accessibilityRole="button" onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ padding: 12 * s }}><Text style={{ color: blue, fontSize: 40 * s }}>‹</Text></Pressable>
+        <Pressable disabled={miniature} accessibilityLabel={translateUiText("이전 달")} accessibilityRole="button" onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ padding: 12 * s }}><Text style={{ color: blue, fontSize: 40 * s }}>‹</Text></Pressable>
         <View style={{ flex: 1 }}><Text style={{ color: blue, fontWeight: '800', fontSize: 78 * s }}>{month.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</Text><Text style={{ color: blue, fontSize: 26 * s }}>{month.getFullYear()}</Text></View>
-        <Pressable disabled={miniature} accessibilityLabel="다음 달" accessibilityRole="button" onPress={() => { tapHaptic('select'); onNextMonth?.(); }} style={{ padding: 12 * s }}><Text style={{ color: blue, fontSize: 40 * s }}>›</Text></Pressable>
+        <Pressable disabled={miniature} accessibilityLabel={translateUiText("다음 달")} accessibilityRole="button" onPress={() => { tapHaptic('select'); onNextMonth?.(); }} style={{ padding: 12 * s }}><Text style={{ color: blue, fontSize: 40 * s }}>›</Text></Pressable>
       </View>
       <View style={{ position: 'absolute', left: 115 * s, top: 461 * s, width: 792 * s, flexDirection: 'row' }}>{['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(label => <Text key={label} style={{ width: '14.285714%', textAlign: 'center', color: blue, fontWeight: '700', fontSize: 22 * s }}>{label}</Text>)}</View>
       <View style={{ position: 'absolute', left: 115 * s, top: 548 * s, width: 792 * s, height: 787 * s, flexDirection: 'row', flexWrap: 'wrap' }}>

@@ -17,7 +17,7 @@ export function HeroDiaryHistoryPage() {
   useFocusEffect(useCallback(() => { setLibrary(readLatest()); }, [readLatest]));
   const commit = (next: Library) => { saveComicDiaryLibrary(next); setLibrary(next); };
   if (!library) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#F7F6F4' }}><ActivityIndicator color="#555A4F" /></View>;
-  return <HeroHistoryPackets diaries={library.diaries} onCreate={() => router.navigate({ pathname: '/(tabs)', params: { historyCreate: String(Date.now()) } })} onDeleteMany={ids => commit(deleteComicDiaries(readLatest(), ids))} onRemoveScenes={entries => {
+  return <HeroHistoryPackets diaries={library.diaries} onCreate={targetDate => router.navigate({ pathname: '/(tabs)', params: targetDate ? { historyPhotoDate: targetDate } : { historyCreate: String(Date.now()) } })} onDeleteMany={ids => commit(deleteComicDiaries(readLatest(), ids))} onRemoveScenes={entries => {
     let latest = readLatest();
     for (const diaryId of new Set(entries.map(entry => entry.diaryId))) {
       const diary = latest.diaries.find(item => item.id === diaryId);

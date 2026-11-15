@@ -1,13 +1,16 @@
+import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 export type PolaroidFilm = 'original' | 'warm' | 'faded' | 'monochrome' | 'cool' | 'sepia' | 'pastel' | 'vivid' | 'rose' | 'cinema' | 'cream' | 'olive' | 'amber' | 'disposable' | 'bluehour' | 'noir';
+/** Three introductory films, the original, and manual adjustments are free. */
+export const isProPolaroidFilm = (value?: PolaroidFilm) => !!value && !(['original', 'warm', 'monochrome', 'cream'] as PolaroidFilm[]).includes(value);
 export const POLAROID_FILMS: { value: PolaroidFilm; label: string }[] = [
-  { value: 'original', label: '원본' }, { value: 'warm', label: '따뜻한 필름' },
-  { value: 'faded', label: '빛바랜 기억' }, { value: 'monochrome', label: '흑백 감성' },
-  { value: 'cool', label: '푸른 공기' }, { value: 'sepia', label: '오래된 사진' },
-  { value: 'pastel', label: '파스텔' }, { value: 'vivid', label: '선명한 순간' },
-  { value: 'rose', label: '로즈빛' }, { value: 'cinema', label: '시네마' },
-  { value: 'cream', label: '크림톤' }, { value: 'olive', label: '올리브' },
-  { value: 'amber', label: '앰버' }, { value: 'disposable', label: '일회용 필름' },
-  { value: 'bluehour', label: '블루 아워' }, { value: 'noir', label: '강한 흑백' },
+  { value: 'original', label: translateUiText("원본") }, { value: 'warm', label: translateUiText("따뜻한 필름") },
+  { value: 'faded', label: translateUiText("빛바랜 기억") }, { value: 'monochrome', label: translateUiText("흑백 감성") },
+  { value: 'cool', label: translateUiText("푸른 공기") }, { value: 'sepia', label: translateUiText("오래된 사진") },
+  { value: 'pastel', label: translateUiText("파스텔") }, { value: 'vivid', label: translateUiText("선명한 순간") },
+  { value: 'rose', label: translateUiText("로즈빛") }, { value: 'cinema', label: translateUiText("시네마") },
+  { value: 'cream', label: translateUiText("크림톤") }, { value: 'olive', label: translateUiText("올리브") },
+  { value: 'amber', label: translateUiText("앰버") }, { value: 'disposable', label: translateUiText("일회용 필름") },
+  { value: 'bluehour', label: translateUiText("블루 아워") }, { value: 'noir', label: translateUiText("강한 흑백") },
 ];
 export const adjustmentKeys = ['brightness', 'contrast', 'saturation', 'highlights', 'shadows', 'temperature', 'fade', 'grain'] as const;
 export type AdjustmentKey = typeof adjustmentKeys[number];
@@ -32,18 +35,49 @@ export const polaroidPixelScript = `function adjustPolaroidPixels(data, effects)
   const fade = Math.max(0, amount('fade')) * 0.35 + (faded ? 0.12 : noir ? 0 : monochrome ? 0.03 : preset[3]);
   const grain = Math.max(0, amount('grain')) * 0.15 + (effects.film === 'disposable' ? 0.065 : 0);
   const shadows = amount('shadows') * 0.5, highlights = amount('highlights') * 0.5;
+  const filmLook = effects.film && effects.film !== 'original';
+  const clamp = v => Math.max(0, Math.min(1, v));
   let seed = 123456789;
   for (let i = 0; i < data.length; i += 4) {
     let r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
     const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    if (filmLook) {
+      // Continuous warm-tone mask. Limit color casts on complexion-like hues.
+      const skin = clamp((r - b) * 8) * clamp((r - g) * 18) * clamp((g - b + 0.025) * 20);
+      const mid = 4 * luma * (1 - luma);
+      const tint = mid * (1 - 0.72 * skin);
+      // Endpoint-preserving S curve keeps near-black and near-white steps distinct.
+      const curve = luma + (contrast - 1) * (luma - 0.5) * mid;
+      const tone = clamp(curve + mid * ((exposure - 1) * 0.45 +
+        shadows * (1 - luma) * (1 - luma) + highlights * luma * luma));
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      const light = clamp(tone * (1 - fade) + fade * 0.6 +
+        (seed / 4294967296 - 0.5) * grain * mid * 0.6);
+      const sat = monochrome ? 0 : saturation + (1 - preset[2]) * 0.55 * skin * (1 + amount('saturation'));
+      let red = (r - luma) * sat, blue = (b - luma) * sat, green = (g - luma) * sat;
+      if (!monochrome) {
+        red += temperature * 0.12 * tint;
+        blue -= temperature * 0.12 * tint;
+        green += preset[5] * tint;
+        const shadowTint = tint * (1 - luma);
+        if (effects.film === 'olive') blue -= 0.035 * shadowTint;
+        if (effects.film === 'amber') green += 0.015 * tint * luma;
+        if (effects.film === 'disposable') green += 0.025 * shadowTint;
+        if (effects.film === 'bluehour') blue += 0.05 * shadowTint;
+      }
+      // Scale chroma together at the gamut boundary to preserve hue.
+      const bias = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      red -= bias; green -= bias; blue -= bias;
+      const scale = Math.min(1, light / Math.max(1e-9, -red, -green, -blue),
+        (1 - light) / Math.max(1e-9, red, green, blue));
+      data[i] = (light + red * scale) * 255;
+      data[i + 1] = (light + green * scale) * 255;
+      data[i + 2] = (light + blue * scale) * 255;
+      continue;
+    }
     const tone = shadows * (1 - luma) * (1 - luma) * (1 - luma) + highlights * luma * luma * luma;
     r = (r + tone) * exposure; g = (g + tone) * exposure; b = (b + tone) * exposure;
     r += temperature * 0.12; b -= temperature * 0.12; g += preset[5];
-    // Split toning colors the darker values without washing out highlights.
-    if (effects.film === 'olive') b -= 0.035 * (1 - luma);
-    if (effects.film === 'amber') g += 0.015 * luma;
-    if (effects.film === 'disposable') g += 0.025 * (1 - luma);
-    if (effects.film === 'bluehour') { r -= 0.02 * (1 - luma); b += 0.035 * (1 - luma); }
     const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const noise = (seed / 4294967296 - 0.5) * grain;

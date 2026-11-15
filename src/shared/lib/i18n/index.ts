@@ -26,3 +26,5 @@ export {
   type DayMealSlot as LocaleDayMealSlot,
   type WeekdayIndex,
 } from './lib/formatLocale';
+
+export { translateUiText } from './lib/translateUiText';
