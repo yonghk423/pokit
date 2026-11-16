@@ -1,6 +1,7 @@
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { isProFreeAccessActive } from '@shared/config/proPromotion';
-import { AppleCalendarSection } from '@features/apple-calendar/AppleCalendarSection';
+import { CalendarConnectionsSection } from '@features/apple-calendar/CalendarConnectionsSection';
+import { selectGoogleCalendar } from '@features/apple-calendar/googleCalendar';
 import { DriveBackupSection } from '@features/drive-backup/DriveBackupSection';
 import { resetServiceTutorialSession } from '../../welcome-intro/model/serviceTutorial';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -190,6 +191,7 @@ export function SettingsPage() {
     setIsResettingData(true);
     try {
       await resetAppLocalData();
+      selectGoogleCalendar(null);
       useAppleCalendar.setState({ ids: [], disconnected: false });
       ensureDefaultPriorityCatalog();
       const today = getLocalDateKey();
@@ -420,7 +422,7 @@ export function SettingsPage() {
             </SettingsSection>
           ) : null}
 
-          <AppleCalendarSection isDark={isDark} />
+          <CalendarConnectionsSection isDark={isDark} />
           {FEATURE_FLAGS.driveBackupSettings ? <DriveBackupSection isDark={isDark} /> : null}
 
           {FEATURE_FLAGS.dailyRhythmWindow ? (

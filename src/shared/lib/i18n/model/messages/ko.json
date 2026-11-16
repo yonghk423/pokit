@@ -1,4 +1,12 @@
 {
+  "diary.calendar.filterAll": "모두",
+  "settings.googleCalendar.upgrade": "Google 캘린더 연결 업데이트",
+  "settings.googleCalendar.tasksError": "Google 할 일을 불러오지 못했어요. 할 일 읽기 권한을 확인해주세요.",
+  "settings.deviceCalendar.manage": "iPhone 캘린더 관리",
+  "settings.googleCalendar.connect": "Google 캘린더 직접 연결",
+  "settings.googleCalendar.disconnect": "Google 캘린더 직접 연결 해제",
+  "settings.googleCalendar.description": "기본 캘린더 일정과 날짜가 있는 할 일을 함께 표시해요.",
+  "settings.googleCalendar.error": "연결하지 못했어요. 다시 눌러 로그인과 일정 읽기 권한을 확인해주세요.",
   "settings.font.schoolNalgae": "학교안심 날개",
   "settings.font.schoolNalgaeDesc": "둥글고 부드러운 손글씨",
   "settings.font.schoolKkokkoma": "학교안심 꼬꼬마",

@@ -4,23 +4,40 @@ import { googleSdk } from '../googleSignin';
 import type { DeviceEvent } from './calendarDates';
 
 const key = 'pokit:google-calendar-email';
+const tasksKey = 'pokit:google-tasks-email';
+const tasksScope = 'https://www.googleapis.com/auth/tasks.readonly';
 const scope = 'https://www.googleapis.com/auth/calendar.events.readonly';
-export const useGoogleCalendar = create<{ email: string | null }>(() => ({
+export const useGoogleCalendar = create<{ email: string | null; tasksEmail: string | null }>(() => ({
+  tasksEmail: localStorageClient.getJson<string>(tasksKey) ?? null,
   email: localStorageClient.getJson<string>(key) ?? null,
 }));
 export function selectGoogleCalendar(email: string | null) {
   localStorageClient.setJson(key, email);
-  useGoogleCalendar.setState({ email });
+  localStorageClient.setJson(tasksKey, null);
+  useGoogleCalendar.setState({ email, tasksEmail: null });
 }
 export async function connectGoogleCalendar() {
   const sdk = googleSdk();
   await sdk.hasPlayServices();
-  const login = await sdk.signIn();
+  const existing = useGoogleCalendar.getState().email;
+  let login = existing ? await sdk.signInSilently() : await sdk.signIn();
+  if (existing && (login.type !== 'success' || login.data.user.email !== existing)) {
+    login = await sdk.signIn();
+  }
   if (login.type !== 'success') return;
-  const grant = login.data.scopes.includes(scope) ? login : await sdk.addScopes({ scopes: [scope] });
+  const { scopes, user: { email } } = login.data;
+  if (existing && existing !== email) throw new Error('google_reconnect');
+  const required = [scope, tasksScope];
+  const missing = required.filter(permission => !scopes.includes(permission));
+  const grant = missing.length ? await sdk.addScopes({ scopes: missing }) : login;
   if (!grant || grant.type !== 'success') return;
-  if (!grant.data.scopes.includes(scope)) throw new Error('Google 캘린더 일정 읽기 권한이 필요합니다.');
-  selectGoogleCalendar(grant.data.user.email);
+  if (grant.data.user.email !== email || !required.every(permission => grant.data.scopes.includes(permission))) {
+    throw new Error('google_permissions');
+  }
+  if (useGoogleCalendar.getState().email !== existing) return;
+  localStorageClient.setJson(key, email);
+  localStorageClient.setJson(tasksKey, email);
+  useGoogleCalendar.setState({ email, tasksEmail: email });
 }
 
 type GoogleDate = { date?: string; dateTime?: string };

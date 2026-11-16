@@ -9,7 +9,8 @@ jest.mock('./HeroMiniMemo', () => ({ HeroMiniMemo: () => null }));
 jest.mock('./HeroMovablePocket', () => ({ HeroMovablePocket: () => null }));
 jest.mock('./HeroTrashIcon', () => ({ HeroTrashIcon: () => null }));
 jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: () => false, useSubscriptionStore: Object.assign(() => false, { getState: () => ({}) }) }));
-jest.mock('@features/apple-calendar/useDeviceEvents', () => ({ useDeviceEvents: () => ({ connected: false, loading: false, events: [], refresh: jest.fn() }) }));
+const mockLinkedEvents: import('@features/apple-calendar/calendarDates').DeviceEvent[] = [];
+jest.mock('@features/apple-calendar/useDeviceEvents', () => ({ useDeviceEvents: () => ({ connected: mockLinkedEvents.length > 0, loading: false, events: mockLinkedEvents, refresh: jest.fn() }) }));
 jest.mock('../model/heroCanvasEvents', () => ({ saveCanvasEvents: jest.fn() }));
 jest.mock('@shared/ui/native-hhmm-wheel-picker/NativeHhmmWheelPicker', () => ({ NativeHhmmWheelPicker: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 54, bottom: 34, left: 0, right: 0 }) }));
@@ -38,4 +39,21 @@ it('cancels an old date load instead of showing its events on a new date', () =>
   finishJobs();
   expect(tree.root.findByType(FlatList).props.data).toEqual([]);
   act(() => tree.unmount());
+});
+
+it('filters the daily list by calendar and restores both providers with All', () => {
+  for (const name of ['Google', 'iCloud']) {
+    mockLinkedEvents.push({ id: name, calendarId: name, sourceName: name, title: name + ' entry', startDate: '2026-11-15T09:00:00', endDate: '2026-11-15T10:00:00' });
+  }
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCanvasNote date="2026-11-15" ink="#222222" />); });
+  act(() => tree.root.findByProps({ testID: 'hero-canvas-tab-calendar' }).props.onPress());
+  const visible = () => ['Google', 'iCloud'].filter(name => tree.root.findAllByProps({ children: name + ' entry' }).length);
+  expect(visible()).toEqual(['Google', 'iCloud']);
+  for (const [filter, expected] of [['Google', ['Google']], ['Apple', ['iCloud']], ['all', ['Google', 'iCloud']]] as const) {
+    act(() => tree.root.findByProps({ testID: `calendar-filter-${filter}` }).props.onPress());
+    expect(visible()).toEqual(expected);
+  }
+  act(() => tree.unmount());
+  mockLinkedEvents.length = 0;
 });

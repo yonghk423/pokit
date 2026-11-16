@@ -1,4 +1,12 @@
 {
+  "diary.calendar.filterAll": "All",
+  "settings.googleCalendar.upgrade": "Update Google Calendar connection",
+  "settings.googleCalendar.tasksError": "Could not load Google Tasks. Check task access.",
+  "settings.deviceCalendar.manage": "Manage iPhone calendars",
+  "settings.googleCalendar.connect": "Connect Google Calendar",
+  "settings.googleCalendar.disconnect": "Disconnect Google Calendar",
+  "settings.googleCalendar.description": "Show primary calendar events and dated tasks.",
+  "settings.googleCalendar.error": "Could not connect. Tap again to check sign-in and calendar read access.",
   "settings.font.schoolNalgae": "School Safety Nalgae",
   "settings.font.schoolNalgaeDesc": "Playful Korean handwriting",
   "settings.font.schoolKkokkoma": "School Safety Kkokkoma",

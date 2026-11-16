@@ -1,5 +1,5 @@
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
-import { SettingsRowIcon, SettingsSection, buildSettingsPalette, settingsChromeStyles as chrome } from '../../pages/settings/lib/settingsChrome';
+import { buildSettingsPalette, settingsChromeStyles as chrome } from '../../pages/settings/lib/settingsChrome';
 import { calendarDisplayTitle } from './calendarDisplayTitle';
 import type { DeviceEvent } from './calendarDates';
 import { calendarSourceLabel } from './calendarSourceLabel';
@@ -10,7 +10,7 @@ import { useTranslation } from '@shared/lib/i18n';
 import { calendarError, deviceCalendars, deviceEvents, useAppleCalendar, type DeviceCalendar } from './appleCalendar';
 
 export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const p = buildSettingsPalette(isDark);
   const ko = locale === 'ko', ink = p.title;
   const ids = useAppleCalendar(state => state.ids), select = useAppleCalendar(state => state.select);
@@ -44,19 +44,11 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
     return () => subscription.remove();
   }, [open, ko]);
   if (Platform.OS !== 'ios') return null;
-  return <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open, busy }}
+  return <View>
+    <Pressable accessibilityRole="button" accessibilityState={{ expanded: open, busy }}
       onPress={() => { setOpen(value => !value); if (!open && !loaded.current && !disconnected) void load(true); }}
       style={chrome.item}>
-      <View style={chrome.itemLeft}>
-        <SettingsRowIcon name="calendar" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
-        <View collapsable={false} style={chrome.itemTextWrap}>
-          <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{translateUiText("Apple · Google 캘린더 연결")}</ThemedText>
-          <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{translateUiText("일정과 오늘의 기록을 함께 봐요")}</ThemedText>
-        </View>
-      </View>
+      <ThemedText style={[chrome.itemTitle, { color: ink }]}>{t('settings.deviceCalendar.manage')}</ThemedText>
       <ThemedText style={{ color: p.desc }}>{open ? '−' : '+'}</ThemedText>
     </Pressable>
     {open ? <View accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'} style={{ paddingHorizontal: 14, paddingVertical: 12, gap: 10 }}>
@@ -96,5 +88,5 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
       </View>
       {disconnected ? <Pressable accessibilityRole="button" onPress={() => void Linking.openSettings()} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink }}>{translateUiText("아이폰에서 접근 권한 끄기")}</ThemedText></Pressable> : null}
     </View> : null}
-  </SettingsSection>;
+  </View>;
 }

@@ -1,4 +1,12 @@
 {
+  "diary.calendar.filterAll": "全部",
+  "settings.googleCalendar.upgrade": "更新 Google 日曆連結",
+  "settings.googleCalendar.tasksError": "無法載入 Google 工作表。請檢查讀取權限。",
+  "settings.deviceCalendar.manage": "管理 iPhone 行事曆",
+  "settings.googleCalendar.connect": "直接連結 Google 日曆",
+  "settings.googleCalendar.disconnect": "解除 Google 日曆直接連結",
+  "settings.googleCalendar.description": "顯示主要日曆活動與有日期的待辦事項。",
+  "settings.googleCalendar.error": "無法連結。請再次點選以確認登入與日曆讀取權限。",
   "settings.font.schoolNalgae": "School Safety Nalgae",
   "settings.font.schoolNalgaeDesc": "Playful Korean handwriting",
   "settings.font.schoolKkokkoma": "School Safety Kkokkoma",

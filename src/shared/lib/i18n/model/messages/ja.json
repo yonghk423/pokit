@@ -1,4 +1,12 @@
 {
+  "diary.calendar.filterAll": "すべて",
+  "settings.googleCalendar.upgrade": "Google カレンダーの接続を更新",
+  "settings.googleCalendar.tasksError": "Google ToDo リストを取得できませんでした。アクセス権をご確認ください。",
+  "settings.deviceCalendar.manage": "iPhone カレンダーの管理",
+  "settings.googleCalendar.connect": "Google カレンダーに直接接続",
+  "settings.googleCalendar.disconnect": "Google カレンダーの直接接続を解除",
+  "settings.googleCalendar.description": "メインカレンダーの予定と日付のあるタスクを表示します。",
+  "settings.googleCalendar.error": "接続できませんでした。もう一度タップしてログインと予定の読み取り権限を確認してください。",
   "settings.font.schoolNalgae": "School Safety Nalgae",
   "settings.font.schoolNalgaeDesc": "Playful Korean handwriting",
   "settings.font.schoolKkokkoma": "School Safety Kkokkoma",

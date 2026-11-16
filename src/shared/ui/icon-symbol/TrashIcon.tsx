@@ -8,12 +8,12 @@ export const TRASH_ASSETS = {
     filled: require('../../../../assets/control-illustrations/mesh-trash-bin-paper.webp'),
   },
   ivory: {
-    empty: require('../../../../assets/control-illustrations/ivory-ceramic-trash-bin.png'),
-    filled: require('../../../../assets/control-illustrations/ivory-ceramic-trash-bin-paper.png'),
+    empty: require('../../../../assets/control-illustrations/ivory-ceramic-trash-bin.webp'),
+    filled: require('../../../../assets/control-illustrations/ivory-ceramic-trash-bin-paper.webp'),
   },
   sage: {
-    empty: require('../../../../assets/control-illustrations/sage-enamel-trash-bin.png'),
-    filled: require('../../../../assets/control-illustrations/sage-enamel-trash-bin-paper.png'),
+    empty: require('../../../../assets/control-illustrations/sage-enamel-trash-bin.webp'),
+    filled: require('../../../../assets/control-illustrations/sage-enamel-trash-bin-paper.webp'),
   },
   rattan: {
     empty: require('../../../../assets/pro-store-previews/rattan-trash-bin.webp'),
