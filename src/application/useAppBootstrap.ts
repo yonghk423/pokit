@@ -1,3 +1,5 @@
+import { hydrateAppleCalendar } from '@features/apple-calendar/appleCalendar';
+import { hydrateGoogleCalendar } from '@features/apple-calendar/googleCalendar';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { getSupabaseUrl } from '@shared/config/supabase';
 import { configureImageCache } from './imageCachePolicy';
@@ -56,6 +58,8 @@ import { prefetchDailyRhythmOnboardingAssets } from '@pages/day-plan/lib/dailyMa
 
 /** 저장소 → 전역 스토어 hydrate. 시작 시와 `restartAppSession()` 때 실행한다. */
 function hydrateAppState() {
+  hydrateAppleCalendar();
+  hydrateGoogleCalendar();
   ensureDefaultPriorityCatalog();
   seedReadingBookstoreIfNeeded();
   // 「하루가 지나면 담기 유지」임시 비활성 — keep 잔존 설정이 롤오버에 영향을 주지 않도록 reset 고정

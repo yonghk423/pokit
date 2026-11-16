@@ -7,10 +7,14 @@ const key = 'pokit:google-calendar-email';
 const tasksKey = 'pokit:google-tasks-email';
 const tasksScope = 'https://www.googleapis.com/auth/tasks.readonly';
 const scope = 'https://www.googleapis.com/auth/calendar.events.readonly';
-export const useGoogleCalendar = create<{ email: string | null; tasksEmail: string | null }>(() => ({
+const readGoogleConnection = () => ({
   tasksEmail: localStorageClient.getJson<string>(tasksKey) ?? null,
   email: localStorageClient.getJson<string>(key) ?? null,
-}));
+});
+export const useGoogleCalendar = create(readGoogleConnection);
+export function hydrateGoogleCalendar() {
+  useGoogleCalendar.setState(readGoogleConnection());
+}
 export function selectGoogleCalendar(email: string | null) {
   localStorageClient.setJson(key, email);
   localStorageClient.setJson(tasksKey, null);

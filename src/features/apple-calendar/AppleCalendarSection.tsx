@@ -29,9 +29,6 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
       if (request) useAppleCalendar.getState().reconnect();
       if (useAppleCalendar.getState().disconnected) return;
       setCalendars(next); loaded.current = true;
-      const selected = useAppleCalendar.getState().ids;
-      const valid = selected.filter(id => next.some(calendar => calendar.id === id));
-      if (valid.length !== selected.length) select(valid);
       const now = new Date();
       try { setMonthEvents(await deviceEvents(next.map(calendar => calendar.id), new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 1))); }
       catch { setMonthEvents(null); }
@@ -59,7 +56,7 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
       </View> : null}
       <View style={{ display: disconnected ? 'none' : 'flex', gap: 10 }} accessibilityElementsHidden={disconnected} importantForAccessibility={disconnected ? 'no-hide-descendants' : 'auto'}>
       {error ? <><ThemedText accessibilityLiveRegion="polite" style={{ color: ink }}>{error}</ThemedText><Pressable accessibilityRole="button" onPress={() => void Linking.openSettings()}><ThemedText style={{ color: ink, textDecorationLine: 'underline' }}>{translateUiText("아이폰 설정 열기")}</ThemedText></Pressable></> : null}
-      <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 13, lineHeight: 20 }}>{busy ? (translateUiText("불러오는 중…")) : (translateUiText("{count}개 캘린더 표시 중", { count: ids.length }))}</ThemedText>
+      <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 13, lineHeight: 20 }}>{busy ? (translateUiText("불러오는 중…")) : (translateUiText("{count}개 캘린더 표시 중", { count: calendars.filter(calendar => ids.includes(calendar.id)).length }))}</ThemedText>
       <ThemedText style={{ color: ink, fontSize: 13 }}>{translateUiText("아이폰에 등록된 Apple·Google 캘린더를 선택해주세요. 체크한 캘린더의 일정을 함께 표시해요.")}</ThemedText>
       <View style={{ flexDirection: 'row', gap: 20 }}>
         <Pressable testID="calendar-refresh-always" accessibilityRole="button" disabled={busy} onPress={() => void load()} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText style={{ color: ink, textDecorationLine: 'underline' }}>{translateUiText("목록 새로고침")}</ThemedText></Pressable>

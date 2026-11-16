@@ -267,7 +267,11 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
       </View> : null}
       </Animated.View>
       {!editing && !monthly ? <View accessibilityRole="tablist" style={{ position: 'absolute', left: 28, right: 28, bottom: 4, height: 44, flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-        {(monthly ? ['story'] as const : ['story', 'calendar', 'event'] as const).map(value => <Pressable key={value} testID={`hero-canvas-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => { Keyboard.dismiss(); setTab(value); }} style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 15, textAlign: 'center', opacity: tab === value ? 1 : 0.5, textDecorationLine: tab === value ? 'underline' : 'none' }}>{value === 'story' ? (monthly ? (translateUiText("월간 기록")) : (translateUiText("일정 계획 기록"))) : value === 'calendar' ? (translateUiText("캘린더")) : (translateUiText("이벤트"))}</ThemedText></Pressable>)}
+        {(monthly ? ['story'] as const : ['story', 'calendar', 'event'] as const).map(value => <Pressable key={value} testID={`hero-canvas-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => {
+          void Haptics.selectionAsync();
+          Keyboard.dismiss();
+          setTab(value);
+        }} style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 15, textAlign: 'center', opacity: tab === value ? 1 : 0.5, textDecorationLine: tab === value ? 'underline' : 'none' }}>{value === 'story' ? (monthly ? (translateUiText("월간 기록")) : (translateUiText("나의 이야기"))) : value === 'calendar' ? (translateUiText("캘린더")) : (translateUiText("이벤트"))}</ThemedText></Pressable>)}
       </View> : null}
       {(editing || expanded) && returnAction ? <View pointerEvents="auto" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: headerHeight, backgroundColor: dark ? '#262B28' : '#F7F6F4', zIndex: 30 }}>
         <View testID={editing ? 'hero-canvas-recording-return' : 'hero-canvas-expanded-return'} style={{ position: 'absolute', right: 20, top: insets.top + 10, zIndex: 30 }}>{returnAction}</View>

@@ -5,9 +5,15 @@ import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import type { DeviceEvent } from './calendarDates';
 const KEY = 'pokit:apple-calendar-selection:v1';
 const DISCONNECTED_KEY = 'yourday:calendar-disconnected';
+function readCalendarSelection() {
+  const disconnected = localStorageClient.getJson<boolean>(DISCONNECTED_KEY) === true;
+  return { disconnected, ids: disconnected ? [] : localStorageClient.getJson<string[]>(KEY) ?? [] };
+}
+export function hydrateAppleCalendar() {
+  useAppleCalendar.setState(readCalendarSelection());
+}
 export const useAppleCalendar = create<{ ids: string[]; disconnected: boolean; disconnect: () => void; reconnect: () => void; select: (ids: string[]) => void }>(set => ({
-  ids: localStorageClient.getJson<boolean>(DISCONNECTED_KEY) === true ? [] : localStorageClient.getJson<string[]>(KEY) ?? [],
-  disconnected: localStorageClient.getJson<boolean>(DISCONNECTED_KEY) === true,
+  ...readCalendarSelection(),
   disconnect: () => { localStorageClient.setJson(KEY, []); localStorageClient.setJson(DISCONNECTED_KEY, true); set({ ids: [], disconnected: true }); },
   reconnect: () => { localStorageClient.setJson(DISCONNECTED_KEY, false); set({ disconnected: false }); },
   select: ids => { localStorageClient.setJson(KEY, ids); set({ ids }); },
