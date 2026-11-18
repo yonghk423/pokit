@@ -1,3 +1,4 @@
+import { hasCalendarProAccess } from './calendarProAccess';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
@@ -24,6 +25,7 @@ async function api() {
   try { return require('expo-calendar/legacy') as typeof import('expo-calendar/legacy'); } catch { throw new Error('rebuild_required'); }
 }
 export async function deviceCalendars(request = false): Promise<DeviceCalendar[]> {
+  if (!hasCalendarProAccess()) return [];
   const calendar = await api();
   const permission = request ? await calendar.requestCalendarPermissionsAsync() : await calendar.getCalendarPermissionsAsync();
   if (!permission.granted) throw new Error('permission_denied');
@@ -33,12 +35,14 @@ export async function deviceCalendars(request = false): Promise<DeviceCalendar[]
 }
 export async function deviceEvents(ids: string[], start: Date, end: Date): Promise<DeviceEvent[]> {
   if (!ids.length) return [];
+  if (!hasCalendarProAccess()) return [];
   const calendar = await api();
   if (!(await calendar.getCalendarPermissionsAsync()).granted) throw new Error('permission_denied');
   const available = (await calendar.getCalendarsAsync(calendar.EntityTypes.EVENT));
   const valid = ids.filter(id => available.some(value => value.id === id));
   if (!valid.length) throw new Error('calendar_selection_expired');
   const events = await calendar.getEventsAsync(valid, start, end);
+  if (!hasCalendarProAccess()) return [];
   return events.map(value => ({ id: value.id, calendarId: value.calendarId, title: value.title, startDate: value.startDate, endDate: value.endDate, allDay: value.allDay, calendarTitle: available.find(calendar => calendar.id === value.calendarId)?.title, sourceName: available.find(calendar => calendar.id === value.calendarId)?.source?.name, sourceType: available.find(calendar => calendar.id === value.calendarId)?.source?.type }));
 }
 export function calendarError(error: unknown, ko: boolean) {

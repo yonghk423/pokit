@@ -1,3 +1,4 @@
+jest.mock('@features/subscriptions', () => ({ selectCanTestProStoreItems: () => false, useSubscriptionStore: (select: () => boolean) => select() }));
 import { HeroPolaroidEditor } from './HeroPolaroidEditor';
 jest.mock('./HeroPolaroidEditor', () => ({ HeroPolaroidEditor: 'PolaroidEditor' }));
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -131,5 +132,18 @@ it('applies edited settings to the current record without requesting photo-libra
   expect(apply).toHaveBeenCalledWith(draft);
   expect(media.requestPermissionsAsync).not.toHaveBeenCalled();
   expect(media.saveToLibraryAsync).not.toHaveBeenCalled();
+  expect(close).toHaveBeenCalledTimes(1);
+});
+
+it('keeps the editor open after a failed draft save and closes only after retry succeeds', async () => {
+  const apply = jest.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(undefined);
+  const close = jest.fn();
+  await act(async () => { tree.update(<HeroImageActions uri="file:///original.png" onSaveDraft={apply} onEditorClose={close} />); });
+  await openEditor();
+  await act(async () => { await save(); });
+  expect(close).not.toHaveBeenCalled();
+  expect(tree.root.findByType(HeroPolaroidEditor).props.busy).toBe(false);
+  await act(async () => { await save(); });
+  expect(apply).toHaveBeenCalledTimes(2);
   expect(close).toHaveBeenCalledTimes(1);
 });

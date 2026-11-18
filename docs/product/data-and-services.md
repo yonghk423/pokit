@@ -1,10 +1,10 @@
 # 데이터와 외부 서비스
 
-확인일: 2026-10-27
+갱신일: 2026-11-17. Daylight의 현재 데이터·서비스 역할과 구현 시작점을 기록합니다. 외부 계정의 판매·배포 상태는 별도 확인합니다.
 
 ## 사용자 기록
 
-일기·장면·할 일·메모와 설정은 로컬 저장 경로를 기준으로 확인합니다.
+날짜별 다이어리·사진·폴라로이드 편집 정보, 계획·메모·이벤트와 설정은 로컬 저장 경로를 기준으로 확인합니다. 기존 장면·메이트 데이터는 각 도메인의 저장 구조를 유지합니다.
 
 - 공용 저장 접근: `src/shared/lib/storage/localStorageClient.ts`
 - 일기와 장면: `src/pages/day-plan/lib/heroDiaryStorage.ts`, `heroDayStorage.ts`
@@ -17,7 +17,8 @@
 | 서비스 | 역할 | 확인 위치 |
 |---|---|---|
 | OpenWeather | 현재 위치를 바탕으로 날씨 조회 | `src/pages/day-plan/ui/WeatherSummary.tsx` |
-| Supabase | 앱 공지 등 해당 구현에서 명시한 원격 콘텐츠 | `src/entities/announcement/api/fetchAnnouncements.ts` |
+| Supabase | 공지와 다운로드형 달력·일러스트 등 원격 에셋 제공 | `src/entities/announcement/api/fetchAnnouncements.ts`, `src/pages/day-plan/lib/illustrationCalendarAssets.ts` |
+| Google Drive | 사용자가 실행하는 날짜별 백업·복구 | [백업 범위와 설정](../google-drive-backup.md) |
 | RevenueCat | 구독 SDK와 구독 상태 처리 코드 | `src/shared/config/revenueCat.ts`, `src/features/subscriptions` |
 | 도서 검색 | 책 찾기·관련 정보 조회 | `src/features/aladin-book-search`, `src/features/open-library-book-search` |
 
@@ -33,11 +34,13 @@
 
 ## 구독과 동기화 상태
 
-설정의 Pro 화면은 RevenueCat의 현재 Offering에서 월간·연간 패키지와 현지화 가격을 조회하고, 구매·복원 결과의 `yourday_pro` 권한을 구독 상태에 반영합니다. 개발 빌드는 SDK가 활성화되며, 배포 빌드는 `EXPO_PUBLIC_REVENUECAT_ENABLED=true`를 명시해야 활성화됩니다. 개발 빌드는 `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`가 있으면 Test Store에 우선 연결합니다. 이 값이 없으면 플랫폼별 키, 공통 키, 개발용 폴백 순으로 사용합니다. 배포 빌드는 개발용 키를 무시하고 플랫폼 키가 `test_`로 시작하면 초기화하지 않습니다. cat 권한 표시 이름은 `yourday pro`, 내부 식별자는 `yourday_pro`입니다.
+한국 스토어의 Daylight Pro 책정가는 월 3,900원, 연 27,900원입니다.
 
-현재 혜택 UI는 기획 예시이며 유료 기능 제한은 아직 연결하지 않았습니다. 판매 전에는 실제 혜택·약관을 확정하고 스토어 상품, 현재 Offering의 월간/연간 패키지, `yourday_pro` 권한 연결 및 샌드박스 구매·취소·복원·만료를 검증합니다. SDK 코드가 있다는 이유로 구독을 판매 중이라고 설명하지 않습니다.
+설정의 Pro 화면은 RevenueCat의 현재 Offering에서 월간·연간 패키지와 현지화 가격을 조회하고, 구매·복원 결과의 `daylight_pro` 권한을 구독 상태에 반영합니다. 개발 빌드는 SDK가 활성화되며, 배포 빌드는 `EXPO_PUBLIC_REVENUECAT_ENABLED=true`를 명시해야 활성화됩니다. iOS 개발 빌드는 App Store용 iOS 키를 우선합니다. 해당 키가 없는 개발 빌드는 `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`가 있으면 Test Store에 우선 연결합니다. 이 값이 없으면 플랫폼별 키, 공통 키, 개발용 폴백 순으로 사용합니다. 배포 빌드는 개발용 키를 무시하고 플랫폼 키가 `test_`로 시작하면 초기화하지 않습니다. 제품 소개의 명칭은 **Daylight Pro**입니다. 기존 구독자의 `yourday_pro` 권한도 인정합니다.
 
-개인 일기의 기기 간 iCloud/CloudKit 동기화가 제공된다고 확인할 수 있는 구현은 이번 문서 점검에서 찾지 못했습니다. 이전의 구독·iCloud 로드맵은 현재 확정 사양으로 사용하지 않습니다. 동기화를 다시 기획하면 대상 데이터, 복구, 충돌 처리, 기기 간 검증 결과를 먼저 명시합니다.
+유료 일러스트 팩·장식과 유료 필름 적용·저장·공유에는 Pro 권한 처리가 연결되어 있습니다. 일반 캘린더와 무료 필름·수동 보정은 무료입니다. 정확한 혜택은 [현재 기능](current-product.md), `featureFlags.ts`와 해당 기능 코드를 함께 확인합니다. 코드 연결 여부와 실제 스토어 판매·결제 검증은 별개이며, 구매·취소·복원·만료는 스토어 샌드박스에서 확인합니다.
+
+Google Drive 날짜별 백업·복구는 수동 동작이며 실시간 기기 간 동기화와 구분합니다. 범위와 실패 복원 정책은 [백업 문서](../google-drive-backup.md)를 따릅니다. 과거 iCloud/CloudKit 로드맵을 현재 확정 사양으로 사용하지 않습니다.
 
 ## 언어
 

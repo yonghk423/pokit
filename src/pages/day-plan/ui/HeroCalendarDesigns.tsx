@@ -78,7 +78,7 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
   const isPhoto = design === 'photo', isIllustration = design === 'illustration', isGrid = design === 'grid' || isIllustration;
   const fitted = layoutHeight != null;
   const coverScale = 0.65;
-  const photoWidth = Math.min(width - 88 * scale, fitted ? layoutHeight * 0.42 / 1.2 : 220 * scale) * coverScale;
+  const photoWidth = Math.min(width - 88 * scale, layoutHeight != null ? layoutHeight * 0.42 / 1.2 : 220 * scale) * coverScale;
   const photoHeight = photoWidth * 1.2 + 25 * scale * coverScale;
   if (isPremiumPaper(design)) return <PremiumCalendarPaper widgetSize={widgetSize} design={design} month={month} today={today} diaries={miniature ? [] : diaries} eventDates={eventDates} width={width} height={layoutHeight} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
   if (design === 'clipboard') return frame(<HeroClipboardCalendar width={width} height={layoutHeight} month={month} today={today} miniature={miniature} eventDates={eventDates} recordDates={[...grouped.keys()]} photos={widgetSize ? {} : Object.fromEntries([...grouped].flatMap(([key, records]) => { const uri = records.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri; return uri ? [[key, uri]] : []; }))} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />);

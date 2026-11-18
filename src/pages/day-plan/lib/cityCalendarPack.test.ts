@@ -1,5 +1,5 @@
 import { EVERYDAY_CINEMA_THEMES } from '../model/heroCalendarDesign';
-import { isCityCalendarPackReady, downloadCityCalendarPack } from './cityCalendarPack';
+import { getCalendarPackDownload, subscribeCalendarPackDownloads, isCityCalendarPackReady, downloadCityCalendarPack } from './cityCalendarPack';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { downloadIllustrationCalendarAssets, isIllustrationCalendarInstalled } from './illustrationCalendarAssets';
 jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { getJson: jest.fn(), setJson: jest.fn(), removeItem: jest.fn() } }));
@@ -46,4 +46,25 @@ it('marks a previously installed pack migrated only after all 100 current files 
   expect(isIllustrationCalendarInstalled).toHaveBeenCalledTimes(100);
   expect(localStorageClient.removeItem).toHaveBeenCalledWith(oldKey);
   expect(localStorageClient.setJson).toHaveBeenCalledWith('pokit:everyday-cinema-pack:20261112-top-only-v4', true);
+});
+
+
+it('retains progress across subscriber remounts and deduplicates the same pack', async () => {
+  let resume!: () => void;
+  jest.mocked(downloadIllustrationCalendarAssets).mockImplementationOnce(() => new Promise(resolve => { resume = () => resolve({ background: 'fixture' }); })).mockResolvedValue({ background: 'fixture' });
+  const oldScreen = jest.fn();
+  const unsubscribe = subscribeCalendarPackDownloads(oldScreen);
+  const first = downloadCityCalendarPack(jest.fn(), 'city');
+  expect(getCalendarPackDownload('city').status).toBe('downloading');
+  unsubscribe();
+  const newScreen = jest.fn();
+  const unsubscribeNew = subscribeCalendarPackDownloads(newScreen);
+  const duplicate = downloadCityCalendarPack(jest.fn(), 'city');
+  expect(downloadIllustrationCalendarAssets).toHaveBeenCalledTimes(1);
+  resume();
+  await Promise.all([first, duplicate]);
+  expect(downloadIllustrationCalendarAssets).toHaveBeenCalledTimes(50);
+  expect(getCalendarPackDownload('city')).toEqual({ status: 'ready', count: 50 });
+  expect(newScreen).toHaveBeenCalled();
+  unsubscribeNew();
 });

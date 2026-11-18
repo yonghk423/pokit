@@ -1,3 +1,4 @@
+jest.mock('./calendarProAccess', () => ({ hasCalendarProAccess: jest.fn(() => true) }));
 import { deviceCalendars, deviceEvents, useAppleCalendar } from './appleCalendar';
 import * as Calendar from 'expo-calendar/legacy';
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));

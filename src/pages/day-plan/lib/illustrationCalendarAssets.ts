@@ -58,7 +58,9 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
   const revision = collectionSeason(themeId) ? `season-${collectionSeason(themeId)}-v1` : themeId.startsWith('season-winter-') ? 'season-winter-v2' : everyday ? 'everyday-cinema-v2' : warmSepia ? 'warm-sepia-open-panel-v2' : citypopRetro ? 'citypop-retro-v1' : texturedWatercolor ? themeId === 'textured-watercolor-01-fly-kite' ? 'textured-watercolor-v1' : 'textured-watercolor-v2' : 'fullbleed-v2';
   await getHeroAiAccessToken();
   const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-theme', { body: { themeId, revision } });
-  if (error || data?.themeId !== themeId || data?.revision !== revision || !Array.isArray(data?.files)) throw new Error('theme_download_unavailable');
+  if (error || data?.themeId !== themeId || data?.revision !== revision || !Array.isArray(data?.files)) {
+    throw new Error('theme_download_unavailable');
+  }
   for (const name of names) {
     const info = await fs.getInfoAsync(assets[name]);
     if (!refresh && info.exists && !info.isDirectory && info.size > 0) continue;

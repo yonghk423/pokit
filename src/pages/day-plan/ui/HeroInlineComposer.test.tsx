@@ -1,3 +1,5 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
+import { HeroImageActions } from './HeroImageActions';
 jest.mock('./HeroPolaroidProcessor', () => ({ HeroPolaroidProcessor: () => null }));
 jest.mock('../model/heroCameraStyle', () => ({ useHeroCameraStyle: () => 'mini-evo', HERO_CAMERA_IMAGES: { 'mini-evo': 1 } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
@@ -15,6 +17,10 @@ import { saveHeroOriginalPhoto } from '../lib/heroOriginalPhoto';
 import { loadHeroSavedFaces, deleteHeroFace } from '../lib/heroSavedFaces';
 import { getHeroAiRemaining, generateHeroImages, resumeHeroAiJob, cancelHeroAiJob, dismissHeroAiJob } from '../lib/heroAiClient';
 let mockIsPro = false;
+jest.mock('@features/subscriptions', () => {
+  const store = jest.requireMock('@features/subscriptions/model/subscriptionStore');
+  return { ...store, selectCanTestProStoreItems: store.selectIsPro };
+});
 jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: (state: { isPro: boolean }) => state.isPro, useSubscriptionStore: (selector: (state: { isPro: boolean }) => boolean) => selector({ isPro: mockIsPro }) }));
 jest.mock('../../settings/ui/ProPreviewPage', () => ({ ProPreviewPage: (props: Record<string, unknown>) => jest.requireActual('react').createElement(jest.requireActual('react-native').View, { ...props, testID: 'mock-pro-page' }) }));
 beforeEach(() => { mockIsPro = false; });
@@ -54,7 +60,7 @@ it('updates style labels when a character is renamed while the composer is open'
     expect(tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.accessibilityLabel).toBe('서연');
     act(() => tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.onPress());
     expect(tree.root.findAllByProps({ testID: 'hero-inline-style-protagonist-1' })[0].props.accessibilityLabel).toBe('서연');
-    expect(tree.root.findAll(node => node.props.children === '서연').length).toBeGreaterThan(0);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-style-options' })[0].props.accessibilityElementsHidden).toBe(false);
     act(() => { saveComicCharacterName('protagonist-1', '지우'); });
     expect(tree.root.findAllByProps({ testID: 'hero-inline-style-toggle' })[0].props.accessibilityLabel).toBe('지우');
     expect(tree.root.findAllByProps({ testID: 'hero-inline-style-protagonist-1' })[0].props.accessibilityLabel).toBe('지우');
@@ -598,20 +604,22 @@ it('keeps the draft and creates no card when original photo selection is cancell
   } finally { act(() => tree.unmount()); }
 });
 
-it('preserves the photo diary title and story while switching between the two sides', async () => {
+it('preserves the photo diary title and story while flipping the photo', async () => {
+  const animation = jest.spyOn(require('react-native').Animated, 'timing').mockImplementation(() => ({ start: (done: any) => done?.({ finished: true }), stop: jest.fn(), reset: jest.fn() }));
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<HeroInlineComposer photoOnly initialMode="original" sceneId="05-work" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
   const field = (testID: string) => tree.root.findAllByProps({ testID })[0];
-  act(() => field('hero-inline-title').props.onChangeText('한 장의 기억'));
-  act(() => field('hero-photo-back-tab').props.onPress());
-  expect(field('hero-photo-back-tab').props.accessibilityState.selected).toBe(true);
-  act(() => field('hero-inline-story').props.onChangeText('오래 기억할 하루'));
-  act(() => field('hero-photo-front-tab').props.onPress());
-  expect(field('hero-inline-title').props.value).toBe('한 장의 기억');
-  act(() => field('hero-photo-back-tab').props.onPress());
-  expect(field('hero-inline-story').props.value).toBe('오래 기억할 하루');
-  expect(field('hero-original-photo-save').props.disabled).toBe(true);
-  act(() => tree.unmount());
+  try {
+    act(() => field('hero-inline-title').props.onChangeText('한 장의 기억'));
+    act(() => field('hero-photo-flip').props.onPress());
+    expect(field('hero-photo-back').props.accessibilityElementsHidden).toBe(false);
+    act(() => field('hero-inline-story').props.onChangeText('오래 기억할 하루'));
+    act(() => field('hero-photo-flip').props.onPress());
+    expect(field('hero-photo-back').props.accessibilityElementsHidden).toBe(true);
+    expect(field('hero-inline-title').props.value).toBe('한 장의 기억');
+    expect(field('hero-inline-story').props.value).toBe('오래 기억할 하루');
+    expect(field('hero-original-photo-save').props.disabled).toBe(true);
+  } finally { act(() => tree.unmount()); animation.mockRestore(); }
 });
 
 it('renders the camera workspace on the main background regardless of card paper, without the main close button', async () => {
@@ -628,6 +636,8 @@ it('renders the camera workspace on the main background regardless of card paper
 });
 
 it('opens the app paywall at zero quota and preserves the draft when dismissed', async () => {
+  const previous = FEATURE_FLAGS.proAiUpgrade;
+  FEATURE_FLAGS.proAiUpgrade = true;
   jest.mocked(getHeroAiRemaining).mockResolvedValue(0);
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" title="작성 중인 제목" memo="작성 중인 내용" ink="#222" onApply={jest.fn()} onClose={jest.fn()} />); });
@@ -640,7 +650,7 @@ it('opens the app paywall at zero quota and preserves the draft when dismissed',
     expect(tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.value).toBe('작성 중인 제목');
     expect(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.value).toBe('작성 중인 내용');
     expect(generateHeroImages).not.toHaveBeenCalled();
-  } finally { act(() => tree.unmount()); }
+  } finally { act(() => tree.unmount()); FEATURE_FLAGS.proAiUpgrade = previous; }
 });
 
 it('does not upsell an active Pro subscriber at zero quota', async () => {
@@ -662,31 +672,15 @@ it('edits the imported photo front and back in the preview and saves both togeth
   try {
     expect(launchImageLibraryAsync).not.toHaveBeenCalled();
     expect(tree.root.findAllByProps({ testID: 'hero-original-photo-save' })).toHaveLength(0);
-    const stage = tree.root.findAllByProps({ testID: 'hero-photo-import-stage' })[0];
-    act(() => stage.props.onLayout({ nativeEvent: { layout: { width: 375, height: 600 } } }));
-    const image = tree.root.findAllByProps({ testID: 'hero-photo-preview-image' })[0];
-    expect(image.props.source).toEqual({ uri: 'file:///album/selected.jpg' });
-    expect(image.props.resizeMode).toBe('contain');
-    const pickerStyle = StyleSheet.flatten(tree.root.findAllByProps({ testID: 'hero-original-photo-picker' })[0].props.style);
-    expect(pickerStyle.width / pickerStyle.height).toBeCloseTo(1200 / 1800);
-    expect(tree.root.findAllByProps({ testID: 'hero-photo-date' })[0].props.children).toMatch(/\d{4}/);
-    const field = (testID: string) => tree.root.findAllByProps({ testID })[0];
-    act(() => field('hero-inline-title').props.onChangeText('한 장의 기억'));
-    expect(field('hero-photo-back').props.accessibilityElementsHidden).toBe(true);
-    const animation = jest.spyOn(require('react-native').Animated, 'timing').mockImplementation(() => ({ start: (done: any) => done?.({ finished: true }), stop: jest.fn(), reset: jest.fn() }));
-    act(() => field('hero-photo-flip').props.onPress());
-    expect(field('hero-photo-front').props.accessibilityElementsHidden).toBe(true);
-    expect(field('hero-photo-back').props.accessibilityElementsHidden).toBe(false);
-    act(() => field('hero-inline-story').props.onChangeText('오래 기억할 하루'));
-    act(() => field('hero-photo-flip').props.onPress());
-    animation.mockRestore();
-    expect(field('hero-inline-title').props.value).toBe('한 장의 기억');
-    expect(field('hero-inline-story').props.value).toBe('오래 기억할 하루');
-    expect(field('hero-photo-back').props.accessibilityElementsHidden).toBe(true);
-    act(() => tree.root.findAllByProps({ testID: 'hero-photo-import-back' })[0].props.onPress());
-    expect(onClose).toHaveBeenCalledTimes(1);
+    const editor = () => tree.root.findByType(HeroImageActions);
+    expect(editor().props.uri).toBe('file:///album/selected.jpg');
+    expect(editor().props.imageSize).toEqual({ width: 1200, height: 1800 });
+    expect(editor().props.editorOnly).toBe(true);
+    act(() => editor().props.onSaveText({ title: '한 장의 기억', memo: '오래 기억할 하루' }));
+    expect(editor().props.title).toBe('한 장의 기억');
+    expect(editor().props.memo).toBe('오래 기억할 하루');
     expect(onApply).not.toHaveBeenCalled();
-    await act(async () => { tree.root.findAllByProps({ testID: 'hero-photo-import-save' })[0].props.onPress(); });
+    await act(async () => { await editor().props.onSaveDraft({ title: '한 장의 기억', memo: '오래 기억할 하루', pen: '#222' }); });
     expect(saveHeroOriginalPhoto).toHaveBeenCalledWith('file:///album/selected.jpg', 'selected.jpg');
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ title: '한 장의 기억', memo: '오래 기억할 하루' }), 'file:///Documents/hero-photos/selected.jpg', '');
     expect(generateHeroImages).not.toHaveBeenCalled();
@@ -720,4 +714,37 @@ it.each(['contain', 'cover'] as const)('preserves the selected upload layout %s 
     }), 'file:///Documents/hero-photos/upload.jpg', '');
     expect(generateHeroImages).not.toHaveBeenCalled();
   } finally { act(() => tree.unmount()); }
+});
+
+it('preserves the title and story when generation fails offline without saving or closing', async () => {
+  jest.mocked(generateHeroImages).mockRejectedValueOnce(new Error('Network request failed'));
+  const apply = jest.fn(), close = jest.fn();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer sceneId="05-work" title="네트워크 오류 제목" memo="보존할 내용" ink="#222" onApply={apply} onClose={close} />); });
+  try {
+    await act(async () => { tree.root.findAllByProps({ testID: 'hero-inline-generate' })[0].props.onPress(); });
+    expect(generateHeroImages).toHaveBeenCalledTimes(1);
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-title' })[0].props.value).toBe('네트워크 오류 제목');
+    expect(tree.root.findAllByProps({ testID: 'hero-inline-story' })[0].props.value).toBe('보존할 내용');
+    expect(apply).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+  } finally { act(() => tree.unmount()); }
+});
+
+it('rejects failed photo saves to keep the editor open and permits retry with the same draft', async () => {
+  jest.mocked(saveHeroOriginalPhoto).mockRejectedValueOnce(new Error('Network request failed')).mockResolvedValueOnce('file:///saved.jpg');
+  const apply = jest.fn(), close = jest.fn();
+  const alert = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => undefined);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroInlineComposer photoOnly initialMode="original" initialOriginalPhoto={{uri:'file:///selected.jpg'}} title="사진 제목" memo="사진 기록" sceneId="05-work" ink="#222" onApply={apply} onClose={close} />); });
+  const draft = {title:'사진 제목',memo:'사진 기록',pen:'#222'};
+  try {
+    await act(async () => { await expect(tree.root.findByType(HeroImageActions).props.onSaveDraft(draft)).rejects.toThrow('Network request failed'); });
+    expect(apply).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+    expect(tree.root.findByType(HeroImageActions).props.title).toBe('사진 제목');
+    expect(tree.root.findByType(HeroImageActions).props.memo).toBe('사진 기록');
+    await act(async () => { await tree.root.findByType(HeroImageActions).props.onSaveDraft(draft); });
+    expect(apply).toHaveBeenCalledWith(expect.objectContaining(draft), 'file:///saved.jpg', '');
+  } finally { act(() => tree.unmount()); alert.mockRestore(); }
 });

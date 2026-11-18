@@ -1,5 +1,5 @@
+import { checkProAccess } from '../_shared/proAccess.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { requiresDownloadSubscription } from '../_shared/subscriptionPolicy.ts';
 import { proDiaryIds } from './proDiaryIds.ts';
 import { proDiaryFolders } from './proDiaryFolders.ts';
 // These calendar designs stay free even when paid diary items resume.
@@ -16,17 +16,9 @@ Deno.serve(async request => {
     if (error || !data.user) return json({ error: 'unauthorized' }, 401);
     const { id, format } = await request.json();
     if (!proDiaryIds.has(id) && !["berry-purple", "camera-kodak-mini-shot", "camera-leica-sofort-2", "camera-mini-12", "camera-polaroid-now", "clip-burgundy", "clip-emerald", "clip-golden-yellow", "clip-lavender", "clip-mint", "clip-orange", "clip-peach", "clip-pink", "clip-purple", "clip-sky", "clip-vivid-pink", "clip-yellow", "cobalt-blue", "emerald", "ivory-paper", "kraft-clip", "leather-folio", "mint-glass", "mint-planner", "silver-ring", "soft-mint", "spiral-plan", "trash-ash", "trash-canvas", "trash-charcoal", "trash-leather", "trash-pink", "trash-rattan", "trash-steel", "trash-vintage", "trash-walnut", "weather"].includes(id)) return json({ error: 'invalid_design' }, 400);
-    if (requiresDownloadSubscription() && !freeCalendarIds.has(id)) {
-      const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
-      if (!secret) return json({ error: 'subscription_verification_unavailable' }, 503);
-      // Identity comes exclusively from the verified Supabase JWT.
-      const response = await fetch(`https://api.revenuecat.com/v2/projects/proj12204b57/customers/${encodeURIComponent(data.user.id)}/active_entitlements?limit=100`, { headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(15000) });
-      if (response.status === 404) return json({ error: 'subscription_required' }, 403);
-      if (!response.ok) return json({ error: 'subscription_verification_unavailable' }, 503);
-      const customer = await response.json();
-      // RevenueCat V2 uses the immutable entitlement ID for yourday_pro.
-      const entitlement = customer.items?.find((item: { entitlement_id: string; expires_at: number | null }) => item.entitlement_id === 'entl6dedc07f76');
-      if (!entitlement || (entitlement.expires_at !== null && !(entitlement.expires_at > Date.now()))) return json({ error: 'subscription_required' }, 403);
+    if (!freeCalendarIds.has(id)) {
+      const access = await checkProAccess(data.user.id, Deno.env.get('REVENUECAT_SECRET_API_KEY'), Deno.env.get('REVENUECAT_DAYLIGHT_PRO_ENTITLEMENT_ID'));
+      if (access) return json({ error: access.error }, access.status);
     }
     const store = admin.storage.from('calendar-store');
     const pack: Record<string, unknown> = { id, revision: 1 };

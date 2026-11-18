@@ -1,6 +1,6 @@
 # 사용 설명서 그림
 
-앱 안의 설명서는 현재 공개된 화면과 실제 UI 라벨을 기준으로 만듭니다. 주인공·장면·메이트를 구분하고 기능 플래그가 꺼진 화면을 대표 동작으로 안내하지 않습니다.
+앱 안의 설명서는 현재 공개된 화면과 실제 UI 라벨을 기준으로 만듭니다. Daylight의 Diary·Photo·Store, 사진 편집과 날짜별 기록을 중심으로 설명합니다. 과거 주인공·장면·메이트와 기능 플래그가 꺼진 화면을 대표 동작으로 안내하지 않습니다.
 
 - 설명 내용: `src/pages/guide-book/lib/guideBookPages.ts`
 - 그림 구현: `src/pages/guide-book/ui/GuideBookFigures.tsx`

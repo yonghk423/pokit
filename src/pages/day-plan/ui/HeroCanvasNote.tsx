@@ -1,4 +1,3 @@
-import { hasSeenProIntroduction } from '@features/subscriptions/lib/proIntroduction';
 import { HeroContentSkeleton } from './HeroContentSkeleton';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
@@ -312,13 +311,13 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
           <HanddrawnControl name="keyboard.chevron.compact.down" size={26} color={ink} />
         </Pressable>
         {tab === 'story' && (['pen', 'paper'] as const).map(kind => <Pressable key={kind} accessibilityRole="button" onPress={() => {
-          if (!isPro) { if (!hasSeenProIntroduction()) router.push('/pro-preview'); return; }
+          if (!isPro) { router.push('/pro-preview'); return; }
           setIllustrationsOpen(false);
           setPicker(current => current === kind ? null : kind);
         }} style={{ minHeight: 44, justifyContent: 'center' }}>
           <ThemedText style={{ color: ink, fontSize: 15 }}>{kind === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}{isPro ? '' : ' · Pro'}</ThemedText>
         </Pressable>)}
-        {tab === 'story' ? <Pressable testID="hero-canvas-illustrations" accessibilityRole="button" accessibilityLabel={translateUiText("이모티콘 모음")} accessibilityState={{ expanded: illustrationsOpen }} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { if (!hasSeenProIntroduction()) router.push('/pro-preview'); return; } setPicker(null); setIllustrationsOpen(value => !value); }} style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+        {tab === 'story' ? <Pressable testID="hero-canvas-illustrations" accessibilityRole="button" accessibilityLabel={translateUiText("이모티콘 모음")} accessibilityState={{ expanded: illustrationsOpen }} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { router.push('/pro-preview'); return; } setPicker(null); setIllustrationsOpen(value => !value); }} style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={noteIllustrationSources[recentIllustration]} contentFit="contain" style={{ width: 28, height: 30 }} />
         </Pressable> : null}
         <Pressable accessibilityRole="button" testID="hero-canvas-edit-done" accessibilityLabel={tab === 'event' ? translateUiText("이벤트 저장") : translateUiText("글쓰기 완료")} disabled={tab === 'event' && !showTime && !eventTitle.trim()} onPress={() => { if (tab === 'event' && showTime) { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); } else if (tab === 'event') { addEvent(); } else { inlineNote.current?.blur(); Keyboard.dismiss(); setEditing(false); } }} style={{ minWidth: 60, height: 48, alignItems: 'center', justifyContent: 'center' }}>

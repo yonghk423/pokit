@@ -44,7 +44,7 @@ it('uses each artwork size and coordinates with the same cover crop, including l
 
 
 it('keeps the full thumbnail height for city animation while cropping the paper tail on everyday cinema', () => {
-  const city = { ...theme, design: 'city-animation-03', themeId: '03-spilled-coffee-report' } as const;
+  const city = { ...theme, design: 'city-animation-03', themeId: '03-spilled-coffee-report', concept: '보고서 위에 다시 채워가는 하루' } as const;
   for (const item of [city, theme]) {
     let tree!: ReactTestRenderer;
     act(() => { tree = create(<IllustrationThemeCard theme={item} width={180} height={411} dark={false} selected={false} error={false} onApply={jest.fn()} />); });

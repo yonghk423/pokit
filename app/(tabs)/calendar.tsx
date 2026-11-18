@@ -1,6 +1,5 @@
-import { hasSeenProIntroduction } from '@features/subscriptions/lib/proIntroduction';
+import { useSyncExternalStore } from 'react';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import { resetDiaryItem } from '../../src/pages/day-plan/model/resetDiaryItem';
 import { proDiaryCatalog } from '../../src/pages/day-plan/model/proDiaryCatalog';
 import { DiaryThemeGallery } from '../../src/pages/day-plan/ui/DiaryThemeGallery';
@@ -25,7 +24,7 @@ import { eventsOnDay } from '@features/apple-calendar/calendarDates';
 import { HeroTrashIcon } from '../../src/pages/day-plan/ui/HeroTrashIcon';
 import { AppAlert } from '@shared/lib/app-alert';
 import { illustrationCalendarBackgroundUri } from '../../src/pages/day-plan/lib/illustrationCalendarAssets';
-import { isCityCalendarPackReady, downloadCityCalendarPack, removeCityCalendarPack, calendarPackThemes, isProCalendarPack, type CalendarPackId } from '../../src/pages/day-plan/lib/cityCalendarPack';
+import { getCalendarPackDownload, subscribeCalendarPackDownloads, isCityCalendarPackReady, downloadCityCalendarPack, removeCityCalendarPack, calendarPackThemes, isProCalendarPack, type CalendarPackId } from '../../src/pages/day-plan/lib/cityCalendarPack';
 import { applyHeroCalendarDesign, CITY_CALENDAR_THEMES, EVERYDAY_CINEMA_THEMES, useHeroCalendarDesign } from '../../src/pages/day-plan/model/heroCalendarDesign';
 import { SettingsTopBarButton } from '../../src/pages/day-plan/ui/SettingsTopBarButton';
 import { palette } from '../../src/pages/day-plan/lib/dayPlanPalette';
@@ -83,8 +82,9 @@ function CalendarPackStore({ pack, width, month, dark }: {
   const [ready, setReady] = useState(false);
   const router = useRouter();
   const openPack = () => router.push({ pathname: '/calendar-pack', params: { pack } });
-  const [progress, setProgress] = useState<number | null>(null);
-  const [failed, setFailed] = useState(false);
+  const downloadState = useSyncExternalStore(subscribeCalendarPackDownloads, () => getCalendarPackDownload(pack));
+  const progress = downloadState.status === 'downloading' ? downloadState.count : null;
+  const failed = downloadState.status === 'error';
   const [deleting, setDeleting] = useState(false);
   const themes = calendarPackThemes(pack);
   const title = pack === 'season-spring' ? translateUiText('봄') : pack === 'season-summer' ? translateUiText('여름') : pack === 'season-autumn' ? translateUiText('가을') : pack === 'season-winter' ? translateUiText("겨울") : pack === 'city' ? translateUiText("시티 애니메이션") : pack === 'warm-sepia' ? 'Warm Sepia Open Panel' : pack === 'citypop-retro' ? translateUiText("시티팝 레트로") : pack === 'textured-watercolor' ? translateUiText("텍스처 수채화") : 'Everyday Cinema';
@@ -92,9 +92,8 @@ function CalendarPackStore({ pack, width, month, dark }: {
   const proPack = (pack.startsWith('season-') || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack);
   const isPro = useSubscriptionStore(selectCanTestProStoreItems);
   const paywall = usePremiumPackPaywall();
-  useEffect(() => { let active = true; void isCityCalendarPackReady(pack).then(value => { if (active) setReady(value); }).catch(() => undefined); return () => { active = false; }; }, [pack]);
+  useEffect(() => { let active = true; void isCityCalendarPackReady(pack).then(value => { if (active) setReady(value); }).catch(() => undefined); return () => { active = false; }; }, [pack, downloadState.status]);
   const unlockPack = async () => {
-    if (proPack && !ready && isProFreeAccessActive()) return (await paywall.present()) === 'promotion' && isProFreeAccessActive();
     if (!proPack || isPro) return true;
     const result = await paywall.present();
     return (result === 'purchased' || result === 'restored') && selectCanTestProStoreItems(useSubscriptionStore.getState());
@@ -103,10 +102,8 @@ function CalendarPackStore({ pack, width, month, dark }: {
     if (progress !== null || deleting) return;
     if (!(await unlockPack())) return;
     if (ready) { openPack(); return; }
-    setProgress(0); setFailed(false);
-    try { await downloadCityCalendarPack(setProgress, pack); setReady(true); }
-    catch { setFailed(true); }
-    finally { setProgress(null); }
+    try { await downloadCityCalendarPack(() => {}, pack); setReady(true); }
+    catch { /* The shared download state retains the failure across tab changes. */ }
   };
   const remove = async () => {
     setDeleting(true);
@@ -141,16 +138,14 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const selectedCameraStyle = useHeroCameraStyle();
   const photoWall = useHeroPhotoWall();
   const [loadingItem, setLoadingItem] = useState<string | null>(null);
-  const itemPaywall = usePremiumPackPaywall();
   const installLock = useRef(false);
   async function chooseItem(id: string, pro: boolean, apply: () => void) {
     if (installLock.current) return;
     tapHaptic('select');
-    if (pro && !isPro) { if (!hasSeenProIntroduction()) router.push('/pro-preview'); return; }
+    if (pro && !isPro) { router.push('/pro-preview'); return; }
     installLock.current = true;
     try {
       if (pro && !diaryImages(id)) {
-        if (isProFreeAccessActive() && ((await itemPaywall.present()) !== 'promotion' || !isProFreeAccessActive())) return;
         setLoadingItem(id); await installDiaryItem(id); }
       apply();
     } catch (error) { AppAlert.alert(translateUiText("다운로드 실패"), storeDownloadErrorMessage(error, locale === 'ko')); }
@@ -253,7 +248,6 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
             </Pressable>;
           }) : null);
   return <View style={{ flex: 1, minHeight: 0 }}>
-    {itemPaywall.modal}
     {view !== 'illustrationDiary' ? selector : null}
     {!storeArtwork ? <Pressable disabled={!storeArtworkFailed} onPress={retryStoreArtwork} accessibilityLabel={storeArtworkFailed ? translateUiText("이미지 다시 불러오기") : translateUiText("상품 준비 중")} style={{ margin: 24, height: 320, borderRadius: 20, backgroundColor: '#E6E5E1', justifyContent: 'center', alignItems: 'center' }}>{storeArtworkFailed ? <ThemedText>{translateUiText("이미지 다시 불러오기")}</ThemedText> : null}</Pressable> : view === 'diary'
       ? <View style={{ flex: 1, minHeight: 0 }}>

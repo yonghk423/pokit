@@ -1,5 +1,5 @@
+import { checkProAccess } from '../_shared/proAccess.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { requiresDownloadSubscription } from '../_shared/subscriptionPolicy.ts';
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Content-Type': 'application/json' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
 Deno.serve(async request => {
@@ -12,17 +12,9 @@ Deno.serve(async request => {
     if (error || !data.user) return json({ error: 'unauthorized' }, 401);
     const { action } = await request.json();
     if (action !== 'preview' && action !== 'download') return json({ error: 'invalid_action' }, 400);
-    if (action === 'download' && requiresDownloadSubscription()) {
-      const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
-      if (!secret) return json({ error: 'subscription_verification_unavailable' }, 503);
-      // Identity comes exclusively from the verified Supabase JWT.
-      const response = await fetch(`https://api.revenuecat.com/v2/projects/proj12204b57/customers/${encodeURIComponent(data.user.id)}/active_entitlements?limit=100`, { headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(15000) });
-      if (response.status === 404) return json({ error: 'subscription_required' }, 403);
-      if (!response.ok) return json({ error: 'subscription_verification_unavailable' }, 503);
-      const customer = await response.json();
-      // RevenueCat V2 uses the immutable entitlement ID for yourday_pro.
-      const entitlement = customer.items?.find((item: { entitlement_id: string; expires_at: number | null }) => item.entitlement_id === 'entl6dedc07f76');
-      if (!entitlement || (entitlement.expires_at !== null && !(entitlement.expires_at > Date.now()))) return json({ error: 'subscription_required' }, 403);
+    if (action === 'download') {
+      const access = await checkProAccess(data.user.id, Deno.env.get('REVENUECAT_SECRET_API_KEY'), Deno.env.get('REVENUECAT_DAYLIGHT_PRO_ENTITLEMENT_ID'));
+      if (access) return json({ error: access.error }, access.status);
     }
     const storage = admin.storage.from('character-illustrations');
     const prefix = 'protagonist-7/card-960';

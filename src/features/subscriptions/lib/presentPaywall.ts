@@ -1,4 +1,3 @@
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 import { REVENUECAT_ENTITLEMENT_PRO } from '@shared/config/revenueCat';
@@ -31,7 +30,6 @@ function mapPaywallResult(result: PAYWALL_RESULT): PresentPaywallOutcome {
 
 /** 현재 Offering Paywall 을 표시한다. (대시보드에 Paywall 템플릿 필요) */
 export async function presentPaywall(): Promise<PresentPaywallOutcome> {
-  if (isProFreeAccessActive()) return 'not_presented';
   if (!isPurchasesConfigured()) return 'skipped';
   try {
     const result = await RevenueCatUI.presentPaywall({ displayCloseButton: true });
@@ -46,7 +44,6 @@ export async function presentPaywall(): Promise<PresentPaywallOutcome> {
 export async function presentPaywallIfNeeded(
   entitlementId: string = REVENUECAT_ENTITLEMENT_PRO,
 ): Promise<PresentPaywallOutcome> {
-  if (isProFreeAccessActive()) return 'not_presented';
   if (!isPurchasesConfigured()) return 'skipped';
   try {
     const result = await RevenueCatUI.presentPaywallIfNeeded({

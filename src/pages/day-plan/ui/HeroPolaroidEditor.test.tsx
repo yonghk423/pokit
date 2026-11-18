@@ -3,7 +3,6 @@ import { Alert, Image } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { HeroPolaroidEditor } from './HeroPolaroidEditor';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { markProIntroductionSeen } from '@features/subscriptions/lib/proIntroduction';
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: 'ComicSceneImage' }));
 jest.mock('./HeroPolaroidProcessor', () => ({ HeroPolaroidProcessor: 'PolaroidProcessor' }));
 const mockState = { isHydrated: true, pro: false, hydrate: jest.fn(async () => {}), refreshCustomerInfo: jest.fn(async () => null) };
@@ -16,7 +15,6 @@ jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-n
 beforeEach(() => { jest.clearAllMocks(); mockState.pro = false; });
 beforeEach(() => {
   localStorageClient.removeItem('pokit:pro-promotion-introduction'); localStorageClient.removeItem('pokit:pro-introduction-seen');
-  jest.spyOn(require('@shared/config/proPromotion'), 'isProFreeAccessActive').mockReturnValue(false);
 });
 afterEach(() => jest.restoreAllMocks());
 beforeEach(() => { FEATURE_FLAGS.proSubscriptions = true; FEATURE_FLAGS.proPolaroidExport = true; });
@@ -233,7 +231,7 @@ it('selects a calendar date and carries it into exports, with hide and today act
 it('keeps manual adjustments free for non-Pro users', async () => {
   const onExport = jest.fn(async () => {});
   let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'Basic edit', film: 'original', brightness: 30, contrast: 10 }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ date: '2026-11-18', title: 'Basic edit', film: 'original', brightness: 30, contrast: 10 }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
   try {
     await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
     expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
@@ -270,34 +268,6 @@ it.each(['warm', 'monochrome', 'cream'] as const)('exports free %s film for save
     expect(tree.root.findByProps({ testID: `polaroid-select-${film}` }).props.accessibilityLabel).not.toContain('Pro');
     expect(tree.root.findByProps({ testID: 'polaroid-select-faded' }).props.accessibilityLabel).toContain('Pro');
   } finally { act(() => tree.unmount()); }
-});
-
-it('continues a paid-film export after the free-promotion introduction', async () => {
-  const promotion = jest.spyOn(require('@shared/config/proPromotion'), 'isProFreeAccessActive').mockReturnValue(true);
-  const onExport = jest.fn(async () => {});
-  let tree!: ReactTestRenderer;
-  act(() => { tree = create(<HeroPolaroidEditor initial={{ title: 'Trial', date: '', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
-  try {
-    await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
-    expect(onExport).not.toHaveBeenCalled();
-    await act(async () => tree.root.findByType('AppProScreen' as never).props.onPromotionContinue());
-    expect(onExport).toHaveBeenCalledWith('save', expect.objectContaining({ film: 'faded' }));
-    await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
-    expect(onExport).toHaveBeenCalledTimes(2);
-    expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
-  } finally { act(() => tree.unmount()); promotion.mockRestore(); }
-});
-
-it('exports a paid film immediately when the introduction was already viewed elsewhere', async () => {
-  jest.spyOn(require('@shared/config/proPromotion'), 'isProFreeAccessActive').mockReturnValue(true);
-  markProIntroductionSeen();
-  const onExport = jest.fn(async () => {});
-  let tree!: ReactTestRenderer;
-  await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'Trial', date: '', film: 'faded' }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
-  await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-save' })[0].props.onPress());
-  expect(onExport).toHaveBeenCalledTimes(1);
-  expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(0);
-  act(() => tree.unmount());
 });
 
 it('keeps the warm preview and final image selected after switching films', async () => {

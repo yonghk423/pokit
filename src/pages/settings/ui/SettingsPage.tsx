@@ -1,5 +1,4 @@
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import { CalendarConnectionsSection } from '@features/apple-calendar/CalendarConnectionsSection';
 import { selectGoogleCalendar } from '@features/apple-calendar/googleCalendar';
 import { DriveBackupSection } from '@features/drive-backup/DriveBackupSection';
@@ -383,10 +382,10 @@ export function SettingsPage() {
                   <SettingsRowIcon name="pro.crown" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
                   <View style={chrome.itemTextWrap}>
                     <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                      {isProFreeAccessActive() ? t('proPromotion.title', locale) : isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
+                      {isPro ? t('settings.pro.active', locale) : t('settings.pro.start', locale)}
                     </ThemedText>
                     <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                      {isProFreeAccessActive() ? t('proPromotion.settingsDesc', locale) : POKIT_PRO_PREVIEW
+                      {POKIT_PRO_PREVIEW
                         ? t('settings.pro.previewDesc', locale)
                         : !subscriptionConfigured
                         ? t('settings.pro.moduleMissing', locale)

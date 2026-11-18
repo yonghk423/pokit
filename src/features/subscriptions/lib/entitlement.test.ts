@@ -30,7 +30,7 @@ function stubCustomerInfo(activeKeys: string[]): CustomerInfo {
   return {
     entitlements: {
       active,
-      all: active,
+      all: { ...active },
       verification: 'NOT_REQUESTED',
     },
   } as CustomerInfo;
@@ -41,8 +41,12 @@ describe('isProEntitlementActive', () => {
     expect(isProEntitlementActive(null)).toBe(false);
   });
 
-  it('returns true when yourday_pro is active', () => {
+  it('returns true when daylight_pro is active', () => {
     expect(isProEntitlementActive(stubCustomerInfo([REVENUECAT_ENTITLEMENT_PRO]))).toBe(true);
+  });
+
+  it('retains access for an existing yourday_pro subscriber', () => {
+    expect(isProEntitlementActive(stubCustomerInfo(['yourday_pro']))).toBe(true);
   });
 
   it('returns false when other entitlements only', () => {
@@ -54,5 +58,19 @@ describe('getActiveProEntitlement', () => {
   it('returns the active entitlement object', () => {
     const info = stubCustomerInfo([REVENUECAT_ENTITLEMENT_PRO]);
     expect(getActiveProEntitlement(info)?.identifier).toBe(REVENUECAT_ENTITLEMENT_PRO);
+  });
+});
+
+describe('subscription lifecycle access', () => {
+  it('keeps access after auto-renewal is cancelled while the entitlement remains active', () => {
+    const info = stubCustomerInfo([REVENUECAT_ENTITLEMENT_PRO]);
+    info.entitlements.active[REVENUECAT_ENTITLEMENT_PRO] = { ...info.entitlements.active[REVENUECAT_ENTITLEMENT_PRO], willRenew: false };
+    expect(isProEntitlementActive(info)).toBe(true);
+  });
+  it('removes access when the SDK returns an expired entitlement only in purchase history', () => {
+    const info = stubCustomerInfo([]);
+    info.entitlements.all[REVENUECAT_ENTITLEMENT_PRO] = { ...stubEntitlement(REVENUECAT_ENTITLEMENT_PRO), isActive: false };
+    // The SDK provides separate history and active maps.
+    expect(isProEntitlementActive(info)).toBe(false);
   });
 });

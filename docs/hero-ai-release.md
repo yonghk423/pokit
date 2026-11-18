@@ -1,5 +1,7 @@
 # Hero AI release connection
 
+> Historical AI implementation and operations notes. The current product is Daylight; `yourday`, `yourday-ai`, and related keys are existing service identifiers. AI camera entry is currently disabled by `heroAiCameraTab`; this document does not describe the main public app experience.
+
 Project: `yourday` (`wvvtyaxsedpqiscogrwk`, Seoul). The app uses the existing public Supabase URL and publishable key. Release builds use no Mac relay, developer credential, or OpenAI key. Local development builds can send a narrowly scoped developer credential as described below.
 
 ## Authentication and limits

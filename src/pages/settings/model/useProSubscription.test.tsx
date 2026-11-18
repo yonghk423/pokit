@@ -1,5 +1,4 @@
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
-jest.mock('@shared/config/proPromotion', () => ({ isProFreeAccessActive: jest.fn(() => false) }));
+import { AppState } from 'react-native';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { useLayoutEffect } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -27,7 +26,6 @@ function Harness() {
 }
 const monthly = { product: { identifier: 'monthly', priceString: '₩3,000' } };
 beforeEach(() => {
-  (isProFreeAccessActive as jest.Mock).mockReturnValue(false);
   FEATURE_FLAGS.proSubscriptions = true;
   jest.clearAllMocks();
   mockState.isConfigured = true;
@@ -125,10 +123,54 @@ it('does not load products or purchase while subscriptions are paused', async ()
   expect(Purchases.purchasePackage).not.toHaveBeenCalled();
 });
 
-it('blocks purchases and offerings during the free promotion', async () => {
-  (isProFreeAccessActive as jest.Mock).mockReturnValue(true);
-  await act(async () => { tree = create(<Harness />); });
-  await act(async () => { expect(await hook.transact('monthly')).toBe('unavailable'); });
-  expect(Purchases.purchasePackage).not.toHaveBeenCalled();
-  expect(Purchases.getOfferings).not.toHaveBeenCalled();
+it('does not grant Pro when restoration returns no active subscription', async () => {
+  await mount();
+  mockRestore.mockResolvedValue({ ok: true, customerInfo: { pro: false } });
+  await act(async () => { expect(await hook.transact()).toBe('none'); });
+  expect(mockState.customerInfo).toEqual({ pro: false });
+  expect(hook.busy).toBe(false);
+});
+
+it('does not grant Pro after a failed restoration and allows a retry', async () => {
+  await mount();
+  mockRestore.mockResolvedValueOnce({ ok: false, reason: 'error' });
+  await act(async () => { expect(await hook.transact()).toBe('error'); });
+  expect(mockState.applyCustomerInfo).not.toHaveBeenCalled();
+  expect(hook.busy).toBe(false);
+  mockRestore.mockResolvedValueOnce({ ok: true, customerInfo: { pro: true } });
+  await act(async () => { expect(await hook.transact()).toBe('active'); });
+});
+
+it('does not grant Pro on purchase network failure and unlocks for a successful retry', async () => {
+  await mount();
+  jest.mocked(Purchases.purchasePackage).mockRejectedValueOnce(new Error('Network request failed'));
+  await act(async () => { expect(await hook.transact('monthly')).toBe('error'); });
+  expect(mockState.applyCustomerInfo).not.toHaveBeenCalled();
+  expect(mockState.customerInfo).toBeNull();
+  expect(hook.busy).toBe(false);
+  jest.mocked(Purchases.purchasePackage).mockResolvedValueOnce({ customerInfo: { pro: true } } as never);
+  await act(async () => { expect(await hook.transact('monthly')).toBe('active'); });
+  expect(Purchases.purchasePackage).toHaveBeenCalledTimes(2);
+});
+it('preserves an existing entitlement when restoration fails offline', async () => {
+  const existing = { pro: true, entitlement: { productIdentifier: 'yearly' } };
+  mockState.customerInfo = existing;
+  await mount();
+  mockRestore.mockResolvedValueOnce({ ok: false, reason: 'error' });
+  await act(async () => { expect(await hook.transact()).toBe('error'); });
+  expect(mockState.customerInfo).toBe(existing);
+  expect(mockState.applyCustomerInfo).not.toHaveBeenCalled();
+  expect(hook.busy).toBe(false);
+});
+
+it('reloads localized product prices after returning from account settings', async () => {
+  const listener = jest.spyOn(AppState, 'addEventListener');
+  await mount();
+  const callback = listener.mock.calls.at(-1)![1];
+  const koreanMonthly = { product: { identifier: 'monthly', priceString: '₩3,900', currencyCode: 'KRW' } };
+  jest.mocked(Purchases.getOfferings).mockResolvedValueOnce({ current: { monthly: koreanMonthly, annual: null } } as never);
+  await act(async () => { callback('active'); });
+  expect(Purchases.getOfferings).toHaveBeenCalledTimes(2);
+  expect(hook.packages.monthly?.product.priceString).toBe('₩3,900');
+  listener.mockRestore();
 });

@@ -4,7 +4,7 @@
 export const FEATURE_FLAGS = {
   /** 설정에서 Google Drive 날짜별 백업·복구를 다시 노출한다. */
   driveBackupSettings: true,
-  /** RevenueCat 연결과 구독 메뉴. 무료 행사는 proPromotion에서 별도로 관리한다. */
+  /** RevenueCat 연결과 구독 메뉴. */
   proSubscriptions: true,
   /** 유료 필름의 적용·저장·공유는 Pro. 원본·따뜻한 필름·흑백 감성·크림톤과 수동 보정은 무료다. */
   proPolaroidExport: true,

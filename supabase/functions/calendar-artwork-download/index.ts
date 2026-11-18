@@ -1,3 +1,4 @@
+import { checkProAccess } from '../_shared/proAccess.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const headers = {
@@ -27,6 +28,9 @@ Deno.serve(async request => {
     const body = await request.json().catch(() => ({}));
     const asset = typeof body.styleId === 'string' ? styleAssets[body.styleId] : undefined;
     if (!asset) return new Response(JSON.stringify({ error: 'invalid_style' }), { status: 400, headers });
+
+    const access = await checkProAccess(data.user.id, Deno.env.get('REVENUECAT_SECRET_API_KEY'), Deno.env.get('REVENUECAT_DAYLIGHT_PRO_ENTITLEMENT_ID'));
+    if (access) return new Response(JSON.stringify({ error: access.error }), { status: access.status, headers });
 
     const { data: signed, error: signingError } = await admin.storage
       .from('character-illustrations')

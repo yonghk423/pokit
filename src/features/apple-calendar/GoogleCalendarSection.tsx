@@ -1,3 +1,6 @@
+import { useRouter } from 'expo-router';
+import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
+import { hasCalendarProAccess } from './calendarProAccess';
 import { useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -6,6 +9,8 @@ import { SettingsRowIcon, buildSettingsPalette, settingsChromeStyles as chrome }
 import { connectGoogleCalendar, selectGoogleCalendar, useGoogleCalendar } from './googleCalendar';
 
 export function GoogleCalendarSection({ isDark }: { isDark: boolean }) {
+  const router = useRouter();
+  const isPro = useSubscriptionStore(selectIsPro);
   const { t } = useTranslation();
   const email = useGoogleCalendar(state => state.email);
   const tasksEmail = useGoogleCalendar(state => state.tasksEmail);
@@ -21,6 +26,7 @@ export function GoogleCalendarSection({ isDark }: { isDark: boolean }) {
       selectGoogleCalendar(null);
       return;
     }
+    if (!hasCalendarProAccess()) { router.push('/pro-preview'); return; }
     setBusy(true);
     try {
       await connectGoogleCalendar();
@@ -35,7 +41,7 @@ export function GoogleCalendarSection({ isDark }: { isDark: boolean }) {
       <View style={chrome.itemLeft}>
         <SettingsRowIcon name="calendar" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
         <View style={chrome.itemTextWrap}>
-          <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{t(complete ? 'settings.googleCalendar.disconnect' : email ? 'settings.googleCalendar.upgrade' : 'settings.googleCalendar.connect')}</ThemedText>
+          <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{t(complete ? 'settings.googleCalendar.disconnect' : email ? 'settings.googleCalendar.upgrade' : 'settings.googleCalendar.connect')}{!isPro && !complete ? ' · Pro' : ''}</ThemedText>
           <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{email ?? t('settings.googleCalendar.description')}</ThemedText>
           {failed && <ThemedText accessibilityLiveRegion="polite" style={{ color: p.title }}>{t('settings.googleCalendar.error')}</ThemedText>}
         </View>

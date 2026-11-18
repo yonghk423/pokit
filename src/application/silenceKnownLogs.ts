@@ -10,6 +10,12 @@ const isIgnored = (args: unknown[]) =>
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
   if (isIgnored(args)) return;
+  // RevenueCat logs a normal purchase cancellation at ERROR level before rejecting
+  // with userCancelled. Keep the diagnostic without showing a development error overlay.
+  if (typeof args[0] === 'string' && /^\[RevenueCat\][^\n]*Purchase was cancelled\.\s*$/.test(args[0])) {
+    console.info(...args);
+    return;
+  }
   originalConsoleError(...args);
 };
 

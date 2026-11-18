@@ -1,6 +1,3 @@
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
-import { hasSeenProIntroduction, markProIntroductionSeen } from '@features/subscriptions/lib/proIntroduction';
-import { isProEntitlementActive } from '@features/subscriptions/lib/entitlement';
 import { useTranslation } from '@shared/lib/i18n';
 import { POLAROID_PHOTO_WIDTH, getPolaroidPrintLayout } from '../lib/heroPolaroidFraming';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -42,8 +39,8 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
 
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallBusy, setPaywallBusy] = useState(false);
-  const paywallResult = useRef<((result: 'purchased' | 'restored' | 'cancelled' | 'promotion') => void) | null>(null);
-  const finishPaywall = (result: 'purchased' | 'restored' | 'cancelled' | 'promotion') => {
+  const paywallResult = useRef<((result: 'purchased' | 'restored' | 'cancelled') => void) | null>(null);
+  const finishPaywall = (result: 'purchased' | 'restored' | 'cancelled') => {
     setPaywallOpen(false);
     paywallResult.current?.(result);
     paywallResult.current = null;
@@ -90,14 +87,11 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
         const store = useSubscriptionStore.getState();
         if (!store.isHydrated) await store.hydrate();
         await useSubscriptionStore.getState().refreshCustomerInfo();
-        const promotion = isProFreeAccessActive();
-        if ((!selectIsPro(useSubscriptionStore.getState()) && !promotion) || (promotion && !isProEntitlementActive(useSubscriptionStore.getState().customerInfo) && !hasSeenProIntroduction())) {
-          if (hasSeenProIntroduction()) return;
-          markProIntroductionSeen();
-          const result = await new Promise<'purchased' | 'restored' | 'cancelled' | 'promotion'>(resolve => { paywallResult.current = resolve; setPaywallOpen(true); });
+        if (!selectIsPro(useSubscriptionStore.getState())) {
+          const result = await new Promise<'purchased' | 'restored' | 'cancelled'>(resolve => { paywallResult.current = resolve; setPaywallOpen(true); });
           if (result === 'cancelled') return;
           await useSubscriptionStore.getState().refreshCustomerInfo();
-          if (!selectIsPro(useSubscriptionStore.getState()) && !(result === 'promotion' && isProFreeAccessActive())) {
+          if (!selectIsPro(useSubscriptionStore.getState())) {
             return;
           }
         }
@@ -152,7 +146,7 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
         {datePickerOpen ? <HeroPolaroidDatePicker date={draft.date} showDate={draft.showDate !== false} onSelect={date => { patch({ date, showDate: true }); setDatePickerOpen(false); }} onHide={() => { patch({ showDate: false }); setDatePickerOpen(false); }} onClose={() => setDatePickerOpen(false)} /> : null}
         {children}
         {paywallOpen ? <AppModal visible presentationStyle="fullScreen" animationType="none" onRequestClose={() => { if (!paywallBusy) finishPaywall('cancelled'); }}>
-          <ProPreviewPage onPromotionContinue={() => finishPaywall('promotion')} onBusyChange={setPaywallBusy} onClose={() => finishPaywall('cancelled')} onActivated={finishPaywall} />
+          <ProPreviewPage onBusyChange={setPaywallBusy} onClose={() => finishPaywall('cancelled')} onActivated={finishPaywall} />
         </AppModal> : null}
       </Animated.View>
       {imageFailed ? <View style={{ position: 'absolute', top: insets.top + 52, left: 24, right: 24 }}><ThemedText style={{ color: '#934C3C', textAlign: 'center' }}>{t('polaroid.editor.could_not_load_the_photo_close_and_reopen_it')}</ThemedText></View> : null}

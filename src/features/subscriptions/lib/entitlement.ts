@@ -7,8 +7,7 @@ export function isProEntitlementActive(
   customerInfo: CustomerInfo | null | undefined,
   entitlementId: string = REVENUECAT_ENTITLEMENT_PRO,
 ): boolean {
-  if (!customerInfo) return false;
-  return typeof customerInfo.entitlements.active[entitlementId] !== 'undefined';
+  return getActiveProEntitlement(customerInfo, entitlementId) !== null;
 }
 
 export function getActiveProEntitlement(
@@ -16,5 +15,6 @@ export function getActiveProEntitlement(
   entitlementId: string = REVENUECAT_ENTITLEMENT_PRO,
 ) {
   if (!customerInfo) return null;
-  return customerInfo.entitlements.active[entitlementId] ?? null;
+  const active = customerInfo.entitlements.active;
+  return active[entitlementId] ?? (entitlementId === REVENUECAT_ENTITLEMENT_PRO ? active.yourday_pro : undefined) ?? null;
 }

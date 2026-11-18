@@ -1,3 +1,4 @@
+import { checkProAccess } from '../_shared/proAccess.ts';
 import { SEASON_COLLECTION_FILES } from './seasonCollectionFiles.ts';
 import { SEASON_WINTER_FILES } from './seasonWinterFiles.ts';
 import { TEXTURED_WATERCOLOR_FILES } from './texturedWatercolorFiles.ts';
@@ -19,6 +20,14 @@ Deno.serve(async request => {
       '06-angry-email', '07-after-work-run', '08-missed-deadline', '09-boxing-bag', '10-basketball-shot', '11-swimming-laps', '12-cycling-hill', '13-yoga-balance', '14-tennis-serve', '15-soccer-dribble', '16-dance-practice', '17-climbing-wall', '18-jump-rope', '19-rain-run', '20-badminton-rally', '21-couch-after-work', '22-window-tea', '23-laundry-day', '24-home-cooking', '25-lazy-morning', '26-couch-nap', '27-houseplant-care', '28-movie-night', '29-bathroom-skincare', '30-cat-on-lap', '31-frustrated-phone-call', '32-sad-bus-stop', '33-exam-results-joy', '34-interview-nerves', '35-breakup-evening', '36-concert-happiness', '37-embarrassed-spill', '38-holiday-loneliness', '39-birthday-surprise', '40-relief-after-cry', '41-spring-blossom-bicycle', '42-spring-rain-puddle', '43-spring-garden-planting', '44-summer-beach-walk', '45-summer-hill-hike', '46-autumn-leaves', '47-autumn-market', '48-autumn-bus-shelter', '49-winter-snow-play', '50-winter-bus-wait',
     ];
     const themeId = body.themeId;
+    const knownProTheme = typeof themeId === 'string' && [SEASON_COLLECTION_FILES, SEASON_WINTER_FILES, TEXTURED_WATERCOLOR_FILES, EVERYDAY_CINEMA_FILES, WARM_SEPIA_OPEN_PANEL_FILES, CITYPOP_RETRO_FILES].some(files => Object.hasOwn(files, themeId));
+    if (!allowed.includes(themeId) && !knownProTheme) return new Response(JSON.stringify({ error: 'invalid_theme' }), { status: 400, headers });
+    // City Animation stays free. Check every paid pack before signing any file URL.
+    if (knownProTheme) {
+      const access = await checkProAccess(data.user.id, Deno.env.get('REVENUECAT_SECRET_API_KEY'), Deno.env.get('REVENUECAT_DAYLIGHT_PRO_ENTITLEMENT_ID'));
+      if (access) return new Response(JSON.stringify({ error: access.error }), { status: access.status, headers });
+    }
+
     const seasonal = typeof themeId === 'string' && Object.hasOwn(SEASON_COLLECTION_FILES, themeId) ? SEASON_COLLECTION_FILES[themeId] : null;
     if (seasonal) {
       const revision = `season-${seasonal.season}-v1`;

@@ -6,7 +6,7 @@ Storage source: private `character-illustrations/protagonist-7/card-960`, verifi
 
 Deployment prerequisites:
 - RevenueCat V2 secret API key (only `customer_information:customers:read`) in Edge Function secret `REVENUECAT_SECRET_API_KEY`.
-- Entitlement identifier `yourday_pro`, V2 ID `entl6dedc07f76`, project `proj12204b57`.
+- Set `REVENUECAT_DAYLIGHT_PRO_ENTITLEMENT_ID` to the RevenueCat V2 entitlement ID for `daylight_pro` in both download functions. Legacy entitlement identifier `yourday_pro`, V2 ID `entl6dedc07f76`, project `proj12204b57`.
 - Deploy `character-pack` using the repository configuration (`verify_jwt=false`; the function validates JWT with auth.getUser).
 
 The preview action signs the first image for authenticated users. The download action checks the authenticated user's entitlement server-side before issuing one-hour URLs. Never make the whole bucket public or put the secret key in EXPO_PUBLIC variables.

@@ -1,6 +1,6 @@
-# 오늘의 주인공 디자인
+# Daylight 디자인
 
-갱신일: 2026-11-12
+갱신일: 2026-11-17
 
 - [캘린더 테마 배치 기준](photo-diary/calendar-layout.md): 노치·하단 탭 안전 영역, 표 좌표, 화면 크기별 검증
 - [일러스트 캘린더 제작 절차](photo-diary/calendar-large-board-production.md) · [공통 좌표 JSON](photo-diary/city-calendar-template.json) · [빈 SVG 골격](photo-diary/city-calendar-template.svg)

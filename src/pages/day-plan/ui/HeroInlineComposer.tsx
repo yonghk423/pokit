@@ -347,8 +347,11 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
       await onApply({ originalArtworkUri: originalUri, ...(draft ? { polaroidSettings: { ...settings, photoFit: settings.photoFit ?? 'cover' } } : {}), title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), paper, pen: draft?.pen ?? ink, ...(draft?.fontId ? { fontId: draft.fontId } : {}) }, uri, '');
       saveHeroOriginalPhotoMetadata({ uri, title: (draft?.title ?? draftTitle).trim(), memo: (draft?.memo ?? text).trim(), createdAt: Date.now() });
       await removeSavedPickerFile(originalPhoto.uri);
-    } catch {
+    } catch (failure) {
       if (alive.current) setError(t('comicDay.photo.saveError'));
+      // The shared editor closes only after a successful draft save.
+      // Propagate failures there; the legacy button path displays the inline error.
+      if (draft) throw failure;
     } finally {
       locked.current = false;
       if (alive.current) setImportingPhoto(false);

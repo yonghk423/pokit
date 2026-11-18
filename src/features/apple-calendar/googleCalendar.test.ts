@@ -1,3 +1,4 @@
+jest.mock('./calendarProAccess', () => ({ hasCalendarProAccess: jest.fn(() => true) }));
 import { connectGoogleCalendar, selectGoogleCalendar, useGoogleCalendar } from './googleCalendar';
 import { googleSdk } from '../googleSignin';
 

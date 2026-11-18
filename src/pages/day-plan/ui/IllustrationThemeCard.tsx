@@ -10,9 +10,11 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { IllustrationCalendarThumbnailOverlay } from './IllustrationCalendarThumbnailOverlay';
 import { CALENDAR_ARTWORK_LAYOUTS } from '../lib/illustrationCalendarLayouts';
 export type CityTheme = typeof CITY_CALENDAR_THEMES[number];
-export const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme, width, height, dark, selected, error, pro = false, onApply }: {
-  theme: CityTheme; width: number; height: number; dark: boolean; selected: boolean; error: boolean; pro?: boolean; onApply: (theme: CityTheme) => void;
-}) {
+type CardProps = { theme: CityTheme; width: number; height: number; dark: boolean; selected: boolean; error: boolean; pro?: boolean; onApply: (theme: CityTheme) => void };
+export const IllustrationThemeCard = memo(function IllustrationThemeCard(props: CardProps) {
+  return <ThemeCardContent key={props.theme.themeId} {...props} />;
+});
+function ThemeCardContent({ theme, width, height, dark, selected, error, pro = false, onApply }: CardProps) {
   useTranslation();
   const [previewReady, setPreviewReady] = useState(false);
   const today = useTodayDate();
@@ -31,7 +33,10 @@ export const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme
     <View style={{ width, height: visibleHeight, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }}>
       <View style={{ width, height: visibleHeight, borderRadius: 14, overflow: 'hidden' }}>
         <ExpoImage source={{ uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ position: 'absolute', top: 0, left: 0, width, height }} />
-        {previewReady ? <IllustrationCalendarThumbnailOverlay themeId={theme.themeId} month={month} width={width} height={height} /> : <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height: visibleHeight, backgroundColor: '#E6E5E1' }} />}
+        {previewReady ? <IllustrationCalendarThumbnailOverlay themeId={theme.themeId} month={month} width={width} height={height} /> : <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height: visibleHeight, backgroundColor: dark ? '#383633' : '#E6E5E1', padding: 12, gap: 10 }}>
+          <View style={{ height: '48%', borderRadius: 8, backgroundColor: dark ? '#484643' : '#D7D5D0' }} />
+          <View style={{ width: '46%', height: 8, alignSelf: 'center', borderRadius: 4, backgroundColor: dark ? '#55524E' : '#CFCCC6' }} />
+        </View>}
       </View>
     </View>
     <View style={{ padding: 8, minHeight: 68, gap: 2 }}>
@@ -43,5 +48,4 @@ export const IllustrationThemeCard = memo(function IllustrationThemeCard({ theme
       {error ? <ThemedText accessibilityLiveRegion="polite" style={{ color: ink, fontSize: 12 }}>{translateUiText("적용하지 못했어요. 사진을 눌러 다시 시도해주세요.")}</ThemedText> : null}
     </View>
   </Pressable>;
-});
-
+}

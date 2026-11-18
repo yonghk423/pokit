@@ -32,18 +32,49 @@ async function finishDownload(pack: CalendarPackId) {
 }
 let downloadGeneration = 0;
 
+type PackDownloadState = { status: 'idle' | 'downloading' | 'ready' | 'error'; count: number };
+const idleDownload: PackDownloadState = { status: 'idle', count: 0 };
+const downloadStates = new Map<CalendarPackId, PackDownloadState>();
+const downloadTasks = new Map<CalendarPackId, Promise<void>>();
+const downloadListeners = new Set<() => void>();
+export const getCalendarPackDownload = (pack: CalendarPackId) => downloadStates.get(pack) ?? idleDownload;
+export function subscribeCalendarPackDownloads(listener: () => void) {
+  downloadListeners.add(listener);
+  return () => { downloadListeners.delete(listener); };
+}
+function publishDownload(pack: CalendarPackId, state: PackDownloadState) {
+  downloadStates.set(pack, state);
+  downloadListeners.forEach(listener => listener());
+}
 export async function downloadCityCalendarPack(progress: (count: number) => void, pack: CalendarPackId = 'everyday') {
+  const existing = downloadTasks.get(pack);
+  if (existing) { progress(getCalendarPackDownload(pack).count); return existing; }
   localStorageClient.setJson(key(pack), false);
   const generation = downloadGeneration;
-  for (let i = 0; i < calendarPackThemes(pack).length; i++) {
-    await downloadIllustrationCalendarAssets(calendarPackThemes(pack)[i].themeId);
-    if (generation !== downloadGeneration) throw new Error('calendar_download_cancelled');
-    progress(i + 1);
-  }
-  await finishDownload(pack);
+  publishDownload(pack, { status: 'downloading', count: 0 });
+  const task = (async () => {
+    try {
+      const themes = calendarPackThemes(pack);
+      for (let i = 0; i < themes.length; i++) {
+        await downloadIllustrationCalendarAssets(themes[i].themeId);
+        if (generation !== downloadGeneration) throw new Error('calendar_download_cancelled');
+        publishDownload(pack, { status: 'downloading', count: i + 1 });
+        progress(i + 1);
+      }
+      await finishDownload(pack);
+      publishDownload(pack, { status: 'ready', count: themes.length });
+    } catch (error) {
+      publishDownload(pack, { status: 'error', count: getCalendarPackDownload(pack).count });
+      throw error;
+    } finally { downloadTasks.delete(pack); }
+  })();
+  downloadTasks.set(pack, task);
+  return task;
 }
 
 export async function removeCityCalendarPack(pack: CalendarPackId = 'everyday') {
+  await downloadTasks.get(pack)?.catch(() => undefined);
+  publishDownload(pack, idleDownload);
   localStorageClient.setJson(key(pack), false);
   if (pack === 'everyday') {
     localStorageClient.removeItem(oldEverydayKey);
@@ -56,5 +87,8 @@ export async function removeCityCalendarPack(pack: CalendarPackId = 'everyday') 
 
 export async function clearCityCalendarDownloads() {
   downloadGeneration++;
+  await Promise.allSettled([...downloadTasks.values()]);
   await removeIllustrationCalendarDownloads();
+  downloadStates.clear();
+  downloadListeners.forEach(listener => listener());
 }

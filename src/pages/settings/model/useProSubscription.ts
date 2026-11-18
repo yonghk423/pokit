@@ -1,4 +1,3 @@
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { REVENUECAT_ENABLED } from '@shared/config/revenueCat';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,7 +32,7 @@ export function useProSubscription(storeItems = false) {
     return id === entitlement.productIdentifier && (!basePlan || basePlan === entitlement.productPlanIdentifier);
   }) ?? null;
   const load = useCallback(async () => {
-    if (!enabled || isProFreeAccessActive()) { setStatus('unavailable'); return; }
+    if (!enabled) { setStatus('unavailable'); return; }
     if (lock.current) return;
     lock.current = true;
     try {
@@ -58,13 +57,18 @@ export function useProSubscription(storeItems = false) {
       if (mounted.current) return load();
     });
     const listener = AppState.addEventListener('change', state => {
-      if (state === 'active') void refreshAfterManagement(enabled);
+      if (state === 'active') {
+        // Account/storefront changes can also change product currency and price.
+        void refreshAfterManagement(enabled).then(() => {
+          if (mounted.current) return load();
+        });
+      }
     });
     return () => { mounted.current = false; listener.remove(); };
   }, [load, enabled]);
 
   const transact = async (plan?: ProPlan): Promise<'active' | 'none' | 'cancelled' | 'error' | 'unavailable'> => {
-    if (!enabled || (plan && isProFreeAccessActive())) return 'unavailable';
+    if (!enabled) return 'unavailable';
     if (lock.current) return 'cancelled';
     // Existing subscribers change plans in the purchasing store, never through a second new purchase.
     if (plan && isProEntitlementActive(useSubscriptionStore.getState().customerInfo)) return 'unavailable';

@@ -8,11 +8,11 @@ afterEach(() => {
   keys.forEach((key, index) => { if (previous[index] === undefined) delete process.env[key]; else process.env[key] = previous[index]; });
   Object.assign(globalThis, { __DEV__: originalDev });
 });
-it('uses the explicit Test Store key ahead of platform keys in development', () => {
+it('prefers the App Store key on iOS when a development Test Store key is also present', () => {
   Object.assign(globalThis, { __DEV__: true });
   process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = 'test_example';
   process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = 'appl_example';
-  expect(getRevenueCatApiKey('ios')).toBe('test_example');
+  expect(getRevenueCatApiKey('ios')).toBe('appl_example');
   expect(getRevenueCatApiKey('android')).toBe('test_example');
   expect(getRevenueCatApiKey('web')).toBeNull();
 });

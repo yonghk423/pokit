@@ -1,0 +1,30 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { useDeviceEvents } from './useDeviceEvents';
+import { deviceEvents } from './appleCalendar';
+let mockPro = true;
+const mockIds = ['saved'];
+jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: () => mockPro, useSubscriptionStore: (select: () => boolean) => select() }));
+jest.mock('./appleCalendar', () => ({ useAppleCalendar: (select: (state: object) => unknown) => select({ids:mockIds}), deviceEvents: jest.fn(), calendarError: () => 'error' }));
+jest.mock('./googleCalendar', () => ({ useGoogleCalendar: (select: (state: object) => unknown) => select({email:null,tasksEmail:null}), googleEvents: jest.fn() }));
+jest.mock('./googleTasks', () => ({ googleTasks: jest.fn() }));
+let result: ReturnType<typeof useDeviceEvents>;
+function Host() { result = useDeviceEvents(2026,10,true); return null; }
+it('hides loaded events immediately on expiry and rejects an in-flight result while preserving selections', async () => {
+  mockPro = true;
+  jest.mocked(deviceEvents).mockResolvedValue([{id:'saved-event',title:'Event',calendarId:'saved',startDate:new Date(),endDate:new Date(),allDay:false}]);
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<Host />); });
+  expect(result.events).toHaveLength(1);
+  let finish!: (events: never[]) => void;
+  jest.mocked(deviceEvents).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  await act(async () => { result.refresh(); });
+  const calls = jest.mocked(deviceEvents).mock.calls.length;
+  mockPro = false;
+  await act(async () => { tree.update(<Host />); });
+  expect(result.connected).toBe(false);
+  expect(result.events).toEqual([]);
+  await act(async () => { finish([]); result.refresh(); });
+  expect(result.events).toEqual([]);
+  expect(deviceEvents).toHaveBeenCalledTimes(calls);
+  act(() => tree.unmount());
+});

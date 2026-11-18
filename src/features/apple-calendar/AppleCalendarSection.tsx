@@ -1,3 +1,6 @@
+import { useRouter } from 'expo-router';
+import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
+import { hasCalendarProAccess } from './calendarProAccess';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { buildSettingsPalette, settingsChromeStyles as chrome } from '../../pages/settings/lib/settingsChrome';
 import { calendarDisplayTitle } from './calendarDisplayTitle';
@@ -10,6 +13,8 @@ import { useTranslation } from '@shared/lib/i18n';
 import { calendarError, deviceCalendars, deviceEvents, useAppleCalendar, type DeviceCalendar } from './appleCalendar';
 
 export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
+  const router = useRouter();
+  const isPro = useSubscriptionStore(selectIsPro);
   const { locale, t } = useTranslation();
   const p = buildSettingsPalette(isDark);
   const ko = locale === 'ko', ink = p.title;
@@ -21,13 +26,14 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
   const loaded = useRef(false);
   const loading = useRef(false);
   const load = async (request = false) => {
+    if (!hasCalendarProAccess()) { if (request) router.push('/pro-preview'); return; }
     if (loading.current || (!request && useAppleCalendar.getState().disconnected)) return;
     loading.current = true;
     setBusy(true); setError(''); setMonthEvents(null);
     try {
       const next = await deviceCalendars(request);
       if (request) useAppleCalendar.getState().reconnect();
-      if (useAppleCalendar.getState().disconnected) return;
+      if (!hasCalendarProAccess() || useAppleCalendar.getState().disconnected) return;
       setCalendars(next); loaded.current = true;
       const now = new Date();
       try { setMonthEvents(await deviceEvents(next.map(calendar => calendar.id), new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 1))); }
@@ -43,12 +49,12 @@ export function AppleCalendarSection({ isDark }: { isDark: boolean }) {
   if (Platform.OS !== 'ios') return null;
   return <View>
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: open, busy }}
-      onPress={() => { setOpen(value => !value); if (!open && !loaded.current && !disconnected) void load(true); }}
+      onPress={() => { if (!hasCalendarProAccess()) { router.push('/pro-preview'); return; } setOpen(value => !value); if (!open && !loaded.current && !disconnected) void load(true); }}
       style={chrome.item}>
-      <ThemedText style={[chrome.itemTitle, { color: ink }]}>{t('settings.deviceCalendar.manage')}</ThemedText>
+      <ThemedText style={[chrome.itemTitle, { color: ink }]}>{t('settings.deviceCalendar.manage')}{!isPro ? ' · Pro' : ''}</ThemedText>
       <ThemedText style={{ color: p.desc }}>{open ? '−' : '+'}</ThemedText>
     </Pressable>
-    {open ? <View accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'} style={{ paddingHorizontal: 14, paddingVertical: 12, gap: 10 }}>
+    {open && isPro ? <View accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'} style={{ paddingHorizontal: 14, paddingVertical: 12, gap: 10 }}>
       {disconnected ? <View style={{ gap: 8 }}>
         <ThemedText style={{ color: ink }}>{translateUiText("캘린더 연결이 해제되어 있어요.")}</ThemedText>
         {error ? <ThemedText accessibilityLiveRegion="polite" style={{ color: ink }}>{error}</ThemedText> : null}

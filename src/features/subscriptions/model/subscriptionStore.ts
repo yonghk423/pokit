@@ -1,4 +1,3 @@
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
 import Purchases, { type CustomerInfo, type PurchasesError } from 'react-native-purchases';
 import { create } from 'zustand';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -81,12 +80,10 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 }));
 
 export function selectIsPro(state: SubscriptionState): boolean {
-  // Feature access includes the launch promotion; paid entitlement remains in CustomerInfo.
-  if (!FEATURE_FLAGS.proSubscriptions || isProFreeAccessActive()) return true;
+  if (!FEATURE_FLAGS.proSubscriptions) return true;
   return isProEntitlementActive(state.customerInfo);
 }
 
-// Store access follows the same temporary free-access policy in every build.
 export function selectCanTestProStoreItems(state: SubscriptionState): boolean {
   return selectIsPro(state);
 }

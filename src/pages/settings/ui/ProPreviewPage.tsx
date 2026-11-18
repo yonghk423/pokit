@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
-import { isProFreeAccessActive } from '@shared/config/proPromotion';
-import { markProIntroductionSeen } from '@features/subscriptions/lib/proIntroduction';
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
 import { AccessibilityInfo, AppState, Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppAlert } from '@shared/lib/app-alert';
+import { PRIVACY_POLICY_URL } from '@shared/config/privacyPolicy';
+import { openWebLink } from '@shared/lib/url/openWebLink';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -100,11 +100,12 @@ function FilmFilterPreview() {
   }, [playing, ready]);
   return <View ref={target} collapsable={false} testID="pro-film-filter-preview">
     <Image ref={image}
-      source={reduceMotion ? require('../../../../assets/pro-introduction/film-full-screen-poster.webp') : require('../../../../assets/pro-introduction/film-full-screen-switch.gif')}
+      source={reduceMotion ? require('../../../../assets/pro-introduction/film-full-screen-poster.webp') : require('../../../../assets/pro-introduction/film-full-screen-switch.webp')}
+      useAppleWebpCodec={false}
       autoplay={playing} onDisplay={() => setReady(true)}
       accessibilityLabel={t('proPreview.screen.photo')}
       contentFit="contain" transition={0}
-      style={{ width: '100%', aspectRatio: 480 / 997 }} />
+      style={{ width: '100%', aspectRatio: 600 / 1304 }} />
   </View>;
 }
 
@@ -248,8 +249,7 @@ function IllustratedCalendarShowcase({ titleColor, detailColor }: { titleColor: 
 }
 
 /** Custom paywall backed by the current RevenueCat Offering. */
-export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBusyChange, storeItems }: { storeItems?: boolean; onPromotionContinue?: () => void; onBusyChange?: (busy: boolean) => void; onClose?: () => void; onActivated?: (result: 'purchased' | 'restored') => void } = {}) {
-  useEffect(() => { markProIntroductionSeen(); }, []);
+export function ProPreviewPage({ onClose, onActivated, onBusyChange, storeItems }: { storeItems?: boolean; onBusyChange?: (busy: boolean) => void; onClose?: () => void; onActivated?: (result: 'purchased' | 'restored') => void } = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
@@ -259,7 +259,17 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
   const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true });
   const [plan, setPlan] = useState<'monthly' | 'yearly' | null>(null);
   const subscription = useProSubscription(storeItems);
+  const openLegalLink = async (url: string) => {
+    if (!await openWebLink(url)) {
+      AppAlert.alert(t('settings.privacyPolicy.openFailedTitle'), t('settings.privacyPolicy.openFailedBody'));
+    }
+  };
   useEffect(() => { onBusyChange?.(subscription.busy); }, [subscription.busy, onBusyChange]);
+  const monthly = subscription.packages.monthly?.product;
+  const yearly = subscription.packages.yearly?.product;
+  const annualSavings = monthly && yearly && monthly.currencyCode === yearly.currencyCode && monthly.price > 0 && yearly.price > 0
+    ? Math.round(100 * (1 - yearly.price / (12 * monthly.price)))
+    : 0;
   const preferredPlan = plan ?? subscription.currentPlan ?? 'monthly';
   const selectedPlan = subscription.packages[preferredPlan] ? preferredPlan : subscription.packages.yearly ? 'yearly' : 'monthly';
   const expiry = subscription.entitlement?.expirationDate;
@@ -310,28 +320,6 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
       <ThemedText style={[styles.description, muted]}>{t('proPreview.freeCalendars')}</ThemedText>
     </View>
   </>;
-  if (isProFreeAccessActive()) return (
-    <View style={[styles.root, { backgroundColor: p.bg, paddingTop: insets.top }]}>
-      <View style={chrome.header}>
-        <Pressable onPress={() => { if (onClose) onClose(); else router.back(); }} accessibilityRole="button" accessibilityLabel={t('settings.back')} style={chrome.headerBtn}>
-          <SettingsPenIcon name="chevron.left" size={20} color={p.title} />
-        </Pressable>
-        <ThemedText style={[chrome.headerTitle, text]}>Pro</ThemedText>
-        <View style={chrome.headerBtn} />
-      </View>
-      <ProScrollContext.Provider value={scrollY}><Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={[styles.content, { paddingTop: 24, paddingBottom: 24, gap: 20 }]}>
-        <View style={[styles.emblem, { backgroundColor: accent }]}><SettingsPenIcon name="pro.crown" size={38} color={p.title} /></View>
-        <ThemedText style={[styles.title, text]}>{t('proPromotion.title')}</ThemedText>
-        <ThemedText style={[styles.sectionTitle, text]}>{t('proPromotion.message')}</ThemedText>
-        <ThemedText style={[styles.description, muted]}>{t('proPromotion.notice')}</ThemedText>
-        <ProReveal><IllustratedCalendarShowcase titleColor={p.title} detailColor={p.desc} /></ProReveal>
-        {benefits}
-        <Pressable accessibilityRole="button" onPress={() => { if (onPromotionContinue) onPromotionContinue(); else if (onClose) onClose(); else router.back(); }} style={[styles.cta, { backgroundColor: accent }]}>
-          <ThemedText style={[styles.benefitTitle, text]}>{t('proPromotion.continue')}</ThemedText>
-        </Pressable>
-      </Animated.ScrollView></ProScrollContext.Provider>
-    </View>
-  );
 
   return (
     <View style={[styles.root, { backgroundColor: p.bg, paddingTop: insets.top }]}>
@@ -350,8 +338,7 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
             <ThemedText style={[styles.subtitle, muted]}>{t('proPreview.subtitle')}</ThemedText>
           </View>
         </View>
-        <ProReveal><IllustratedCalendarShowcase titleColor={p.title} detailColor={p.desc} /></ProReveal>
-
+        <ThemedText style={[styles.sectionTitle, text]}>{t('proPreview.choose')}</ThemedText>
         {subscription.isPro ? (
           <View style={[styles.account, { backgroundColor: accent }]}>
             <SettingsInkFrame color={p.title} />
@@ -361,10 +348,8 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
             <ThemedText style={[styles.description, muted]}>{t(subscription.entitlement?.store === 'TEST_STORE' ? 'proPreview.testManage' : 'proPreview.changeNotice')}</ThemedText>
           </View>
         ) : null}
-        {benefits}
-        <ThemedText style={[styles.sectionTitle, text]}>{t('proPreview.choose')}</ThemedText>
         <View style={styles.plans}>
-          {(['monthly', 'yearly'] as const).map((value) => (
+          {(['yearly', 'monthly'] as const).map((value) => (
             <Pressable key={value} disabled={subscription.busy || !subscription.packages[value]} onPress={() => setPlan(value)} accessibilityRole="radio" accessibilityState={{ checked: selectedPlan === value }} accessibilityLabel={t(`proPreview.${value}`)} style={[styles.plan, selectedPlan === value && { backgroundColor: accent }]}>
               <SettingsInkFrame color={p.title} />
               <View style={styles.planHeading}>
@@ -372,6 +357,9 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
                 <View style={[styles.radio, { borderColor: p.title }]}>{selectedPlan === value ? <View style={[styles.radioDot, { backgroundColor: p.title }]} /> : null}</View>
               </View>
               <ThemedText style={[styles.price, text]}>{subscription.packages[value]?.product.priceString ?? t(subscription.status === 'loading' ? 'proPreview.loading' : 'proPreview.unavailable')}</ThemedText>
+              {value === 'yearly' && yearly?.pricePerMonthString && annualSavings > 0 && (
+                <ThemedText style={[styles.description, text]}>{t('proPreview.annualSavings', { price: yearly.pricePerMonthString, percent: annualSavings })}</ThemedText>
+              )}
               <ThemedText style={[styles.description, muted]}>{t(subscription.currentPlan === value ? 'proPreview.currentPlan' : `proPreview.${value}Desc`)}</ThemedText>
             </Pressable>
           ))}
@@ -383,6 +371,25 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
             <ThemedText style={[styles.description, text]}>{t('proPreview.retry')}</ThemedText>
           </Pressable>
         ) : null}
+        <View style={styles.benefitTableSection}>
+          <ThemedText style={[styles.sectionTitle, text]}>{t('proPreview.table.title')}</ThemedText>
+          <ThemedText style={[styles.description, muted]}>{t('proPreview.table.note')}</ThemedText>
+          <View style={[styles.benefitTable, { borderColor: p.border }]}>
+            <View style={[styles.benefitTableRow, { backgroundColor: accent }]}>
+              <ThemedText style={[styles.benefitTableName, styles.description, text]}>{t('proPreview.table.feature')}</ThemedText>
+              <ThemedText style={[styles.benefitTableValue, styles.description, text]}>Pro</ThemedText>
+            </View>
+            {(['calendars', 'films', 'writing', 'tools', 'calendarSync', 'future'] as const).map(key => (
+              <View key={key} accessible accessibilityLabel={`${t(`proPreview.table.${key}`)}, ${t('proPreview.table.included')}`} style={[styles.benefitTableRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.border }]}>
+                <ThemedText style={[styles.benefitTableName, styles.description, text]}>{t(`proPreview.table.${key}`)}</ThemedText>
+                <ThemedText style={[styles.benefitTableValue, styles.description, text]}>{t('proPreview.table.included')}</ThemedText>
+              </View>
+            ))}
+          </View>
+        </View>
+        <ProReveal><IllustratedCalendarShowcase titleColor={p.title} detailColor={p.desc} /></ProReveal>
+
+        {benefits}
       </Animated.ScrollView></ProScrollContext.Provider>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 10), backgroundColor: p.bg, borderTopColor: p.border }]}>
         {!subscription.isPro && subscription.packages[selectedPlan] ? <ThemedText style={[styles.note, muted]}>{t(`proPreview.${selectedPlan}`)} · {subscription.packages[selectedPlan]?.product.priceString}</ThemedText> : null}
@@ -392,12 +399,27 @@ export function ProPreviewPage({ onClose, onPromotionContinue, onActivated, onBu
         <Pressable disabled={subscription.busy || subscription.status === 'loading'} onPress={() => void submit(true)} accessibilityRole="button" style={styles.restore}>
           <ThemedText style={[styles.description, text]}>{t('settings.restore.title')}</ThemedText>
         </Pressable>
+        <View style={styles.legalLinks}>
+          <Pressable accessibilityRole="link" onPress={() => void openLegalLink('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')} style={styles.legalLink}>
+            <ThemedText style={[styles.note, muted]}>{t('proPreview.termsOfUse')}</ThemedText>
+          </Pressable>
+          <Pressable accessibilityRole="link" onPress={() => void openLegalLink(PRIVACY_POLICY_URL)} style={styles.legalLink}>
+            <ThemedText style={[styles.note, muted]}>{t('settings.privacyPolicy.title')}</ThemedText>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  benefitTableSection: { gap: 12, paddingVertical: 20 },
+  benefitTable: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, overflow: 'hidden' },
+  benefitTableRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14, gap: 12 },
+  benefitTableName: { flex: 1, flexShrink: 1 },
+  benefitTableValue: { width: 76, textAlign: 'center' },
+  legalLinks: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 16 },
+  legalLink: { minHeight: 44, justifyContent: 'center' },
   root: { flex: 1 },
   appScreens: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap', gap: 12, paddingTop: 16, paddingBottom: 8 },
   appScreen: { flex: 1, maxWidth: 240 },
@@ -407,7 +429,7 @@ const styles = StyleSheet.create({
   benefitFootnote: { gap: 12, paddingVertical: 28 },
   benefitSection: { gap: 14, paddingVertical: 36, borderBottomWidth: StyleSheet.hairlineWidth },
   content: { paddingHorizontal: 20, gap: 12, width: '100%', maxWidth: 600, alignSelf: 'center' },
-  hero: { alignItems: 'center', paddingTop: 30, gap: 18, paddingBottom: 36 },
+  hero: { alignItems: 'center', paddingTop: 8, gap: 18, paddingBottom: 36 },
   showcase: { width: '100%', paddingVertical: 32, gap: 14, borderRadius: 2 },
   showcaseKicker: { fontSize: 10, lineHeight: 14, letterSpacing: 1.2, fontWeight: '700' },
   showcaseTitle: { fontSize: 21, lineHeight: 29, letterSpacing: -0.4, fontWeight: '600' },

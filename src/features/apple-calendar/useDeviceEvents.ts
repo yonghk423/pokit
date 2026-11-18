@@ -1,3 +1,4 @@
+import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { googleTasks } from './googleTasks';
 import { t } from '@shared/lib/i18n/model/translate';
@@ -7,16 +8,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { calendarError, deviceEvents, useAppleCalendar } from './appleCalendar';
 import type { DeviceEvent } from './calendarDates';
 export function useDeviceEvents(year: number, month: number, ko: boolean, enabled = true) {
+  const isPro = useSubscriptionStore(selectIsPro);
+  const canRead = enabled && isPro;
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = useCallback(() => setRefreshKey(value => value + 1), []);
   const [loading, setLoading] = useState(false);
   const email = useGoogleCalendar(state => state.email);
   const tasksEmail = useGoogleCalendar(state => state.tasksEmail);
   const ids = useAppleCalendar(state => state.ids);
-  const connected = enabled && (!!email || ids.length > 0);
+  const connected = canRead && (!!email || ids.length > 0);
   const [result, setResult] = useState<{ events: DeviceEvent[]; error: string }>({ events: [], error: '' });
   useEffect(() => {
-    if (!enabled) return;
+    if (!canRead) return;
     let alive = true, revision = 0;
     const refresh = async () => {
       const current = ++revision;
@@ -42,7 +45,7 @@ export function useDeviceEvents(year: number, month: number, ko: boolean, enable
     };
     void refresh();
     return () => { alive = false; };
-  }, [email, tasksEmail, ids, year, month, ko, refreshKey, enabled]);
+  }, [email, tasksEmail, ids, year, month, ko, refreshKey, canRead]);
   // Clear synchronously on disconnect, even before the effect runs.
   return { connected, ...(connected ? result : { events: [], error: '' }), loading: connected && loading, refresh };
 }

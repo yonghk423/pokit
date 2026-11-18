@@ -34,7 +34,7 @@ it('starts displaying long text without waiting for slow decoration files', asyn
   jest.mocked(localStorageClient.getJson).mockImplementation(key => key.endsWith(':inline') ? { text, icons: ['star'] } : null);
   const injectJavaScript = jest.fn();
   let tree!: ReturnType<typeof create>;
-  await act(async () => { tree = create(<HeroInlineNote storageKey="long-note" sources={{ star: 999 }} ink="#222222" placeholder="Notes" onFocusChange={() => {}} onIllustrationInserted={() => {}} />, { createNodeMock: element => element.props.testID === 'hero-canvas-note' ? { injectJavaScript } : null }); });
+  await act(async () => { tree = create(<HeroInlineNote storageKey="long-note" sources={{ star: 999 }} ink="#222222" placeholder="Notes" onFocusChange={() => {}} onIllustrationInserted={() => {}} />, { createNodeMock: element => (element.props as { testID?: string }).testID === 'hero-canvas-note' ? { injectJavaScript } : null }); });
   await act(async () => tree.root.findByProps({ testID: 'hero-canvas-note' }).props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready' }) } }));
   expect(injectJavaScript.mock.calls.some(([script]) => script.startsWith('window.note.initialize('))).toBe(true);
   expect(injectJavaScript.mock.calls.some(([script]) => script.startsWith('window.note.images('))).toBe(false);
