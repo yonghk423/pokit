@@ -1,0 +1,337 @@
+[
+  {
+    "remote": "trash-bins/decor-cat-trash-filled.webp",
+    "sha256": "6efbeacbf75504876d5418c83a97bfa14fb491f9996cbb2aeae8a8fdbd7fdbc4",
+    "bytes": 577946
+  },
+  {
+    "remote": "cameras/decor-cat-camera.webp",
+    "sha256": "9f65e3ccef32f7d0a4f607e4eac84cc223daab44ab8da2d0482f04105e987fdd",
+    "bytes": 767522
+  },
+  {
+    "remote": "trash-bins/decor-cat-trash.webp",
+    "sha256": "82d9bc9b4cd8de2f451cfab9cfa60a7f9ae60ce05722222925ecf35b410a9af5",
+    "bytes": 509306
+  },
+  {
+    "remote": "cameras/decor-shell-camera.webp",
+    "sha256": "ce85b333c51f2eeafac2253e065a41a3f348a4d72c3c0bda6703d84f9b45fd1e",
+    "bytes": 582990
+  },
+  {
+    "remote": "trash-bins/decor-shell-trash-filled.webp",
+    "sha256": "9ada000e8a20ef0e373c2ed48acbfab4a2c6a8f614d8e557a5d7bcb9e57f99f9",
+    "bytes": 466182
+  },
+  {
+    "remote": "trash-bins/decor-shell-trash.webp",
+    "sha256": "b9a0768a63c39eb610ad09d420a580bb43714e5896730ba5a05857d1e17a7193",
+    "bytes": 451434
+  },
+  {
+    "remote": "trash-bins/decor-chick-trash.webp",
+    "sha256": "64b9db3502810ad6187d05ebf60d65668309629f537653c0562db0b4468e9ccd",
+    "bytes": 420248
+  },
+  {
+    "remote": "cameras/decor-chick-camera.webp",
+    "sha256": "a0de0e3a378c12cdf4a2faee32a9b6256c01ecaece00dc45977ef7b6db9cb4ed",
+    "bytes": 539034
+  },
+  {
+    "remote": "trash-bins/decor-chick-trash-filled.webp",
+    "sha256": "e223fc43f084ae77126cf1095aefa3d7f729912e04a9102be9908fbdc3b7c857",
+    "bytes": 512288
+  },
+  {
+    "remote": "trash-bins/decor-ribbon-trash.webp",
+    "sha256": "620c25999943162a7d57d8d8d739ebcf8d0c102dd432e1558df86201eac64e04",
+    "bytes": 583564
+  },
+  {
+    "remote": "cameras/decor-ribbon-camera.webp",
+    "sha256": "572c8a98349b81bbd5bf7c41f3e20e020ff16c4ab3ba471d31e9f4b292e2ce02",
+    "bytes": 677090
+  },
+  {
+    "remote": "trash-bins/decor-ribbon-trash-filled.webp",
+    "sha256": "e529a8e33c4a9ae480a55c8d61e455f2ce3200bd5edeb4457e71e258420fb8a4",
+    "bytes": 554798
+  },
+  {
+    "remote": "trash-bins/decor-berry-trash.webp",
+    "sha256": "1dbe78114e1674af76b8fe929ab4b6e774f5e6ccdfb90c43b33bffcd2a34c15e",
+    "bytes": 910046
+  },
+  {
+    "remote": "trash-bins/decor-berry-trash-filled.webp",
+    "sha256": "e364d1c3a3eccee06426305a20e4ea3c62ee0b5b93eccf8b9131b50548a08bce",
+    "bytes": 898608
+  },
+  {
+    "remote": "cameras/decor-berry-camera.webp",
+    "sha256": "49093b94592bef628173ca817ffd8ac56dbf6873a078e27fe4fb3df70546c527",
+    "bytes": 988812
+  },
+  {
+    "remote": "trash-bins/decor-stamp-trash.webp",
+    "sha256": "883aa83050ced80435155372f82c26281384664085dda277927e663c5ac552b7",
+    "bytes": 570538
+  },
+  {
+    "remote": "trash-bins/decor-stamp-trash-filled.webp",
+    "sha256": "793b60fd3b0c67065cb69cb8b2e8718d65033d3d4f7c1c99878ac779569d1bca",
+    "bytes": 615018
+  },
+  {
+    "remote": "cameras/decor-stamp-camera.webp",
+    "sha256": "6c78af2292e2bab3c72e93a84769dd4b8855ea75206f32bb0953593f11b976d6",
+    "bytes": 871928
+  },
+  {
+    "remote": "clips/clip-satin-bow.webp",
+    "sha256": "ac0dea47ab0e3c7271a01024554dced2a49c1acec76ad0a103220f5ea699599e",
+    "bytes": 372626
+  },
+  {
+    "remote": "clips/clip-strawberry.webp",
+    "sha256": "cee61b340e24817a070bc2fb37fcc8f82cba1786d20c5945b7f6c5c065b8fed4",
+    "bytes": 465504
+  },
+  {
+    "remote": "clips/clip-pearl-lilac.webp",
+    "sha256": "7ea1638099b17f3cb5238e38ac92c35bd7ea60e225701a2d867723332330b59d",
+    "bytes": 320826
+  },
+  {
+    "remote": "cameras/mini-bunny.webp",
+    "sha256": "4444ad5b36b3944e5559d959641687e54179ee17feff7082584161f32c4c1365",
+    "bytes": 890946
+  },
+  {
+    "remote": "cameras/mini-toast.webp",
+    "sha256": "fd2faa92f89823156f875a284c1c401d5d9b3c19cb4db7d3c75b159c192086f2",
+    "bytes": 684082
+  },
+  {
+    "remote": "cameras/mini-mail.webp",
+    "sha256": "d8dac4ed85002ae3a1660eaf8aca798bc3f3ed31e54e15ac7c124370c0fdd124",
+    "bytes": 713240
+  },
+  {
+    "remote": "trash-bins/mini-bunny-trash.webp",
+    "sha256": "178b93c354a2dc43b9d617d752222fcfefc1172be2ea547205685fc40eea2c36",
+    "bytes": 667250
+  },
+  {
+    "remote": "trash-bins/mini-bunny-trash-filled.webp",
+    "sha256": "425f456c4161a58595039a2a43ded6281728c4ea0a6953077ce124988e9545d8",
+    "bytes": 712050
+  },
+  {
+    "remote": "clips/mini-bunny-clip.webp",
+    "sha256": "f4f800027e4363794a7d6e573fe8beb6f694e91ccc0cec86ec40e62c0a238313",
+    "bytes": 428904
+  },
+  {
+    "remote": "trash-bins/mini-toast-trash.webp",
+    "sha256": "5603848e3e8c603bc951459dd0fee8f428083269a7998e76ba854b58b69ab281",
+    "bytes": 688592
+  },
+  {
+    "remote": "trash-bins/mini-toast-trash-filled.webp",
+    "sha256": "513900c723fd73c9bac93cff128a1837b82fa4a76c2df9997bcc67bb18d06a38",
+    "bytes": 644646
+  },
+  {
+    "remote": "clips/mini-toast-clip.webp",
+    "sha256": "64fa17d14193b4da9cd72933ab0cce177a122e861549fac9bd4b2001d2d90ce1",
+    "bytes": 387152
+  },
+  {
+    "remote": "trash-bins/mini-clover-trash.webp",
+    "sha256": "057be10235e7adad38eb26c4e60e309b4b9c6265cb1cb446f6d881c19f0630bb",
+    "bytes": 631496
+  },
+  {
+    "remote": "trash-bins/mini-clover-trash-filled.webp",
+    "sha256": "e64e9e14ac693f81defe4acc0a4d2d1502a50bb4f18c1509d1a24e651a261886",
+    "bytes": 647368
+  },
+  {
+    "remote": "clips/mini-clover-clip.webp",
+    "sha256": "e1827d6d5753c44d0e59e945da09fb67b42931242fcfdcda742e8662179464d8",
+    "bytes": 341026
+  },
+  {
+    "remote": "clips/clip-purple.webp",
+    "sha256": "5bc4c1dfe10c991307d2c37563efbb53fdb0f56ae45110e46ed8adc4f517e64c",
+    "bytes": 198634
+  },
+  {
+    "remote": "clips/clip-burgundy.webp",
+    "sha256": "65ea3f264e0789e155360f33f7ac2676c2dbd5fd86cf98364e4549e80e6f530e",
+    "bytes": 172922
+  },
+  {
+    "remote": "clips/clip-emerald.webp",
+    "sha256": "c2e13be045e403839d6340849d5a07e6b9c7e8118383f8e3dca9388fd4be2c60",
+    "bytes": 191512
+  },
+  {
+    "remote": "clips/clip-golden-yellow.webp",
+    "sha256": "5d2f174a759b88f70c45adf1218c8c97e85698a599d3a1523a35000d18eb8e02",
+    "bytes": 169878
+  },
+  {
+    "remote": "clips/clip-orange.webp",
+    "sha256": "ec36a0af14b44333d53159f6b36ba872230c34a2ebd4c5695eb53487e6f9ebcd",
+    "bytes": 241640
+  },
+  {
+    "remote": "clips/clip-vivid-pink.webp",
+    "sha256": "a8e8b978a3dd2deeebc49d89bdf7d03bb964488441303069b2bf75df025b2a21",
+    "bytes": 229102
+  },
+  {
+    "remote": "clips/clip-lavender.webp",
+    "sha256": "4b6ef2e9f6412d319d7ac60941c72479695502408ee10529c917a25f1fb8dc28",
+    "bytes": 233688
+  },
+  {
+    "remote": "clips/clip-sky.webp",
+    "sha256": "bdf30bb53ecd0c803baf91118ddc4fc9d994b4fd47beee6e1ecf0a4a77a19264",
+    "bytes": 153426
+  },
+  {
+    "remote": "clips/clip-mint.webp",
+    "sha256": "5140a8cc2561103d88ee21de4b62609bf1a0e5da4eca9c7ad7d969ec7d2eea9b",
+    "bytes": 169092
+  },
+  {
+    "remote": "clips/clip-yellow.webp",
+    "sha256": "bc4c3e6f87d5cc08ec811dc9ac0fce8bf64b19893dbd564753d55340596d86e7",
+    "bytes": 195282
+  },
+  {
+    "remote": "clips/clip-peach.webp",
+    "sha256": "d2fe020514d2e0c17abb07429f404389c7ae80cf97f18af5ace4697b126c8bbc",
+    "bytes": 218686
+  },
+  {
+    "remote": "clips/clip-pink.webp",
+    "sha256": "de3fd838a8b1f68b6918cc3ba6b34a0f323d020acef82e0e16ba509206cddecd",
+    "bytes": 203112
+  },
+  {
+    "remote": "cameras/camera-mini-12.webp",
+    "sha256": "a9175121bfcd33ffdc1054dd27129110f84452636b248729a48eb26a45aa7c7f",
+    "bytes": 501212
+  },
+  {
+    "remote": "cameras/camera-polaroid-now.webp",
+    "sha256": "aa0ed8e6237584a8a4877898bd7ccada00ace0a2561f12069a557fb68b74c98e",
+    "bytes": 550272
+  },
+  {
+    "remote": "cameras/camera-kodak-mini-shot.webp",
+    "sha256": "6a8e35961f7eb1d34eb8b7abb221551f135fa16ebf1e53ffa92d58b66db9bf32",
+    "bytes": 802456
+  },
+  {
+    "remote": "cameras/camera-leica-sofort-2.webp",
+    "sha256": "d800930732ab3b1bb4987c8639c7b2bf052c7e08423befbef959eb177b71bb29",
+    "bytes": 460836
+  },
+  {
+    "remote": "trash-bins/trash-rattan-empty.webp",
+    "sha256": "493ce2ffe7fea83ebbeb86a9b322f6bf454eee0812f1391c655e1e07a185219f",
+    "bytes": 755758
+  },
+  {
+    "remote": "trash-bins/trash-rattan-filled.webp",
+    "sha256": "35d430ba63eacd359978b5ec89949975facab6c8790886931c917ecf0eefec0a",
+    "bytes": 748352
+  },
+  {
+    "remote": "trash-bins/trash-walnut-empty.webp",
+    "sha256": "418d523e9c5056d52f31d2f300492618da35f439b827b2c34efe66df1d5d4423",
+    "bytes": 680800
+  },
+  {
+    "remote": "trash-bins/trash-walnut-filled.webp",
+    "sha256": "356952ceda5d6a5e475954ca4370a91bd25ff36ef4c65f854bdebb33c495f325",
+    "bytes": 605192
+  },
+  {
+    "remote": "trash-bins/trash-leather-empty.webp",
+    "sha256": "05f88a0625b7ba5ea927c81192a4e52af2e27caefa2200355f6c6f50f113dbed",
+    "bytes": 687778
+  },
+  {
+    "remote": "trash-bins/trash-leather-filled.webp",
+    "sha256": "6faaf1de2809ac3d6aa0667d8dcf9f0d12bd43fe153f3d155b82a11c4860e33d",
+    "bytes": 684118
+  },
+  {
+    "remote": "trash-bins/trash-steel-empty.webp",
+    "sha256": "f017ab6a0f296fdf70e34bbbe244c366eb0a0dfd6e5fde67889bd9de7d26a4c1",
+    "bytes": 466974
+  },
+  {
+    "remote": "trash-bins/trash-steel-filled.webp",
+    "sha256": "fc2daf7c1c959bebd154ba2ad8d9e3c0f45ada4369d024e25c467caf0ce8a542",
+    "bytes": 430216
+  },
+  {
+    "remote": "trash-bins/trash-pink-empty.webp",
+    "sha256": "56597006e10643846456e4ab412af2babff83461957aacd11974ff4c9159c6b3",
+    "bytes": 283764
+  },
+  {
+    "remote": "trash-bins/trash-pink-filled.webp",
+    "sha256": "7a1d3a5941786ae0fa6dae47b769d8c3d26e95f65c3958ec23fb4e0282241b74",
+    "bytes": 296482
+  },
+  {
+    "remote": "trash-bins/trash-charcoal-empty.webp",
+    "sha256": "fc950594a8b720f60928f12e9e81aaed40df228508f69954ba75c7259d5c0a1a",
+    "bytes": 392266
+  },
+  {
+    "remote": "trash-bins/trash-charcoal-filled.webp",
+    "sha256": "815710bb6c2be853573d972527ba72f47bbea420a6e7c4eeda2ca05097ad45c9",
+    "bytes": 327182
+  },
+  {
+    "remote": "trash-bins/trash-ash-empty.webp",
+    "sha256": "0651840c6c75e04b061d0fdb6a72ac40bc11a33af3a18634959e8b8d3429e596",
+    "bytes": 539320
+  },
+  {
+    "remote": "trash-bins/trash-ash-filled.webp",
+    "sha256": "cc891295403269e0a4865b0760b1117d288cdbaec5ec3f4b88590e8e67a0d138",
+    "bytes": 537114
+  },
+  {
+    "remote": "trash-bins/trash-canvas-empty.webp",
+    "sha256": "ab626abbb713a462c09b99692de101c13fb908a51e9354e6f0be28d67fbc853c",
+    "bytes": 824856
+  },
+  {
+    "remote": "trash-bins/trash-canvas-filled.webp",
+    "sha256": "fc8077cbd1780778db6e8172daf5b4117fecd5fa2f398ecaf33fee4a22accccd",
+    "bytes": 816588
+  },
+  {
+    "remote": "trash-bins/trash-vintage-empty.webp",
+    "sha256": "ee400d663eaa17701b9b46674eb1989ddef3d6a300442c3e59300ef665cc0bf0",
+    "bytes": 257466
+  },
+  {
+    "remote": "trash-bins/trash-vintage-filled.webp",
+    "sha256": "361c991e773661350986d240e28daa6b45f61e1cd3dbe5ba4eadc79b4ae4ca7f",
+    "bytes": 276454
+  }
+]

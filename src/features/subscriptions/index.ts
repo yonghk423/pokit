@@ -14,3 +14,4 @@ export {
   useSubscriptionStore,
 } from './model/subscriptionStore';
 export { manageSubscription } from './lib/manageSubscription';
+export { activateDeveloperProForPurchase } from './lib/developerPro';

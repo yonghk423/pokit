@@ -1,0 +1,63 @@
+{
+  "project": "wvvtyaxsedpqiscogrwk",
+  "bucket": "calendar-store",
+  "folder": "photo-walls",
+  "method": "Authenticated dashboard replacement and ZIP download readback",
+  "files": [
+    {
+      "file": "wall-bunny.webp",
+      "sha256": "21dbfedb4ff8fdba1581162da0d159cd4bcb74cc6dd2074bee16cf8cee8fcb75",
+      "bytes": 421224
+    },
+    {
+      "file": "wall-daisy.webp",
+      "sha256": "039303f0b853760525d16a544bcf4671b1832129c4871dd0c3c11975ced7e0ac",
+      "bytes": 283134
+    },
+    {
+      "file": "wall-moon.webp",
+      "sha256": "791a2bce92fd332a0a5304796e88a1ec76acbd66ca86fc257383faa145227743",
+      "bytes": 290734
+    },
+    {
+      "file": "wall-bakery.webp",
+      "sha256": "b8044ded03f2495557152468a58db268b28dc4c8ac5308abdc44ed9f2e108c1e",
+      "bytes": 387862
+    },
+    {
+      "file": "wall-berry.webp",
+      "sha256": "f4d12745119db7a631c0a9ae34b9ad5fca9ddf37a437326f8adf86acdfbf9a8a",
+      "bytes": 395298
+    },
+    {
+      "file": "wall-stamp.webp",
+      "sha256": "481f143bac553af1a8685d11e1342f5f8551b38d734ebb5f4911736b497a5525",
+      "bytes": 370434
+    },
+    {
+      "file": "wall-ribbon.webp",
+      "sha256": "b8ed911210c5275dbbbcabf92b645d6da0f0cb73764f9a6fa25eb063da7938b1",
+      "bytes": 312460
+    },
+    {
+      "file": "wall-shell.webp",
+      "sha256": "be8802be92bb211028ff511b596bf569eccdc9f51b39f12567869b5bf4d932a9",
+      "bytes": 440818
+    },
+    {
+      "file": "wall-chick.webp",
+      "sha256": "d6d1217e91b9636174f870b8c1b05a0dcc2b91b20fda9322b52d5ddec0dcfefb",
+      "bytes": 267998
+    },
+    {
+      "file": "wall-cat.webp",
+      "sha256": "559efb508833d2b884504dae20ca14f2c2136fb0357cb289e7df2f9887972a28",
+      "bytes": 219768
+    },
+    {
+      "file": "wall-mail.webp",
+      "sha256": "797fd98fee78d046a8b1e5076f32a05faf391ff75c3666fa9a870a53243342ed",
+      "bytes": 275564
+    }
+  ]
+}

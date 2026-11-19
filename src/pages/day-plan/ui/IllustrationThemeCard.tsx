@@ -5,6 +5,7 @@ import { memo, useState, useMemo, useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 import { CITY_CALENDAR_THEMES } from '../model/heroCalendarDesign';
 import { illustrationCalendarBackgroundUri } from '../lib/illustrationCalendarAssets';
+import { PAID_CALENDAR_THUMBNAILS } from '../lib/paidCalendarThumbnails';
 import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { ThemedText } from '@shared/ui/themed-text';
 import { IllustrationCalendarThumbnailOverlay } from './IllustrationCalendarThumbnailOverlay';
@@ -32,7 +33,7 @@ function ThemeCardContent({ theme, width, height, dark, selected, error, pro = f
   return <Pressable testID={`illustration-theme-${theme.themeId}`} accessibilityRole="button" accessibilityLabel={translateUiText("{title} 캘린더 적용", { title: theme.title }) + (pro ? ", Pro" : "")} accessibilityState={{ selected }} onPress={apply} style={{ width }}>
     <View style={{ width, height: visibleHeight, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }}>
       <View style={{ width, height: visibleHeight, borderRadius: 14, overflow: 'hidden' }}>
-        <ExpoImage source={{ uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ position: 'absolute', top: 0, left: 0, width, height }} />
+        <ExpoImage source={PAID_CALENDAR_THUMBNAILS[theme.themeId] ?? { uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ position: 'absolute', top: 0, left: 0, width, height }} />
         {previewReady ? <IllustrationCalendarThumbnailOverlay themeId={theme.themeId} month={month} width={width} height={height} /> : <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height: visibleHeight, backgroundColor: dark ? '#383633' : '#E6E5E1', padding: 12, gap: 10 }}>
           <View style={{ height: '48%', borderRadius: 8, backgroundColor: dark ? '#484643' : '#D7D5D0' }} />
           <View style={{ width: '46%', height: 8, alignSelf: 'center', borderRadius: 4, backgroundColor: dark ? '#55524E' : '#CFCCC6' }} />

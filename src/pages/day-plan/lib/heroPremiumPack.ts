@@ -1,3 +1,4 @@
+import { Asset } from 'expo-asset';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import * as fs from 'expo-file-system/legacy';
 import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
@@ -20,20 +21,56 @@ export function premiumSceneTitle(id: string): string {
 export const PREMIUM_CHARACTER_ID = 'protagonist-7';
 type Pack = { count: number; files: { name: string; url: string }[] };
 const folder = () => { if (!fs.documentDirectory) throw new Error('storage_unavailable'); return `${fs.documentDirectory}character-packs/protagonist-7/`; };
-async function requestPack(action: 'preview' | 'download'): Promise<Pack> {
-  await getHeroAiAccessToken();
-  const { data, error } = await getHeroAiAuthClient().functions.invoke('character-pack', { body: { action } });
-  if (error || !data?.files?.length) throw new Error('pack_unavailable');
-  if (!data.files.every((file: { name: string; url: string }) => /^p7-\d+\.webp$/.test(file.name) && file.url.startsWith('https://'))) throw new Error('invalid_pack');
-  return { count: 1, files: data.files.slice(0, 1) };
+const sceneRevision = 'detail-restoration-v6-release';
+let downloading: Promise<{ id: string; uri: string }[]> | undefined;
+/** Replace the existing canonical file so saved diary references also receive the restored scene. */
+export function downloadPremiumPack(): Promise<{ id: string; uri: string }[]> {
+  if (downloading) return downloading;
+  downloading = (async () => {
+    const token = await getHeroAiAccessToken();
+    const { data, error } = await getHeroAiAuthClient().functions.invoke('character-pack', { body: { action: 'download' }, headers: { Authorization: 'Bearer ' + token } });
+    if (error) throw error;
+    const file = data?.files?.find((entry: { name: string; url: string }) => entry.name === 'p7-01.webp');
+    if (!file || !file.url.startsWith('https://') || !decodeURIComponent(new URL(file.url).pathname).endsWith('/protagonist-7/card-960/p7-01.webp')) throw new Error('invalid_pack');
+    const directory = folder();
+    await fs.makeDirectoryAsync(directory, { intermediates: true });
+    const uri = directory + 'p7-01.webp';
+    const temporary = uri + '.part';
+    try {
+      const result = await fs.downloadAsync(file.url, temporary, { headers: { 'Cache-Control': 'no-store' } });
+      const info = await fs.getInfoAsync(temporary);
+      const mime = Object.entries(result.headers).find(([name]) => name.toLowerCase() === 'content-type')?.[1];
+      if (result.status !== 200 || !info.exists || !info.size || !mime?.startsWith('image/webp')) throw new Error('invalid_pack');
+      await fs.moveAsync({ from: temporary, to: uri });
+      await fs.writeAsStringAsync(directory + 'manifest.json', JSON.stringify(['p7-01.webp']));
+      await fs.writeAsStringAsync(directory + 'revision.txt', sceneRevision);
+      return [{ id: 'p7-01', uri }];
+    } finally { await fs.deleteAsync(temporary, { idempotent: true }).catch(() => undefined); }
+  })().finally(() => { downloading = undefined; });
+  return downloading;
 }
-export const loadPremiumPackPreview = () => requestPack('preview');
+/** Saved diary references survive removing the pack manifest. */
+export async function ensurePremiumScene(): Promise<boolean> {
+  try {
+    const revision = await fs.readAsStringAsync(folder() + 'revision.txt').catch(() => '');
+    const info = await fs.getInfoAsync(folder() + 'p7-01.webp');
+    if (revision === sceneRevision && info.exists && !info.isDirectory && info.size > 0) return true;
+    return (await downloadPremiumPack()).length > 0;
+  } catch { return false; }
+}
+export async function loadPremiumPackPreview(): Promise<Pack> {
+  const asset = Asset.fromModule(require('../../../../assets/store-previews/premium-scene.webp'));
+  await asset.downloadAsync();
+  return { count: 1, files: [{ name: 'p7-01.webp', url: asset.localUri ?? asset.uri }] };
+}
 export async function loadPremiumPack(): Promise<{ id: string; uri: string }[]> {
   try {
     const manifest = JSON.parse(await fs.readAsStringAsync(folder() + 'manifest.json'));
     if (!Array.isArray(manifest) || !manifest.length || !manifest.every(name => typeof name === 'string' && /^p7-\d+\.webp$/.test(name))) return [];
     const images = await Promise.all(manifest.slice(0, 1).map(async name => { const uri = folder() + name; const info = await fs.getInfoAsync(uri); return info.exists && !info.isDirectory && info.size > 0 ? { id: name.slice(0, -5), uri } : null; }));
-    return images.every(Boolean) ? images as { id: string; uri: string }[] : [];
+    if (!images.every(Boolean)) return [];
+    const revision = await fs.readAsStringAsync(folder() + 'revision.txt').catch(() => '');
+    return revision === sceneRevision ? images as { id: string; uri: string }[] : await downloadPremiumPack();
   } catch { return []; }
 }
 let deleting = false;

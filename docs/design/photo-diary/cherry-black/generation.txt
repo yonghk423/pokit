@@ -1,0 +1,25 @@
+Tool: built-in image_gen; transparent background enabled.
+Reference: approved black/red monthly photo-wall concept (2026-11-19).
+Final prompt:
+Create production UI asset from this concept: isolate ONLY the slender horizontal satin-black metal rail and two vivid cherry-red satin ribbon knots tied near its ends. Shorten both ribbon tails drastically to about 2.5 times rail thickness below each knot, small chic fluttering tails, not long cascading ribbons. Entire rail and ribbons fully visible. Front orthographic view, straight horizontal bar, realistic refined material and gentle self-shadow. True transparent background. No wall, no text, no photos, no hanging cords, no clips, no other objects. Wide horizontal asset with close fitting bounds, rail spans full width, compact height. Retain elegant black and saturated red design of reference.
+Production: transparent bounds trimmed, resized to 1200x115, WebP quality 85 (16,746 bytes).
+Asset: assets/control-illustrations/cherry-black-photo-wall.webp
+
+2026-11-19 follow-up: user requested original long ribbons, free binder clip, paper background.
+Tool: built-in image_gen. Rail and clip transparent; paper opaque.
+Rail prompt: Extract/recreate ONLY the black horizontal rail with TWO red satin ribbon knots and their ORIGINAL LONG elegantly flowing tails from this reference. Preserve reference silhouette: left tail flowing down about 55% of bar length, right down about 23%, thin satin, vivid red. Straight-on orthographic. Entire bar and tails visible. True transparent background. No photos, cords, clips, wall, text, paper, floor shadows. Production app decoration asset. Keep exact reference material and design, do not shorten ribbon tails.
+Clip prompt: Isolate and faithfully recreate the single red binder clip from reference as a crisp production UI asset. Glossy saturated red rectangular folded metal body, raised slender warm silver wire handles, slight same natural tilt. Front view as reference. Full object centered, close framing, transparent background. No paper, text, lines, other objects or cast shadow on background. Preserve elegant realistic design.
+Paper prompt: Production app background texture only: warm ivory cream fine art paper, exact overall color near #F5EBDD, extremely subtle fine tactile paper fibers and shallow natural grain, elegant premium stationery. Flat evenly lit orthographic full bleed surface, uniform brightness across entire image, no vignette, no shadows, no folds, no objects, no writing, no marks, no border. Quiet subtle texture behind black text and photographs. Portrait 2:3.
+Assets (WebP quality 82):
+assets/control-illustrations/cherry-black-long-photo-wall.webp (1200x496)
+assets/control-illustrations/cherry-binder-clip.webp (240x283)
+assets/control-illustrations/warm-ivory-paper.webp (800x1200)
+
+Color matching revision: built-in image_gen with approved full concept as reference.
+Prompt: Extract just the BACKGROUND PAPER from this approved app mockup. Remove every object, photograph, rail, ribbon, clip, text and their shadows, fill with seamless continuation of the existing paper. Match EXACT reference paper color: very pale neutral warm off-white / light blush ivory, NOT yellow, NOT beige, NOT golden, NOT parchment. Retain very subtle finely grained matte paper texture at original scale. Uniform flat light. Entire image is blank paper only, portrait composition. Faithfully match the background brightness and low saturation in the provided reference.
+Asset: assets/control-illustrations/warm-ivory-paper-v2.webp (800px wide, WebP quality 82).
+Photo wall uses clean ivory photographic stock, warm downward diffuse shadows, rail contact shadow and metal cord eyelets.
+
+Photo hardware revision (built-in image_gen, transparent):
+Final prompt: A single tiny dark crimson lacquered metal photo clip, straight-on product cutout, isolated on transparent background. Shape like an upside down T: narrow upright rounded tab with small circular hole, wide short horizontal clamping jaw along base. Width 1.1 times total height. Polished deep red #B71925 with a fine silver-red highlight and dark burgundy lower edge. Realistic small stationery hardware, rounded edges. Clean cutout, no glow, no halo, no cast shadow, no other objects. Clip fills canvas, front face lit with soft neutral studio light. NOT a binder clip with wire handles.
+Asset: assets/control-illustrations/cherry-photo-clip.webp (140px wide, WebP quality 90).

@@ -1,0 +1,79 @@
+[
+  {
+    "id": "wall-bakery.webp",
+    "width": 1991,
+    "height": 707,
+    "bytes": 515156,
+    "alpha": true
+  },
+  {
+    "id": "wall-berry.webp",
+    "width": 2135,
+    "height": 620,
+    "bytes": 540446,
+    "alpha": true
+  },
+  {
+    "id": "wall-bunny.webp",
+    "width": 1934,
+    "height": 751,
+    "bytes": 671970,
+    "alpha": true
+  },
+  {
+    "id": "wall-cat.webp",
+    "width": 2139,
+    "height": 580,
+    "bytes": 419466,
+    "alpha": true
+  },
+  {
+    "id": "wall-chick.webp",
+    "width": 2153,
+    "height": 593,
+    "bytes": 419782,
+    "alpha": true
+  },
+  {
+    "id": "wall-daisy.webp",
+    "width": 1997,
+    "height": 702,
+    "bytes": 439094,
+    "alpha": true
+  },
+  {
+    "id": "wall-mail.webp",
+    "width": 2148,
+    "height": 601,
+    "bytes": 502220,
+    "alpha": true
+  },
+  {
+    "id": "wall-moon.webp",
+    "width": 1829,
+    "height": 733,
+    "bytes": 526290,
+    "alpha": true
+  },
+  {
+    "id": "wall-ribbon.webp",
+    "width": 2143,
+    "height": 621,
+    "bytes": 665774,
+    "alpha": true
+  },
+  {
+    "id": "wall-shell.webp",
+    "width": 2161,
+    "height": 582,
+    "bytes": 652650,
+    "alpha": true
+  },
+  {
+    "id": "wall-stamp.webp",
+    "width": 2159,
+    "height": 604,
+    "bytes": 469946,
+    "alpha": true
+  }
+]

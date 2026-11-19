@@ -1,0 +1,62 @@
+{
+  "project": "wvvtyaxsedpqiscogrwk",
+  "bucket": "calendar-store",
+  "folder": "photo-walls",
+  "files": [
+    {
+      "file": "wall-bakery.webp",
+      "sha256": "ba753f1f2794573926d2b39d2d1dd4c320d525223f3ef63b7c821ba9fb2ce86d",
+      "bytes": 515156
+    },
+    {
+      "file": "wall-berry.webp",
+      "sha256": "15f4a8c1f3bcf8bb71f3d2477fa33fc5ee7093ef3769621aaa95e077d26803f3",
+      "bytes": 540446
+    },
+    {
+      "file": "wall-bunny.webp",
+      "sha256": "29b8c8667a59cf21617e0800e3624e086735df2fa49bb54009365c3138ff76df",
+      "bytes": 671970
+    },
+    {
+      "file": "wall-cat.webp",
+      "sha256": "9d4f39d60cf87615730694c45fe9d730684df6f4768d3333d2a6ff04934e1293",
+      "bytes": 419466
+    },
+    {
+      "file": "wall-chick.webp",
+      "sha256": "526999259936d45f2d06c0a5a3be8c4dd62a851901434a5d3c29b1b0cac142dc",
+      "bytes": 419782
+    },
+    {
+      "file": "wall-daisy.webp",
+      "sha256": "25e590fe756ba104c6d5b746753f48b80cd089cc6c43cd44af2b2ef590db70fd",
+      "bytes": 439094
+    },
+    {
+      "file": "wall-mail.webp",
+      "sha256": "ea961650772d2e77a7c18ac1e65e9a3e4de5e904c3bd12d18d385abdc6871708",
+      "bytes": 502220
+    },
+    {
+      "file": "wall-moon.webp",
+      "sha256": "97b4ca0a6177f44ad6ad6374d813223f4e83ce81631d9fcf9728e0eb0b72f942",
+      "bytes": 526290
+    },
+    {
+      "file": "wall-ribbon.webp",
+      "sha256": "206f875d2ccd165bdfeb42b2035aab3b882867ba7fc88320ddb7ab8b99fd036b",
+      "bytes": 665774
+    },
+    {
+      "file": "wall-shell.webp",
+      "sha256": "f1495a7d5bd6528c0633917b5db67caa7aab52c7d2bd77ab7967226cd2cb5f4c",
+      "bytes": 652650
+    },
+    {
+      "file": "wall-stamp.webp",
+      "sha256": "03dd56fe32a704fc2e3cf7cc8edec4c172b72296c60ebbd5329b258497b9d547",
+      "bytes": 469946
+    }
+  ]
+}

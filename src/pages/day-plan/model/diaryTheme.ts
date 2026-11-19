@@ -1,3 +1,4 @@
+import { proPhotoWallDimensions } from './proPhotoWallArtwork';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
@@ -48,5 +49,5 @@ export function useDiaryTheme(slot: ThemeSlot) {
     return () => { live = false; };
   }, [pro, id, slot]);
   const uri = pro && id ? diaryImages(id)?.image : undefined;
-  return classic ? { id: classic.id, source: classic.preview } : uri ? { id, source: { uri } } : undefined;
+  return classic ? { id: classic.id, source: classic.preview } : uri ? { id, source: { uri, ...(id ? proPhotoWallDimensions[id] : undefined) } } : undefined;
 }

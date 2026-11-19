@@ -1,4 +1,4 @@
-import { diaryImage } from '../../../pages/day-plan/lib/calendarStoreDownload';
+import { useAppliedDiaryImage } from '../../../pages/day-plan/lib/useAppliedDiaryImage';
 import type { ColorValue } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -57,5 +57,6 @@ export type TrashBinStyle = keyof typeof TRASH_ASSETS;
 
 /** Shared illustrated wastebasket; show paper when a delete selection contains items. */
 export function TrashIcon({ size = 29, variant = 'mesh', filled = false }: { size?: number; color?: ColorValue; variant?: TrashBinStyle; filled?: boolean }) {
-  return <Image source={diaryImage('trash-' + variant, filled ? 'filled' : 'empty', TRASH_ASSETS[variant][filled ? 'filled' : 'empty'])} contentFit="contain" transition={0} cachePolicy="memory-disk" accessible={false} style={{ width: size, height: size }} />;
+  const source = useAppliedDiaryImage('trash-' + variant, filled ? 'filled' : 'empty', TRASH_ASSETS[variant][filled ? 'filled' : 'empty']);
+  return <Image source={source} contentFit="contain" transition={0} cachePolicy="memory-disk" accessible={false} style={{ width: size, height: size }} />;
 }

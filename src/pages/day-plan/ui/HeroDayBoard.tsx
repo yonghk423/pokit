@@ -5,7 +5,7 @@ import { useDiaryTheme } from '../model/diaryTheme';
 import { HeroCardFlipContext } from './HeroDiaryCardSides';
 import { useHeroPhotoWall } from '../model/heroPhotoWall';
 import { PHOTO_WALL_COLUMNS, photoWallLayout } from '../lib/photoWallLayout';
-import { HeroPhotoWall, PhotoWallHeader, PHOTO_WALL_HEADER_HEIGHT } from './HeroPhotoWall';
+import { HeroPhotoWall, PhotoWallHeader, PhotoWallClip, PHOTO_WALL_HEADER_HEIGHT } from './HeroPhotoWall';
 import { HeroTrashIcon } from './HeroTrashIcon';
 import type { TrashBinStyle } from '@shared/ui/icon-symbol/TrashIcon';
 import { useHeroTrashBinStyle } from '../model/heroTrashBinStyle';
@@ -130,11 +130,16 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   } as Record<string, [string, string]>)[wall?.id ?? ''];
   const baseWall = useHeroPhotoWall();
   const photoWallStyle = wall?.id ?? baseWall;
+  const alignedPhotos = photoWallStyle === 'aligned';
   const photoWallSelected = cardsFirst && photoWallStyle !== 'none';
   const [wallView, setWallView] = useState({ style: photoWallStyle, deck: false });
   if (wallView.style !== photoWallStyle) setWallView({ style: photoWallStyle, deck: false });
   const [localGridOpen, updateGridOpen] = useState(false);
   const gridOpen = photoWallSelected && !wallView.deck ? true : overviewOpen ?? localGridOpen;
+  // Photo-wall themes open their grid directly. Keep the parent note panel in sync.
+  useEffect(() => {
+    if (photoWallSelected && !wallView.deck && overviewOpen === false) onOverviewChange?.(true);
+  }, [photoWallSelected, wallView.deck, overviewOpen, onOverviewChange]);
   const photoWallActive = photoWallSelected && gridOpen && !detailOpen;
   const setGridOpen = (open: boolean) => {
     if (open === gridOpen) return;
@@ -200,17 +205,27 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     setCanvasExpanded?.(cardsFirst);
     return () => setCanvasExpanded?.(false);
   }, [setCanvasExpanded, cardsFirst]);
-  const upperReach = (canvasContext?.headerHeight ?? 0) + safeInsets.top;
+  // Monthly albums already place the board below their safe area and header.
+  const upperReach = historyOverview ? 0 : (canvasContext?.headerHeight ?? 0) + safeInsets.top;
   const [scatterHeights, setScatterHeights] = useState<Record<string, number>>({});
   const [printPositions, setPrintPositions] = useState(loadPrintPositions);
   const [draggingPrint, setDraggingPrint] = useState<string | null>(null);
-  const wallLayout = photoWallActive ? photoWallLayout(boardWidth, items.length, items.map(item => item.photoFit)) : undefined;
+  const wallArtwork = wall && typeof wall.source === 'number' ? NativeImage.resolveAssetSource(wall.source) : wall && 'width' in wall.source && 'height' in wall.source ? wall.source : undefined;
+  // Match the cherry wall rail's 3px inset on both sides for every theme.
+  const wallArtworkWidth = Math.max(1, boardWidth - 6);
+  // Compress only the decorative header; keep the photo grid dimensions unchanged.
+  const wallArtworkHeight = (wallArtwork?.width && wallArtwork.height ? wallArtworkWidth * wallArtwork.height / wallArtwork.width : PHOTO_WALL_HEADER_HEIGHT) * 0.75;
+  const wallLayout = photoWallActive ? photoWallLayout(boardWidth, items.length) : undefined;
+  if (wallLayout && alignedPhotos) {
+    wallLayout.frames = wallLayout.frames.map(frame => ({ ...frame, top: frame.top - 84 }));
+    wallLayout.height -= 84;
+  }
   const scatter = wallLayout ?? polaroidScatter(boardWidth, items.map(item => item.key), scatterHeights);
   const [wallScrollRow, setWallScrollRow] = useState(0);
   const [wallViewportHeight, setWallViewportHeight] = useState(windowHeight);
   const firstFrame = scatter.frames[0];
   const rowStride = wallLayout?.rowStride ?? ((firstFrame?.height ?? 0) + 28);
-  const firstRowOffset = (firstFrame?.top ?? 0) - PHOTO_WALL_HEADER_HEIGHT;
+  const firstRowOffset = (firstFrame?.top ?? 0) - (alignedPhotos ? 0 : PHOTO_WALL_HEADER_HEIGHT);
   const firstWallRow = Math.max(0, Math.min(wallScrollRow, Math.ceil(items.length / PHOTO_WALL_COLUMNS) - 1) - 2);
   const windowStart = firstWallRow * PHOTO_WALL_COLUMNS;
   const windowEnd = windowStart + (Math.ceil(wallViewportHeight / rowStride) + 6) * PHOTO_WALL_COLUMNS;
@@ -255,20 +270,21 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
       // Do not paint a square provisional photo before its actual ratio arrives.
       if (!fixedPrint && item.artworkUri && !uploadedRatios[item.artworkUri]) return null;
       const printHeight = wallLayout ? (wallLayout.frames[index].height - 7) * 2 : scatter.frames[index].width * 2 * 1.2;
+      const editorialPrint = photoWallActive;
       const selected = selectedKeys.includes(item.key);
       return <HeroOverviewCardMotion key={item.key} progress={overviewProgress} index={index} count={items.length} enabled={false} source={sourceFrame} stageWidth={stageWidth} sourceTop={sourceFrame.top ?? 0} parentTop={0} targetRotation={anchors[index].rotation} targetZIndex={draggingPrint === item.key ? 100000 : scatter.frames[index].zIndex} onMeasureHeight={photoWallActive ? undefined : height => setScatterHeights(previous => Math.abs((previous[item.key] ?? 0) - height) < 1 ? previous : { ...previous, [item.key]: height })} style={{ position: 'absolute', left: anchors[index].left, top: anchors[index].top, width: scatter.frames[index].width }}>
         <HeroDraggablePrint minTop={8 - upperReach} anchorLeft={anchors[index].left} anchorTop={anchors[index].top} anchorRotation={anchors[index].rotation} onRotate={angle => setPrintPositions(savePrintPosition(item.key, scatter.frames[index].left / boardWidth, scatter.frames[index].top / boardWidth, angle))} rotation={scatter.frames[index].rotation} enabled={gridOpen && overviewSettled && !deleteMode && !photoWallActive} scrollGesture={gridNative} dismissGesture={gridDismiss} left={scatter.frames[index].left} top={scatter.frames[index].top} width={scatter.frames[index].width} boardWidth={boardWidth} bottom={scatter.height + 120} onActive={active => setDraggingPrint(active ? item.key : null)} onDrop={(x, y) => setPrintPositions(savePrintPosition(item.key, x / boardWidth, y / boardWidth))}>
-        <HeroScaledPrint width={scatter.frames[index].width}>
+        <HeroScaledPrint width={scatter.frames[index].width} height={photoWallActive ? printHeight + 14 : undefined}>
         <Pressable accessibilityRole={deleteMode ? 'checkbox' : 'button'} accessibilityState={deleteMode ? { checked: selected } : undefined} accessibilityLabel={deleteMode ? t('comicDay.selectForDeletion', { label: title || t('comicDay.showCards') }) : title || t('comicDay.showCards')} onPress={() => {
           tapHaptic(deleteMode ? 'select' : undefined);
           openItem(item.key);
-        }} style={({ pressed }) => [s.polaroid, fixedPrint && { height: printHeight }, { opacity: pressed ? 0.75 : 1 }]}>
-          <HeroPolaroidSurface />
+        }} style={({ pressed }) => [s.polaroid, editorialPrint && { padding: scatter.frames[index].width * 0.12, paddingBottom: 4, backgroundColor: '#FAF3E9', borderRadius: 2, shadowColor: '#594336', shadowOpacity: 0.30, shadowRadius: 12, shadowOffset: { width: 2, height: 12 }, elevation: 6 }, fixedPrint && { height: printHeight }, { opacity: pressed ? 0.75 : 1 }]}>
+          <HeroPolaroidSurface cleanIvory={photoWallActive && !wall} />
           <View>
-            <ComicSceneImage preserveFullImage={item.photoFit !== 'cover'} showSkeletonOnMount contentFit={item.photoFit ?? 'contain'} backgroundColor="#EEEEEC" imageKey={`history-grid:${item.artworkUri ?? scene.id}`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} style={{ width: '100%', ...(fixedPrint ? { height: Math.max(1, printHeight - 66) } : { aspectRatio: item.artworkUri ? uploadedRatios[item.artworkUri] ?? 1 : 3 / 4 }) }} />
+            <ComicSceneImage preserveFullImage={item.photoFit !== 'cover'} showSkeletonOnMount contentFit={item.photoFit ?? 'contain'} backgroundColor="#EEEEEC" imageKey={`history-grid:${item.artworkUri ?? scene.id}`} source={item.artworkUri ? { uri: item.artworkUri } : COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source} style={{ width: '100%', ...(fixedPrint ? { height: Math.max(1, editorialPrint ? scatter.frames[index].width * 1.76 * 1.30 : printHeight - 66) } : { aspectRatio: item.artworkUri ? uploadedRatios[item.artworkUri] ?? 1 : 3 / 4 }) }} />
           </View>
-          <View style={{ minHeight: 44, ...(fixedPrint ? { flex: 1, overflow: 'hidden' as const } : { flexGrow: 1 }), paddingTop: 7, paddingHorizontal: 2, gap: 3 }}>
-            {title ? <ThemedText fontId={item.fontId} numberOfLines={2} style={{ color: item.inkColor ?? ink, fontSize: 12, lineHeight: 17 }}>{title}</ThemedText> : null}
+          <View style={{ minHeight: editorialPrint ? 0 : 44, ...(fixedPrint ? { flex: 1, overflow: 'hidden' as const } : { flexGrow: 1 }), paddingTop: editorialPrint ? 3 : 7, paddingHorizontal: 2, gap: 3 }}>
+            {title ? <ThemedText fontId={item.fontId} numberOfLines={editorialPrint ? 1 : 2} style={{ color: item.inkColor ?? ink, fontSize: editorialPrint ? 10 : 12, lineHeight: editorialPrint ? 13 : 17 }}>{title}</ThemedText> : null}
           </View>
 
           <HeroPrintBorder />
@@ -281,7 +297,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
           </> : null}
         </Pressable>
         </HeroScaledPrint>
-        {photoWallActive && wallHardware ? <View pointerEvents="none" style={{ position: 'absolute', left: scatter.frames[index].width / 2 + 9, top: 5 }}><ThemedText style={{ fontSize: 13 }}>{wallHardware[0]}</ThemedText></View> : photoWallActive ? <View pointerEvents="none" style={{ position: 'absolute', left: scatter.frames[index].width / 2 + 15, top: 10, width: 6, height: 17, borderRadius: 1, backgroundColor: '#4B3528', borderTopWidth: 1, borderTopColor: '#94785D', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 1, shadowOffset: { width: 1, height: 1 } }} /> : null}
+        {photoWallActive && !alignedPhotos && wallHardware ? <View pointerEvents="none" style={{ position: 'absolute', left: scatter.frames[index].width / 2 + 9, top: 5 }}><ThemedText style={{ fontSize: 13 }}>{wallHardware[0]}</ThemedText></View> : photoWallActive && !alignedPhotos ? <View pointerEvents="none" style={{ position: 'absolute', left: scatter.frames[index].width / 2 + 11, top: 10 }}><PhotoWallClip /></View> : null}
         </HeroDraggablePrint>
       </HeroOverviewCardMotion>;
     }
@@ -345,16 +361,16 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     testID="hero-duvet-camera" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')}
     onPress={() => { tapHaptic(); (onAddPhoto ?? onAdd)(); }}
     style={({ pressed }) => ({ position: 'absolute', right: 20, bottom: dockBottom, zIndex: 3, width: 75, height: 53, transform: [ { translateY: pressed ? 1.5 : 0 }, { scale: pressed ? 0.985 : 1 }] })}>
-    {({ pressed }) => <HeroRestingCamera active={pressed} dark={isDark} raised={historyOverview} onPhotoWall={photoWallActive} />}
+    {({ pressed }) => <View style={{ position: 'absolute', right: 0, bottom: 0, width: photoWallActive ? 60 : 75, height: photoWallActive ? 42.4 : 53 }}><HeroRestingCamera active={pressed} dark={isDark} raised={historyOverview} onPhotoWall={photoWallActive} /></View>}
   </Pressable> : null;
-  const trashIconSize = photoWallActive ? 39 : 35;
-  const cameraGroundInset = 53 - cameraFootprints[cameraStyle].y;
+  const trashIconSize = photoWallActive ? 32 : 35;
+  const cameraGroundInset = (53 - cameraFootprints[cameraStyle].y) * (photoWallActive ? 0.8 : 1);
   const trashGroundInset = 49 - (3 + trashIconSize * 0.86);
   const trashBottom = dockBottom + cameraGroundInset - trashGroundInset;
   const mainTrash = dockVisible && ((syncMainState && !historyOverview) || (historyOverview && !!onRemoveMany)) ? <Pressable
     testID="hero-duvet-trash" accessibilityRole="button" accessibilityLabel={t('comicDay.toggleDelete')}
     disabled={!items.length} accessibilityState={{ selected: deleteMode, disabled: !items.length }} onPress={() => { if (!deleteMode) { tapHaptic('warn'); toggleDeleteMode(); } }}
-    style={{ position: 'absolute', right: 100, bottom: trashBottom, zIndex: 4, width: 40, height: 49, alignItems: 'center', justifyContent: 'center' }}>
+    style={{ position: 'absolute', right: photoWallActive ? 78 : 100, bottom: trashBottom, zIndex: 4, width: 40, height: 49, alignItems: 'center', justifyContent: 'center' }}>
     <Svg pointerEvents="none" width={50} height={19} style={{ position: 'absolute', left: 0, top: 3 + trashIconSize * 0.86 - 6 }}>
       <Defs>
         <RadialGradient id="bin-shadow" cx="50%" cy="50%" rx="50%" ry="50%">
@@ -414,19 +430,19 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
     </Animated.View> : null}
     <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1, marginBottom: photoWallNoteClearance }, gridVisibility]}>
   <View style={{ flex: 1, overflow: 'hidden' }} onLayout={event => { if (photoWallActive) setWallViewportHeight(event.nativeEvent.layout.height); }}>
-  {photoWallActive ? <View pointerEvents="none" style={{ marginHorizontal: 16, marginTop: upperReach + 6, height: PHOTO_WALL_HEADER_HEIGHT }}>{wall ? <ThemeImage source={wall.source} contentFit="fill" style={{width: boardWidth, height: PHOTO_WALL_HEADER_HEIGHT}} /> : <PhotoWallHeader width={boardWidth} />}</View> : null}
-  <View style={{ flex: 1, minHeight: 0, overflow: photoWallActive ? 'hidden' : 'visible' }}>
+  {photoWallActive && !alignedPhotos ? <View pointerEvents="none" style={{ marginHorizontal: 16, marginTop: upperReach + 6, height: wall ? wallArtworkHeight : PHOTO_WALL_HEADER_HEIGHT, zIndex: 5 }}>{wall ? <ThemeImage source={wall.source} contentFit="fill" style={{ position: 'absolute', bottom: 0, left: (boardWidth - wallArtworkWidth) / 2, width: wallArtworkWidth, height: wallArtworkHeight }} /> : <PhotoWallHeader width={boardWidth} count={items.length} />}</View> : null}
+  <View style={{ flex: 1, minHeight: 0, marginTop: photoWallActive && alignedPhotos ? upperReach + 6 : 0, overflow: photoWallActive ? 'hidden' : 'visible' }}>
   <GestureDetector gesture={gridGesture}><ScrollView ref={gridScrollRef} removeClippedSubviews={false} scrollEnabled={!showCards} testID="comic-card-overview" onScrollBeginDrag={() => setMenuOpen(false)} onScroll={event => { gridOffsetRef.current = event.nativeEvent.contentOffset.y;
     if (photoWallActive) setWallScrollRow(Math.max(0, Math.floor((gridOffsetRef.current - firstRowOffset) / rowStride))); }} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[s.board, photoWallActive ? { paddingBottom: 12 } : historyOverview && { paddingBottom: dockBottom + (deleteMode ? 126 : 66) }, { flexGrow: 1, paddingTop: photoWallActive ? 0 : cardsFirst ? upperReach + 6 : 6 }]}>
 
     {photoWallActive ? null : heading}
-    <View testID="comic-card-grid-layout" style={cardsFirst ? { height: scatter.height, marginTop: photoWallActive ? -PHOTO_WALL_HEADER_HEIGHT : 0, position: 'relative', overflow: 'visible' } : s.grid} onLayout={event => {
+    <View testID="comic-card-grid-layout" style={cardsFirst ? { height: scatter.height, marginTop: photoWallActive && !alignedPhotos ? -PHOTO_WALL_HEADER_HEIGHT : 0, position: 'relative', overflow: 'visible' } : s.grid} onLayout={event => {
       const width = Math.round(event.nativeEvent.layout.width);
       if (!focused || width <= 0) return;
       lastBoardWidth = width;
       setBoardWidth(previous => previous === width ? previous : width);
     }}>
-      {photoWallActive ? <HeroPhotoWall cordColor={wallHardware?.[1]} layout={wallLayout} width={boardWidth} count={items.length} /> : null}
+      {photoWallActive && !alignedPhotos ? <HeroPhotoWall railTop={wall ? undefined : 48} cordColor={wallHardware?.[1]} layout={wallLayout} width={boardWidth} count={items.length} /> : null}
       {!cardsFirst && (viewMode === 'hero' || viewMode === 'page' || viewMode === 'diagonal') ? Array.from({ length: Math.ceil(items.length / (viewMode === 'hero' ? 3 : 4)) }, (_, pageIndex) => {
         const groupSize = viewMode === 'hero' ? 3 : 4;
         const group = items.slice(pageIndex * groupSize, (pageIndex + 1) * groupSize);

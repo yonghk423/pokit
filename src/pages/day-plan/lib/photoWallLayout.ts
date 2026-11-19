@@ -1,20 +1,19 @@
-import { getPolaroidPrintLayout } from './heroPolaroidFraming';
-
 /** Equal-width prints in rows; adding photos extends the same hanging cords. */
 export const PHOTO_WALL_COLUMNS = 4;
 export const PHOTO_WALL_RAIL_TOP = 61;
-const PRINT_TOP = 100;
+const PRINT_TOP = 84;
 
-export function photoWallLayout(width: number, count: number, fits: readonly ('contain' | 'cover' | undefined)[] = []) {
+export function photoWallLayout(width: number, count: number) {
   const columns = PHOTO_WALL_COLUMNS;
-  const gap = width * 0.055;
-  const cardWidth = (width - gap * (columns + 1)) / columns;
-  const printHeight = (fit?: 'contain' | 'cover') => cardWidth * getPolaroidPrintLayout(fit ?? 'cover').printHeight / 360 + 7;
-  const cardHeight = printHeight(fits.includes('contain') ? 'contain' : 'cover');
+  const gap = width * 0.03;
+  const inset = width * 0.055;
+  const cardWidth = (width - inset * 2 - gap * (columns - 1)) / columns;
+  const cardHeight = cardWidth * 1.46 + 7;
+  const rowStride = cardHeight + cardWidth * 0.13;
   const frames = Array.from({ length: count }, (_, index) => ({
-    left: gap + (index % columns) * (cardWidth + gap),
-    top: PRINT_TOP + Math.floor(index / columns) * (cardHeight + 28),
-    width: cardWidth, height: printHeight(fits[index]), rotation: 0, zIndex: index + 1,
+    left: inset + (index % columns) * (cardWidth + gap),
+    top: PRINT_TOP + Math.floor(index / columns) * rowStride,
+    width: cardWidth, height: cardHeight, rotation: 0, zIndex: index + 1,
   }));
-  return { frames, rowStride: cardHeight + 28, height: Math.max(180, (frames.at(-1)?.top ?? PRINT_TOP) + cardHeight + 32) };
+  return { frames, rowStride, height: Math.max(180, (frames.at(-1)?.top ?? PRINT_TOP) + cardHeight + 32) };
 }

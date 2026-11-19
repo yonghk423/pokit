@@ -1,3 +1,6 @@
+import { RETIRED_CALENDAR_DESIGNS } from '../model/retiredCalendarDesigns';
+import { FREE_PHOTO_CALENDARS, freePhotoCalendar } from '../model/freePhotoCalendars';
+import { FreePhotoCalendarPaper } from './FreePhotoCalendarPaper';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { installedPaper, installPaper, storeDownloadErrorMessage } from '../lib/calendarStoreDownload';
 import { PremiumCalendarPaper, premiumPaperRatios } from './PremiumCalendarPaper';
@@ -21,6 +24,7 @@ import { groupCalendarDiaries } from '../lib/heroCalendar';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
 
 export const CALENDAR_DESIGNS = [
+  ...FREE_PHOTO_CALENDARS,
   { id: 'clipboard', name: 'Blue Clipboard', description: translateUiText("주황 보드와 파란 클립의 달력") },
   { id: 'bold', name: 'Bold Month', description: translateUiText("큰 월 제목과 여백이 있는 달력") },
   { id: 'photo', name: 'Photo Paper', description: translateUiText("한 장의 사진을 담은 달력") },
@@ -80,6 +84,7 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
   const coverScale = 0.65;
   const photoWidth = Math.min(width - 88 * scale, layoutHeight != null ? layoutHeight * 0.42 / 1.2 : 220 * scale) * coverScale;
   const photoHeight = photoWidth * 1.2 + 25 * scale * coverScale;
+  if (freePhotoCalendar(design)) return <FreePhotoCalendarPaper design={design} width={frameWidth} height={layoutHeight ?? frameWidth * 1.8} month={month} today={today} diaries={diaries} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
   if (isPremiumPaper(design)) return <PremiumCalendarPaper widgetSize={widgetSize} design={design} month={month} today={today} diaries={miniature ? [] : diaries} eventDates={eventDates} width={width} height={layoutHeight} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
   if (design === 'clipboard') return frame(<HeroClipboardCalendar width={width} height={layoutHeight} month={month} today={today} miniature={miniature} eventDates={eventDates} recordDates={[...grouped.keys()]} photos={widgetSize ? {} : Object.fromEntries([...grouped].flatMap(([key, records]) => { const uri = records.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri; return uri ? [[key, uri]] : []; }))} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />);
   const paper = <View testID="calendar-paper" pointerEvents={miniature ? 'none' : 'auto'} onLayout={layoutWidth == null ? e => { const next = e.nativeEvent.layout.width; if (next > 0) setWidth(current => current === next ? current : next); } : undefined} style={[styles.paper, wallpaper && { backgroundColor: framed ? '#FAFAF6' : 'transparent', shadowOpacity: 0, elevation: 0 }, design === 'weather' && { backgroundColor: '#FFFFFF', shadowOpacity: 0, borderRadius: 18 * scale, overflow: 'hidden' }, { padding: 19 * scale, paddingTop: (design === 'weather' && !miniature ? 24 : wallpaper ? 0 : fitted ? 24 : 37) * scale, paddingBottom: (wallpaper ? 6 : 19) * scale, ...(fitted ? { height: weatherLayout?.contentHeight ?? layoutHeight } : {}) }]}>
@@ -140,7 +145,7 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
   const previewWidth = Math.max(1, Math.floor(((gridWidth ?? windowWidth - 40) - 24) / 3));
   const previewStageHeight = (previewWidth - 8) * 540 / 330 + 8;
   return <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-    <View onLayout={event => setGridWidth(event.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.map(item => {
+    <View onLayout={event => setGridWidth(event.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.filter(item => !RETIRED_CALENDAR_DESIGNS.has(item.id)).map(item => {
       const previewLayoutWidth = previewWidth - 8;
       const previewLayoutHeight = previewLayoutWidth * (isPremiumPaper(item.id) ? premiumPaperRatios[item.id] : item.id === 'clipboard' ? 1340 / 914 : 540 / 330);
       // The clipboard artwork starts 25 reference pixels below its canvas.

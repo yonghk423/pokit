@@ -1,0 +1,15 @@
+{
+  "filmCount": 16,
+  "paidFilmCount": 12,
+  "thumbnail": {
+    "width": 96,
+    "height": 96,
+    "format": "jpeg",
+    "codeVerified": true
+  },
+  "correctionResult": {
+    "maxEdge": 2048,
+    "format": "png"
+  },
+  "legacyFallbackProducts": 23
+}

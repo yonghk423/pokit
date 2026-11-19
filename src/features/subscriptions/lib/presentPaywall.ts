@@ -1,3 +1,5 @@
+import { activateDeveloperProForPurchase } from './developerPro';
+import { useSubscriptionStore } from '../model/subscriptionStore';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 import { REVENUECAT_ENTITLEMENT_PRO } from '@shared/config/revenueCat';
@@ -32,6 +34,11 @@ function mapPaywallResult(result: PAYWALL_RESULT): PresentPaywallOutcome {
 export async function presentPaywall(): Promise<PresentPaywallOutcome> {
   if (!isPurchasesConfigured()) return 'skipped';
   try {
+    const developerInfo = await activateDeveloperProForPurchase();
+    if (developerInfo) {
+      useSubscriptionStore.getState().applyCustomerInfo(developerInfo);
+      return 'restored';
+    }
     const result = await RevenueCatUI.presentPaywall({ displayCloseButton: true });
     return mapPaywallResult(result);
   } catch (error) {
@@ -46,6 +53,11 @@ export async function presentPaywallIfNeeded(
 ): Promise<PresentPaywallOutcome> {
   if (!isPurchasesConfigured()) return 'skipped';
   try {
+    const developerInfo = await activateDeveloperProForPurchase();
+    if (developerInfo) {
+      useSubscriptionStore.getState().applyCustomerInfo(developerInfo);
+      return 'restored';
+    }
     const result = await RevenueCatUI.presentPaywallIfNeeded({
       requiredEntitlementIdentifier: entitlementId,
       displayCloseButton: true,

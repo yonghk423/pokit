@@ -51,7 +51,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(() => {
     const saved = localStorageClient.getJson<InlineNoteDocument>(storageKey + ':inline');
-    return saved ? !saved.text && !saved.icons.length : !localStorageClient.getItemRaw(storageKey) && !(localStorageClient.getJson<string[]>(storageKey + ':illustrations') ?? []).length;
+    return saved ? !saved.text.trim() && !saved.icons.length : !(localStorageClient.getItemRaw(storageKey) ?? '').trim() && !(localStorageClient.getJson<string[]>(storageKey + ':illustrations') ?? []).length;
   });
   const source = useMemo(() => {
     const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -99,7 +99,9 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
     onError={() => { generation.current++; ready.current = false; setInitialized(false); setFailed(true); }}
     onContentProcessDidTerminate={() => { generation.current++; ready.current = false; setFailed(false); setInitialized(false); setAttempt(value => value + 1); }}
     onShouldStartLoadWithRequest={request => request.url === 'about:blank'}
-    style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent', opacity: initialized ? 1 : 0 }]}
+    // WKWebView can pause animation frames at zero opacity, preventing its
+    // initialized message (sent after layout) from ever reaching React Native.
+    style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}
     onMessage={event => {
       let message;
       try { message = JSON.parse(event.nativeEvent.data); } catch { return; }
@@ -127,7 +129,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
       else if (message.type === 'inserted') callbacks.current.onIllustrationInserted(message.id);
       else if (message.type === 'change') {
         const document = message.document as InlineNoteDocument;
-        setEmpty(!document.text && !document.icons.length);
+        setEmpty(!document.text.trim() && !document.icons.length);
         localStorageClient.setJson(storageKey + ':inline', document);
         localStorageClient.setItemRaw(storageKey, document.text.replace(/\uFFFC/g, ''));
       }

@@ -1,3 +1,4 @@
+import { mockPortraitBlurRadius } from '../lib/mockPortraitBlur';
 import { getPolaroidPrintLayout } from '../lib/heroPolaroidFraming';
 import { HeroFilmDateStamp } from './HeroFilmDateStamp';
 import { HeroPolaroidSurface } from './HeroPolaroidSurface';
@@ -67,7 +68,7 @@ export function HeroPolaroidExport({ content, onComplete, onError }: { content: 
     {imageSize ? <View testID="hero-polaroid-export" ref={ref} collapsable={false} style={heroPolaroidStyles.paper} onLayout={event => setHeight(event.nativeEvent.layout.height)}>
       <HeroPolaroidSurface onReady={markTextureReady} onError={onError} />
       <View style={{ width: 324, height: photoHeight }}>
-      <Image testID="hero-polaroid-image" source={{ uri: imageUri }} resizeMode={content.photoFit ?? 'cover'} fadeDuration={0} onLoad={() => setLoaded(true)} onError={onError} style={{ width: 324, height: photoHeight }} />
+      <Image blurRadius={mockPortraitBlurRadius(imageUri)} testID="hero-polaroid-image" source={{ uri: imageUri }} resizeMode={content.photoFit ?? 'cover'} fadeDuration={0} onLoad={() => setLoaded(true)} onError={onError} style={{ width: 324, height: photoHeight }} />
       {content.showDate !== false ? <View pointerEvents="none" style={{ position: 'absolute', width: stampWidth, height: stampHeight, left: (324 - stampWidth) / 2, top: (photoHeight - stampHeight) / 2 }}><HeroFilmDateStamp testID="hero-polaroid-date" date={content.date || formatHeroPolaroidDate()} /></View> : null}
       </View>
 

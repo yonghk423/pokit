@@ -1,7 +1,7 @@
 import { HeroCameraPrintLight } from './HeroCameraPrintLight';
 import { HeroCameraMotion } from './HeroCameraMotion';
 import { useDiaryTheme } from '../model/diaryTheme';
-import { diaryImage } from '../lib/calendarStoreDownload';
+import { useAppliedDiaryImage } from '../lib/useAppliedDiaryImage';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
@@ -19,8 +19,10 @@ export const cameraFootprints: Record<HeroCameraStyle, { x: number; y: number; r
 export function HeroRestingCamera({ dark = false, raised = false, onPhotoWall = false, active = false }: { dark?: boolean; raised?: boolean; onPhotoWall?: boolean; active?: boolean }) {
   const theme = useDiaryTheme('camera');
   const cameraStyle = useHeroCameraStyle();
-  const foot = cameraFootprints[cameraStyle];
-  const levelMiniEvo = onPhotoWall && cameraStyle === 'mini-evo';
+  const appliedCamera = useAppliedDiaryImage('camera-' + cameraStyle, 'image', HERO_CAMERA_IMAGES[cameraStyle]);
+  // Decorative cameras have a taller, centered silhouette than the base camera.
+  const foot = theme ? { x: 37.5, y: 49.5, radius: 15, angle: 0 } : cameraFootprints[cameraStyle];
+  const levelMiniEvo = !theme && onPhotoWall && cameraStyle === 'mini-evo';
   return <HeroCameraMotion active={active} cameraId={theme?.id ?? cameraStyle}><View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
     <Svg width="100%" height="100%" viewBox="0 0 75 53" style={StyleSheet.absoluteFill}>
       <Defs>
@@ -38,7 +40,7 @@ export function HeroRestingCamera({ dark = false, raised = false, onPhotoWall = 
       <Ellipse cx={foot.x + 2} cy={foot.y + 0.8} rx={foot.radius + 3} ry={3.1} opacity={raised ? 0.85 : 0.72} fill="url(#duvet-camera-cast)" />
       <Ellipse cx={foot.x} cy={foot.y} rx={foot.radius} ry={1.7} rotation={foot.angle} originX={foot.x} originY={foot.y} fill="url(#duvet-camera-contact)" />
     </Svg>
-    <Image testID="hero-duvet-camera-image" source={theme?.source ?? diaryImage('camera-' + cameraStyle, 'image', HERO_CAMERA_IMAGES[cameraStyle])} contentFit="contain" cachePolicy="memory-disk" transition={0} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }, levelMiniEvo && { transform: [{ rotate: '2deg' }, { perspective: 220 }, { rotateY: '-6deg' }] }]} />
+    <Image testID="hero-duvet-camera-image" source={theme?.source ?? appliedCamera} contentFit="contain" cachePolicy="memory-disk" transition={0} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }, levelMiniEvo && { transform: [{ rotate: '2deg' }, { perspective: 220 }, { rotateY: '-6deg' }] }]} />
     {active && <HeroCameraPrintLight testID="hero-camera-print-light" width={75} height={53} />}
   </View></HeroCameraMotion>;
 }

@@ -1,3 +1,5 @@
+import { RETIRED_CALENDAR_DESIGNS } from './retiredCalendarDesigns';
+import { freePhotoCalendar, type FreePhotoCalendar } from './freePhotoCalendars';
 import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { isPremiumPaper, type PremiumPaper } from './premiumCalendarPapers';
@@ -73,7 +75,7 @@ export const CITY_CALENDAR_THEMES = [
   { design: 'city-animation-49', themeId: '49-winter-snow-play', get title() { return translateUiText("첫눈의 장난"); }, concept: '눈 내린 길 위에 적는 한 달' },
   { design: 'city-animation-50', themeId: '50-winter-bus-wait', get title() { return translateUiText("겨울 정류장"); }, concept: '목도리의 니트 칸마다 담은 기록' },
 ] as const;
-export type HeroCalendarDesign = PremiumPaper | 'clipboard' | 'bold' | 'grid' | 'photo' | 'weather' | 'illustration' | typeof CITY_CALENDAR_THEMES[number]['design'];
+export type HeroCalendarDesign = FreePhotoCalendar | PremiumPaper | 'clipboard' | 'bold' | 'grid' | 'photo' | 'weather' | 'illustration' | typeof CITY_CALENDAR_THEMES[number]['design'];
 export function isIllustrationCalendarDesign(design: string): boolean {
   return design === 'illustration' || CITY_CALENDAR_THEMES.some(theme => theme.design === design);
 }
@@ -82,7 +84,8 @@ const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 export function readHeroCalendarDesign(): HeroCalendarDesign {
   const saved = localStorageClient.getJson<string>(KEY);
-  return isPremiumPaper(saved) || saved === 'clipboard' || saved === 'bold' || saved === 'photo' || saved === 'weather' || CITY_CALENDAR_THEMES.some(theme => theme.design === saved) ? saved as HeroCalendarDesign : 'bold';
+  if (saved && RETIRED_CALENDAR_DESIGNS.has(saved)) return 'bold';
+  return freePhotoCalendar(saved) || isPremiumPaper(saved) || saved === 'clipboard' || saved === 'bold' || saved === 'photo' || saved === 'weather' || CITY_CALENDAR_THEMES.some(theme => theme.design === saved) ? saved as HeroCalendarDesign : 'bold';
 }
 export function applyHeroCalendarDesign(design: HeroCalendarDesign) {
   localStorageClient.setJson(KEY, design);

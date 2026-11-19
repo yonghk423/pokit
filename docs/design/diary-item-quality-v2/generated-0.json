@@ -1,0 +1,13 @@
+{
+  "item": {
+    "id": "decor-cat-trash",
+    "role": "image",
+    "category": "trash",
+    "remote": "trash-bins/decor-cat-trash.webp",
+    "preview": "/Users/yonghee/Documents/project/pokit/assets/pro-diary-thumbs/decor-cat-trash.webp",
+    "index": 0,
+    "file": "decor-cat-trash-image.webp"
+  },
+  "master": "/Users/yonghee/.codex/generated_images/01a1ed9d-37af-7540-ae71-f7c0353b83cf/exec-a0bd01b7-f0ee-4063-9515-a8eeed3974c2.png",
+  "prompt": "Faithfully restore this exact empty decorative wastebasket at high resolution. Preserve its exact silhouette, camera angle, cocoa brown and cream colors, cat face, pink bow, panels, proportions and all motif placement. Add high definition fine cloth/ceramic/leather surface details appropriate to original, soft sculpted relief, realistic material highlights, subtle ambient occlusion and dimensional edges. No redesign, no added ornaments. Transparent background and clean alpha edges, no glow or exterior cast shadow. Entire object fully visible, centered, close framing. Crisp premium app product icon. The bin must remain EMPTY."
+}

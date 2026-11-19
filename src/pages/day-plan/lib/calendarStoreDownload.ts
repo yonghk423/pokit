@@ -1,3 +1,5 @@
+import { restoredDiaryItems } from '../model/restoredDiaryItems';
+import { highDefinitionDiaryItemIds } from '../model/diaryItemAssetRevision';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import * as fs from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
@@ -7,7 +9,9 @@ import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/
 
 type PaperAsset = { revision: number; id: string; paper: string; edge: string; binding?: string };
 const revisedItems = new Set<string>(proDiaryCatalog.map(item => item.id));
-const key = (id: string) => (revisedItems.has(id) ? 'pokit:calendar-store:v2:' : 'pokit:calendar-store:v1:') + id;
+const photoWallIds = new Set<string>(proDiaryCatalog.filter(item => item.category === 'photoWall').map(item => item.id));
+const assetFolder = (id: string) => restoredDiaryItems.has(id) ? 'diary-store-v6-release/' : highDefinitionDiaryItemIds.has(id) ? 'diary-store-v4/' : photoWallIds.has(id) ? 'diary-store-v5/' : 'diary-store-v2/';
+const key = (id: string) => restoredDiaryItems.has(id) ? 'pokit:calendar-store:v6-release:' + id : highDefinitionDiaryItemIds.has(id) ? 'pokit:calendar-store:v4:' + id : photoWallIds.has(id) ? 'pokit:calendar-store:v5:' + id : (revisedItems.has(id) ? 'pokit:calendar-store:v2:' : 'pokit:calendar-store:v1:') + id;
 export function installedPaper(id: string) {
   return localStorageClient.getJson<PaperAsset>(key(id));
 }
@@ -26,9 +30,9 @@ async function requestAsset(id: string) {
   if (!data.files) return data;
   const entries = await Promise.all(Object.entries(data.files).map(async ([role, url]) => {
     if (typeof url !== 'string') throw new Error('invalid_asset');
-    if (revisedItems.has(id) && Platform.OS !== 'web' && fs.documentDirectory) {
+    if ((revisedItems.has(id) || highDefinitionDiaryItemIds.has(id)) && Platform.OS !== 'web' && fs.documentDirectory) {
       if (!/^[a-z-]+$/.test(role)) throw new Error('invalid_asset');
-      const folder = fs.documentDirectory + 'diary-store-v2/' + id + '/';
+      const folder = fs.documentDirectory + assetFolder(id) + id + '/';
       await fs.makeDirectoryAsync(folder, { intermediates: true });
       const destination = folder + role + '.webp';
       const temporary = destination + '.download';
@@ -88,14 +92,15 @@ export function installDiaryItem(id: string): Promise<void> {
 async function installDiaryItemFiles(id: string) {
   const cached = diaryImages(id);
   const themedBin = revisedItems.has(id) && id.endsWith('-trash');
-  const native = Platform.OS !== 'web' && !!fs.documentDirectory && revisedItems.has(id);
+  const names = id.startsWith('print-border-') ? ['image','tl','tr','bl','br','top','bottom','left','right'] : id.startsWith('trash-') ? ['empty', 'filled'] : themedBin ? ['image', 'filled'] : ['image'];
+  const native = Platform.OS !== 'web' && !!fs.documentDirectory && (revisedItems.has(id) || highDefinitionDiaryItemIds.has(id));
   if (cached && (!themedBin || cached.filled)) {
     if (!native) return;
-    const required = themedBin ? ['image', 'filled'] : ['image'];
+    const required = names;
     if (required.every(role => cached[role]?.startsWith('file://')) &&
         (await Promise.all(required.map(role => fs.getInfoAsync(cached[role])))).every(info => info.exists)) return;
     if (required.every(role => cached[role]?.startsWith('data:image/webp;base64,'))) {
-      const folder = fs.documentDirectory + 'diary-store-v2/' + id + '/';
+      const folder = fs.documentDirectory + assetFolder(id) + id + '/';
       await fs.makeDirectoryAsync(folder, { intermediates: true });
       const migrated: DiaryImages = {};
       for (const role of required) {
@@ -109,10 +114,18 @@ async function installDiaryItemFiles(id: string) {
     }
   }
   const { images } = await requestAsset(id);
-  const names = id.startsWith('print-border-') ? ['image','tl','tr','bl','br','top','bottom','left','right'] : id.startsWith('trash-') ? ['empty', 'filled'] : themedBin ? ['image', 'filled'] : ['image'];
-  if (!names.every(name => typeof images?.[name] === 'string' && (images[name].startsWith('data:image/webp;base64,') || (native && images[name].startsWith(fs.documentDirectory! + 'diary-store-v2/' + id + '/'))))) throw new Error('invalid_asset');
+  if (!names.every(name => typeof images?.[name] === 'string' && (images[name].startsWith('data:image/webp;base64,') || (native && images[name].startsWith(fs.documentDirectory! + assetFolder(id) + id + '/'))))) throw new Error('invalid_asset');
   localStorageClient.setJson(key(id), images);
   installed.set(id, images);
+  if (restoredDiaryItems.has(id) || photoWallIds.has(id) || highDefinitionDiaryItemIds.has(id)) {
+    if (photoWallIds.has(id)) {
+      localStorageClient.removeItem('pokit:calendar-store:v3:' + id);
+      if (native) await fs.deleteAsync(fs.documentDirectory + 'diary-store-v3/' + id + '/', { idempotent: true }).catch(() => undefined);
+    }
+    if (highDefinitionDiaryItemIds.has(id)) localStorageClient.removeItem('pokit:calendar-store:v1:' + id);
+    localStorageClient.removeItem('pokit:calendar-store:v2:' + id);
+    if (native) await fs.deleteAsync(fs.documentDirectory + 'diary-store-v2/' + id + '/', { idempotent: true }).catch(() => undefined);
+  }
 }
 export function diaryImage(id: string, name: string, fallback: number) {
   const uri = diaryImages(id)?.[name];

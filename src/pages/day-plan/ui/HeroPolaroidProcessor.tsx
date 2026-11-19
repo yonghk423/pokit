@@ -11,6 +11,10 @@ export function HeroPolaroidProcessor({ uri, source, effects, onThumbnails, onPr
   uri?: string; source?: number; effects: PolaroidEffects; onThumbnails?: (images: Record<string, string>) => void; onPreview: (uri: string, key: string) => void; onResult: (uri: string, key: string) => void; onError: () => void;
 }) {
   const web = useRef<WebView>(null);
+  const thumbnailSession = useRef(0);
+  const thumbnailFiles = useRef(new Set<string>());
+  const mounted = useRef(true);
+  useEffect(() => { const files = thumbnailFiles.current; mounted.current = true; return () => { mounted.current = false; for (const uri of files) void deleteAsync(uri, { idempotent: true }); files.clear(); }; }, []);
   const callbacks = useRef({ onThumbnails, onPreview, onResult, onError });
   callbacks.current = { onThumbnails, onPreview, onResult, onError };
   const latest = useRef(effects);
@@ -34,6 +38,7 @@ export function HeroPolaroidProcessor({ uri, source, effects, onThumbnails, onPr
   const [input, setInput] = useState<string>();
   useEffect(() => {
     let live = true;
+    thumbnailSession.current++;
     setReady(false);
     timeout.current = setTimeout(() => { if (live) callbacks.current.onError(); }, 20000);
     void (async () => {
@@ -92,7 +97,7 @@ img.onload = () => { try {
      const film = films[index++];
      thumbPixels.data.set(thumbOriginal.data); adjust(thumbPixels.data,{film});
      thumbCtx.putImageData(thumbPixels,0,0);
-     send({thumbnail:film,uri:thumb.toDataURL('image/jpeg',0.85)});
+     send({thumbnail:film,uri:thumb.toDataURL('image/png')});
      if (index < films.length) setTimeout(nextThumbnail,30);
    } catch(e) {}
  };
@@ -103,6 +108,6 @@ img.src = ${JSON.stringify(input)};
   const documentSource = useMemo(() => ({ html }), [html]);
   if (!html) return null;
   return <View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}><WebView ref={web} originWhitelist={['about:*']} source={documentSource} javaScriptEnabled onError={onError} onMessage={event => {
-    try { const result = JSON.parse(event.nativeEvent.data); if (result.thumbnail) { callbacks.current.onThumbnails?.({ [result.thumbnail]: result.uri }); return; } if (result.preview) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onPreview(result.preview, result.key); return; } if (result.ready) { clearTimeout(timeout.current); setReady(true); return; } clearTimeout(timeout.current); running.current = false; if (typeof result.uri === 'string' && result.uri.startsWith('data:image/png;base64,')) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onResult(result.uri, result.key); else submit(); } else callbacks.current.onError(); } catch { onError(); }
+    try { const result = JSON.parse(event.nativeEvent.data); if (result.thumbnail) { const session = thumbnailSession.current; void manipulateAsync(result.uri, [], { format: SaveFormat.WEBP, compress: 0.78 }).then(image => { if (!mounted.current || session !== thumbnailSession.current) { void deleteAsync(image.uri, { idempotent: true }); return; } thumbnailFiles.current.add(image.uri); callbacks.current.onThumbnails?.({ [result.thumbnail]: image.uri }); }).catch(() => {}); return; } if (result.preview) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onPreview(result.preview, result.key); return; } if (result.ready) { clearTimeout(timeout.current); setReady(true); return; } clearTimeout(timeout.current); running.current = false; if (typeof result.uri === 'string' && result.uri.startsWith('data:image/png;base64,')) { if (result.key === JSON.stringify(latest.current)) callbacks.current.onResult(result.uri, result.key); else submit(); } else callbacks.current.onError(); } catch { onError(); }
   }} /></View>;
 }

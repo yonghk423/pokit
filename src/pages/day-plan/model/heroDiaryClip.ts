@@ -12,6 +12,7 @@ const read = (): DiaryClip => {
 export function useHeroDiaryClip() { return useSyncExternalStore(subscribe, read, read); }
 export function applyHeroDiaryClip(clip: DiaryClip) { applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
 export const DIARY_CLIP_IMAGES = {
+  'cherry-binder': require('../../../../assets/control-illustrations/cherry-binder-clip.webp'),
   'purple': require('../../../../assets/pro-store-previews/vivid-purple-clipboard-clip.webp'),
   'burgundy': require('../../../../assets/pro-store-previews/vivid-burgundy-clipboard-clip.webp'),
   'emerald': require('../../../../assets/pro-store-previews/vivid-emerald-clipboard-clip.webp'),
@@ -30,6 +31,7 @@ export const DIARY_CLIP_IMAGES = {
 };
 
 export const DIARY_CLIPS: { id: DiaryClip; name: string; english: string; pro: boolean }[] = [
+  { id: 'cherry-binder', name: '체리 바인더 집게', english: 'Cherry Binder Clip', pro: false },
   { id: 'blue', name: '파란 집게', english: 'Blue Clip', pro: false },
   { id: 'black', name: '검은 집게', english: 'Black Clip', pro: false },
   { id: 'red', name: '빨간 집게', english: 'Red Clip', pro: false },

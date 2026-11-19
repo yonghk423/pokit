@@ -1,3 +1,5 @@
+import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
+import { WARM_IVORY_PAPER } from '@shared/ui/app-wallpaper';
 import { useSyncExternalStore } from 'react';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { resetDiaryItem } from '../../src/pages/day-plan/model/resetDiaryItem';
@@ -155,8 +157,12 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
     if (loadingItem === id) return translateUiText("다운로드 중");
     return diaryImages(id) ? 'Pro' : translateUiText("Pro · 다운로드");
   }
-  const [diaryCategory, setDiaryCategory] = useState<ThemeSlot | 'wall'>('clip');
-  const [wallCategory, setWallCategory] = useState<'photo-wall' | null>(null);
+  const [moreDiaryCategories, setMoreDiaryCategories] = useState(false);
+  const diaryCategoryScroll = useRef({ height: 170, content: 0, offset: 0 });
+  const updateCategoryHint = () => { const { height, content, offset } = diaryCategoryScroll.current; setMoreDiaryCategories(offset <= 2 && content - height > 4); };
+  const [diaryCategory, setDiaryCategory] = useState<ThemeSlot | 'wall' | 'background'>('clip');
+  const wallpaper = useWallpaperStore(state => state.wallpaper);
+  const setWallpaper = useWallpaperStore(state => state.setWallpaper);
   const [illustrationCategory, setIllustrationCategory] = useState<IllustrationCalendarCategoryId>('character');
   const illustrationPacks = ILLUSTRATION_CALENDAR_CATEGORIES.find(category => category.id === illustrationCategory)?.packs ?? [];
   const windowSize = useWindowDimensions();
@@ -251,29 +257,35 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
     {view !== 'illustrationDiary' ? selector : null}
     {!storeArtwork ? <Pressable disabled={!storeArtworkFailed} onPress={retryStoreArtwork} accessibilityLabel={storeArtworkFailed ? translateUiText("이미지 다시 불러오기") : translateUiText("상품 준비 중")} style={{ margin: 24, height: 320, borderRadius: 20, backgroundColor: '#E6E5E1', justifyContent: 'center', alignItems: 'center' }}>{storeArtworkFailed ? <ThemedText>{translateUiText("이미지 다시 불러오기")}</ThemedText> : null}</Pressable> : view === 'diary'
       ? <View style={{ flex: 1, minHeight: 0 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ gap: 10, paddingHorizontal: 12, paddingVertical: 12 }}>
-          {([['clip', categoryNames.clip], ['trash', categoryNames.trash], ['camera', categoryNames.camera], ['wall', ['벽장식', 'Wall decor']], ...Object.entries(categoryNames).filter(([key]) => !['clip','trash','camera','photoWall'].includes(key) && proDiaryCatalog.some(item => item.category === key))] as [ThemeSlot | 'wall', string[]][]).map(([category, labels]) => <Pressable key={category} testID={`diary-category-${category}`} accessibilityRole="tab" accessibilityLabel={locale === 'en' ? labels[1] : translateUiText(labels[0])} accessibilityState={{ selected: diaryCategory === category }} onPress={() => { tapHaptic('select'); setDiaryCategory(category); }} style={{ minWidth: 74, minHeight: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: diaryCategory === category ? '#F8F8FA' : 'transparent', boxShadow: diaryCategory === category ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : 'none' }}>
-            <ThemedText style={{ color: ink, fontSize: 14, opacity: diaryCategory === category ? 1 : 0.55 }}>{locale === 'en' ? labels[1] : translateUiText(labels[0])}</ThemedText>
+        <View style={{ flexShrink: 0 }}>
+        <ScrollView onLayout={event => { diaryCategoryScroll.current.height = event.nativeEvent.layout.height; updateCategoryHint(); }} onContentSizeChange={(_, height) => { diaryCategoryScroll.current.content = height; updateCategoryHint(); }} onScroll={event => { diaryCategoryScroll.current.offset = event.nativeEvent.contentOffset.y; updateCategoryHint(); }} scrollEventThrottle={32} testID="diary-category-grid" nestedScrollEnabled showsVerticalScrollIndicator style={{ height: 170, flexGrow: 0, flexShrink: 0, marginHorizontal: 12, borderRadius: 18 }} contentContainerStyle={{ padding: 12 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 10 }}>
+          {([['clip', categoryNames.clip], ['trash', categoryNames.trash], ['camera', categoryNames.camera], ['wall', ['벽장식', 'Wall decor']], ['background', ['배경', 'Backgrounds']], ...Object.entries(categoryNames).filter(([key]) => !['clip','trash','camera','photoWall'].includes(key) && proDiaryCatalog.some(item => item.category === key))] as [ThemeSlot | 'wall' | 'background', string[]][]).map(([category, labels]) => <Pressable key={category} testID={`diary-category-${category}`} accessibilityRole="tab" accessibilityLabel={locale === 'en' ? labels[1] : translateUiText(labels[0])} accessibilityState={{ selected: diaryCategory === category }} onPress={() => { tapHaptic('select'); setDiaryCategory(category); }} style={{ width: '33.33%', height: 42, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: diaryCategory === category ? '#F8F8FA' : '#F0EFEC', boxShadow: diaryCategory === category ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : '-2px -2px 5px rgba(255,255,255,0.75), 2px 2px 5px rgba(126,127,145,0.13)' }}>
+            <ThemedText style={{ color: ink, fontSize: 14, textAlign: 'center', opacity: diaryCategory === category ? 1 : 0.55 }}>{locale === 'en' ? labels[1] : translateUiText(labels[0])}</ThemedText>
           </Pressable>)}
+          </View>
         </ScrollView>
+        {moreDiaryCategories ? <View pointerEvents="none" style={{ position: 'absolute', right: 2, bottom: 10 }}><ThemedText accessibilityLabel={locale === 'en' ? 'More categories below' : '아래에 카테고리 더 있음'} style={{ color: ink, opacity: 0.55, fontSize: 16 }}>↓</ThemedText></View> : null}
+        </View>
         <ScrollView key={diaryCategory} testID="diary-items-gallery" onLayout={event => setDiaryGalleryWidth(event.nativeEvent.layout.width)} contentContainerStyle={diaryCategory === 'trash'
           ? { paddingHorizontal: 12, paddingVertical: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }
           : { padding: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 12 }}>
           {renderLegacyItems(false)}
-          {diaryCategory !== 'wall' ? null : <View testID="diary-wall-decor-category" style={{ width: '100%', gap: 16 }}>
-            {wallCategory === null ? <Pressable testID="wall-category-photo-wall" accessibilityRole="button" accessibilityLabel={translateUiText("포토월 카테고리 열기")} onPress={() => { tapHaptic('select'); setWallCategory('photo-wall'); }} style={{ width: '48%', maxWidth: 220, padding: 10, gap: 10 }}>
-              <PhotoWallStorePreview variant="black" square />
-              <ThemedText style={{ color: ink, fontSize: 15, textAlign: 'center' }}>{translateUiText("포토월")}</ThemedText>
-            </Pressable> : <View testID="wall-photo-wall-gallery" style={{ gap: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Pressable testID="wall-category-back" accessibilityRole="button" accessibilityLabel={translateUiText("벽장식 카테고리로 돌아가기")} onPress={() => { tapHaptic('select'); setWallCategory(null); }} style={{ minHeight: 44, justifyContent: 'center', paddingRight: 8 }}><ThemedText style={{ color: ink, fontSize: 14 }}>{translateUiText("‹ 벽장식")}</ThemedText></Pressable>
-              <ThemedText accessibilityRole="header" style={{ color: ink, fontSize: 16 }}>{translateUiText("포토월")}</ThemedText>
+          {diaryCategory === 'background' ? (['default', 'warm-ivory'] as const).map(id => <Pressable key={id} testID={`diary-background-${id}`} accessibilityRole="button" accessibilityState={{ selected: wallpaper === id }} onPress={() => { tapHaptic('select'); setWallpaper(id); }} style={{ width: diaryItemWidth, padding: 8, gap: 8 }}>
+            <View style={{ height: 100, borderRadius: 6, backgroundColor: '#F7F6F4', shadowColor: '#51463B', shadowOpacity: 0.16, shadowRadius: 5, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}>
+              <View style={{ flex: 1, borderRadius: 6, overflow: 'hidden', borderWidth: 0.7, borderColor: '#D8D1C8' }}>{id === 'warm-ivory' ? <Image source={WARM_IVORY_PAPER} resizeMode="cover" style={{ width: '100%', height: '100%' }} /> : null}</View>
             </View>
+            <ThemedText style={{ textAlign: 'center', color: ink, fontSize: 13 }}>{id === 'default' ? (locale === 'ko' ? '기본 배경' : 'Default') : (locale === 'ko' ? '웜 아이보리 페이퍼' : 'Warm Ivory Paper')}</ThemedText>
+            <ThemedText style={{ textAlign: 'center', color: wallpaper === id ? '#278B77' : ink, fontSize: 13 }}>{wallpaper === id ? translateUiText('적용 중') : translateUiText('무료')}</ThemedText>
+          </Pressable>) : null}
+          {diaryCategory !== 'wall' ? null : <View testID="diary-wall-decor-category" style={{ width: '100%', gap: 16 }}>
+            <View testID="wall-photo-wall-gallery" style={{ gap: 16 }}>
+              <ThemedText accessibilityRole="header" style={{ color: ink, fontSize: 16 }}>{translateUiText("포토월")}</ThemedText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 12 }}>
-              {(['none', 'black'] as const).map(style => {
+              {(['none', 'aligned', 'black'] as const).map(style => {
                 const selected = !themedWall && photoWall === style;
-                const name = style === 'none' ? (translateUiText("자유 배치")) : (translateUiText("월넛 포토월"));
-                return <Pressable key={style} testID={style === 'none' ? 'diary-item-no-photo-wall' : 'diary-item-black-photo-wall'} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); if (selected) resetDiaryItem('photoWall'); else applyHeroPhotoWall(style); }} style={{ width: diaryItemWidth, padding: 7, gap: 5, borderRadius: 12, backgroundColor: selected ? '#F8F8FA' : 'transparent' }}>
+                const name = style === 'aligned' ? (locale === 'ko' ? '정렬 배치' : 'Aligned Layout') : style === 'none' ? (translateUiText("자유 배치")) : (locale === 'ko' ? '체리 리본 포토월' : 'Cherry Ribbon Photo Wall');
+                return <Pressable key={style} testID={style === 'none' ? 'diary-item-no-photo-wall' : style === 'aligned' ? 'diary-item-aligned-photo-wall' : 'diary-item-black-photo-wall'} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); if (selected) resetDiaryItem('photoWall'); else applyHeroPhotoWall(style); }} style={{ width: diaryItemWidth, padding: 7, gap: 5, borderRadius: 12, backgroundColor: selected ? '#F8F8FA' : 'transparent' }}>
                   <View style={{ height: 58, width: '100%', alignItems: 'center' }}><View style={{ width: 58, height: 58 }}><PhotoWallStorePreview variant={style} square /></View></View>
                   <ThemedText numberOfLines={2} style={{ color: ink, textAlign: 'center', fontSize: 12, lineHeight: 16, minHeight: 32 }}>{name}</ThemedText>
                   <ThemedText style={{ color: selected ? '#278B77' : ink, opacity: selected ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{selected ? (translateUiText("적용 중")) : (translateUiText("무료"))}</ThemedText>
@@ -281,9 +293,9 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
               })}
               <DiaryThemeGallery itemWidth={diaryItemWidth} choose={chooseItem} status={itemStatus} category="photoWall" ko={locale === 'ko'} ink={ink} />
             </View>
-            </View>}
+            </View>
           </View>}
-          {diaryCategory !== 'wall' && <DiaryThemeGallery itemWidth={diaryCategory === 'trash' ? Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 24 - 16) / 3)) : diaryItemWidth} choose={chooseItem} status={itemStatus} category={diaryCategory} ko={locale === 'ko'} ink={ink} />}
+          {diaryCategory !== 'wall' && diaryCategory !== 'background' && <DiaryThemeGallery itemWidth={diaryCategory === 'trash' ? Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 24 - 16) / 3)) : diaryItemWidth} choose={chooseItem} status={itemStatus} category={diaryCategory} ko={locale === 'ko'} ink={ink} />}
           {renderLegacyItems(true)}
         </ScrollView>
       </View>

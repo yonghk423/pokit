@@ -1,3 +1,5 @@
+import { ensurePremiumScene } from '../lib/heroPremiumPack';
+import { mockPortraitBlurRadius } from '../lib/mockPortraitBlur';
 import { photoPreview } from '../lib/heroPhotoPreview';
 import { Image, type ImageProps } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,7 +47,7 @@ function fullResolutionSource(source: ImageProps['source']): ImageProps['source'
     : typeof source === 'string' ? { uri: source } : source;
   if (!resolved || !('uri' in resolved) || !resolved.uri) return source;
   const uri = resolveHeroArtworkUri(resolved.uri);
-  return { ...resolved, uri, cacheKey: `comic-full-v1:${uri}` };
+  return { ...resolved, uri, cacheKey: `${uri.includes('/character-packs/protagonist-7/') ? 'comic-scene-detail-v6-release' : 'comic-full-v1'}:${uri}` };
 }
 
 /** Artwork already shown this session sits in the memory cache, so remounts skip the skeleton. */
@@ -80,10 +82,23 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   const [reload, setReload] = useState(0);
   const key = `${imageKey}:${reload}:${attempt}`;
   const exhausted = attempt >= 2;
-  const activeSource = attempt >= 2 && fallbackSource ? fallbackSource : source;
+  const restoredScene = !!imageIdentity(source)?.includes('/character-packs/protagonist-7/');
+  const activeSource = attempt >= 2 && fallbackSource && !restoredScene ? fallbackSource : source;
   const resolvedSource = useMemo(() => fullResolutionSource(activeSource), [activeSource]);
   const [preview, setPreview] = useState<{ original: string; uri: string } | null>(null);
   const originalIdentity = imageIdentity(resolvedSource);
+  const [sceneReady, setSceneReady] = useState(!restoredScene);
+  useEffect(() => {
+    if (!restoredScene) { setSceneReady(true); return; }
+    setSceneReady(false);
+    let live = true;
+    void ensurePremiumScene().then(ready => {
+      if (!live) return;
+      if (ready) setSceneReady(true);
+      else setFailed(key);
+    });
+    return () => { live = false; };
+  }, [restoredScene, originalIdentity, key]);
   const smallPreview = !!frameSize && Math.max(frameSize.width, frameSize.height) <= 400;
   useEffect(() => {
     let live = true;
@@ -95,7 +110,7 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   const waitingForPreview = !frameSize || (smallPreview && !!originalIdentity && /\/hero-photos\/photo-/.test(originalIdentity) && preview?.original !== originalIdentity);
   const displaySource = smallPreview && preview?.original === originalIdentity ? { uri: preview.uri } : resolvedSource;
   const decodeSource = displaySource && typeof displaySource === 'object' && !Array.isArray(displaySource) && 'uri' in displaySource
-    ? { ...displaySource, cacheKey: `comic-display-v2:${smallPreview ? 'small' : 'large'}:${displaySource.uri}` } : displaySource;
+    ? { ...displaySource, cacheKey: `${restoredScene ? 'comic-scene-display-v6-release' : 'comic-display-v2'}:${smallPreview ? 'small' : 'large'}:${displaySource.uri}` } : displaySource;
   const identity = imageIdentity(resolvedSource) ?? `session:${imageKey}:${attempt}`;
   // Original photos fill the frame in every orientation, using centered cropping
   // rather than the illustration-specific portrait zoom.
@@ -121,7 +136,7 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
     const timer = setTimeout(() => setAttempt(value => value + 1), 300 * (attempt + 1));
     return () => clearTimeout(timer);
   }, [failed, key, exhausted, attempt]);
-  const ready = displayed === key && !waitingForPreview && !waitingForSize && failed !== key;
+  const ready = sceneReady && displayed === key && !waitingForPreview && !waitingForSize && failed !== key;
   const retry = () => { shownImageKeys.delete(imageKey); setFailed(null); setDisplayed(null); setAttempt(0); setReload(value => value + 1); };
   return <View style={[{ overflow: 'hidden', backgroundColor }, style]} onLayout={event => {
     const { width, height } = event.nativeEvent.layout;
@@ -129,7 +144,7 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   }}>
     <View style={[StyleSheet.absoluteFill, { opacity: ready ? 1 : 0 }]} pointerEvents="none">
     {fillPortrait && !fitToCard && portrait ? <Image testID="comic-image-portrait-backdrop" source={resolvedSource} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} useAppleWebpCodec={false} cachePolicy="memory" accessible={false} /> : null}
-    {!waitingForPreview ? <Image key={key} source={decodeSource} recyclingKey={key}
+    {!waitingForPreview && sceneReady ? <Image key={key} blurRadius={mockPortraitBlurRadius(originalIdentity ?? undefined)} source={decodeSource} recyclingKey={key}
       style={[StyleSheet.absoluteFill, waitingForSize && { opacity: 0 }, portraitFrame ?? (cropCardPadding && paddedCardFrame)]} contentFit={portraitFrame ? 'fill' : resolvedFit} contentPosition={originalPhoto ? 'center' : contentPosition ?? (fitToCard && portrait ? 'top' : undefined)}
       useAppleWebpCodec={false} cachePolicy={attempt > 0 || reload > 0 ? 'none' : /^https?:/.test(identity) ? 'memory-disk' : 'memory'}
       allowDownscaling enforceEarlyResizing priority={priority} transition={0}

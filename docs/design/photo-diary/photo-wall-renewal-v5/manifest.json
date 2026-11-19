@@ -1,0 +1,101 @@
+[
+  {
+    "id": "bunny",
+    "file": "wall-bunny.webp",
+    "width": 2130,
+    "height": 504,
+    "alpha": true,
+    "bytes": 421224,
+    "sha256": "21dbfedb4ff8fdba1581162da0d159cd4bcb74cc6dd2074bee16cf8cee8fcb75"
+  },
+  {
+    "id": "daisy",
+    "file": "wall-daisy.webp",
+    "width": 2097,
+    "height": 360,
+    "alpha": true,
+    "bytes": 283134,
+    "sha256": "039303f0b853760525d16a544bcf4671b1832129c4871dd0c3c11975ced7e0ac"
+  },
+  {
+    "id": "moon",
+    "file": "wall-moon.webp",
+    "width": 2098,
+    "height": 457,
+    "alpha": true,
+    "bytes": 290734,
+    "sha256": "791a2bce92fd332a0a5304796e88a1ec76acbd66ca86fc257383faa145227743"
+  },
+  {
+    "id": "bakery",
+    "file": "wall-bakery.webp",
+    "width": 2090,
+    "height": 450,
+    "alpha": true,
+    "bytes": 387862,
+    "sha256": "b8044ded03f2495557152468a58db268b28dc4c8ac5308abdc44ed9f2e108c1e"
+  },
+  {
+    "id": "berry",
+    "file": "wall-berry.webp",
+    "width": 2078,
+    "height": 397,
+    "alpha": true,
+    "bytes": 395298,
+    "sha256": "f4d12745119db7a631c0a9ae34b9ad5fca9ddf37a437326f8adf86acdfbf9a8a"
+  },
+  {
+    "id": "stamp",
+    "file": "wall-stamp.webp",
+    "width": 2128,
+    "height": 318,
+    "alpha": true,
+    "bytes": 370434,
+    "sha256": "481f143bac553af1a8685d11e1342f5f8551b38d734ebb5f4911736b497a5525"
+  },
+  {
+    "id": "ribbon",
+    "file": "wall-ribbon.webp",
+    "width": 2131,
+    "height": 377,
+    "alpha": true,
+    "bytes": 312460,
+    "sha256": "b8ed911210c5275dbbbcabf92b645d6da0f0cb73764f9a6fa25eb063da7938b1"
+  },
+  {
+    "id": "shell",
+    "file": "wall-shell.webp",
+    "width": 2110,
+    "height": 364,
+    "alpha": true,
+    "bytes": 440818,
+    "sha256": "be8802be92bb211028ff511b596bf569eccdc9f51b39f12567869b5bf4d932a9"
+  },
+  {
+    "id": "chick",
+    "file": "wall-chick.webp",
+    "width": 2106,
+    "height": 383,
+    "alpha": true,
+    "bytes": 267998,
+    "sha256": "d6d1217e91b9636174f870b8c1b05a0dcc2b91b20fda9322b52d5ddec0dcfefb"
+  },
+  {
+    "id": "cat",
+    "file": "wall-cat.webp",
+    "width": 2072,
+    "height": 358,
+    "alpha": true,
+    "bytes": 219768,
+    "sha256": "559efb508833d2b884504dae20ca14f2c2136fb0357cb289e7df2f9887972a28"
+  },
+  {
+    "id": "mail",
+    "file": "wall-mail.webp",
+    "width": 2120,
+    "height": 393,
+    "alpha": true,
+    "bytes": 275564,
+    "sha256": "797fd98fee78d046a8b1e5076f32a05faf391ff75c3666fa9a870a53243342ed"
+  }
+]

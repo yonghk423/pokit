@@ -1,3 +1,4 @@
+jest.mock('@features/subscriptions', () => ({ useSubscriptionStore: () => false, selectCanTestProStoreItems: () => false }));
 import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
 import { CALENDAR_ARTWORK_SIZES, fitCalendarArtwork, calendarCellContents } from './illustrationCalendarGeometry';
 import { illustrationCellFrame, illustrationMonthCells } from '../ui/HeroIllustrationCalendar';
@@ -26,7 +27,9 @@ it.each([[320,568,20,90],[375,667,20,90],[390,844,59,110],[430,932,59,110],[440,
     const cells = Array.from({length:42},(_,slot)=>illustrationCellFrame(theme,slot,frame.width,frame.height));
     cells.forEach((cell,i)=>{
       const content = calendarCellContents(cell.width, cell.height);
-      expect(content.photoTop).toBeGreaterThan(content.numberTop+content.numberHeight);
+      expect(content.photoTop).toBeGreaterThan(content.numberTop);
+      expect(content.photoTop).toBeLessThan(content.numberTop+content.numberHeight);
+      expect(content.photoWidth).toBeLessThan(cell.width);
       expect(content.photoTop+content.photoHeight).toBeLessThan(cell.height);
       expect(cell.width).toBeGreaterThan(0);
       expect(cell.height).toBeGreaterThan(0);
@@ -54,4 +57,19 @@ it('provides independently sampled contrast for every date and weekday on every 
   }
   expect(CALENDAR_CONTRAST['49-winter-snow-play'].dates).toContain('#28231D');
   expect(CALENDAR_CONTRAST['33-exam-results-joy'].dates).toContain('#FFF8E8');
+});
+
+it('enlarges photos behind dates without changing number placement or crossing cell edges', () => {
+  for (const width of [30, 40, 55, 70]) for (const height of [30, 45, 60, 85]) {
+    const content = calendarCellContents(width, height);
+    const inset = Math.min(width, height) * .06;
+    expect(content.numberTop).toBe(inset);
+    expect(content.numberSize).toBe(Math.min(width * .40, height * .40, 26));
+    expect(content.numberHeight).toBe(content.numberSize * 1.18);
+    expect(content.photoTop).toBeLessThan(content.numberTop + content.numberHeight);
+    expect(content.photoTop).toBeGreaterThan(content.numberTop);
+    expect(content.photoTop + content.photoHeight).toBeLessThan(height);
+    expect(content.photoWidth).toBeLessThan(width);
+    expect(content.photoHeight).toBeGreaterThan(0);
+  }
 });

@@ -1,0 +1,4299 @@
+{
+  "summary": {
+    "products": 90,
+    "byCategory": {
+      "date": 10,
+      "tab": 9,
+      "frame": 6,
+      "trash": 18,
+      "camera": 11,
+      "clip": 18,
+      "charm": 1,
+      "memo": 1,
+      "pocket": 2,
+      "mark": 1,
+      "corner": 1,
+      "pin": 1,
+      "photoWall": 11
+    },
+    "previews": 108,
+    "originals": 156,
+    "missingOriginals": 0,
+    "nonWebpPreviews": [],
+    "nonWebpOriginals": [],
+    "largePreviews": [
+      {
+        "path": "assets/pro-diary-thumbs/decor-cat-trash.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 515,
+        "bytes": 51868,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-diary-thumbs/decor-cat-trash-filled.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 515,
+        "bytes": 57506,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-diary-thumbs/decor-stamp-trash.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 522,
+        "bytes": 67288,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-diary-thumbs/decor-stamp-trash-filled.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 529,
+        "bytes": 74024,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-diary-thumbs/mini-toast-trash.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 520,
+        "bytes": 74400,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-diary-thumbs/mini-toast-trash-filled.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 524,
+        "bytes": 81278,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-store-previews/rattan-trash-bin.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 112972,
+        "alpha": true
+      },
+      {
+        "path": "assets/pro-store-previews/rattan-trash-bin-paper.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 107222,
+        "alpha": true
+      }
+    ],
+    "fullImageUnder1024": [
+      {
+        "id": "date-label-mail",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-mail.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-mail.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 228,
+        "bytes": 37346,
+        "alpha": true
+      },
+      {
+        "id": "date-label-berry",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-berry.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-berry.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 261,
+        "bytes": 71228,
+        "alpha": true
+      },
+      {
+        "id": "date-label-stamp",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-stamp.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-stamp.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 233,
+        "bytes": 37970,
+        "alpha": true
+      },
+      {
+        "id": "date-label-ribbon",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-ribbon.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-ribbon.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 253,
+        "bytes": 35122,
+        "alpha": true
+      },
+      {
+        "id": "date-label-shell",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-shell.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-shell.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 249,
+        "bytes": 36650,
+        "alpha": true
+      },
+      {
+        "id": "date-label-chick",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-chick.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-chick.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 265,
+        "bytes": 29528,
+        "alpha": true
+      },
+      {
+        "id": "date-label-cat",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-cat.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-cat.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 900,
+        "height": 260,
+        "bytes": 32578,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-cat",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-cat.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-cat.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 411,
+        "bytes": 186722,
+        "alpha": true
+      },
+      {
+        "id": "print-border-cat",
+        "category": "frame",
+        "role": "image",
+        "remotePath": "photo-frames/print-border-cat.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 31958,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-shell",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-shell.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-shell.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 405,
+        "bytes": 181818,
+        "alpha": true
+      },
+      {
+        "id": "print-border-shell",
+        "category": "frame",
+        "role": "image",
+        "remotePath": "photo-frames/print-border-shell.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 34280,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-chick",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-chick.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-chick.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 385,
+        "bytes": 150398,
+        "alpha": true
+      },
+      {
+        "id": "print-border-chick",
+        "category": "frame",
+        "role": "image",
+        "remotePath": "photo-frames/print-border-chick.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 31572,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-ribbon",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-ribbon.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-ribbon.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 409,
+        "bytes": 179384,
+        "alpha": true
+      },
+      {
+        "id": "print-border-ribbon",
+        "category": "frame",
+        "role": "image",
+        "remotePath": "photo-frames/print-border-ribbon.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 40364,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-berry",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-berry.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-berry.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 403,
+        "bytes": 165282,
+        "alpha": true
+      },
+      {
+        "id": "print-border-berry",
+        "category": "frame",
+        "role": "image",
+        "remotePath": "photo-frames/print-border-berry.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 26566,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-stamp",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-stamp.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-stamp.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 408,
+        "bytes": 192666,
+        "alpha": true
+      },
+      {
+        "id": "print-border-stamp",
+        "category": "frame",
+        "role": "image",
+        "remotePath": "photo-frames/print-border-stamp.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 400,
+        "height": 500,
+        "bytes": 48042,
+        "alpha": true
+      },
+      {
+        "id": "mini-carrot",
+        "category": "charm",
+        "role": "image",
+        "remotePath": "charms/mini-carrot.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/charms/mini-carrot.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 510,
+        "height": 910,
+        "bytes": 157868,
+        "alpha": true
+      },
+      {
+        "id": "mini-order",
+        "category": "memo",
+        "role": "image",
+        "remotePath": "memo-pads/mini-order.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/memo-pads/mini-order.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 910,
+        "height": 600,
+        "bytes": 143222,
+        "alpha": true
+      },
+      {
+        "id": "mini-airmail",
+        "category": "pocket",
+        "role": "image",
+        "remotePath": "pockets/mini-airmail.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/pockets/mini-airmail.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 884,
+        "height": 910,
+        "bytes": 194518,
+        "alpha": true
+      },
+      {
+        "id": "date-label-bunny",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-bunny.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-bunny.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 272,
+        "bytes": 102484,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-bunny",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-bunny.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-bunny.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 414,
+        "bytes": 180340,
+        "alpha": true
+      },
+      {
+        "id": "date-label-toast",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-toast.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-toast.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 275,
+        "bytes": 126244,
+        "alpha": true
+      },
+      {
+        "id": "mini-toast-label",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/mini-toast-label.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/mini-toast-label.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 405,
+        "bytes": 118472,
+        "alpha": true
+      },
+      {
+        "id": "date-label-clover",
+        "category": "date",
+        "role": "image",
+        "remotePath": "date-labels/date-label-clover.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-clover.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 258,
+        "bytes": 94462,
+        "alpha": true
+      },
+      {
+        "id": "tab-label-clover",
+        "category": "tab",
+        "role": "image",
+        "remotePath": "tab-labels/tab-label-clover.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-clover.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 850,
+        "height": 413,
+        "bytes": 179664,
+        "alpha": true
+      },
+      {
+        "id": "mini-ears",
+        "category": "mark",
+        "role": "image",
+        "remotePath": "bookmarks/mini-ears.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/bookmarks/mini-ears.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 571,
+        "height": 910,
+        "bytes": 153224,
+        "alpha": true
+      },
+      {
+        "id": "mini-butter",
+        "category": "corner",
+        "role": "image",
+        "remotePath": "photo-corners/mini-butter.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-corners/mini-butter.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 910,
+        "height": 855,
+        "bytes": 115538,
+        "alpha": true
+      },
+      {
+        "id": "mini-clover",
+        "category": "pin",
+        "role": "image",
+        "remotePath": "pins/mini-clover.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/pins/mini-clover.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 815,
+        "height": 910,
+        "bytes": 294620,
+        "alpha": true
+      },
+      {
+        "id": "mini-letter",
+        "category": "pocket",
+        "role": "image",
+        "remotePath": "pockets/mini-letter.webp",
+        "path": "output/paid-image-audit-20261119/remote/calendar-store/pockets/mini-letter.webp",
+        "extension": ".webp",
+        "format": "webp",
+        "webpSignature": true,
+        "width": 910,
+        "height": 895,
+        "bytes": 220564,
+        "alpha": true
+      }
+    ],
+    "originalsNotLargerThanPreview": []
+  },
+  "records": [
+    {
+      "id": "date-label-mail",
+      "category": "date",
+      "title": "편지 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-mail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 61,
+          "bytes": 3948,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-mail.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-mail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 228,
+          "bytes": 37346,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-berry",
+      "category": "date",
+      "title": "딸기 자수 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 70,
+          "bytes": 7434,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-berry.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 261,
+          "bytes": 71228,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-stamp",
+      "category": "date",
+      "title": "소다빛 우표 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 62,
+          "bytes": 4688,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-stamp.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 233,
+          "bytes": 37970,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-ribbon",
+      "category": "date",
+      "title": "발레 리본 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 68,
+          "bytes": 3694,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-ribbon.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 253,
+          "bytes": 35122,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-shell",
+      "category": "date",
+      "title": "진주 조개 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 66,
+          "bytes": 5214,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-shell.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 249,
+          "bytes": 36650,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-chick",
+      "category": "date",
+      "title": "병아리 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 71,
+          "bytes": 3320,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-chick.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 265,
+          "bytes": 29528,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-cat",
+      "category": "date",
+      "title": "코코아 고양이 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 69,
+          "bytes": 3566,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-cat.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 900,
+          "height": 260,
+          "bytes": 32578,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-cat",
+      "category": "tab",
+      "title": "코코아 고양이",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 101,
+          "bytes": 9214,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-cat.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 411,
+          "bytes": 186722,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "print-border-cat",
+      "category": "frame",
+      "title": "코코아 고양이",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/print-border-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 104,
+          "height": 130,
+          "bytes": 3428,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-frames/print-border-cat.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 31958,
+          "alpha": true
+        },
+        {
+          "role": "tl",
+          "remotePath": "photo-frames/print-border-cat-tl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-tl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4042,
+          "alpha": true
+        },
+        {
+          "role": "tr",
+          "remotePath": "photo-frames/print-border-cat-tr.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-tr.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3388,
+          "alpha": true
+        },
+        {
+          "role": "bl",
+          "remotePath": "photo-frames/print-border-cat-bl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-bl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3516,
+          "alpha": true
+        },
+        {
+          "role": "br",
+          "remotePath": "photo-frames/print-border-cat-br.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-br.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3628,
+          "alpha": true
+        },
+        {
+          "role": "top",
+          "remotePath": "photo-frames/print-border-cat-top.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-top.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 3948,
+          "alpha": true
+        },
+        {
+          "role": "bottom",
+          "remotePath": "photo-frames/print-border-cat-bottom.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-bottom.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 3480,
+          "alpha": true
+        },
+        {
+          "role": "left",
+          "remotePath": "photo-frames/print-border-cat-left.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-left.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5762,
+          "alpha": true
+        },
+        {
+          "role": "right",
+          "remotePath": "photo-frames/print-border-cat-right.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat-right.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5650,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-cat-trash",
+      "category": "trash",
+      "title": "코코아 고양이",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-cat-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 515,
+          "bytes": 51868,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/decor-cat-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 515,
+          "bytes": 57506,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/decor-cat-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-cat-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1193,
+          "height": 1536,
+          "bytes": 509306,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/decor-cat-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-cat-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1192,
+          "height": 1536,
+          "bytes": 577946,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-cat-camera",
+      "category": "camera",
+      "title": "코코아 고양이",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-cat-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 388,
+          "bytes": 48540,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/decor-cat-camera.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/decor-cat-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1490,
+          "bytes": 767522,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-shell",
+      "category": "tab",
+      "title": "진주 조개",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 99,
+          "bytes": 8068,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-shell.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 405,
+          "bytes": 181818,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "print-border-shell",
+      "category": "frame",
+      "title": "진주 조개",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/print-border-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 104,
+          "height": 130,
+          "bytes": 3142,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-frames/print-border-shell.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 34280,
+          "alpha": true
+        },
+        {
+          "role": "tl",
+          "remotePath": "photo-frames/print-border-shell-tl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-tl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4364,
+          "alpha": true
+        },
+        {
+          "role": "tr",
+          "remotePath": "photo-frames/print-border-shell-tr.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-tr.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4202,
+          "alpha": true
+        },
+        {
+          "role": "bl",
+          "remotePath": "photo-frames/print-border-shell-bl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-bl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3980,
+          "alpha": true
+        },
+        {
+          "role": "br",
+          "remotePath": "photo-frames/print-border-shell-br.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-br.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3960,
+          "alpha": true
+        },
+        {
+          "role": "top",
+          "remotePath": "photo-frames/print-border-shell-top.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-top.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 4334,
+          "alpha": true
+        },
+        {
+          "role": "bottom",
+          "remotePath": "photo-frames/print-border-shell-bottom.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-bottom.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 4038,
+          "alpha": true
+        },
+        {
+          "role": "left",
+          "remotePath": "photo-frames/print-border-shell-left.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-left.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5798,
+          "alpha": true
+        },
+        {
+          "role": "right",
+          "remotePath": "photo-frames/print-border-shell-right.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell-right.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5742,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-shell-trash",
+      "category": "trash",
+      "title": "진주 조개",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-shell-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 461,
+          "bytes": 39560,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/decor-shell-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 458,
+          "bytes": 45454,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/decor-shell-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-shell-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1332,
+          "height": 1536,
+          "bytes": 451434,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/decor-shell-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-shell-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1342,
+          "height": 1536,
+          "bytes": 466182,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-shell-camera",
+      "category": "camera",
+      "title": "진주 조개",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-shell-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 422,
+          "bytes": 47396,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/decor-shell-camera.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/decor-shell-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1455,
+          "height": 1536,
+          "bytes": 582990,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-chick",
+      "category": "tab",
+      "title": "병아리 문구점",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 94,
+          "bytes": 8150,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-chick.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 385,
+          "bytes": 150398,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "print-border-chick",
+      "category": "frame",
+      "title": "병아리 문구점",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/print-border-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 104,
+          "height": 130,
+          "bytes": 3116,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-frames/print-border-chick.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 31572,
+          "alpha": true
+        },
+        {
+          "role": "tl",
+          "remotePath": "photo-frames/print-border-chick-tl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-tl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3626,
+          "alpha": true
+        },
+        {
+          "role": "tr",
+          "remotePath": "photo-frames/print-border-chick-tr.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-tr.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3668,
+          "alpha": true
+        },
+        {
+          "role": "bl",
+          "remotePath": "photo-frames/print-border-chick-bl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-bl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 2858,
+          "alpha": true
+        },
+        {
+          "role": "br",
+          "remotePath": "photo-frames/print-border-chick-br.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-br.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3350,
+          "alpha": true
+        },
+        {
+          "role": "top",
+          "remotePath": "photo-frames/print-border-chick-top.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-top.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 5334,
+          "alpha": true
+        },
+        {
+          "role": "bottom",
+          "remotePath": "photo-frames/print-border-chick-bottom.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-bottom.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 3012,
+          "alpha": true
+        },
+        {
+          "role": "left",
+          "remotePath": "photo-frames/print-border-chick-left.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-left.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5020,
+          "alpha": true
+        },
+        {
+          "role": "right",
+          "remotePath": "photo-frames/print-border-chick-right.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick-right.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5316,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-chick-trash",
+      "category": "trash",
+      "title": "병아리 문구점",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-chick-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 468,
+          "bytes": 41782,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/decor-chick-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 482,
+          "bytes": 49226,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/decor-chick-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-chick-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1313,
+          "height": 1536,
+          "bytes": 420248,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/decor-chick-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-chick-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1274,
+          "height": 1536,
+          "bytes": 512288,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-chick-camera",
+      "category": "camera",
+      "title": "병아리 문구점",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-chick-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 385,
+          "bytes": 37814,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/decor-chick-camera.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/decor-chick-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1477,
+          "bytes": 539034,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-ribbon",
+      "category": "tab",
+      "title": "발레 리본",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 100,
+          "bytes": 8816,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-ribbon.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 409,
+          "bytes": 179384,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "print-border-ribbon",
+      "category": "frame",
+      "title": "발레 리본",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/print-border-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 104,
+          "height": 130,
+          "bytes": 3486,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-frames/print-border-ribbon.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 40364,
+          "alpha": true
+        },
+        {
+          "role": "tl",
+          "remotePath": "photo-frames/print-border-ribbon-tl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-tl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4804,
+          "alpha": true
+        },
+        {
+          "role": "tr",
+          "remotePath": "photo-frames/print-border-ribbon-tr.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-tr.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4614,
+          "alpha": true
+        },
+        {
+          "role": "bl",
+          "remotePath": "photo-frames/print-border-ribbon-bl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-bl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4090,
+          "alpha": true
+        },
+        {
+          "role": "br",
+          "remotePath": "photo-frames/print-border-ribbon-br.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-br.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4274,
+          "alpha": true
+        },
+        {
+          "role": "top",
+          "remotePath": "photo-frames/print-border-ribbon-top.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-top.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 6812,
+          "alpha": true
+        },
+        {
+          "role": "bottom",
+          "remotePath": "photo-frames/print-border-ribbon-bottom.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-bottom.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 6230,
+          "alpha": true
+        },
+        {
+          "role": "left",
+          "remotePath": "photo-frames/print-border-ribbon-left.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-left.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 6536,
+          "alpha": true
+        },
+        {
+          "role": "right",
+          "remotePath": "photo-frames/print-border-ribbon-right.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon-right.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 5172,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-ribbon-trash",
+      "category": "trash",
+      "title": "발레 리본",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-ribbon-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 491,
+          "bytes": 52488,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/decor-ribbon-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 53762,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/decor-ribbon-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-ribbon-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1251,
+          "height": 1536,
+          "bytes": 583564,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/decor-ribbon-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-ribbon-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1230,
+          "height": 1536,
+          "bytes": 554798,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-ribbon-camera",
+      "category": "camera",
+      "title": "발레 리본",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-ribbon-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 405,
+          "bytes": 47086,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/decor-ribbon-camera.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/decor-ribbon-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1516,
+          "height": 1536,
+          "bytes": 677090,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-berry",
+      "category": "tab",
+      "title": "딸기 자수",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 99,
+          "bytes": 8346,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-berry.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 403,
+          "bytes": 165282,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "print-border-berry",
+      "category": "frame",
+      "title": "딸기 자수",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/print-border-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 104,
+          "height": 130,
+          "bytes": 2516,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-frames/print-border-berry.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 26566,
+          "alpha": true
+        },
+        {
+          "role": "tl",
+          "remotePath": "photo-frames/print-border-berry-tl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-tl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3120,
+          "alpha": true
+        },
+        {
+          "role": "tr",
+          "remotePath": "photo-frames/print-border-berry-tr.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-tr.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3142,
+          "alpha": true
+        },
+        {
+          "role": "bl",
+          "remotePath": "photo-frames/print-border-berry-bl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-bl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3124,
+          "alpha": true
+        },
+        {
+          "role": "br",
+          "remotePath": "photo-frames/print-border-berry-br.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-br.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3022,
+          "alpha": true
+        },
+        {
+          "role": "top",
+          "remotePath": "photo-frames/print-border-berry-top.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-top.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 4008,
+          "alpha": true
+        },
+        {
+          "role": "bottom",
+          "remotePath": "photo-frames/print-border-berry-bottom.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-bottom.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 3982,
+          "alpha": true
+        },
+        {
+          "role": "left",
+          "remotePath": "photo-frames/print-border-berry-left.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-left.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 3746,
+          "alpha": true
+        },
+        {
+          "role": "right",
+          "remotePath": "photo-frames/print-border-berry-right.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry-right.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 3708,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-berry-trash",
+      "category": "trash",
+      "title": "딸기 자수",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-berry-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 449,
+          "bytes": 89110,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/decor-berry-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 448,
+          "bytes": 91670,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/decor-berry-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-berry-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1367,
+          "height": 1536,
+          "bytes": 910046,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/decor-berry-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-berry-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1372,
+          "height": 1536,
+          "bytes": 898608,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-berry-camera",
+      "category": "camera",
+      "title": "딸기 자수",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-berry-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 379,
+          "bytes": 79764,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/decor-berry-camera.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/decor-berry-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1457,
+          "bytes": 988812,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-stamp",
+      "category": "tab",
+      "title": "소다빛 우표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 100,
+          "bytes": 11170,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-stamp.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 408,
+          "bytes": 192666,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "print-border-stamp",
+      "category": "frame",
+      "title": "소다빛 우표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/print-border-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 104,
+          "height": 130,
+          "bytes": 4738,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-frames/print-border-stamp.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 48042,
+          "alpha": true
+        },
+        {
+          "role": "tl",
+          "remotePath": "photo-frames/print-border-stamp-tl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-tl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 5096,
+          "alpha": true
+        },
+        {
+          "role": "tr",
+          "remotePath": "photo-frames/print-border-stamp-tr.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-tr.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4704,
+          "alpha": true
+        },
+        {
+          "role": "bl",
+          "remotePath": "photo-frames/print-border-stamp-bl.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-bl.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 4264,
+          "alpha": true
+        },
+        {
+          "role": "br",
+          "remotePath": "photo-frames/print-border-stamp-br.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-br.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 80,
+          "bytes": 3902,
+          "alpha": true
+        },
+        {
+          "role": "top",
+          "remotePath": "photo-frames/print-border-stamp-top.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-top.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 7604,
+          "alpha": true
+        },
+        {
+          "role": "bottom",
+          "remotePath": "photo-frames/print-border-stamp-bottom.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-bottom.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 240,
+          "height": 80,
+          "bytes": 6728,
+          "alpha": true
+        },
+        {
+          "role": "left",
+          "remotePath": "photo-frames/print-border-stamp-left.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-left.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 8872,
+          "alpha": true
+        },
+        {
+          "role": "right",
+          "remotePath": "photo-frames/print-border-stamp-right.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp-right.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 80,
+          "height": 340,
+          "bytes": 8338,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-stamp-trash",
+      "category": "trash",
+      "title": "소다빛 우표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-stamp-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 522,
+          "bytes": 67288,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/decor-stamp-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 529,
+          "bytes": 74024,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/decor-stamp-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-stamp-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1176,
+          "height": 1536,
+          "bytes": 570538,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/decor-stamp-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/decor-stamp-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1161,
+          "height": 1536,
+          "bytes": 615018,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "decor-stamp-camera",
+      "category": "camera",
+      "title": "소다빛 우표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/decor-stamp-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 374,
+          "bytes": 64538,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/decor-stamp-camera.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/decor-stamp-camera.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1436,
+          "bytes": 871928,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-satin-bow",
+      "category": "clip",
+      "title": "새틴 리본 집게",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/clip-satin-bow.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 214,
+          "bytes": 22000,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-satin-bow.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-satin-bow.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 822,
+          "bytes": 372626,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-strawberry",
+      "category": "clip",
+      "title": "딸기꽃 집게",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/clip-strawberry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 188,
+          "bytes": 34092,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-strawberry.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-strawberry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 722,
+          "bytes": 465504,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-pearl-lilac",
+      "category": "clip",
+      "title": "라일락 진주 집게",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/clip-pearl-lilac.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 209,
+          "bytes": 21112,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-pearl-lilac.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-pearl-lilac.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 803,
+          "bytes": 320826,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-bunny",
+      "category": "camera",
+      "title": "코튼 바니 카메라",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 366,
+          "bytes": 64720,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/mini-bunny.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/mini-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1404,
+          "bytes": 890946,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-toast",
+      "category": "camera",
+      "title": "버터 토스터 카메라",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-toast.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 415,
+          "bytes": 51278,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/mini-toast.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/mini-toast.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1482,
+          "height": 1536,
+          "bytes": 684082,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-mail",
+      "category": "camera",
+      "title": "편지 카메라",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-mail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 345,
+          "bytes": 46992,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/mini-mail.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/mini-mail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1325,
+          "bytes": 713240,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-carrot",
+      "category": "charm",
+      "title": "당근 사진 참",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-carrot.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 117,
+          "height": 208,
+          "bytes": 10794,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "charms/mini-carrot.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/charms/mini-carrot.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 510,
+          "height": 910,
+          "bytes": 157868,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-order",
+      "category": "memo",
+      "title": "빵집 주문표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-order.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 137,
+          "bytes": 10512,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "memo-pads/mini-order.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/memo-pads/mini-order.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 910,
+          "height": 600,
+          "bytes": 143222,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-airmail",
+      "category": "pocket",
+      "title": "항공우편 포켓",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-airmail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 202,
+          "height": 208,
+          "bytes": 14108,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "pockets/mini-airmail.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/pockets/mini-airmail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 884,
+          "height": 910,
+          "bytes": 194518,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-bunny",
+      "category": "date",
+      "title": "토끼 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 67,
+          "bytes": 6742,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-bunny.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 272,
+          "bytes": 102484,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-bunny",
+      "category": "tab",
+      "title": "토끼 탭 장식",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 101,
+          "bytes": 9634,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-bunny.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 414,
+          "bytes": 180340,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-bunny-trash",
+      "category": "trash",
+      "title": "토끼 휴지통",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-bunny-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 488,
+          "bytes": 73562,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/mini-bunny-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 78894,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/mini-bunny-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/mini-bunny-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1259,
+          "height": 1536,
+          "bytes": 667250,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/mini-bunny-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/mini-bunny-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1230,
+          "height": 1536,
+          "bytes": 712050,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-bunny-clip",
+      "category": "clip",
+      "title": "토끼 집게",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-bunny-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 210,
+          "bytes": 28804,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/mini-bunny-clip.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/mini-bunny-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 805,
+          "bytes": 428904,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-toast",
+      "category": "date",
+      "title": "토스트 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-toast.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 67,
+          "bytes": 7480,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-toast.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-toast.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 275,
+          "bytes": 126244,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-toast-label",
+      "category": "tab",
+      "title": "토스트 탭 장식",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-toast-label.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 99,
+          "bytes": 7498,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/mini-toast-label.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/mini-toast-label.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 405,
+          "bytes": 118472,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-toast-trash",
+      "category": "trash",
+      "title": "토스트 휴지통",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-toast-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 520,
+          "bytes": 74400,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/mini-toast-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 524,
+          "bytes": 81278,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/mini-toast-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/mini-toast-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1182,
+          "height": 1536,
+          "bytes": 688592,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/mini-toast-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/mini-toast-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1173,
+          "height": 1536,
+          "bytes": 644646,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-toast-clip",
+      "category": "clip",
+      "title": "토스트 집게",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-toast-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 196,
+          "bytes": 21286,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/mini-toast-clip.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/mini-toast-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 751,
+          "bytes": 387152,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "date-label-clover",
+      "category": "date",
+      "title": "클로버 날짜표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/date-label-clover.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 63,
+          "bytes": 4488,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "date-labels/date-label-clover.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-clover.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 258,
+          "bytes": 94462,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tab-label-clover",
+      "category": "tab",
+      "title": "클로버 탭 장식",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/tab-label-clover.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 101,
+          "bytes": 8510,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "tab-labels/tab-label-clover.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-clover.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 850,
+          "height": 413,
+          "bytes": 179664,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-clover-trash",
+      "category": "trash",
+      "title": "클로버 휴지통",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-clover-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 470,
+          "bytes": 59872,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-diary-thumbs/mini-clover-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 476,
+          "bytes": 62386,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "trash-bins/mini-clover-trash.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/mini-clover-trash.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1308,
+          "height": 1536,
+          "bytes": 631496,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/mini-clover-trash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/mini-clover-trash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1290,
+          "height": 1536,
+          "bytes": 647368,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-clover-clip",
+      "category": "clip",
+      "title": "클로버 집게",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-clover-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 207,
+          "bytes": 25304,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/mini-clover-clip.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/mini-clover-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 795,
+          "bytes": 341026,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-ears",
+      "category": "mark",
+      "title": "토끼 귀 책갈피",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-ears.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 131,
+          "height": 208,
+          "bytes": 11004,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "bookmarks/mini-ears.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/bookmarks/mini-ears.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 571,
+          "height": 910,
+          "bytes": 153224,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-butter",
+      "category": "corner",
+      "title": "버터 체크 코너",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-butter.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 195,
+          "bytes": 8336,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-corners/mini-butter.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-corners/mini-butter.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 910,
+          "height": 855,
+          "bytes": 115538,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-clover",
+      "category": "pin",
+      "title": "클로버 자수 씰",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-clover.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 186,
+          "height": 208,
+          "bytes": 19424,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "pins/mini-clover.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/pins/mini-clover.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 815,
+          "height": 910,
+          "bytes": 294620,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mini-letter",
+      "category": "pocket",
+      "title": "분홍 편지 장식",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/mini-letter.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 208,
+          "height": 205,
+          "bytes": 13690,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "pockets/mini-letter.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/pockets/mini-letter.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 910,
+          "height": 895,
+          "bytes": 220564,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-bunny",
+      "category": "photoWall",
+      "title": "토끼 반짇고리",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 95,
+          "bytes": 24086,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-bunny.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-bunny.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2130,
+          "height": 504,
+          "bytes": 421224,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-daisy",
+      "category": "photoWall",
+      "title": "데이지 산책길",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-daisy.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 69,
+          "bytes": 17114,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-daisy.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-daisy.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2097,
+          "height": 360,
+          "bytes": 283134,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-moon",
+      "category": "photoWall",
+      "title": "초승달 모빌",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-moon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 87,
+          "bytes": 17948,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-moon.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-moon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2098,
+          "height": 457,
+          "bytes": 290734,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-bakery",
+      "category": "photoWall",
+      "title": "살구빛 빵집",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-bakery.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 86,
+          "bytes": 16548,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-bakery.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-bakery.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2090,
+          "height": 450,
+          "bytes": 387862,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-mail",
+      "category": "photoWall",
+      "title": "편지 벽장식",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-mail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 74,
+          "bytes": 15222,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-mail.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-mail.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2120,
+          "height": 393,
+          "bytes": 275564,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-berry",
+      "category": "photoWall",
+      "title": "딸기 자수",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 76,
+          "bytes": 22760,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-berry.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-berry.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2078,
+          "height": 397,
+          "bytes": 395298,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-stamp",
+      "category": "photoWall",
+      "title": "소다빛 우표",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 60,
+          "bytes": 20308,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-stamp.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-stamp.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2128,
+          "height": 318,
+          "bytes": 370434,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-ribbon",
+      "category": "photoWall",
+      "title": "발레 리본",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 71,
+          "bytes": 14688,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-ribbon.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-ribbon.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2131,
+          "height": 377,
+          "bytes": 312460,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-shell",
+      "category": "photoWall",
+      "title": "진주 조개",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 69,
+          "bytes": 22690,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-shell.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-shell.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2110,
+          "height": 364,
+          "bytes": 440818,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-chick",
+      "category": "photoWall",
+      "title": "병아리 문구점",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 73,
+          "bytes": 14014,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-chick.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-chick.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2106,
+          "height": 383,
+          "bytes": 267998,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wall-cat",
+      "category": "photoWall",
+      "title": "코코아 고양이",
+      "previews": [
+        {
+          "path": "assets/pro-diary-thumbs/wall-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 69,
+          "bytes": 13810,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "photo-walls/wall-cat.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/photo-walls/wall-cat.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 2072,
+          "height": 358,
+          "bytes": 219768,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-purple",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/vivid-purple-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 14200,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-purple.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-purple.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 198634,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-burgundy",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/vivid-burgundy-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 11550,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-burgundy.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-burgundy.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 172922,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-emerald",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/vivid-emerald-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 13518,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-emerald.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-emerald.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 191512,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-golden-yellow",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/vivid-golden-yellow-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 13046,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-golden-yellow.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-golden-yellow.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 169878,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-orange",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/vivid-orange-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 14548,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-orange.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-orange.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 241640,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-vivid-pink",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/vivid-pink-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 13374,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-vivid-pink.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-vivid-pink.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 229102,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-lavender",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pastel-lavender-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 14322,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-lavender.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-lavender.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 233688,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-sky",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pastel-sky-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 12814,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-sky.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-sky.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 153426,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-mint",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pastel-mint-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 12264,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-mint.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-mint.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 169092,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-yellow",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pastel-yellow-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 12474,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-yellow.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-yellow.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 195282,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-peach",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pastel-peach-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 13326,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-peach.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-peach.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 218686,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "clip-pink",
+      "category": "clip",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pastel-pink-clipboard-clip.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 133,
+          "bytes": 13542,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "clips/clip-pink.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/clips/clip-pink.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 511,
+          "bytes": 203112,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "camera-mini-12",
+      "category": "camera",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/instax-mini-12.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 400,
+          "bytes": 39026,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/camera-mini-12.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/camera-mini-12.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1536,
+          "bytes": 501212,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "camera-kodak-mini-shot",
+      "category": "camera",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/kodak-mini-shot-3-retro.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 400,
+          "bytes": 66870,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "image",
+          "remotePath": "cameras/camera-kodak-mini-shot.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/cameras/camera-kodak-mini-shot.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1536,
+          "height": 1536,
+          "bytes": 802456,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-rattan",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/rattan-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 112972,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/rattan-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 107222,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-rattan-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-rattan-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 755758,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-rattan-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-rattan-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 748352,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-walnut",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/walnut-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 84362,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/walnut-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 72294,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-walnut-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-walnut-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 680800,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-walnut-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-walnut-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 605192,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-leather",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/leather-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 70398,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/leather-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 66224,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-leather-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-leather-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 687778,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-leather-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-leather-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 684118,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-steel",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/steel-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 40786,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/steel-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 44666,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-steel-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-steel-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 466974,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-steel-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-steel-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 430216,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-pink",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/pink-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 34634,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/pink-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 36788,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-pink-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-pink-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 283764,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-pink-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-pink-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 296482,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-charcoal",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/charcoal-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 32562,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/charcoal-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 31472,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-charcoal-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-charcoal-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 392266,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-charcoal-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-charcoal-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 327182,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-ash",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/ash-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 62258,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/ash-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 62312,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-ash-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-ash-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 539320,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-ash-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-ash-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 537114,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-canvas",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/canvas-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 96150,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/canvas-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 93270,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-canvas-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-canvas-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 824856,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-canvas-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-canvas-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 816588,
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "trash-vintage",
+      "category": "trash",
+      "previews": [
+        {
+          "path": "assets/pro-store-previews/powder-blue-trash-bin.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 37020,
+          "alpha": true
+        },
+        {
+          "path": "assets/pro-store-previews/powder-blue-trash-bin-paper.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 400,
+          "height": 500,
+          "bytes": 41814,
+          "alpha": true
+        }
+      ],
+      "files": [
+        {
+          "role": "empty",
+          "remotePath": "trash-bins/trash-vintage-empty.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-vintage-empty.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 257466,
+          "alpha": true
+        },
+        {
+          "role": "filled",
+          "remotePath": "trash-bins/trash-vintage-filled.webp",
+          "path": "output/paid-image-audit-20261119/remote/calendar-store/trash-bins/trash-vintage-filled.webp",
+          "extension": ".webp",
+          "format": "webp",
+          "webpSignature": true,
+          "width": 1229,
+          "height": 1536,
+          "bytes": 276454,
+          "alpha": true
+        }
+      ]
+    }
+  ]
+}

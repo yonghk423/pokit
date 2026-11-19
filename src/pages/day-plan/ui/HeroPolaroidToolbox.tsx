@@ -43,7 +43,7 @@ export const HeroPolaroidToolbox = memo(function HeroPolaroidToolbox({ thumbnail
       <ScrollView testID="polaroid-film-options" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: 8, gap: 5, alignItems: 'flex-end' }}>
         {films.map(option => <Pressable key={option.value} testID={`polaroid-select-${option.value}`} disabled={disabled} accessibilityRole="button" accessibilityLabel={option.label + (filmFiltersPro && isProPolaroidFilm(option.value) ? ' · Pro' : '')} accessibilityState={{ selected: film === option.value, disabled }} onPress={() => onChange({ film: option.value })} style={{ width: 68, height: 94, padding: 4, borderRadius: 0, backgroundColor: '#F9F9F6', shadowColor: '#39362F', shadowOpacity: 0.22, shadowRadius: 3, shadowOffset: { width: 0, height: 3 }, elevation: 3, borderWidth: 1, borderColor: film === option.value ? '#008F83' : '#E6E4DF' }}>
           <HeroPolaroidSurface />
-          <Image source={thumbnails[option.value] ? { uri: thumbnails[option.value] } : imageUri ? { uri: imageUri } : imageSource} contentFit="cover" transition={0} cachePolicy="memory" style={{ width: 58, height: 58, borderRadius: 0 }} />
+          <Image source={thumbnails[option.value] ? { uri: thumbnails[option.value] } : undefined} contentFit="cover" transition={0} cachePolicy="memory" style={{ width: 58, height: 58, borderRadius: 0 }} />
           <ThemedText numberOfLines={2} allowFontScaling={false} style={{ fontSize: 10, lineHeight: 12, textAlign: 'center', paddingTop: 3, color: '#343831' }}>{option.label}{filmFiltersPro && isProPolaroidFilm(option.value) ? ' Pro' : ''}</ThemedText>
         </Pressable>)}
       </ScrollView>

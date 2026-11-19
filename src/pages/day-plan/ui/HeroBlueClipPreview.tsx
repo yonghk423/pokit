@@ -14,7 +14,7 @@ export function HeroBlueClipPreview({ dark, clip = 'blue' }: { dark: boolean; cl
   const [failed, setFailed] = useState(false);
   return <View accessibilityLabel={ready ? undefined : failed ? translateUiText("집게 이미지를 불러오지 못했어요") : translateUiText("집게 이미지 불러오는 중")} style={{ height: 56, justifyContent: 'center', alignItems: 'center' }}>
     {!ready && !failed ? <View testID="blue-clip-skeleton" pointerEvents="none" style={{ position: 'absolute', width: '68%', height: 29, borderRadius: 8, backgroundColor: dark ? '#626762' : '#DADCD7', opacity: 0.4 }} /> : null}
-    <View style={{ width: '80%', aspectRatio: artwork ? artwork[clip].width / artwork[clip].height : 640 / 213, overflow: 'visible' }}>
+    <View style={{ width: clip === 'cherry-binder' ? 36 : '80%', aspectRatio: clip === 'cherry-binder' ? 768 / 905 : artwork ? artwork[clip].width / artwork[clip].height : 640 / 213, overflow: 'visible' }}>
       {artwork ? <Image source={artwork[clip]} contentFit="fill" contentPosition="center" allowDownscaling={false} cachePolicy="memory" transition={0} useAppleWebpCodec={false} priority="high"  onError={() => setFailed(true)} style={{ width: '100%', height: '100%' }} /> : null}
     </View>
   </View>;

@@ -1,3 +1,5 @@
+import { Image as CalendarBackdropImage } from 'react-native';
+import { freePhotoCalendar } from '../model/freePhotoCalendars';
 import { isIllustrationCalendarDesign, useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
 import { DayPlanCanvasContext } from '../model/dayPlanHeaderActions';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
@@ -68,7 +70,8 @@ type Props = {
  */
 export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
   const calendarDesign = useHeroCalendarDesign();
-  const illustrationSelected = isIllustrationCalendarDesign(calendarDesign);
+  const photoCalendar = freePhotoCalendar(calendarDesign);
+  const illustrationSelected = isIllustrationCalendarDesign(calendarDesign) || !!photoCalendar;
   const calendarBackdrop = useCalendarBackdropVisible();
   const immersiveIllustration = tabName === 'comic-day' && illustrationSelected && calendarBackdrop;
   const { t } = useTranslation();
@@ -168,7 +171,7 @@ export function DayPlanTabScreenShell({ children, tabName, onClose }: Props) {
     <DayPlanWeatherActionsContext.Provider value={setWeatherActions}>
     <DayPlanHeaderCenterActionsContext.Provider value={setCenterActions}>
       <View style={[styles.root, { backgroundColor: hasWallpaper || isComicTab && !isDark && !composerKeyboardOpen && !cameraTabActive ? 'transparent' : shellBg, paddingTop: fullCanvasHeader ? 0 : insets.top }]}>
-        {shellOverride === '#FAFAF6' && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { top: -insets.top, bottom: -200, backgroundColor: '#FAFAF6' }]} />}
+        {!photoCalendar && shellOverride === '#FAFAF6' && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { top: -insets.top, bottom: -200, backgroundColor: '#FAFAF6' }]} />}
         <View pointerEvents="box-none" onLayout={({ nativeEvent: { layout } }) => { if (layout.height > 0) setMeasuredHeaderHeight(previous => previous === Math.round(layout.height) ? previous : Math.round(layout.height)); }} testID="day-plan-shell-header" style={[styles.stickyTopBar, shellOverride === '#FAFAF6' && { paddingTop: 0 }, fullCanvasHeader && { position: 'absolute', top: insets.top, left: 0, right: 0 }, hideComicHeader && { display: 'none' }]} accessibilityElementsHidden={hideComicHeader} importantForAccessibility={hideComicHeader ? 'no-hide-descendants' : 'auto'}>
           <PlanModeSwitch
             planMode={planMode}

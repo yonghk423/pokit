@@ -5,7 +5,7 @@ import { COMIC_DIARY_STORAGE_KEY, type ComicDiary, type ComicDiaryLibrary } from
 import { mockCopy } from './mockCopy';
 import { MOCK_PROTAGONISTS, getMockProtagonist, getMockProtagonistName, getMockSceneImages } from './mockProtagonists';
 import type { ComicDayScene } from '@pages/day-plan/lib/heroDayStorage';
-import { developmentArtworkUri } from './mockArtwork';
+import { developmentArtworkUriAt } from './mockArtwork';
 const koreanCharacterStories: Record<string, Pick<ComicDayScene, 'image' | 'title' | 'memo'>[]> = {
   'protagonist-5': [
     { image: 'p5-01-platform', title: '기다리는 시간도 내 하루', memo: '기차를 기다리며 잠깐 이어폰을 뺐다. 바쁘게 걷는 사람들 사이에서 나만 잠시 멈춘 기분이었다. 서둘러야 한다는 생각 대신, 오늘은 내 속도로 가도 괜찮다고 마음속으로 이야기했다.' },
@@ -26,14 +26,15 @@ const labels: Record<AppLocale, string[]> = {
   'zh-TW': ['慢慢開始的早晨', '專注的上午', '午餐後的小歇', '午後遇見的風景', '留給自己的夜晚', '睡前的紀錄'],
 };
 const CALENDAR_MOCK_CHARACTER_VERSION_KEY = 'pokit:calendar-mock-character-version';
-const CALENDAR_MOCK_CHARACTER_VERSION = '7';
+const CALENDAR_MOCK_CHARACTER_VERSION = '10';
 /** Stable dated photo diary fixtures with long entries and fullbleed artwork. */
 export function buildCalendarMockDiaries(locale: AppLocale, date: string): ComicDiary[] {
   const month = date.slice(0, 7);
   const today = Number(date.slice(8));
-  const days = locale === 'ko'
-    ? Array.from({ length: today }, (_, index) => index + 1)
-    : [...new Set([1, 3, 5, 7, 9, 12, 13, 16, 18, 20, 23, 26, today - 1, today])].filter(day => day > 0 && day <= today).sort((a, b) => a - b);
+  // Development previews deliberately fill every date, including upcoming dates.
+  const [year, monthNumber] = month.split('-').map(Number);
+  const daysInMonth = new Date(year, monthNumber, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, index) => index + 1);
   const copy = mockCopy[locale];
   const source = copy.scenes.slice(0, 10).map(scene => ({ copy: scene }));
   // Korean previews include a completed month, even when today is the first.
@@ -47,10 +48,9 @@ export function buildCalendarMockDiaries(locale: AppLocale, date: string): Comic
     const characterIndex = MOCK_PROTAGONISTS.findIndex(item => item.id === 'protagonist-6');
     const character = getMockProtagonist(characterIndex);
     const characterScenes = getMockSceneImages(character.id);
-    const sizes = day.endsWith('-13') ? [3, 6, 12, 20, 5, 9] : [3, 7, 12, 20, 5, 9];
     const stories = locale === 'ko' ? koreanCharacterStories[character.id] : undefined;
     const characterStories = stories?.map((_, index) => stories[(index + Number(day.slice(8)) - 1) % stories.length]);
-    const size = characterStories?.length ?? sizes[entry];
+    const size = 20;
     const timestamp = new Date(`${day}T${String(7 + entry * 2).padStart(2, '0')}:15:00`).getTime();
     return {
       id, title: `${day.slice(5).replace('-', '/')} · ${characterStories?.[0].title ?? labels[locale][entry]}`, characterId: character.id, characterName: getMockProtagonistName(characterIndex, locale),
@@ -59,9 +59,9 @@ export function buildCalendarMockDiaries(locale: AppLocale, date: string): Comic
         const item = source[(dayIndex * 3 + entry * 2 + i) % source.length];
         const [title, memo] = item.copy;
         const minutes = 7 * 60 + Math.round(i * 15 * 60 / Math.max(size - 1, 1));
-        const story = characterStories?.[i];
-        const image = story?.image ?? characterScenes[(dayIndex * 3 + entry * 2 + i) % characterScenes.length]!;
-        return { id: `${id}:scene:${i}`, title, memo, image, artworkUri: developmentArtworkUri(image), ...story, time: `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`, paper: '#FFFFFF', pen: '#252822', todos: [] };
+        const story = characterStories?.[i % characterStories.length];
+        const image = characterScenes[(dayIndex * 3 + entry * 2 + i) % characterScenes.length]!;
+        return { id: `${id}:scene:${i}`, title, memo, ...story, image, artworkUri: developmentArtworkUriAt(dayIndex * 7 + entry * 20 + i), time: `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`, paper: '#FFFFFF', pen: '#252822', todos: [] };
       }),
     };
   }));

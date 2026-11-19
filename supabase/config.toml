@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.calendar-store]
 verify_jwt = false
+
+[functions.developer-pro]
+verify_jwt = false

@@ -9,7 +9,9 @@ import { manageSubscription } from '@features/subscriptions';
 jest.mock('react-native-purchases', () => ({ __esModule: true, default: { getOfferings: jest.fn(), purchasePackage: jest.fn(), invalidateCustomerInfoCache: jest.fn() } }));
 const mockState = { hydrate: jest.fn(), isConfigured: true, refreshCustomerInfo: jest.fn(), customerInfo: null as unknown, applyCustomerInfo: jest.fn() };
 const mockRestore = jest.fn();
+const mockDeveloperPro = jest.fn();
 jest.mock('@features/subscriptions', () => ({
+  activateDeveloperProForPurchase: (...args: unknown[]) => mockDeveloperPro(...args),
   useSubscriptionStore: Object.assign((selector: (state: typeof mockState) => unknown) => selector(mockState), { getState: () => mockState }),
   getActiveProEntitlement: (info: { entitlement?: unknown } | null) => info?.entitlement ?? null,
   manageSubscription: jest.fn(),
@@ -28,6 +30,7 @@ const monthly = { product: { identifier: 'monthly', priceString: '₩3,000' } };
 beforeEach(() => {
   FEATURE_FLAGS.proSubscriptions = true;
   jest.clearAllMocks();
+  mockDeveloperPro.mockResolvedValue(null);
   mockState.isConfigured = true;
   mockState.customerInfo = null;
   mockState.hydrate.mockResolvedValue(undefined);
@@ -161,6 +164,19 @@ it('preserves an existing entitlement when restoration fails offline', async () 
   expect(mockState.customerInfo).toBe(existing);
   expect(mockState.applyCustomerInfo).not.toHaveBeenCalled();
   expect(hook.busy).toBe(false);
+});
+
+it('activates registered developer Pro without purchasing a store package', async () => {
+  await mount();
+  mockDeveloperPro.mockResolvedValue({ pro: true });
+  await act(async () => { expect(await hook.transact('monthly')).toBe('active'); });
+  expect(Purchases.purchasePackage).not.toHaveBeenCalled();
+});
+it('never charges if developer activation fails', async () => {
+  await mount();
+  mockDeveloperPro.mockRejectedValue(new Error('developer_pro_unavailable'));
+  await act(async () => { expect(await hook.transact('monthly')).toBe('error'); });
+  expect(Purchases.purchasePackage).not.toHaveBeenCalled();
 });
 
 it('reloads localized product prices after returning from account settings', async () => {

@@ -1,0 +1,266 @@
+[
+  {
+    "id": "date-label-mail",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-mail.webp",
+    "remote": "date-labels/date-label-mail.webp",
+    "width": 900,
+    "height": 228
+  },
+  {
+    "id": "date-label-berry",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-berry.webp",
+    "remote": "date-labels/date-label-berry.webp",
+    "width": 900,
+    "height": 261
+  },
+  {
+    "id": "date-label-stamp",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-stamp.webp",
+    "remote": "date-labels/date-label-stamp.webp",
+    "width": 900,
+    "height": 233
+  },
+  {
+    "id": "date-label-ribbon",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-ribbon.webp",
+    "remote": "date-labels/date-label-ribbon.webp",
+    "width": 900,
+    "height": 253
+  },
+  {
+    "id": "date-label-shell",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-shell.webp",
+    "remote": "date-labels/date-label-shell.webp",
+    "width": 900,
+    "height": 249
+  },
+  {
+    "id": "date-label-chick",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-chick.webp",
+    "remote": "date-labels/date-label-chick.webp",
+    "width": 900,
+    "height": 265
+  },
+  {
+    "id": "date-label-cat",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-cat.webp",
+    "remote": "date-labels/date-label-cat.webp",
+    "width": 900,
+    "height": 260
+  },
+  {
+    "id": "tab-label-cat",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-cat.webp",
+    "remote": "tab-labels/tab-label-cat.webp",
+    "width": 850,
+    "height": 411
+  },
+  {
+    "id": "print-border-cat",
+    "category": "frame",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-cat.webp",
+    "remote": "photo-frames/print-border-cat.webp",
+    "width": 400,
+    "height": 500
+  },
+  {
+    "id": "tab-label-shell",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-shell.webp",
+    "remote": "tab-labels/tab-label-shell.webp",
+    "width": 850,
+    "height": 405
+  },
+  {
+    "id": "print-border-shell",
+    "category": "frame",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-shell.webp",
+    "remote": "photo-frames/print-border-shell.webp",
+    "width": 400,
+    "height": 500
+  },
+  {
+    "id": "tab-label-chick",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-chick.webp",
+    "remote": "tab-labels/tab-label-chick.webp",
+    "width": 850,
+    "height": 385
+  },
+  {
+    "id": "print-border-chick",
+    "category": "frame",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-chick.webp",
+    "remote": "photo-frames/print-border-chick.webp",
+    "width": 400,
+    "height": 500
+  },
+  {
+    "id": "tab-label-ribbon",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-ribbon.webp",
+    "remote": "tab-labels/tab-label-ribbon.webp",
+    "width": 850,
+    "height": 409
+  },
+  {
+    "id": "print-border-ribbon",
+    "category": "frame",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-ribbon.webp",
+    "remote": "photo-frames/print-border-ribbon.webp",
+    "width": 400,
+    "height": 500
+  },
+  {
+    "id": "tab-label-berry",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-berry.webp",
+    "remote": "tab-labels/tab-label-berry.webp",
+    "width": 850,
+    "height": 403
+  },
+  {
+    "id": "print-border-berry",
+    "category": "frame",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-berry.webp",
+    "remote": "photo-frames/print-border-berry.webp",
+    "width": 400,
+    "height": 500
+  },
+  {
+    "id": "tab-label-stamp",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-stamp.webp",
+    "remote": "tab-labels/tab-label-stamp.webp",
+    "width": 850,
+    "height": 408
+  },
+  {
+    "id": "print-border-stamp",
+    "category": "frame",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-frames/print-border-stamp.webp",
+    "remote": "photo-frames/print-border-stamp.webp",
+    "width": 400,
+    "height": 500
+  },
+  {
+    "id": "mini-carrot",
+    "category": "charm",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/charms/mini-carrot.webp",
+    "remote": "charms/mini-carrot.webp",
+    "width": 510,
+    "height": 910
+  },
+  {
+    "id": "mini-order",
+    "category": "memo",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/memo-pads/mini-order.webp",
+    "remote": "memo-pads/mini-order.webp",
+    "width": 910,
+    "height": 600
+  },
+  {
+    "id": "mini-airmail",
+    "category": "pocket",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/pockets/mini-airmail.webp",
+    "remote": "pockets/mini-airmail.webp",
+    "width": 884,
+    "height": 910
+  },
+  {
+    "id": "date-label-bunny",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-bunny.webp",
+    "remote": "date-labels/date-label-bunny.webp",
+    "width": 850,
+    "height": 272
+  },
+  {
+    "id": "tab-label-bunny",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-bunny.webp",
+    "remote": "tab-labels/tab-label-bunny.webp",
+    "width": 850,
+    "height": 414
+  },
+  {
+    "id": "date-label-toast",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-toast.webp",
+    "remote": "date-labels/date-label-toast.webp",
+    "width": 850,
+    "height": 275
+  },
+  {
+    "id": "mini-toast-label",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/mini-toast-label.webp",
+    "remote": "tab-labels/mini-toast-label.webp",
+    "width": 850,
+    "height": 405
+  },
+  {
+    "id": "date-label-clover",
+    "category": "date",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/date-labels/date-label-clover.webp",
+    "remote": "date-labels/date-label-clover.webp",
+    "width": 850,
+    "height": 258
+  },
+  {
+    "id": "tab-label-clover",
+    "category": "tab",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/tab-labels/tab-label-clover.webp",
+    "remote": "tab-labels/tab-label-clover.webp",
+    "width": 850,
+    "height": 413
+  },
+  {
+    "id": "mini-ears",
+    "category": "mark",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/bookmarks/mini-ears.webp",
+    "remote": "bookmarks/mini-ears.webp",
+    "width": 571,
+    "height": 910
+  },
+  {
+    "id": "mini-butter",
+    "category": "corner",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/photo-corners/mini-butter.webp",
+    "remote": "photo-corners/mini-butter.webp",
+    "width": 910,
+    "height": 855
+  },
+  {
+    "id": "mini-clover",
+    "category": "pin",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/pins/mini-clover.webp",
+    "remote": "pins/mini-clover.webp",
+    "width": 815,
+    "height": 910
+  },
+  {
+    "id": "mini-letter",
+    "category": "pocket",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/calendar-store/pockets/mini-letter.webp",
+    "remote": "pockets/mini-letter.webp",
+    "width": 910,
+    "height": 895
+  },
+  {
+    "id": "p7-01",
+    "category": "scene",
+    "path": "/Users/yonghee/Documents/project/pokit/output/paid-image-audit-20261119/remote/character-illustrations/protagonist-7/card-960/p7-01.webp",
+    "remote": "protagonist-7/card-960/p7-01.webp",
+    "width": 720,
+    "height": 960
+  }
+]

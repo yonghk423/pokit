@@ -1,0 +1,244 @@
+[
+  {
+    "id": "clip-blue",
+    "source": "assets/control-illustrations/blue-clipboard-clip.png",
+    "sha256": "ebfa65583a89cc47a8a8059deb7612dc3f756c9cff002fe7c9f6de18e7481651",
+    "size": [
+      768,
+      256
+    ],
+    "before": 207508,
+    "after": 139826
+  },
+  {
+    "id": "clip-red",
+    "source": "assets/control-illustrations/red-clipboard-clip.png",
+    "sha256": "227bc7221d2da82dca1d5093c72baba29582077554397123d533c27def68e85a",
+    "size": [
+      768,
+      257
+    ],
+    "before": 250412,
+    "after": 189844
+  },
+  {
+    "id": "clip-black",
+    "source": "assets/control-illustrations/black-clipboard-clip.png",
+    "sha256": "8d2e9417b2fa37d6adc66aeb9b02d08bb811ba7514c078031f837a8719fca1a3",
+    "size": [
+      768,
+      256
+    ],
+    "before": 153349,
+    "after": 93484
+  },
+  {
+    "id": "clip-cherry-binder",
+    "source": "assets/control-illustrations/cherry-binder-clip.webp",
+    "sha256": "ccfa24233c181a3b5e7562cf39a5bf39cec41340c146df899962a91f6fa2f951",
+    "size": [
+      326,
+      384
+    ],
+    "before": 134634,
+    "after": 96254
+  },
+  {
+    "id": "trash-mesh-empty",
+    "source": "assets/control-illustrations/mesh-trash-bin.png",
+    "sha256": "dced3d0d2c92f211cc17c4bc97ae4cf55a50b2aff708567de09c40649b279d63",
+    "size": [
+      188,
+      256
+    ],
+    "before": 1784783,
+    "after": 78112
+  },
+  {
+    "id": "trash-mesh-filled",
+    "source": "assets/control-illustrations/mesh-trash-bin-paper.webp",
+    "sha256": "f036c1e55d2cacbdae14d830dd783e2f1db2fd1cac218a9f1b7eb29935750d34",
+    "size": [
+      188,
+      256
+    ],
+    "before": 440008,
+    "after": 74142
+  },
+  {
+    "id": "trash-ivory-empty",
+    "source": "assets/control-illustrations/ivory-ceramic-trash-bin.webp",
+    "sha256": "ad05e16aab00518564e5db6f1d6209e7e0f30ab0fd0cffc605ff637d88af9ece",
+    "size": [
+      256,
+      234
+    ],
+    "before": 60674,
+    "after": 41184
+  },
+  {
+    "id": "trash-ivory-filled",
+    "source": "assets/control-illustrations/ivory-ceramic-trash-bin-paper.webp",
+    "sha256": "98274f5e6334a71f152fc06757598e1fb6d760eaa57821837ae5f726c480fa6a",
+    "size": [
+      256,
+      234
+    ],
+    "before": 61416,
+    "after": 42494
+  },
+  {
+    "id": "trash-sage-empty",
+    "source": "assets/control-illustrations/sage-enamel-trash-bin.webp",
+    "sha256": "fe993cfd22801fc791765f98a9ff6f83e5c622a3a33a9ed42cda86b63d37a605",
+    "size": [
+      234,
+      256
+    ],
+    "before": 82612,
+    "after": 47618
+  },
+  {
+    "id": "trash-sage-filled",
+    "source": "assets/control-illustrations/sage-enamel-trash-bin-paper.webp",
+    "sha256": "91c153df07665adaca63a3fc3bd6e6409cb908faeb0bc57f4988300e410c0dc2",
+    "size": [
+      234,
+      256
+    ],
+    "before": 113172,
+    "after": 52970
+  },
+  {
+    "id": "camera-mini-evo",
+    "source": "assets/store-cameras/instax-mini-evo.png",
+    "sha256": "4b6cfeffd5187baf4e2e6e732385fd5387d0d3309e0d9f03fac22e3db4388b27",
+    "size": [
+      400,
+      267
+    ],
+    "before": 616747,
+    "after": 120022
+  },
+  {
+    "id": "classic-tab",
+    "source": "assets/classic-diary/classic-tab-3d-v2.webp",
+    "sha256": "9c52d9834fbe6c4ad665a554f1daf349fe852e09e10ab67c0cd89c49688c352b",
+    "size": [
+      320,
+      126
+    ],
+    "before": 120258,
+    "after": 52798
+  },
+  {
+    "id": "classic-date",
+    "source": "assets/classic-diary/classic-date-paper-v3.webp",
+    "sha256": "2dd2cad4266dd43d3cc509cb8f7174af8f92c1e8eccf688e74e4965cf76c119a",
+    "size": [
+      320,
+      71
+    ],
+    "before": 36178,
+    "after": 17830
+  },
+  {
+    "id": "classic-mark",
+    "source": "assets/classic-diary/classic-mark-3d.webp",
+    "sha256": "6b1fe0684065d37379acc2f1c85fcde71eb9716deecc5afa896923bd32968cd5",
+    "size": [
+      75,
+      320
+    ],
+    "before": 111962,
+    "after": 39280
+  },
+  {
+    "id": "classic-memo",
+    "source": "assets/classic-diary/classic-memo-3d.webp",
+    "sha256": "f7a097df461932ba3743b516af7ce74580d1c1f71cf607ebb77d3aeab81c74b1",
+    "size": [
+      320,
+      197
+    ],
+    "before": 138980,
+    "after": 68632
+  },
+  {
+    "id": "classic-corner",
+    "source": "assets/classic-diary/classic-corner-3d.webp",
+    "sha256": "343fc14de12f0aed4b02690f1e04ecef3d45c3e61cf341952c3049cf3f0b9e8d",
+    "size": [
+      320,
+      319
+    ],
+    "before": 215748,
+    "after": 73896
+  },
+  {
+    "id": "classic-pin",
+    "source": "assets/classic-diary/classic-pin-3d.webp",
+    "sha256": "133cb3f622e53d0e7f2b5e7e0e555211fbab4d6b37ae862b345d674ae856af26",
+    "size": [
+      263,
+      320
+    ],
+    "before": 154226,
+    "after": 57188
+  },
+  {
+    "id": "classic-charm",
+    "source": "assets/classic-diary/classic-charm-3d.webp",
+    "sha256": "50d5c677b1b163a5a0829351c73da73cfc633c0bd99752f74a1a571a97da3d18",
+    "size": [
+      183,
+      320
+    ],
+    "before": 118850,
+    "after": 43562
+  },
+  {
+    "id": "classic-pocket",
+    "source": "assets/classic-diary/classic-pocket-3d.webp",
+    "sha256": "2597c6df8e1f891378cb949981dd8506ef48610dda2d9315ff0c75f61f2b7fa0",
+    "size": [
+      318,
+      320
+    ],
+    "before": 282594,
+    "after": 105752
+  },
+  {
+    "id": "polaroid-stock",
+    "source": "assets/textures/polaroid-stock-v1.png",
+    "sha256": "d802c77e2e95e034d0734d8bcfe81ed24b8014cbdd0265d817e48ba2df90e86f",
+    "size": [
+      192,
+      256
+    ],
+    "before": 1990687,
+    "after": 21432
+  },
+  {
+    "id": "polaroid-handled",
+    "source": "assets/textures/polaroid-handled-v1.png",
+    "sha256": "3b0cafc20c7b6671c03def20212122289ebc5e1319e6b4af14d8575788e82be8",
+    "size": [
+      171,
+      256
+    ],
+    "before": 2245076,
+    "after": 29626
+  },
+  {
+    "id": "photo-wall-black",
+    "source": "assets/control-illustrations/cherry-black-long-photo-wall.webp",
+    "sha256": "957f7a0ccefa8b1bd75b3438972e092579beddf5af805c9319922d404c731ec4",
+    "size": [
+      400,
+      165
+    ],
+    "before": 30406,
+    "after": 13418
+  }
+]

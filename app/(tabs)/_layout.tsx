@@ -1,5 +1,9 @@
-import { useCalendarBackdropVisible } from '../../src/pages/day-plan/model/heroCalendarDesign';
-import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WARM_IVORY_PAPER } from '@shared/ui/app-wallpaper';
+import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
+import { Image } from 'react-native';
+import { freePhotoCalendar } from '../../src/pages/day-plan/model/freePhotoCalendars';
+import { useHeroCalendarDesign, useCalendarBackdropVisible } from '../../src/pages/day-plan/model/heroCalendarDesign';
 import { View } from 'react-native';
 import { useContext } from 'react';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
@@ -15,14 +19,17 @@ import { useTranslation } from '@shared/lib/i18n';
 export const unstable_settings = { initialRouteName: 'index' };
 
 function TabWallpaper() {
+  const insets = useSafeAreaInsets();
   const calendarVisible = useCalendarBackdropVisible();
+  const photoCalendar = freePhotoCalendar(useHeroCalendarDesign());
+  const ivoryBackground = useWallpaperStore(state => state.wallpaper === 'warm-ivory');
   const photoActive = useContext(HeroCharacterPickerActionContext)?.photoActive;
   const segments = useSegments();
   const home = segments.every(segment => segment === '(tabs)');
   if (photoActive && home) return null;
   return <>
-    <AppWallpaperBackground />
-    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: '#FAFAF6' }} /> : null}
+    {home && !calendarVisible && ivoryBackground ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}><Image source={WARM_IVORY_PAPER} resizeMode="cover" style={{ width: '100%', height: '100%' }} /></View> : null}
+    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: photoCalendar?.id === 'cream-kitten' ? '#D8CDBB' : '#FAFAF6' }}>{photoCalendar && <Image source={photoCalendar.background} resizeMode="cover" style={{ position: 'absolute', width: '100%', left: 0, right: 0, bottom: 0, top: photoCalendar.id === 'cream-kitten' ? Math.max(0, insets.top - 28) : 0 }} />}</View> : null}
   </>;
 }
 

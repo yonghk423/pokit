@@ -1,0 +1,488 @@
+[
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-mail.webp",
+    "sha256": "4a3f7c8bd56869bc3d9e92fe60cf026b408a71a4aa5fe1a82ac92ecccc098792",
+    "bytes": 37346
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-berry.webp",
+    "sha256": "60c73ddaf2c2f09296aea0b83b5fd60efff3a9aa0e2667346c5561db0ad5486b",
+    "bytes": 71228
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-stamp.webp",
+    "sha256": "bfe9644a1588c38919e6fda0dd5f88905c7da4a015ba53e10fce72850a67fe45",
+    "bytes": 37970
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-ribbon.webp",
+    "sha256": "39706d25f0f372939b2fd2c2cd3dcfd0298fb8e34ae7eb41dfc84771c8678492",
+    "bytes": 35122
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-shell.webp",
+    "sha256": "449fd52c2b0ad4cbcc279b3321ed5b0372a8c8bf1d613678c007f62a57add666",
+    "bytes": 36650
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-chick.webp",
+    "sha256": "c3221e577af5accc241d14529ab146664efc738de7fa546aeb03eb041931278b",
+    "bytes": 29528
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-cat.webp",
+    "sha256": "f8971c96a49b99f31f984d68dbd74299f09613d2435ea02d57152153f9b55fbf",
+    "bytes": 32578
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-cat.webp",
+    "sha256": "37379d9239b7c134db14b9278587e506b3eaa69efab5ab056b52c9a7a96ede12",
+    "bytes": 186722
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat.webp",
+    "sha256": "10786c521d61e4d39f187f317e8f4297b419f3f2e2fa109cd3e1c232fd512607",
+    "bytes": 31958
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-tl.webp",
+    "sha256": "ffbd04e4a164a034b050e50e60b3b6fc45603daa92957850140a11ef2711b2b2",
+    "bytes": 4042
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-tr.webp",
+    "sha256": "cc09114962dc0e29c8718a9c343b6af920fd437874aceb7e32cbf6ca32a1d263",
+    "bytes": 3388
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-bl.webp",
+    "sha256": "9b7cbb21c32291d1b4da67a6b69f63f30feba990af6b14874d2f56972be8b427",
+    "bytes": 3516
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-br.webp",
+    "sha256": "0c1dc72324636f05da298ee519a3b05e14a24a9ab922a8e0534825df5c01121f",
+    "bytes": 3628
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-top.webp",
+    "sha256": "174d0ad28da4684590304dfe150a669a80dbd4a911e3ec7db916e0f344a55734",
+    "bytes": 3948
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-bottom.webp",
+    "sha256": "6ee966aa6f0287eef06123b5aa8d7c1f5151ee94ac9a575887ce156cf125653c",
+    "bytes": 3480
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-left.webp",
+    "sha256": "dc01d7f83fba32cc32f8ab0d0742676c27f3bf82a1ce25534dea467df03dd46e",
+    "bytes": 5762
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-cat-right.webp",
+    "sha256": "033f7694c4c4733788f915685625cd0e61332a721ed0589514594d2324329f7c",
+    "bytes": 5650
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-shell.webp",
+    "sha256": "dd054ccb21241ea6922e8e1449e5f1b07bff098f21a15d723dfd46db6ca163af",
+    "bytes": 181818
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell.webp",
+    "sha256": "cb3bd1a8c4634e17fd4a15bd7281b705aa92a962cb1522fa435f84550982c272",
+    "bytes": 34280
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-tl.webp",
+    "sha256": "903cd6b5e25bc3bf671c56bbb07189e0f96b1d0f69db1ec7dc736c27a7108932",
+    "bytes": 4364
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-tr.webp",
+    "sha256": "ddd001b0605d0ab7d88d0d2ce097f170cd04077e4ca5d1a0a85d6384914b2f1b",
+    "bytes": 4202
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-bl.webp",
+    "sha256": "7152832558778d5c44523b4d095d4c0929e3edc7e09dd056734ab665e2f10576",
+    "bytes": 3980
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-br.webp",
+    "sha256": "07b76beb6054652863401fceaede481804fbdceced87b9b082078676e9558a06",
+    "bytes": 3960
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-top.webp",
+    "sha256": "154fa876295aa5a362526decd7f4008311e20b919454935d60b3ca4a76e09759",
+    "bytes": 4334
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-bottom.webp",
+    "sha256": "348ab6daac86706bc8fecc6ddacdee3b29756779550ab59e45ce29e77a996fe1",
+    "bytes": 4038
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-left.webp",
+    "sha256": "4b17680c2561aafeadeb9738ca4a98e5eaffaa83a86e7d2aa89740c762bd8680",
+    "bytes": 5798
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-shell-right.webp",
+    "sha256": "bd55662950f71dd859cedec47c83bba0258f8a87332b756a6e8d8ac105af450d",
+    "bytes": 5742
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-chick.webp",
+    "sha256": "2794089fced2678a6212957e2406185cc08dddf3f830d200385c50c73a6fdf6f",
+    "bytes": 150398
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick.webp",
+    "sha256": "2bd234df584fe352cd5739f33810db896458ef809b17de1547295b88b9e19901",
+    "bytes": 31572
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-tl.webp",
+    "sha256": "b53854ef8cfbdb681b9f26903acf2a41da3647e55421a8151e084dded5b0e0b2",
+    "bytes": 3626
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-tr.webp",
+    "sha256": "c34069644fe5968d9488e88de3395eba82581c85179aa21c01b209f2b2992f02",
+    "bytes": 3668
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-bl.webp",
+    "sha256": "932c7ce566899e382526e3e7e716736eb93a0f2ac126009e3c88952b2b0665e9",
+    "bytes": 2858
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-br.webp",
+    "sha256": "2ccf6d1a54381b8019a9d617ce81fbe9009332b1b0ba0ab584c3f17c04f2684d",
+    "bytes": 3350
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-top.webp",
+    "sha256": "90d76ff71fcf5f217b1d2636d2c11a96c46d3722c27da8b4e6f06907548366d4",
+    "bytes": 5334
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-bottom.webp",
+    "sha256": "26090f20f94899974f45e785ab56325a1ed6e8953ca77d97a3a1a18df043ad3a",
+    "bytes": 3012
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-left.webp",
+    "sha256": "75771d8992e2e876c9251ee46c2d60a2e68cb50cc1131d02185e8e1767f5e8ad",
+    "bytes": 5020
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-chick-right.webp",
+    "sha256": "05f71d5dfe488316c8a82c073c96c1ff6a33fa57a98f8912449fe572dc7a6c97",
+    "bytes": 5316
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-ribbon.webp",
+    "sha256": "8d77c10efa26588dee6f98914566e68b3f9da81aec267024a7bd8855154dcba2",
+    "bytes": 179384
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon.webp",
+    "sha256": "f212aba5371e8ebfd5aaff1b157f018c5ae87e06cc69ac8a230aee916778866e",
+    "bytes": 40364
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-tl.webp",
+    "sha256": "74b7d2c7763fbbae35620aa319782d8edbadd1db4811454375c587cfca6f211a",
+    "bytes": 4804
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-tr.webp",
+    "sha256": "70cda2c0ff42aff72dcd7870a3eda31e7fbd1de7037732fb605df478ffb63b50",
+    "bytes": 4614
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-bl.webp",
+    "sha256": "6e0a58cd1c8ab0e8adf049aa607bda1a7826ccb0576afa156bc3965238ed2c6c",
+    "bytes": 4090
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-br.webp",
+    "sha256": "adb2dd005f5e9461b527a757379f7d05e936a68b85a9f6a07d6e19f7c8c43ae0",
+    "bytes": 4274
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-top.webp",
+    "sha256": "23007256f321c4c21657bd5612c76506931b635db224ef6327455091ceadcdbc",
+    "bytes": 6812
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-bottom.webp",
+    "sha256": "3939afd9e8ca31711b554c3f926023032f9697ec9eecf9ee1cfc6d3a7e01336e",
+    "bytes": 6230
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-left.webp",
+    "sha256": "3aef5c1254a371d59e1df32b97fd99e7c9ac380a2012f0c5b206b0aa8788e373",
+    "bytes": 6536
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-ribbon-right.webp",
+    "sha256": "38afd1428b18dd31f0e75842edfbcfbf62a070b1138b4d9fa96edae08ac810bb",
+    "bytes": 5172
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-berry.webp",
+    "sha256": "a8fca511a21486d147a1c361e590663da8da1c1f1eb5d9a1d512bf6766a447dc",
+    "bytes": 165282
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry.webp",
+    "sha256": "cfb9993c026176ff884e95d061a88f425cd1eeb94e0e1f965932a45ca7af4c67",
+    "bytes": 26566
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-tl.webp",
+    "sha256": "269ed087dbadb26c41d33620ed7fc86cd6de751ee5d1c9c8b1606e09b1c5b903",
+    "bytes": 3120
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-tr.webp",
+    "sha256": "3bb758f8cf1f5572256f09ebba618242bebf3d8236334deba47a178722717d37",
+    "bytes": 3142
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-bl.webp",
+    "sha256": "324330e7624e99abbdb32de9b4fd69ebb89f3a2407871e1bafa32f7e8b19c4b4",
+    "bytes": 3124
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-br.webp",
+    "sha256": "9ac86082cc249dbbaa0d0655c3db87ee181af6f8084eab2c019835bec2cc7bab",
+    "bytes": 3022
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-top.webp",
+    "sha256": "d04d419d6eccd27838c319c0e9977c8dbd5d517f78548f6a721d08021b2410f1",
+    "bytes": 4008
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-bottom.webp",
+    "sha256": "a3834dd729d4a71854ef93d60764feb0b2ae112494910e1a1130fe0661880906",
+    "bytes": 3982
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-left.webp",
+    "sha256": "099170bbce52983cfb71ed44ec12fc8e6a45234bb67ddd95673cacf15f0a1cac",
+    "bytes": 3746
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-berry-right.webp",
+    "sha256": "4ad2e63f1b3e142a2ca17b67521e201133ad63928442823fb780c6ff3211ee59",
+    "bytes": 3708
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-stamp.webp",
+    "sha256": "db89b5dd3cb0d4c22595698dee71321c961118fe8aa73039d8b253295bdee0c8",
+    "bytes": 192666
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp.webp",
+    "sha256": "7a947ec7cd4281db67b8d1efd69d9edaa717b3b27f32360b6d7e7b61fa3d484b",
+    "bytes": 48042
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-tl.webp",
+    "sha256": "af53af5941b6335812fdfe74bef79c9ada854e97d952c576240956d7f3b81e59",
+    "bytes": 5096
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-tr.webp",
+    "sha256": "36360d6f5fde8821a986d1d2f8639df38672c5102bbac00d161986dc01e4194c",
+    "bytes": 4704
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-bl.webp",
+    "sha256": "bcf69fbb68ba987277da47b1b3f5cfe6e4adce178d7336714900b224f7f26753",
+    "bytes": 4264
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-br.webp",
+    "sha256": "601eac0948fba0ea28d9a8b2ba2ead9262f7aad7c53cb49a0c51e2efe1600bb1",
+    "bytes": 3902
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-top.webp",
+    "sha256": "f1d29aff03aea687dfdd55cfbee96dfefa64a37acf9317d4fa45764a42dbd2a6",
+    "bytes": 7604
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-bottom.webp",
+    "sha256": "13b51ae503e5efd9c07bfb6e3be5a45e3d2a9dbec2d0291c3d37ae5ef7798c0f",
+    "bytes": 6728
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-left.webp",
+    "sha256": "2c7cc7b4baa45045c91aa9dbefe5a0a33dc10978a082d754409337a92d5fdddb",
+    "bytes": 8872
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-frames/print-border-stamp-right.webp",
+    "sha256": "0debeda1235ea83f53eca67a516a41ac7478e01a57ea0bf83231295be0b33d74",
+    "bytes": 8338
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "charms/mini-carrot.webp",
+    "sha256": "6385d4467ef15037b86bc86ec1be93229169e884ca3b73c0ac10a4e267beffb2",
+    "bytes": 157868
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "memo-pads/mini-order.webp",
+    "sha256": "8321bf0d49c60ef5724c63c3978109d9d73cea6d8a2a176309e49c85fe95731e",
+    "bytes": 143222
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "pockets/mini-airmail.webp",
+    "sha256": "ba58f5ee5162d8d8d7fb39d914e673407c2b63f33dce4daecbd3bf030793eba1",
+    "bytes": 194518
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-bunny.webp",
+    "sha256": "2fdc10565bdb045f735055dc0844597a33c8369f5d445e0cc2848714dd0dafd9",
+    "bytes": 102484
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-bunny.webp",
+    "sha256": "136933db267a43ff17ac60df579244e60bee0e214a6c9d53a7b384bf3f6bfa65",
+    "bytes": 180340
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-toast.webp",
+    "sha256": "a7a7d0740308258203dc3ce449a866974a5442b1e79e5a18f915f9a764e3fbd6",
+    "bytes": 126244
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/mini-toast-label.webp",
+    "sha256": "b990792fbb8fd482189ca02014bb9f77f06219c5a592a7279fcad97df87f59bc",
+    "bytes": 118472
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "date-labels/date-label-clover.webp",
+    "sha256": "f744a3b55e9bddc9c25eb9fa8761b59d9f0916ae5355507377d1dcb0a2ddb4cb",
+    "bytes": 94462
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "tab-labels/tab-label-clover.webp",
+    "sha256": "c4812143a91569ce90816cbe9b4ebd65cc10159909fd741977e46d918dfc24a8",
+    "bytes": 179664
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "bookmarks/mini-ears.webp",
+    "sha256": "f7871f58f8a97d239c1318cd0e8138dc64fb8800e080bd6f4a75a2ec5d16b0e6",
+    "bytes": 153224
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "photo-corners/mini-butter.webp",
+    "sha256": "aade5bc0dffd1324bfed2118fad44ac3661cd5d9ac960f2da87976d2ae03a918",
+    "bytes": 115538
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "pins/mini-clover.webp",
+    "sha256": "c2d516f8e4b9159b58bbd0bfa71f0fdf2cd91582f88da6b3b8ba8db6a5f1d1bf",
+    "bytes": 294620
+  },
+  {
+    "bucket": "calendar-store",
+    "remote": "pockets/mini-letter.webp",
+    "sha256": "3fab783e904c2476be91a02dd0e24ff8b81500cc19e0e24e750a45324faa4050",
+    "bytes": 220564
+  },
+  {
+    "bucket": "character-illustrations",
+    "remote": "protagonist-7/card-960/p7-01.webp",
+    "sha256": "9f93e18d8b75a59ebacb2f11b74042cf2303a59a5c558a500278325a6d4e1027",
+    "bytes": 216880
+  }
+]

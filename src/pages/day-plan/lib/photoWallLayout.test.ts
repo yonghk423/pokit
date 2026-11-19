@@ -23,9 +23,13 @@ it('has a finite empty layout and keeps existing positions when new photos are a
   expect(photoWallLayout(350, 9).frames.slice(0, 5)).toEqual(photoWallLayout(350, 5).frames);
 });
 
-it('hangs original and classic papers at different heights without covering the next row', () => {
-  const { frames } = photoWallLayout(360, 5, ['cover', 'contain']);
-  expect(frames[0].width).toBe(frames[1].width);
-  expect(frames[1].height).toBeGreaterThan(frames[0].height);
-  expect(frames[4].top).toBeGreaterThan(frames[1].top + frames[1].height);
+it('uses the cherry ribbon photo size and spacing for every wall', () => {
+  const { frames, rowStride } = photoWallLayout(360, 8);
+  expect((frames[0].height - 7) / frames[0].width).toBeCloseTo(1.46);
+  expect(frames[0].top).toBe(84);
+  expect(frames[0].width).toBeCloseTo(72);
+  expect(frames[1].left - frames[0].left - frames[0].width).toBeCloseTo(10.8);
+  expect(rowStride - frames[0].height).toBeCloseTo(frames[0].width * 0.13);
+  expect(frames[4].top).toBeGreaterThan(frames[0].top + frames[0].height);
+  expect(frames[3].left + frames[3].width).toBeLessThan(360);
 });

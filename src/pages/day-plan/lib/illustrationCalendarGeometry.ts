@@ -31,10 +31,10 @@ export function calendarCellContents(width: number, height: number) {
   const numberSize = Math.min(width * .40, height * .40, 26);
   const numberHeight = numberSize * 1.18;
   const numberTop = inset;
-  const photoTop = numberTop + numberHeight + height * .06;
-  // Leave rotation and the pin within this cell, below the number and event ring.
-  const photoHeight = Math.min((height - photoTop - inset) / 1.07, width * .75);
-  const photoWidth = photoHeight / 1.2;
+  const photoTop = numberTop + numberHeight * .72;
+  // Expand only the photo; the date and calibrated cell coordinates stay unchanged.
+  const photoHeight = height - photoTop - inset;
+  const photoWidth = width * .82;
   return { numberSize, numberHeight, numberTop, photoTop, photoHeight, photoWidth };
 }
 

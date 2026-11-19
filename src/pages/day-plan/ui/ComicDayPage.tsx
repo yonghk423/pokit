@@ -1,3 +1,4 @@
+import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { ProDiaryDecoration } from './ProDiaryDecoration';
 import { ThemedText as Text } from '@shared/ui/themed-text';
@@ -165,6 +166,7 @@ export function ComicDayPage() {
 
   return (
     <View style={[styles.root, { backgroundColor: surface }]} onLayout={event => setCanvasHeight(event.nativeEvent.layout.height)}>
+      {!calendarVisible && !photoActive ? <AppWallpaperBackground /> : null}
       <AnnouncementHomeOverlay
         announcement={announcementHome.notice}
         onDismiss={announcementHome.dismiss}

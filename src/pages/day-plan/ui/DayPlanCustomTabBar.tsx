@@ -1,3 +1,6 @@
+import { freePhotoCalendar } from '../model/freePhotoCalendars';
+import { WARM_IVORY_PAPER } from '@shared/ui/app-wallpaper';
+import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { DiaryItemImage } from './DiaryItemImage';
 import { useDiaryTheme } from '../model/diaryTheme';
 import { isIllustrationCalendarDesign, useHeroCalendarDesign, useCalendarBackdropVisible } from '../model/heroCalendarDesign';
@@ -62,8 +65,9 @@ function TabButton({ children, ...props }: PressableProps & { children: React.Re
 
 export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   const calendarDesign = useHeroCalendarDesign();
+  const ivoryBackground = useWallpaperStore(state => state.wallpaper === 'warm-ivory');
   const theme = useDiaryTheme('tab');
-  const selectedIllustration = isIllustrationCalendarDesign(calendarDesign);
+  const selectedIllustration = isIllustrationCalendarDesign(calendarDesign) || !!freePhotoCalendar(calendarDesign);
   const calendarBackdrop = useCalendarBackdropVisible();
   const illustrationMode = useIllustrationCalendarMode();
   const { width } = useWindowDimensions();

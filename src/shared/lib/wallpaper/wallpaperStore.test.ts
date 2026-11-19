@@ -16,3 +16,12 @@ it('falls back safely for an unknown stored wallpaper', () => {
   useWallpaperStore.getState().hydrate();
   expect(useWallpaperStore.getState().wallpaper).toBe('default');
 });
+it('persists warm ivory paper and restores it after hydration', () => {
+  useWallpaperStore.getState().setWallpaper('warm-ivory');
+  useWallpaperStore.setState({ wallpaper: 'default' });
+  useWallpaperStore.getState().hydrate();
+  expect(useWallpaperStore.getState().wallpaper).toBe('warm-ivory');
+  useWallpaperStore.getState().setWallpaper('default');
+  useWallpaperStore.getState().hydrate();
+  expect(useWallpaperStore.getState().wallpaper).toBe('default');
+});

@@ -1,3 +1,4 @@
+import { BASIC_STORE_THUMBNAILS } from '../lib/basicStoreThumbnails';
 import { applyTheme } from './diaryTheme';
 import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { useSyncExternalStore } from 'react';
@@ -28,7 +29,12 @@ export function applyHeroTrashBinStyle(style: TrashBinStyle) {
   listeners.forEach(listener => listener());
 }
 
-export const HERO_TRASH_BIN_PREVIEWS = TRASH_ASSETS;
+export const HERO_TRASH_BIN_PREVIEWS = {
+  ...TRASH_ASSETS,
+  mesh: { empty: BASIC_STORE_THUMBNAILS['trash-mesh-empty'], filled: BASIC_STORE_THUMBNAILS['trash-mesh-filled'] },
+  ivory: { empty: BASIC_STORE_THUMBNAILS['trash-ivory-empty'], filled: BASIC_STORE_THUMBNAILS['trash-ivory-filled'] },
+  sage: { empty: BASIC_STORE_THUMBNAILS['trash-sage-empty'], filled: BASIC_STORE_THUMBNAILS['trash-sage-filled'] },
+};
 
 export const HERO_TRASH_BIN_ITEMS: { id: TrashBinStyle; ko: string; en: string }[] = [
   { id: 'mesh', ko: '메쉬 휴지통', en: 'Mesh wastebasket' },
