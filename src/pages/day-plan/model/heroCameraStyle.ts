@@ -14,7 +14,7 @@ export const HERO_CAMERA_STORE_ITEMS: { id: HeroCameraStyle; name: { ko: string;
 ];
 
 export const HERO_CAMERA_IMAGES: Record<HeroCameraStyle, number> = {
-  'mini-evo': require('../../../../assets/store-cameras/instax-mini-evo.png'),
+  'mini-evo': require('../../../../assets/store-cameras/instax-mini-evo.webp'),
   'mini-12': require('../../../../assets/pro-store-previews/instax-mini-12.webp'),
   'polaroid-now': require('../../../../assets/pro-store-previews/polaroid-now-gen2.webp'),
   'kodak-mini-shot': require('../../../../assets/pro-store-previews/kodak-mini-shot-3-retro.webp'),

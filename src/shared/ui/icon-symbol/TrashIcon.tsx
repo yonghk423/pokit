@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 
 export const TRASH_ASSETS = {
   mesh: {
-    empty: require('../../../../assets/control-illustrations/mesh-trash-bin.png'),
+    empty: require('../../../../assets/control-illustrations/mesh-trash-bin.webp'),
     filled: require('../../../../assets/control-illustrations/mesh-trash-bin-paper.webp'),
   },
   ivory: {

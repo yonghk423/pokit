@@ -1,7 +1,7 @@
 [
   {
     "id": "clip-blue",
-    "source": "assets/control-illustrations/blue-clipboard-clip.png",
+    "source": "assets/control-illustrations/blue-clipboard-clip.webp",
     "sha256": "ebfa65583a89cc47a8a8059deb7612dc3f756c9cff002fe7c9f6de18e7481651",
     "size": [
       768,
@@ -12,7 +12,7 @@
   },
   {
     "id": "clip-red",
-    "source": "assets/control-illustrations/red-clipboard-clip.png",
+    "source": "assets/control-illustrations/red-clipboard-clip.webp",
     "sha256": "227bc7221d2da82dca1d5093c72baba29582077554397123d533c27def68e85a",
     "size": [
       768,
@@ -23,7 +23,7 @@
   },
   {
     "id": "clip-black",
-    "source": "assets/control-illustrations/black-clipboard-clip.png",
+    "source": "assets/control-illustrations/black-clipboard-clip.webp",
     "sha256": "8d2e9417b2fa37d6adc66aeb9b02d08bb811ba7514c078031f837a8719fca1a3",
     "size": [
       768,
@@ -45,7 +45,7 @@
   },
   {
     "id": "trash-mesh-empty",
-    "source": "assets/control-illustrations/mesh-trash-bin.png",
+    "source": "assets/control-illustrations/mesh-trash-bin.webp",
     "sha256": "dced3d0d2c92f211cc17c4bc97ae4cf55a50b2aff708567de09c40649b279d63",
     "size": [
       188,
@@ -111,7 +111,7 @@
   },
   {
     "id": "camera-mini-evo",
-    "source": "assets/store-cameras/instax-mini-evo.png",
+    "source": "assets/store-cameras/instax-mini-evo.webp",
     "sha256": "4b6cfeffd5187baf4e2e6e732385fd5387d0d3309e0d9f03fac22e3db4388b27",
     "size": [
       400,

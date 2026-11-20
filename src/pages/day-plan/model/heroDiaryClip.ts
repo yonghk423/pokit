@@ -25,9 +25,9 @@ export const DIARY_CLIP_IMAGES = {
   yellow: require('../../../../assets/pro-store-previews/pastel-yellow-clipboard-clip.webp'),
   peach: require('../../../../assets/pro-store-previews/pastel-peach-clipboard-clip.webp'),
   pink: require('../../../../assets/pro-store-previews/pastel-pink-clipboard-clip.webp'),
-  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.png'),
-  red: require('../../../../assets/control-illustrations/red-clipboard-clip.png'),
-  black: require('../../../../assets/control-illustrations/black-clipboard-clip.png'),
+  blue: require('../../../../assets/control-illustrations/blue-clipboard-clip.webp'),
+  red: require('../../../../assets/control-illustrations/red-clipboard-clip.webp'),
+  black: require('../../../../assets/control-illustrations/black-clipboard-clip.webp'),
 };
 
 export const DIARY_CLIPS: { id: DiaryClip; name: string; english: string; pro: boolean }[] = [
