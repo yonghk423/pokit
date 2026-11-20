@@ -45,3 +45,12 @@ it('keeps original-photo cards readable after the iOS container changes', () => 
   expect(resolveHeroArtworkUri('file:///old/Documents/hero-photos/../secret.jpg'))
     .toBe('file:///old/Documents/hero-photos/../secret.jpg');
 });
+
+it('redirects former fixture portraits to the generated replacements and rebases fresh AI files', () => {
+  expect(resolveHeroArtworkUri('file:///old/Documents/hero-photos/selected-v2-extra-01.webp'))
+    .toBe('file:///current/Documents/hero-photos/selected-ai-v1-extra-01.webp');
+  expect(resolveHeroArtworkUri('file:///old/Documents/hero-photos/selected-ai-v1-extra-01.webp'))
+    .toBe('file:///current/Documents/hero-photos/selected-ai-v1-extra-01.webp');
+  expect(resolveHeroArtworkUri('file:///old/Documents/hero-photos/selected-v2-extra-02.webp'))
+    .toBe('file:///current/Documents/hero-photos/selected-v2-extra-02.webp');
+});

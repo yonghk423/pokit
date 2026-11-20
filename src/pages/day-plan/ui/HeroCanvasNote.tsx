@@ -64,7 +64,7 @@ const CanvasEventRow = memo(function CanvasEventRow({ event, ink, onDelete }: { 
 });
 
 /** An independent canvas annotation; it never changes the photo layout bounds. */
-export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, keyboardVerticalOffset = 0, returnAction }: { date: string; ink: string; initialHeight?: number; monthlyHeight?: number; keyboardVerticalOffset?: number; returnAction?: ReactNode }) {
+export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, keyboardVerticalOffset = 0, returnAction, archiveView = false }: { date: string; ink: string; initialHeight?: number; monthlyHeight?: number; keyboardVerticalOffset?: number; returnAction?: ReactNode; archiveView?: boolean }) {
   const { locale, t } = useTranslation();
   const proClip = useDiaryTheme('clip');
   const diaryClip = useHeroDiaryClip();
@@ -120,14 +120,14 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
   const dark = useColorScheme() === 'dark';
   const canvasPaper = ivoryBackground ? '#F3E9DF' : dark ? '#262B28' : '#F7F6F4';
   const [expanded, setExpanded] = useState(() => localStorageClient.getJson<boolean>('pokit:canvas-panel-expanded') === true);
-  useEffect(() => { if (monthly) setMonthlyCanvasExpanded(expanded); }, [monthly, expanded]);
+  useEffect(() => { if (monthly && !archiveView) setMonthlyCanvasExpanded(expanded); }, [monthly, expanded, archiveView]);
   const expansion = useRef(new Animated.Value(expanded ? 1 : 0)).current;
   const currentExpansion = useRef(expanded ? 1 : 0);
   const dragStart = useRef(0);
   const dragDistance = useRef(0);
-  const collapsedTop = Math.max(0, canvasHeight - (monthlyHeight ?? 218));
+  const collapsedTop = archiveView ? 0 : Math.max(0, canvasHeight - (monthlyHeight ?? 218));
   const headerHeight = insets.top + 54;
-  const expandedTop = monthly ? 0 : Math.min(collapsedTop, returnAction ? headerHeight : insets.top + 4);
+  const expandedTop = monthly || archiveView ? 0 : Math.min(collapsedTop, returnAction ? headerHeight : insets.top + 4);
   const clipOffset = (proClip ? 30 : 25) + 8;
   const travel = Math.max(1, collapsedTop - expandedTop);
   useEffect(() => {
@@ -209,7 +209,7 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
     <View pointerEvents={editing ? 'auto' : 'box-none'} onLayout={({ nativeEvent: { layout } }) => setCanvasHeight(previous => previous === layout.height ? previous : layout.height)} style={{ flex: 1, backgroundColor: editing ? canvasPaper : 'transparent' }}>
       {editing && ivoryBackground ? <AppWallpaperBackground /> : null}
       {monthly && !editing && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: canvasPaper, opacity: expansion }]}><AppWallpaperBackground /></Animated.View>}
-      {!editing ? <Animated.View
+      {!editing && !archiveView ? <Animated.View
         testID="hero-canvas-decoration-overlays"
         pointerEvents={expanded ? 'none' : 'box-none'}
         style={[StyleSheet.absoluteFill, { zIndex: 4, opacity: expansion.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 0, 0] }) }]}
@@ -217,9 +217,9 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
         <HeroMiniMemo key={storageKey} storageKey={monthly ? `pokit:monthly-mini-memo:${date.slice(0, 7)}` : `pokit:mini-memo:${date}`} ko={ko} defaultTop={collapsedTop} />
         <HeroMovablePocket defaultTop={collapsedTop} ko={ko} />
       </Animated.View> : null}
-      <Animated.View testID="hero-canvas-reading-panel" pointerEvents="auto" style={{ position: 'absolute', left: 0, right: 0, backgroundColor: panelPaper, bottom: editing ? 64 : 52, top: editing ? (monthly ? 0 : returnAction ? headerHeight : insets.top + 28) : expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop, expandedTop] }) }}>
+      <Animated.View testID="hero-canvas-reading-panel" pointerEvents="auto" style={{ position: 'absolute', left: 0, right: 0, backgroundColor: panelPaper, bottom: editing ? 64 : 52, top: editing ? (monthly || archiveView ? 0 : returnAction ? headerHeight : insets.top + 28) : expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop, expandedTop] }) }}>
         {panelPaper ? <PaperGrain opacity={0.68} /> : null}
-        {!editing && !monthly && !panelPaper && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: canvasPaper, opacity: expansion, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' }]}><AppWallpaperBackground /></Animated.View>}
+        {!editing && !monthly && !panelPaper && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: canvasPaper, opacity: expansion, bottom: -52, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' }]}><AppWallpaperBackground /></Animated.View>}
 
       <View style={{ display: tab === 'story' ? 'flex' : 'none', position: 'absolute', left: 20, right: 28, top: editing ? 0 : 8, bottom: 0 }}>
         <HeroInlineNote key={storageKey} ref={inlineNote} storageKey={storageKey} sources={noteIllustrationSources} ink={noteInk} onIllustrationInserted={rememberIllustration}
@@ -282,7 +282,7 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
         <AppWallpaperBackground />
         <View testID={editing ? 'hero-canvas-recording-return' : 'hero-canvas-expanded-return'} style={{ position: 'absolute', right: 20, top: insets.top + 10, zIndex: 30 }}>{returnAction}</View>
       </View> : null}
-      {!editing ? <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 20, width: 76, height: 44, top: expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop - clipOffset, expandedTop - clipOffset] }), zIndex: 31, elevation: 31 }}>
+      {!editing && !archiveView ? <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 20, width: 76, height: 44, top: expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop - clipOffset, expandedTop - clipOffset] }), zIndex: 31, elevation: 31 }}>
           <View testID="hero-canvas-clip-handle"  {...clipGesture.panHandlers} accessible accessibilityRole="button" accessibilityLabel={translateUiText("내용 영역 펼치기 또는 접기")} accessibilityHint={translateUiText("위로 끌면 펼쳐지고 아래로 끌면 접힙니다")} accessibilityState={{ expanded }} accessibilityActions={[{ name: 'activate' }]} onAccessibilityAction={() => settlePanel(!expanded)} style={{ width: 76, height: 44, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}>
             <Image testID="hero-canvas-blue-clip" source={proClip?.source ?? appliedClip} contentFit="contain" transition={0} cachePolicy="memory-disk" useAppleWebpCodec={false} accessible={false} pointerEvents="none" style={{ width: 60, height: proClip || diaryClip === 'cherry-binder' ? 36 : 20 }} />
           </View>

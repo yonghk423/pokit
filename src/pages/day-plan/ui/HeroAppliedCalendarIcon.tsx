@@ -1,4 +1,5 @@
 import { isPremiumPaper } from '../model/premiumCalendarPapers';
+import { isPhotoCalendar } from '../model/freePhotoCalendars';
 import { useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
@@ -26,7 +27,7 @@ export function HeroAppliedCalendarIcon({ month, today }: { month: Date; today: 
   }, [illustrated, themeId]);
   return <View pointerEvents="none" accessible={false} style={{ width: 30, height: 39, backgroundColor: design === 'clipboard' ? 'transparent' : '#FAFAF6', shadowColor: '#302C24', shadowOpacity: 0.22, shadowRadius: 2, shadowOffset: { width: 0, height: 2 } }}>
     {illustrated ? <Image cachePolicy="memory-disk" source={art?.themeId === themeId ? { uri: art.uri } : undefined} recyclingKey={themeId} transition={0} contentFit="cover" style={{ width: 30, height: 39 }} /> : <View style={{ width: 300, height: 390, transform: [{ translateX: -135 }, { translateY: -175.5 }, { scale: 0.1 }] }}>
-      <CalendarPaper design={isPremiumPaper(design) || design === 'clipboard' || design === 'bold' || design === 'grid' || design === 'photo' ? design : 'bold'} month={month} today={today} diaries={[]} miniature previewSavedCover layoutWidth={300} layoutHeight={390} />
+      <CalendarPaper design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'bold' || design === 'grid' || design === 'photo' ? design : 'bold'} month={month} today={today} diaries={[]} miniature previewSavedCover layoutWidth={300} layoutHeight={390} />
     </View>}
     <View testID="calendar-return-arrow" pointerEvents="none" style={{ position: 'absolute', right: -5, bottom: -4, width: 17, height: 17, borderRadius: 9, backgroundColor: '#FAFAF6', alignItems: 'center', justifyContent: 'center', shadowColor: '#302C24', shadowOpacity: 0.18, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }}>
       <Feather name="corner-up-left" size={12} color="#32372F" />

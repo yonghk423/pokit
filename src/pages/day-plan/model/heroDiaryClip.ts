@@ -7,7 +7,7 @@ const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 const read = (): DiaryClip => {
   const saved = localStorageClient.getJson(KEY);
-  return DIARY_CLIPS.some(clip => clip.id === saved) ? saved as DiaryClip : 'blue';
+  return DIARY_CLIPS.some(clip => clip.id === saved) ? saved as DiaryClip : 'cherry-binder';
 };
 export function useHeroDiaryClip() { return useSyncExternalStore(subscribe, read, read); }
 export function applyHeroDiaryClip(clip: DiaryClip) { applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }

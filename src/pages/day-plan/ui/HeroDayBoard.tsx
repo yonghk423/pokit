@@ -355,13 +355,13 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const dockBottom = historyOverview
     ? Math.round((windowHeight - safeInsets.top - safeInsets.bottom) * 0.32)
     : heroCameraBottom(safeInsets.bottom);
-  const photoWallNoteClearance = photoWallActive ? dockBottom - 17 : 0;
+  // Keep photos visible behind the transparent note in every layout.
   const dockVisible = cardsFirst && (gridOpen || !items.length) && !detailOpen;
   const mainCamera = dockVisible && (syncMainState || historyOverview) ? <Pressable
     testID="hero-duvet-camera" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')}
     onPress={() => { tapHaptic(); (onAddPhoto ?? onAdd)(); }}
     style={({ pressed }) => ({ position: 'absolute', right: 20, bottom: dockBottom, zIndex: 3, width: 75, height: 53, transform: [ { translateY: pressed ? 1.5 : 0 }, { scale: pressed ? 0.985 : 1 }] })}>
-    {({ pressed }) => <View style={{ position: 'absolute', right: 0, bottom: 0, width: photoWallActive ? 60 : 75, height: photoWallActive ? 42.4 : 53 }}><HeroRestingCamera active={pressed} dark={isDark} raised={historyOverview} onPhotoWall={photoWallActive} /></View>}
+    {({ pressed }) => <View style={{ position: 'absolute', right: 0, bottom: 0, width: photoWallActive ? 51 : 64, height: photoWallActive ? 36 : 45.2 }}><HeroRestingCamera active={pressed} dark={isDark} raised={historyOverview} onPhotoWall={photoWallActive} /></View>}
   </Pressable> : null;
   const trashIconSize = photoWallActive ? 32 : 35;
   const cameraGroundInset = (53 - cameraFootprints[cameraStyle].y) * (photoWallActive ? 0.8 : 1);
@@ -370,7 +370,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const mainTrash = dockVisible && ((syncMainState && !historyOverview) || (historyOverview && !!onRemoveMany)) ? <Pressable
     testID="hero-duvet-trash" accessibilityRole="button" accessibilityLabel={t('comicDay.toggleDelete')}
     disabled={!items.length} accessibilityState={{ selected: deleteMode, disabled: !items.length }} onPress={() => { if (!deleteMode) { tapHaptic('warn'); toggleDeleteMode(); } }}
-    style={{ position: 'absolute', right: photoWallActive ? 78 : 100, bottom: trashBottom, zIndex: 4, width: 40, height: 49, alignItems: 'center', justifyContent: 'center' }}>
+    style={{ position: 'absolute', right: photoWallActive ? 66 : 88, bottom: trashBottom, zIndex: 4, width: 40, height: 49, alignItems: 'center', justifyContent: 'center' }}>
     <Svg pointerEvents="none" width={50} height={19} style={{ position: 'absolute', left: 0, top: 3 + trashIconSize * 0.86 - 6 }}>
       <Defs>
         <RadialGradient id="bin-shadow" cx="50%" cy="50%" rx="50%" ry="50%">
@@ -428,7 +428,7 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
         {showCards && !detailOpen ? <Pressable testID="comic-close-carousel" accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => { tapHaptic('select'); setGridOpen(true); setMenuOpen(false); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ThemedText style={{ color: ink, fontSize: 17, lineHeight: 24 }}>{translateUiText("닫기")}</ThemedText></Pressable> : null}
       </View> : null}
     </Animated.View> : null}
-    <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1, marginBottom: photoWallNoteClearance }, gridVisibility]}>
+    <Animated.View testID="comic-card-grid-layer" pointerEvents={showCards ? 'none' : 'auto'} accessibilityElementsHidden={showCards} importantForAccessibility={showCards ? 'no-hide-descendants' : 'auto'} style={[{ flex: 1 }, gridVisibility]}>
   <View style={{ flex: 1, overflow: 'hidden' }} onLayout={event => { if (photoWallActive) setWallViewportHeight(event.nativeEvent.layout.height); }}>
   {photoWallActive && !alignedPhotos ? <View pointerEvents="none" style={{ marginHorizontal: 16, marginTop: upperReach + 6, height: wall ? wallArtworkHeight : PHOTO_WALL_HEADER_HEIGHT, zIndex: 5 }}>{wall ? <ThemeImage source={wall.source} contentFit="fill" style={{ position: 'absolute', bottom: 0, left: (boardWidth - wallArtworkWidth) / 2, width: wallArtworkWidth, height: wallArtworkHeight }} /> : <PhotoWallHeader width={boardWidth} count={items.length} />}</View> : null}
   <View style={{ flex: 1, minHeight: 0, marginTop: photoWallActive && alignedPhotos ? upperReach + 6 : 0, overflow: photoWallActive ? 'hidden' : 'visible' }}>

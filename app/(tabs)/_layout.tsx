@@ -29,7 +29,7 @@ function TabWallpaper() {
   if (photoActive && home) return null;
   return <>
     {home && !calendarVisible && ivoryBackground ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}><Image source={WARM_IVORY_PAPER} resizeMode="cover" style={{ width: '100%', height: '100%' }} /></View> : null}
-    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: photoCalendar?.id === 'cream-kitten' ? '#D8CDBB' : '#FAFAF6' }}>{photoCalendar && <Image source={photoCalendar.background} resizeMode="cover" style={{ position: 'absolute', width: '100%', left: 0, right: 0, bottom: 0, top: photoCalendar.id === 'cream-kitten' ? Math.max(0, insets.top - 28) : 0 }} />}</View> : null}
+    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: photoCalendar?.id === 'cream-kitten' ? '#D8CDBB' : '#FAFAF6' }}>{photoCalendar && <Image source={photoCalendar.background} resizeMode="cover" style={{ position: 'absolute', width: '100%', height: '100%', left: 0, right: 0, top: photoCalendar.id === 'cream-kitten' ? Math.max(0, insets.top - 28) : 0 }} />}</View> : null}
   </>;
 }
 
@@ -63,7 +63,7 @@ export default function TabLayout() {
         }}>
         <Tabs.Screen name="index" options={{ title: t('tabs.comicDay') }} />
         <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), lazy: false, animation: 'none' }} />
-        <Tabs.Screen name="history" options={{ title: t('comicDiary.history') }} />
+        <Tabs.Screen name="history" options={{ title: 'Archive' }} />
         <Tabs.Screen
           name="fixed-routines"
           options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }}

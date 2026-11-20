@@ -1,3 +1,8 @@
+jest.mock('react-native-purchases', () => ({ __esModule: true, default: {} }));
+jest.mock('../model/heroTrashBinStyle', () => ({ useHeroTrashBinStyle: () => 'mesh' }));
+jest.mock('../model/diaryTheme', () => ({ useDiaryTheme: () => undefined }));
+jest.mock('./HeroCanvasNote', () => ({ HeroCanvasNote: () => null }));
+jest.mock('./HeroNoteArchive', () => ({ HeroNoteArchive: 'NoteArchive' }));
 jest.mock('@shared/ui/native-hhmm-wheel-picker/NativeHhmmWheelPicker', () => ({ NativeHhmmWheelPicker: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -83,5 +88,22 @@ it('starts an upload for the day picked in the open month, including days withou
     act(() => tree.root.findByType('SceneDeck' as never).props.onAdd());
     act(() => tree.root.findAllByProps({ testID: 'polaroid-date-day-7' })[0].props.onPress());
     expect(onCreate).toHaveBeenCalledWith('2026-11-07');
+  } finally { act(() => tree.unmount()); }
+});
+
+
+it('switches between photos and notes while preserving the selected year', () => {
+  let tree!: ReactTestRenderer;
+  const diaries = [{ id: 'past', title: 'Past', date: '2025-11-01', characterId: 'protagonist-1', scenes: [], createdAt: 1, updatedAt: 1 }];
+  act(() => { tree = create(<HeroHistoryPackets diaries={diaries} onCreate={jest.fn()} onDeleteMany={jest.fn()} onUpdateScene={jest.fn()} />); });
+  try {
+    act(() => tree.root.findAllByProps({ testID: 'archive-tab-notes' })[0].props.onPress());
+    expect(tree.root.findByType('NoteArchive' as never).props.year).toBe(2025);
+    expect(tree.root.findAllByProps({ testID: 'history-selection-toggle' })).toHaveLength(0);
+    act(() => tree.root.findAllByProps({ testID: 'history-next-year' })[0].props.onPress());
+    expect(tree.root.findByType('NoteArchive' as never).props.year).toBe(2026);
+    act(() => tree.root.findAllByProps({ testID: 'archive-tab-photo' })[0].props.onPress());
+    expect(tree.root.findAllByType('NoteArchive' as never)).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'history-selection-toggle' }).length).toBeGreaterThan(0);
   } finally { act(() => tree.unmount()); }
 });

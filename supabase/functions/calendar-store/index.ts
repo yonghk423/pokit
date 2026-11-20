@@ -2,6 +2,7 @@ import { checkProAccess } from '../_shared/proAccess.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { proDiaryIds } from './proDiaryIds.ts';
 import { proDiaryFolders } from './proDiaryFolders.ts';
+const photoCalendarIds = new Set(['sunshine-yellow', 'lemon-slice', 'kissing-shadows', 'daylight-cassette', 'mint-sneakers']);
 // These calendar designs stay free even when paid diary items resume.
 const freeCalendarIds = new Set(['silver-ring', 'mint-glass', 'leather-folio', 'soft-mint', 'mint-planner', 'spiral-plan', 'kraft-clip', 'ivory-paper', 'berry-purple', 'cobalt-blue', 'emerald', 'weather']);
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Content-Type': 'application/json' };
@@ -15,7 +16,7 @@ Deno.serve(async request => {
     const { data, error } = await admin.auth.getUser(token);
     if (error || !data.user) return json({ error: 'unauthorized' }, 401);
     const { id, format } = await request.json();
-    if (!proDiaryIds.has(id) && !["berry-purple", "camera-kodak-mini-shot", "camera-leica-sofort-2", "camera-mini-12", "camera-polaroid-now", "clip-burgundy", "clip-emerald", "clip-golden-yellow", "clip-lavender", "clip-mint", "clip-orange", "clip-peach", "clip-pink", "clip-purple", "clip-sky", "clip-vivid-pink", "clip-yellow", "cobalt-blue", "emerald", "ivory-paper", "kraft-clip", "leather-folio", "mint-glass", "mint-planner", "silver-ring", "soft-mint", "spiral-plan", "trash-ash", "trash-canvas", "trash-charcoal", "trash-leather", "trash-pink", "trash-rattan", "trash-steel", "trash-vintage", "trash-walnut", "weather"].includes(id)) return json({ error: 'invalid_design' }, 400);
+    if (!photoCalendarIds.has(id) && !proDiaryIds.has(id) && !["berry-purple", "camera-kodak-mini-shot", "camera-leica-sofort-2", "camera-mini-12", "camera-polaroid-now", "clip-burgundy", "clip-emerald", "clip-golden-yellow", "clip-lavender", "clip-mint", "clip-orange", "clip-peach", "clip-pink", "clip-purple", "clip-sky", "clip-vivid-pink", "clip-yellow", "cobalt-blue", "emerald", "ivory-paper", "kraft-clip", "leather-folio", "mint-glass", "mint-planner", "silver-ring", "soft-mint", "spiral-plan", "trash-ash", "trash-canvas", "trash-charcoal", "trash-leather", "trash-pink", "trash-rattan", "trash-steel", "trash-vintage", "trash-walnut", "weather"].includes(id)) return json({ error: 'invalid_design' }, 400);
     if (!freeCalendarIds.has(id)) {
       const access = await checkProAccess(data.user.id, Deno.env.get('REVENUECAT_SECRET_API_KEY'), Deno.env.get('REVENUECAT_DAYLIGHT_PRO_ENTITLEMENT_ID'));
       if (access) return json({ error: access.error }, access.status);
@@ -23,7 +24,9 @@ Deno.serve(async request => {
     const store = admin.storage.from('calendar-store');
     const pack: Record<string, unknown> = { id, revision: 1 };
     let paths: Record<string, string>;
-    if (proDiaryIds.has(id)) {
+    if (photoCalendarIds.has(id)) {
+      paths = { image: `photo-calendars/paid-v2/${id}.webp` };
+    } else if (proDiaryIds.has(id)) {
       const folder = proDiaryFolders[id];
       if (!folder) return json({ error: 'invalid_design' }, 400);
       paths = { image: `${folder}/${id}.webp` };

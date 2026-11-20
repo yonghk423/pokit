@@ -1,8 +1,10 @@
+jest.mock('react-native-purchases', () => ({ __esModule: true, default: {}, LOG_LEVEL: {} }));
+jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: {} }));
 jest.mock('./HeroPolaroidEditor', () => ({ HeroPolaroidEditor: jest.requireActual('react-native').View }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPresentationStyle: { FULL_SCREEN: 'fullScreen' } }));
 import { launchImageLibraryAsync } from 'expo-image-picker';
 jest.mock('../lib/heroPremiumPack', () => ({ PREMIUM_CHARACTER_ID: 'protagonist-7', premiumSceneTitle: () => '햇살 아래 버스 정류장', loadPremiumPack: jest.fn(async () => []), loadPremiumPackPreview: jest.fn(async () => ({ files: [{ url: 'https://example.com/cover.webp' }] })), downloadPremiumPack: jest.fn(async () => [{ id: 'p7-01', uri: 'file:///pack/p7-01.webp' }]) }));
-jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: () => false, useSubscriptionStore: (selector: (state: object) => unknown) => selector({}) }));
+jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: () => false, selectCanTestProStoreItems: () => false, useSubscriptionStore: (selector: (state: object) => unknown) => selector({}) }));
 jest.mock('../../settings/ui/ProPreviewPage', () => ({ ProPreviewPage: () => null }));
 import * as heroAiClient from '../lib/heroAiClient';
 import * as originalPhotoLibrary from '../lib/heroOriginalPhoto';
@@ -73,6 +75,10 @@ function loadComicDay(_date: string) {
   return library?.diaries.find(diary => diary.id === library.activeId)?.scenes ?? [];
 }
 beforeEach(() => {
+  jest.spyOn(require('react-native').Image, 'getSize').mockImplementation((_uri: unknown, success: unknown) => {
+    if (typeof success === 'function') success(320, 240);
+    return Promise.resolve({ width: 320, height: 240 });
+  });
   localStorageClient.removeItem('pokit:hero-card-layout:v1');
   localStorageClient.setJson(COMIC_DIARY_HOME_DATE_KEY, '2026-10-21');
   localStorageClient.removeItem(COMIC_DIARY_STORAGE_KEY);
@@ -798,4 +804,26 @@ it('passes deletion to the main card editor and waits for confirmation', () => {
     expect(alert).toHaveBeenCalled();
     expect(tree.root.findByType(ComicDayBoard).props.items.some((item: { key: string }) => item.key === target.id)).toBe(true);
   } finally { act(() => tree.unmount()); alert.mockRestore(); }
+});
+
+
+it('appends an imported photo to the current mixed diary without hiding existing cards', async () => {
+  useServiceTutorial.setState({ ...initialServiceProgress, active: false, step: 'finish', completed: ['comic', 'rhythm'] });
+  const existing = { id: 'mock-diary', date: '2026-11-17', title: 'Memories', characterId: COMIC_CHARACTERS[0].id, scenes: [newComicScene('Keep original')], createdAt: 1, updatedAt: 1 };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [existing], activeId: existing.id, migratedLegacyKeys: [] });
+  const ref = createRef<ComicDiaryHandle>();
+  const saved = jest.fn();
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<IndependentComicPlanner ref={ref} date="2026-11-17" ink="#222" muted="#888" isDark={false} onDiarySaved={saved} />); });
+  await act(async () => ref.current!.openPhotoEntry());
+  const uri = 'file:///Documents/hero-photos/photo-imported.jpg';
+  await act(async () => tree.root.findByType(HeroInlineComposer).props.onApply({ title: 'New photo', memo: '' }, uri));
+  const library = localStorageClient.getJson<DiaryState>(COMIC_DIARY_STORAGE_KEY)!;
+  expect(library.diaries).toHaveLength(1);
+  expect(library.activeId).toBe(existing.id);
+  expect(library.diaries[0].scenes).toHaveLength(2);
+  expect(library.diaries[0].scenes[0]).toEqual(existing.scenes[0]);
+  expect(library.diaries[0].scenes[1].artworkUri).toBe(uri);
+  expect(saved).toHaveBeenCalledWith(uri);
+  act(() => tree.unmount());
 });

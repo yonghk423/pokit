@@ -1,8 +1,9 @@
+import { matchesStoreAccess, type StoreAccessFilter } from '../model/storeAccessFilter';
 import { RETIRED_CALENDAR_DESIGNS } from '../model/retiredCalendarDesigns';
-import { FREE_PHOTO_CALENDARS, freePhotoCalendar } from '../model/freePhotoCalendars';
+import { PHOTO_CALENDARS, freePhotoCalendar } from '../model/freePhotoCalendars';
 import { FreePhotoCalendarPaper } from './FreePhotoCalendarPaper';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
-import { installedPaper, installPaper, storeDownloadErrorMessage } from '../lib/calendarStoreDownload';
+import { installedPaper, installPaper, installDiaryItem, diaryImages, storeDownloadErrorMessage } from '../lib/calendarStoreDownload';
 import { PremiumCalendarPaper, premiumPaperRatios } from './PremiumCalendarPaper';
 import { isPremiumPaper, premiumCalendarItems } from '../model/premiumCalendarPapers';
 import { ThemedText } from '@shared/ui/themed-text';
@@ -22,9 +23,11 @@ import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import { applyHeroCalendarDesign, useHeroCalendarDesign, useHeroCalendarCover, saveHeroCalendarCover } from '../model/heroCalendarDesign';
 import { groupCalendarDiaries } from '../lib/heroCalendar';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
+import { usePremiumPackPaywall } from './usePremiumPackPaywall';
 
 export const CALENDAR_DESIGNS = [
-  ...FREE_PHOTO_CALENDARS,
+  ...PHOTO_CALENDARS,
   { id: 'clipboard', name: 'Blue Clipboard', description: translateUiText("주황 보드와 파란 클립의 달력") },
   { id: 'bold', name: 'Bold Month', description: translateUiText("큰 월 제목과 여백이 있는 달력") },
   { id: 'photo', name: 'Photo Paper', description: translateUiText("한 장의 사진을 담은 달력") },
@@ -136,16 +139,18 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
   return frame(paper);
 }
 
-export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: ComicDiary[]; onSelectDate: (date: string) => void }) {
+export function HeroCalendarDesigns(props: { accessFilter?: StoreAccessFilter; month: Date; today: Date; diaries: ComicDiary[]; onSelectDate: (date: string) => void }) {
   const lock = useRef(false);
   const [downloading, setDownloading] = useState<string | null>(null);
   const selected = useHeroCalendarDesign() ?? 'bold';
+  const isPro = useSubscriptionStore(selectCanTestProStoreItems);
+  const paywall = usePremiumPackPaywall();
   const { width: windowWidth } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState<number | null>(null);
   const previewWidth = Math.max(1, Math.floor(((gridWidth ?? windowWidth - 40) - 24) / 3));
   const previewStageHeight = (previewWidth - 8) * 540 / 330 + 8;
   return <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-    <View onLayout={event => setGridWidth(event.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.filter(item => !RETIRED_CALENDAR_DESIGNS.has(item.id)).map(item => {
+    <View onLayout={event => setGridWidth(event.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22, alignItems: 'flex-start', justifyContent: 'flex-start' }}>{CALENDAR_DESIGNS.filter(item => !RETIRED_CALENDAR_DESIGNS.has(item.id) && matchesStoreAccess(props.accessFilter ?? 'all', !!(freePhotoCalendar(item.id) as { pro?: boolean } | undefined)?.pro)).map(item => {
       const previewLayoutWidth = previewWidth - 8;
       const previewLayoutHeight = previewLayoutWidth * (isPremiumPaper(item.id) ? premiumPaperRatios[item.id] : item.id === 'clipboard' ? 1340 / 914 : 540 / 330);
       // The clipboard artwork starts 25 reference pixels below its canvas.
@@ -153,13 +158,23 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
       const previewTop = item.id === 'clipboard' ? -(25 / 1340 * previewLayoutHeight + 3 / 330 * previewLayoutWidth) : 0;
       const downloadable = requiresCalendarDownload(item.id);
       const installed = downloadable && !!installedPaper(item.id);
-      const applied = selected === item.id && (!downloadable || installed);
-      const status = downloading === item.id ? translateUiText("다운로드 중") : applied ? translateUiText("적용 중") : downloadable ? installed ? translateUiText("무료 · 적용하기") : translateUiText("무료 · 다운로드") : translateUiText("무료");
+      const photoTheme = freePhotoCalendar(item.id);
+      const proTheme = !!photoTheme && 'pro' in photoTheme && photoTheme.pro;
+      const applied = selected === item.id && (!proTheme || (isPro && !!diaryImages(item.id)?.image)) && (!downloadable || installed);
+      const status = downloading === item.id ? translateUiText("다운로드 중") : applied ? translateUiText("적용 중") : proTheme ? (isPro ? 'Pro · 선택하기' : 'Pro') : downloadable ? installed ? translateUiText("무료 · 적용하기") : translateUiText("무료 · 다운로드") : translateUiText("무료");
       return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}, ${status}, ${item.description}`} accessibilityState={{ selected: selected === item.id, disabled: applied || !!downloading }} disabled={applied || !!downloading} onPress={async () => {
         if (lock.current) return;
         lock.current = true;
         try {
         tapHaptic('select');
+        if (proTheme && !isPro) {
+          const result = await paywall.present();
+          if ((result !== 'purchased' && result !== 'restored') || !selectCanTestProStoreItems(useSubscriptionStore.getState())) return;
+        }
+        if (proTheme) {
+          setDownloading(item.id);
+          await installDiaryItem(item.id);
+        }
         if (downloadable && !installed) {
           setDownloading(item.id);
           await installPaper(item.id);
@@ -176,6 +191,7 @@ export function HeroCalendarDesigns(props: { month: Date; today: Date; diaries: 
       <View style={styles.caption}><ThemedText style={styles.label}>{item.name}</ThemedText><ThemedText style={[styles.free, selected === item.id && { color: '#278B77' }]}>{status}</ThemedText></View>
     </Pressable>;
     })}</View>
+    {paywall.modal}
   </ScrollView>;
 }
 const styles = StyleSheet.create({

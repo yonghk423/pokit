@@ -4,10 +4,20 @@ import { Image } from 'react-native';
 // Rebuildable previews live outside Documents/backups. Serialize decoding so
 // opening a photo grid cannot decode dozens of full-resolution originals at once.
 const jobs = new Map<string, Promise<string>>();
+const resolved = new Map<string, string>();
+export const cachedPhotoPreview = (uri: string, maxEdge = 512) => resolved.get(`${maxEdge}:${uri}`);
+export function forgetPhotoPreview(uri: string, maxEdge = 512) { resolved.delete(`${maxEdge}:${uri}`); }
+function rememberPreview(key: string, source: string) {
+  resolved.delete(key);
+  resolved.set(key, source);
+  if (resolved.size > 256) resolved.delete(resolved.keys().next().value!);
+}
 let queue: Promise<unknown> = Promise.resolve();
 const root = () => `${fs.cacheDirectory}hero-previews-v1/`;
 export function photoPreview(uri: string, maxEdge = 512): Promise<string> {
   const jobKey = `${maxEdge}:${uri}`;
+  const ready = resolved.get(jobKey);
+  if (ready) return Promise.resolve(ready);
   const existing = jobs.get(jobKey);
   if (existing) return existing;
   const job = queue.catch(() => undefined).then(async () => {
@@ -36,10 +46,11 @@ export function photoPreview(uri: string, maxEdge = 512): Promise<string> {
         if (file.uri === destination || !file.info.exists) continue;
         await fs.deleteAsync(file.uri, { idempotent: true });
         total -= file.info.size;
+        for (const [key, source] of resolved) if (source === file.uri) resolved.delete(key);
       }
       return destination;
     } finally { await fs.deleteAsync(result.uri, { idempotent: true }).catch(() => undefined); }
-  }).catch(() => uri);
+  }).then(source => { if (source !== uri) rememberPreview(jobKey, source); return source; }).catch(() => uri);
   queue = job;
   jobs.set(jobKey, job);
   void job.finally(() => jobs.delete(jobKey));
@@ -48,5 +59,6 @@ export function photoPreview(uri: string, maxEdge = 512): Promise<string> {
 
 export async function clearHeroPhotoPreviews() {
   await queue;
+  resolved.clear();
   if (fs.cacheDirectory) await fs.deleteAsync(root(), { idempotent: true });
 }

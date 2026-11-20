@@ -1,3 +1,4 @@
+import { matchesStoreAccess, type StoreAccessFilter } from '../../src/pages/day-plan/model/storeAccessFilter';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { WARM_IVORY_PAPER } from '@shared/ui/app-wallpaper';
 import { useSyncExternalStore } from 'react';
@@ -160,6 +161,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const [moreDiaryCategories, setMoreDiaryCategories] = useState(false);
   const diaryCategoryScroll = useRef({ height: 170, content: 0, offset: 0 });
   const updateCategoryHint = () => { const { height, content, offset } = diaryCategoryScroll.current; setMoreDiaryCategories(offset <= 2 && content - height > 4); };
+  const [accessFilter, setAccessFilter] = useState<StoreAccessFilter>('all');
   const [diaryCategory, setDiaryCategory] = useState<ThemeSlot | 'wall' | 'background'>('clip');
   const wallpaper = useWallpaperStore(state => state.wallpaper);
   const setWallpaper = useWallpaperStore(state => state.setWallpaper);
@@ -214,7 +216,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
       <ThemedText numberOfLines={1} style={{ color: '#000000', fontSize: 13 }}>{label}</ThemedText>
     </Pressable>)}
   </View>;
-  const renderLegacyItems = (paidItems: boolean) => (diaryCategory === 'clip' ? DIARY_CLIPS.filter(item => item.pro === paidItems).map(({ id: clip, name, english, pro }) => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: !themedClip && selectedClip === clip }} onPress={() => { if (!themedClip && selectedClip === clip) { tapHaptic('select'); resetDiaryItem('clip'); } else void chooseItem('clip-' + clip, pro, () => applyHeroDiaryClip(clip)); }} style={{ width: diaryItemWidth, padding: 8, gap: 6 }}>
+  const renderLegacyItems = (paidItems: boolean) => !matchesStoreAccess(accessFilter, paidItems) ? null : (diaryCategory === 'clip' ? DIARY_CLIPS.filter(item => item.pro === paidItems).map(({ id: clip, name, english, pro }) => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: !themedClip && selectedClip === clip }} onPress={() => { if (!themedClip && selectedClip === clip) { tapHaptic('select'); resetDiaryItem('clip'); } else void chooseItem('clip-' + clip, pro, () => applyHeroDiaryClip(clip)); }} style={{ width: diaryItemWidth, padding: 8, gap: 6 }}>
             <HeroBlueClipPreview dark={isDark} clip={clip} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <ThemedText numberOfLines={1} adjustsFontSizeToFit style={{ color: ink, fontSize: 14, flexShrink: 1 }}>{locale === 'en' ? english : translateUiText(name)}</ThemedText>
@@ -254,7 +256,13 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
             </Pressable>;
           }) : null);
   return <View style={{ flex: 1, minHeight: 0 }}>
-    {view !== 'illustrationDiary' ? selector : null}
+    {view !== 'illustrationDiary' ? <>{selector}
+      <View accessibilityRole="tablist" style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 8 }}>
+        {(['all', 'free', 'pro'] as const).map(filter => <Pressable key={filter} testID={`store-access-${filter}`} accessibilityRole="tab" accessibilityState={{ selected: accessFilter === filter }} onPress={() => { tapHaptic('select'); setAccessFilter(filter); }} style={({ pressed }) => ({ minHeight: 40, minWidth: 70, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: accessFilter === filter || pressed ? '#FFFFFF' : '#EEEEEE', borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E2E2E2', borderBottomColor: '#DCDCDC', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: pressed ? 0.10 : 0.18, shadowRadius: pressed ? 3 : 7, elevation: pressed ? 2 : 6 })}>
+          <ThemedText style={{ fontSize: 13, color: '#242321', opacity: accessFilter === filter ? 1 : 0.55 }}>{filter === 'all' ? (locale === 'ko' ? '전체' : 'All') : filter === 'free' ? translateUiText('무료') : 'Pro'}</ThemedText>
+        </Pressable>)}
+      </View>
+    </> : null}
     {!storeArtwork ? <Pressable disabled={!storeArtworkFailed} onPress={retryStoreArtwork} accessibilityLabel={storeArtworkFailed ? translateUiText("이미지 다시 불러오기") : translateUiText("상품 준비 중")} style={{ margin: 24, height: 320, borderRadius: 20, backgroundColor: '#E6E5E1', justifyContent: 'center', alignItems: 'center' }}>{storeArtworkFailed ? <ThemedText>{translateUiText("이미지 다시 불러오기")}</ThemedText> : null}</Pressable> : view === 'diary'
       ? <View style={{ flex: 1, minHeight: 0 }}>
         <View style={{ flexShrink: 0 }}>
@@ -271,7 +279,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
           ? { paddingHorizontal: 12, paddingVertical: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }
           : { padding: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 12 }}>
           {renderLegacyItems(false)}
-          {diaryCategory === 'background' ? (['default', 'warm-ivory'] as const).map(id => <Pressable key={id} testID={`diary-background-${id}`} accessibilityRole="button" accessibilityState={{ selected: wallpaper === id }} onPress={() => { tapHaptic('select'); setWallpaper(id); }} style={{ width: diaryItemWidth, padding: 8, gap: 8 }}>
+          {diaryCategory === 'background' && matchesStoreAccess(accessFilter, false) ? (['default', 'warm-ivory'] as const).map(id => <Pressable key={id} testID={`diary-background-${id}`} accessibilityRole="button" accessibilityState={{ selected: wallpaper === id }} onPress={() => { tapHaptic('select'); setWallpaper(id); }} style={{ width: diaryItemWidth, padding: 8, gap: 8 }}>
             <View style={{ height: 100, borderRadius: 6, backgroundColor: '#F7F6F4', shadowColor: '#51463B', shadowOpacity: 0.16, shadowRadius: 5, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}>
               <View style={{ flex: 1, borderRadius: 6, overflow: 'hidden', borderWidth: 0.7, borderColor: '#D8D1C8' }}>{id === 'warm-ivory' ? <Image source={WARM_IVORY_PAPER} resizeMode="cover" style={{ width: '100%', height: '100%' }} /> : null}</View>
             </View>
@@ -282,7 +290,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
             <View testID="wall-photo-wall-gallery" style={{ gap: 16 }}>
               <ThemedText accessibilityRole="header" style={{ color: ink, fontSize: 16 }}>{translateUiText("포토월")}</ThemedText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 12 }}>
-              {(['none', 'aligned', 'black'] as const).map(style => {
+              {(['none', 'aligned', 'black'] as const).filter(() => matchesStoreAccess(accessFilter, false)).map(style => {
                 const selected = !themedWall && photoWall === style;
                 const name = style === 'aligned' ? (locale === 'ko' ? '정렬 배치' : 'Aligned Layout') : style === 'none' ? (translateUiText("자유 배치")) : (locale === 'ko' ? '체리 리본 포토월' : 'Cherry Ribbon Photo Wall');
                 return <Pressable key={style} testID={style === 'none' ? 'diary-item-no-photo-wall' : style === 'aligned' ? 'diary-item-aligned-photo-wall' : 'diary-item-black-photo-wall'} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); if (selected) resetDiaryItem('photoWall'); else applyHeroPhotoWall(style); }} style={{ width: diaryItemWidth, padding: 7, gap: 5, borderRadius: 12, backgroundColor: selected ? '#F8F8FA' : 'transparent' }}>
@@ -291,16 +299,16 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
                   <ThemedText style={{ color: selected ? '#278B77' : ink, opacity: selected ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{selected ? (translateUiText("적용 중")) : (translateUiText("무료"))}</ThemedText>
                 </Pressable>;
               })}
-              <DiaryThemeGallery itemWidth={diaryItemWidth} choose={chooseItem} status={itemStatus} category="photoWall" ko={locale === 'ko'} ink={ink} />
+              <DiaryThemeGallery accessFilter={accessFilter} itemWidth={diaryItemWidth} choose={chooseItem} status={itemStatus} category="photoWall" ko={locale === 'ko'} ink={ink} />
             </View>
             </View>
           </View>}
-          {diaryCategory !== 'wall' && diaryCategory !== 'background' && <DiaryThemeGallery itemWidth={diaryCategory === 'trash' ? Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 24 - 16) / 3)) : diaryItemWidth} choose={chooseItem} status={itemStatus} category={diaryCategory} ko={locale === 'ko'} ink={ink} />}
+          {diaryCategory !== 'wall' && diaryCategory !== 'background' && <DiaryThemeGallery accessFilter={accessFilter} itemWidth={diaryCategory === 'trash' ? Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 24 - 16) / 3)) : diaryItemWidth} choose={chooseItem} status={itemStatus} category={diaryCategory} ko={locale === 'ko'} ink={ink} />}
           {renderLegacyItems(true)}
         </ScrollView>
       </View>
       : view === 'calendar'
-      ? <View style={{ flex: 1, minHeight: 0 }}><HeroCalendarDesigns today={today} month={month} diaries={diaries} onSelectDate={openDate} /></View>
+      ? <View style={{ flex: 1, minHeight: 0 }}><HeroCalendarDesigns accessFilter={accessFilter} today={today} month={month} diaries={diaries} onSelectDate={openDate} /></View>
       : view === 'illustrationGallery'
       ? <View style={{ flex: 1, minHeight: 0 }}>
         <View testID="illustration-calendar-categories" accessibilityRole="tablist" style={{ alignSelf: 'center', flexDirection: 'row', gap: 12, paddingVertical: 12 }}>
@@ -313,7 +321,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
           })}
         </View>
         <ScrollView key={illustrationCategory} testID="illustration-calendar-gallery" onLayout={({ nativeEvent: { layout } }) => setIllustrationGalleryWidth(previous => previous === layout.width ? previous : layout.width)} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 20, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }}>
-          {illustrationGalleryWidth !== null && illustrationPacks.map(pack => <CalendarPackStore key={pack} pack={pack} width={calendarThemeWidth} month={month} dark={isDark} />)}
+          {illustrationGalleryWidth !== null && illustrationPacks.filter(pack => matchesStoreAccess(accessFilter, (pack.startsWith('season-') || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack))).map(pack => <CalendarPackStore key={pack} pack={pack} width={calendarThemeWidth} month={month} dark={isDark} />)}
         </ScrollView>
       </View>
       : <View testID="illustration-diary-calendar" style={{ flex: 1, minHeight: 0, backgroundColor: '#F7F6F4' }} onLayout={({ nativeEvent: { layout } }) => setIllustrationCanvas(old => old.width === layout.width && old.height === layout.height ? old : { width: layout.width, height: layout.height })}>

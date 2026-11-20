@@ -26,7 +26,7 @@ const labels: Record<AppLocale, string[]> = {
   'zh-TW': ['慢慢開始的早晨', '專注的上午', '午餐後的小歇', '午後遇見的風景', '留給自己的夜晚', '睡前的紀錄'],
 };
 const CALENDAR_MOCK_CHARACTER_VERSION_KEY = 'pokit:calendar-mock-character-version';
-const CALENDAR_MOCK_CHARACTER_VERSION = '10';
+const CALENDAR_MOCK_CHARACTER_VERSION = '11';
 /** Stable dated photo diary fixtures with long entries and fullbleed artwork. */
 export function buildCalendarMockDiaries(locale: AppLocale, date: string): ComicDiary[] {
   const month = date.slice(0, 7);
@@ -66,6 +66,43 @@ export function buildCalendarMockDiaries(locale: AppLocale, date: string): Comic
     };
   }));
 }
+/** A small set of older photo months makes the development archive scrollable. */
+function buildArchiveMockDiaries(locale: AppLocale, date: string): ComicDiary[] {
+  const diaries: ComicDiary[] = [];
+  const characterIndex = MOCK_PROTAGONISTS.findIndex(item => item.id === 'protagonist-6');
+  const character = getMockProtagonist(characterIndex);
+  const characterScenes = getMockSceneImages(character.id);
+  let cursor = addDaysToLocalDateKey(`${date.slice(0, 7)}-01`, -1);
+
+  // Keep the current and previous month as-is, then add six compact older months.
+  for (let monthOffset = 0; monthOffset < 6; monthOffset += 1) {
+    cursor = addDaysToLocalDateKey(`${cursor.slice(0, 7)}-01`, -1);
+    const month = cursor.slice(0, 7);
+    for (const [entry, dayNumber] of [5, 19].entries()) {
+      const day = `${month}-${String(dayNumber).padStart(2, '0')}`;
+      const id = `mock-calendar:${locale}:${day}:archive:${entry}`;
+      const artworkIndex = monthOffset * 2 + entry;
+      const timestamp = new Date(`${day}T${String(10 + entry * 4).padStart(2, '0')}:15:00`).getTime();
+      const [title, memo] = mockCopy[locale].scenes[(monthOffset * 2 + entry) % mockCopy[locale].scenes.length];
+      diaries.push({
+        id,
+        title: `${day.slice(5).replace('-', '/')} · ${labels[locale][(monthOffset + entry) % labels[locale].length]}`,
+        characterId: character.id,
+        characterName: getMockProtagonistName(characterIndex, locale),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        scenes: [{
+          id: `${id}:scene:0`, title, memo,
+          image: characterScenes[artworkIndex % characterScenes.length]!,
+          artworkUri: developmentArtworkUriAt(artworkIndex),
+          time: `${String(10 + entry * 4).padStart(2, '0')}:15`,
+          paper: '#FFFFFF', pen: '#252822', todos: [],
+        }],
+      });
+    }
+  }
+  return diaries;
+}
 /** Keep existing mock calendar records and refresh only their character artwork once. */
 export function addDevelopmentCalendarMockData(date = getLocalDateKey()): boolean {
   if (!__DEV__) return false;
@@ -73,7 +110,7 @@ export function addDevelopmentCalendarMockData(date = getLocalDateKey()): boolea
   if (!locale) return false;
   const library = localStorageClient.getJson<ComicDiaryLibrary>(COMIC_DIARY_STORAGE_KEY);
   if (!Array.isArray(library?.diaries)) return false;
-  const samples = buildCalendarMockDiaries(locale, date);
+  const samples = [...buildCalendarMockDiaries(locale, date), ...buildArchiveMockDiaries(locale, date)];
   const sampleById = new Map(samples.map(diary => [diary.id, diary]));
   const datasetVersion = `${CALENDAR_MOCK_CHARACTER_VERSION}:${date}`;
   const upgrade = localStorageClient.getItemRaw(CALENDAR_MOCK_CHARACTER_VERSION_KEY) !== datasetVersion;

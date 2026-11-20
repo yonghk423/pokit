@@ -1,11 +1,16 @@
+import { generatedMockPortraitName } from './mockArtworkFiles';
 import * as fs from 'expo-file-system/legacy';
 
 /** iOS can move the app container during installation; Documents contents survive. */
 export function resolveHeroArtworkUri(uri: string): string {
   if (!fs.documentDirectory || !uri.startsWith('file://')) return uri;
+  if (__DEV__) {
+    const generated = generatedMockPortraitName(uri);
+    if (generated) return fs.documentDirectory + 'hero-photos/' + generated;
+  }
   const scene = /\/Documents\/(character-packs\/protagonist-7\/p7-01\.webp)$/.exec(uri);
   if (scene) return `${fs.documentDirectory}${scene[1]}`;
-  const photo = /\/Documents\/(hero-photos\/photo-[a-zA-Z0-9-]+\.(?:jpe?g|png|heic|heif|webp|gif|avif))$/i.exec(uri);
+  const photo = /\/Documents\/(hero-photos\/(?:photo-|selected-(?:v2|ai-v1|unsplash-v[12])-)[a-zA-Z0-9-]+\.(?:jpe?g|png|heic|heif|webp|gif|avif))$/i.exec(uri);
   if (photo) return `${fs.documentDirectory}${photo[1]}`;
   const calendarCover = /\/Documents\/(calendar-covers\/\d{4}-\d{2}-\d+\.(?:jpe?g|png|heic|heif|webp|gif|avif))$/i.exec(uri);
   if (calendarCover) return `${fs.documentDirectory}${calendarCover[1]}`;

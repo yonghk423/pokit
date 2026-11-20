@@ -84,8 +84,8 @@ const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 export function readHeroCalendarDesign(): HeroCalendarDesign {
   const saved = localStorageClient.getJson<string>(KEY);
-  if (saved && RETIRED_CALENDAR_DESIGNS.has(saved)) return 'bold';
-  return freePhotoCalendar(saved) || isPremiumPaper(saved) || saved === 'clipboard' || saved === 'bold' || saved === 'photo' || saved === 'weather' || CITY_CALENDAR_THEMES.some(theme => theme.design === saved) ? saved as HeroCalendarDesign : 'bold';
+  if (saved && RETIRED_CALENDAR_DESIGNS.has(saved)) return 'cream-kitten';
+  return freePhotoCalendar(saved) || isPremiumPaper(saved) || saved === 'clipboard' || saved === 'bold' || saved === 'photo' || saved === 'weather' || CITY_CALENDAR_THEMES.some(theme => theme.design === saved) ? saved as HeroCalendarDesign : 'cream-kitten';
 }
 export function applyHeroCalendarDesign(design: HeroCalendarDesign) {
   localStorageClient.setJson(KEY, design);

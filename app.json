@@ -4,11 +4,11 @@
     "slug": "pokit",
     "version": "2.2.5",
     "orientation": "portrait",
-    "icon": "./assets/app-icon4-inset.png",
+    "icon": "./assets/daylight-photo-calendar-icon.png",
     "scheme": "pokit",
     "userInterfaceStyle": "automatic",
     "notification": {
-      "icon": "./assets/app-icon4-inset.png",
+      "icon": "./assets/daylight-photo-calendar-icon.png",
       "color": "#000000"
     },
     "newArchEnabled": true,
@@ -51,7 +51,7 @@
       "versionCode": 132,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/app-icon4-inset.png"
+        "foregroundImage": "./assets/daylight-photo-calendar-icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -62,7 +62,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/app-icon4-inset.png"
+      "favicon": "./assets/daylight-photo-calendar-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -111,7 +111,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/app-icon4-inset.png",
+          "icon": "./assets/daylight-photo-calendar-icon.png",
           "color": "#000000",
           "defaultChannel": "default"
         }

@@ -8,9 +8,15 @@ it('spreads the selected photo fixtures across the Korean calendar with durable 
   expect(new Set(scenes.map(scene => scene.image)).size).toBe(50);
   for (const scene of scenes) {
     expect(MOCK_DIARY_ARTWORK.some(photo => developmentArtworkUri(photo.sceneId) === scene.artworkUri)).toBe(true);
-    expect(scene.artworkUri).toContain('/hero-photos/selected-v2-');
+    expect(scene.artworkUri).toMatch(/\/hero-photos\/selected-(?:v2|ai-v1)-/);
     expect(scene.artworkUri).toMatch(/\.webp$/);
   }
+});
+
+it('uses fresh AI portrait paths for all fifty portrait slots', () => {
+  const portraits = MOCK_DIARY_ARTWORK.filter(photo => 'generatedPortrait' in photo);
+  expect(portraits).toHaveLength(50);
+  for (const portrait of portraits) expect(developmentArtworkUri(portrait.sceneId)).toContain('/hero-photos/selected-ai-v1-');
 });
 
 it.each([['2026-11-19', 30], ['2027-02-01', 28], ['2028-02-01', 29]])(

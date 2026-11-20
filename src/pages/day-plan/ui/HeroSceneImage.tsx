@@ -1,5 +1,4 @@
 import { ensurePremiumScene } from '../lib/heroPremiumPack';
-import { mockPortraitBlurRadius } from '../lib/mockPortraitBlur';
 import { photoPreview } from '../lib/heroPhotoPreview';
 import { Image, type ImageProps } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
@@ -144,7 +143,7 @@ function ComicImageSession({ source, fallbackSource, imageKey, style, priority =
   }}>
     <View style={[StyleSheet.absoluteFill, { opacity: ready ? 1 : 0 }]} pointerEvents="none">
     {fillPortrait && !fitToCard && portrait ? <Image testID="comic-image-portrait-backdrop" source={resolvedSource} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} useAppleWebpCodec={false} cachePolicy="memory" accessible={false} /> : null}
-    {!waitingForPreview && sceneReady ? <Image key={key} blurRadius={mockPortraitBlurRadius(originalIdentity ?? undefined)} source={decodeSource} recyclingKey={key}
+    {!waitingForPreview && sceneReady ? <Image key={key} source={decodeSource} recyclingKey={key}
       style={[StyleSheet.absoluteFill, waitingForSize && { opacity: 0 }, portraitFrame ?? (cropCardPadding && paddedCardFrame)]} contentFit={portraitFrame ? 'fill' : resolvedFit} contentPosition={originalPhoto ? 'center' : contentPosition ?? (fitToCard && portrait ? 'top' : undefined)}
       useAppleWebpCodec={false} cachePolicy={attempt > 0 || reload > 0 ? 'none' : /^https?:/.test(identity) ? 'memory-disk' : 'memory'}
       allowDownscaling enforceEarlyResizing priority={priority} transition={0}

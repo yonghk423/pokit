@@ -1,3 +1,4 @@
+import { matchesStoreAccess, type StoreAccessFilter } from '../model/storeAccessFilter';
 import { BASIC_STORE_THUMBNAILS } from '../lib/basicStoreThumbnails';
 import { useTranslation } from '@shared/lib/i18n';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
@@ -17,8 +18,8 @@ function StoreItemThumbnail({ source, style }: { source: number; style?: StylePr
   </View>;
 }
 
-export function DiaryThemeGallery({ category, ink, choose, status, itemWidth }: {
-  itemWidth?: number; category: ThemeSlot; ko: boolean; ink: string;
+export function DiaryThemeGallery({ category, ink, choose, status, itemWidth, accessFilter = 'all' }: {
+  accessFilter?: StoreAccessFilter; itemWidth?: number; category: ThemeSlot; ko: boolean; ink: string;
   choose: (id: string, pro: boolean, apply: () => void) => Promise<void>;
   status: (id: string) => string;
 }) {
@@ -26,7 +27,7 @@ export function DiaryThemeGallery({ category, ink, choose, status, itemWidth }: 
   const active = useDiaryTheme(category);
   const clearSelection = () => resetDiaryItem(category);
   return <>
-    {classicDiaryCatalog.filter(item => item.category === category).map(item => {
+    {classicDiaryCatalog.filter(item => item.category === category && matchesStoreAccess(accessFilter, false)).map(item => {
       const selected = active?.id === item.id;
       const title = locale === 'en' ? item.titleEn : item.title;
       return <Pressable key={item.id} testID={'diary-item-' + item.id} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ selected }} onPress={() => selected ? clearSelection() : void choose(item.id, false, () => applyTheme(item, category))} style={{ width: itemWidth ?? '33.33%', alignItems: 'center', padding: 6, marginBottom: 16 }}>
@@ -40,7 +41,7 @@ export function DiaryThemeGallery({ category, ink, choose, status, itemWidth }: 
         <ThemedText style={{ color: selected ? '#278B77' : ink, fontSize: 12 }}>{selected ? (translateUiText("적용 중")) : (translateUiText("무료"))}</ThemedText>
       </Pressable>;
     })}
-    {proDiaryCatalog.filter(item => item.category === category).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt)).map(item => {
+    {proDiaryCatalog.filter(item => item.category === category && matchesStoreAccess(accessFilter, true)).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt)).map(item => {
       const selected = active?.id === item.id;
       const title = locale === 'en' ? item.titleEn : item.title;
       return <Pressable key={item.id} testID={'diary-item-' + item.id} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ selected }} onPress={() => selected ? clearSelection() : void choose(item.id, true, () => applyTheme(item, category))} style={{ width: itemWidth ?? '33.33%', alignItems: 'center', padding: 6, marginBottom: 16 }}>

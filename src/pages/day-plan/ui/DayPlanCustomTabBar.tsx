@@ -159,7 +159,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="tab"
                 testID={`hero-tab-${tab.route}`}
                 accessibilityState={{ selected: isFocused && !photoSelected }}
-                accessibilityLabel={tab.route === 'history' ? 'Photo' : tab.route === 'index' ? 'Diary' : tab.route === 'calendar' ? 'Store' : t(tab.labelKey)}
+                accessibilityLabel={tab.route === 'history' ? 'Archive' : tab.route === 'index' ? 'Diary' : tab.route === 'calendar' ? 'Store' : t(tab.labelKey)}
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   if (tab.route === 'index' && characterPicker) {
@@ -174,7 +174,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
                   { width: itemWidth },
                   pressed && { opacity: 0.8 },
                 ]}>
-                {tab.route === 'calendar' || tab.route === 'history' || tab.route === 'index' ? <ThemedText numberOfLines={1} style={{ fontSize: tab.route === 'calendar' ? 16 : 20, lineHeight: 28, color: isFocused && !photoSelected ? (theme ? '#412D27' : colors.selectedText) : colors.text, textAlign: 'center' }}>{tab.route === 'history' ? 'Photo' : tab.route === 'calendar' ? 'Store' : 'Diary'}</ThemedText> : <Image source={tab.icon!} style={[styles.icon, { tintColor: isFocused ? colors.selectedIcon : colors.icon }]} resizeMode="contain" />}
+                {tab.route === 'calendar' || tab.route === 'history' || tab.route === 'index' ? <ThemedText numberOfLines={1} style={{ fontSize: tab.route === 'calendar' ? 16 : 20, lineHeight: 28, color: isFocused && !photoSelected ? (theme ? '#412D27' : colors.selectedText) : colors.text, textAlign: 'center' }}>{tab.route === 'history' ? 'Archive' : tab.route === 'calendar' ? 'Store' : 'Diary'}</ThemedText> : <Image source={tab.icon!} style={[styles.icon, { tintColor: isFocused ? colors.selectedIcon : colors.icon }]} resizeMode="contain" />}
               </TabButton>{tab.route === 'index' && FEATURE_FLAGS.heroAiCameraTab ? <>
                 <TabButton
                   testID="hero-ai-mode-tab"

@@ -1,10 +1,11 @@
+import type { PolaroidDraft } from './HeroPolaroidEditor';
 import { applyPolaroidDraft } from '../lib/applyPolaroidDraft';
 import { HeroPhotoImportPending, type ImportedHeroPhoto } from './HeroPhotoImportPreview';
 import { launchImageLibraryAsync, UIImagePickerPresentationStyle } from 'expo-image-picker';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { CloseIcon } from '@shared/ui/icon-symbol/CloseIcon';
 import { HeroGeneratedArtworkPicker } from './HeroGeneratedArtworkPicker';
-import { loadHeroOriginalPhotoLibrary } from '../lib/heroOriginalPhoto';
+import { saveHeroOriginalPhoto, loadHeroOriginalPhotoLibrary } from '../lib/heroOriginalPhoto';
 import { loadHeroAiLibrary, type HeroAiLibraryImage } from '../lib/heroAiLibrary';
 import { useHeroTabArtwork } from '../model/heroTabArtwork';
 import { HeroCharacterPickerOverlay } from './HeroCharacterPickerOverlay';
@@ -379,7 +380,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     const duplicate = next.diaries.find(value => comicDiaryDate(value) === props.date && value.scenes.some(scene => scene.artworkUri === uri));
     const isOriginalPhoto = /\/hero-photos\/photo-[a-zA-Z0-9-]+\./i.test(uri);
     if (!duplicate && isOriginalPhoto) {
-      const target = next.diaries.find(value => value.id === inline?.diaryId && value.artworkCollection === 'original' && comicDiaryDate(value) === props.date)
+      const target = next.diaries.find(value => value.id === inline?.diaryId && comicDiaryDate(value) === props.date)
         ?? next.diaries.find(value => value.artworkCollection === 'original' && comicDiaryDate(value) === props.date);
       const personalName = t('comicDay.photo.originalTitle');
       if (target) {
@@ -465,7 +466,7 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
       onRename={(id, title) => commit(updateComicDiary(library, id, { title }))} onDelete={id => removeMany([id])} onDeleteMany={removeMany} /> : null}
   </View></TutorialGuideLayer>;
 });
-function CharacterComicPlanner({ pendingPrintUri, overviewOpen, onOverviewChange, date, writingSceneId, onWritingOpened, focusSceneId, ink, muted, isDark, character, diary, onUpdate, onSelectCharacter, hideCharacterHeading, onOpenBag, onAddCharacter, onAddOriginalPhoto, onOpenCameraAlbum, additionCharacter, onActiveSceneChange, onAdditionComplete }: PlannerProps & { writingSceneId?: string | null; onWritingOpened: () => void; focusSceneId?: string | null; onAdditionComplete: () => void; onActiveSceneChange?: (id: string) => void; onAddCharacter: () => void; onAddOriginalPhoto: () => void; onOpenCameraAlbum: () => void; additionCharacter: ComicCharacter | null; diary: ComicDiary; onUpdate: (scenes: ComicDayScene[]) => void; character: ComicCharacter; onSelectCharacter: () => void }) {
+function CharacterComicPlanner({ onDiarySaved, pendingPrintUri, overviewOpen, onOverviewChange, date, writingSceneId, onWritingOpened, focusSceneId, ink, muted, isDark, character, diary, onUpdate, onSelectCharacter, hideCharacterHeading, onOpenBag, onAddCharacter, onAddOriginalPhoto, onOpenCameraAlbum, additionCharacter, onActiveSceneChange, onAdditionComplete }: PlannerProps & { writingSceneId?: string | null; onWritingOpened: () => void; focusSceneId?: string | null; onAdditionComplete: () => void; onActiveSceneChange?: (id: string) => void; onAddCharacter: () => void; onAddOriginalPhoto: () => void; onOpenCameraAlbum: () => void; additionCharacter: ComicCharacter | null; diary: ComicDiary; onUpdate: (scenes: ComicDayScene[]) => void; character: ComicCharacter; onSelectCharacter: () => void }) {
   const { t } = useTranslation();
   const scenes = diary.scenes;
   const addingGenerated = useRef(false);
@@ -499,6 +500,19 @@ function CharacterComicPlanner({ pendingPrintUri, overviewOpen, onOverviewChange
   const patch = (id: string, fields: Partial<ComicDayScene>) => {
     update(scenes.map(scene => scene.id === id ? { ...scene, ...fields } : scene));
 
+  };
+  const uploadEditedPhoto = async (scene: ComicDayScene, draft: PolaroidDraft) => {
+    const fields = await applyPolaroidDraft(draft, scene.originalArtworkUri ?? scene.artworkUri);
+    if (!fields.artworkUri) throw new Error('missing_image');
+    // A separate file also gives the camera animation a unique print identity.
+    const uri = await saveHeroOriginalPhoto(fields.artworkUri);
+    const added = { ...newComicScene(draft.title), ...fields, image: scene.image, artworkUri: uri };
+    update([...scenes, added]);
+    await flushLocalStorageClientWrites();
+    setPhotoId(null);
+    setSelectedId(null);
+    onOverviewChange?.(true);
+    onDiarySaved?.(uri);
   };
   const open = (id: string) => {
     setPhotoId(id);
@@ -549,7 +563,7 @@ function CharacterComicPlanner({ pendingPrintUri, overviewOpen, onOverviewChange
 
   const hasWallpaper = useWallpaperStore(state => !!state.wallpaper);
   return <View style={{ flex: 1, backgroundColor: !hasWallpaper && isDark ? '#262B28' : 'transparent' }}>
-    {photo ? <HeroImageActions initialDraft={photo.polaroidSettings} onSaveDraft={async draft => { patch(photo.id, await applyPolaroidDraft(draft, photo.originalArtworkUri ?? photo.artworkUri)); }} onDelete={() => removeScene(photo.id)} key={photo.id} onSaveText={text => patch(photo.id, text)} editorOnly onEditorClose={() => setPhotoId(null)} uri={photo.originalArtworkUri ?? photo.artworkUri} source={(COMIC_SCENES.find(scene => scene.id === photo.image) ?? character.scenes[0]).source} title={photo.title} memo={photo.memo} paper={photo.paper} pen={photo.pen} fontId={photo.fontId} exportDate={comicDiaryDate(diary) ?? date} /> : null}
+    {photo ? <HeroImageActions initialDraft={photo.polaroidSettings} onSaveDraft={draft => uploadEditedPhoto(photo, draft)} onDelete={() => removeScene(photo.id)} key={photo.id} onSaveText={text => patch(photo.id, text)} editorOnly onEditorClose={() => setPhotoId(null)} uri={photo.originalArtworkUri ?? photo.artworkUri} source={(COMIC_SCENES.find(scene => scene.id === photo.image) ?? character.scenes[0]).source} title={photo.title} memo={photo.memo} paper={photo.paper} pen={photo.pen} fontId={photo.fontId} exportDate={comicDiaryDate(diary) ?? date} /> : null}
     {!selected ? <ServiceTutorialCoach steps={['comicTools', 'comicOpen', 'comicMemo', 'comicTask', 'comicCheck', 'comicSuccess']} /> : null}
     <ComicDayBoard overviewOpen={overviewOpen} onOverviewChange={onOverviewChange} focusSceneId={focusSceneId} onActiveSceneChange={onActiveSceneChange} onOpenBag={onOpenBag} character={character} sceneLibrary={character.scenes} detailOpen={!!selected} hideCharacterHeading={hideCharacterHeading} diaryTitle={diary.title} onSelectCharacter={onSelectCharacter} items={scenes.filter(scene => !pendingPrintUri || scene.artworkUri !== pendingPrintUri).map(scene => ({ key: scene.id, label: scene.title, memo: scene.memo, artworkUri: scene.artworkUri, exportDate: comicDiaryDate(diary) ?? date, icon: '', faceColor: scene.paper, inkColor: scene.pen, fontId: scene.fontId, photoFit: scene.polaroidSettings?.photoFit }))}
       ink={ink} muted={muted} isDark={isDark} choices={Object.fromEntries(scenes.map(scene => [scene.id, scene.image]))}
@@ -570,7 +584,7 @@ function CharacterComicPlanner({ pendingPrintUri, overviewOpen, onOverviewChange
     {selected ? <HeroImageActions
       key={`detail-editor:${selected.id}`}
       initialDraft={selected.polaroidSettings}
-      onSaveDraft={async draft => { patch(selected.id, await applyPolaroidDraft(draft, selected.originalArtworkUri ?? selected.artworkUri)); }}
+      onSaveDraft={draft => uploadEditedPhoto(selected, draft)}
       onDelete={() => removeScene(selected.id)}
       editorOnly
       onEditorClose={finishClose}

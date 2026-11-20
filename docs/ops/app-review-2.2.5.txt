@@ -1,0 +1,21 @@
+Daylight Pro subscription review
+
+No app account or sign-in is required. An internet connection is required to load subscription products, complete purchases, restore purchases, and download Pro content.
+
+How to access the subscription screen:
+1. Open the app and complete the introductory screens if shown.
+2. Open Settings from the main screen.
+3. Tap "Start Pro" to open the Pro screen.
+4. Select Monthly or Yearly, then tap "Subscribe" to open the Apple purchase sheet.
+
+Products:
+- monthly: Daylight Pro Monthly, auto-renewing, 1 month.
+- yearly: Daylight Pro Yearly, auto-renewing, 1 year.
+Both plans provide the same Daylight Pro benefits; only the billing period differs. Pro includes premium illustration calendar packs and Pro film filters. The app also includes free calendar designs and free filters.
+
+Restore: Tap "Restore purchases" at the bottom of the Pro screen, or use Restore purchases in Settings.
+Manage or change plan: For an active subscriber, open the Pro screen and tap "Manage subscription / Change plan" to open Apple subscription management.
+
+The Pro screen displays the localized App Store price and billing period. Terms of Use and Privacy Policy links are available at the bottom of that screen.
+
+Photo library and calendar permissions are only needed for the related optional features; they are not required to open the subscription screen.

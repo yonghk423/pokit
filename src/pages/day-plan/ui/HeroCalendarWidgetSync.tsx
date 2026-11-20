@@ -1,5 +1,6 @@
 import { subscribeCalendarPlanner } from '../model/calendarPlannerUpdates';
 import { isPremiumPaper } from '../model/premiumCalendarPapers';
+import { isPhotoCalendar } from '../model/freePhotoCalendars';
 import { CalendarWidgetRenderReadyContext } from '../model/calendarWidgetRenderReady';
 import { getLoadedIllustrationCalendarAssets } from '../lib/illustrationCalendarAssets';
 import { useCallback, useEffect, useRef } from 'react';
@@ -86,7 +87,7 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
         return <View key={family} ref={view => { targets.current[family] = view; }} collapsable={false} style={{ width: 330, height, backgroundColor: '#FAFAF6', overflow: 'hidden' }}>
           {theme || design === 'illustration'
             ? <HeroIllustrationCalendar widget themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={height} month={month} today={today} diaries={diaries} eventDates={eventDates} onSelectDate={() => undefined} />
-            : <CalendarPaper widgetSize={family} design={isPremiumPaper(design) || design === 'clipboard' || design === 'photo' || design === 'grid' || design === 'weather' ? design : 'bold'} month={month} today={today} diaries={diaries} eventDates={eventDates} layoutWidth={330} layoutHeight={height} />}
+            : <CalendarPaper widgetSize={family} design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'photo' || design === 'grid' || design === 'weather' ? design : 'bold'} month={month} today={today} diaries={diaries} eventDates={eventDates} layoutWidth={330} layoutHeight={height} />}
         </View>;
       })}
     </CalendarWidgetRenderReadyContext.Provider>

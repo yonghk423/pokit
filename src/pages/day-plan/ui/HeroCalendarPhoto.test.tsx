@@ -41,3 +41,24 @@ it('loads a local calendar thumbnail before displaying the photo and falls back 
     act(() => tree.unmount());
   }
 });
+
+it('attaches a cached thumbnail immediately when returning to a remounted calendar', () => {
+  const previews = require('../lib/heroPhotoPreview') as typeof import('../lib/heroPhotoPreview');
+  const original = 'file:///Documents/hero-photos/return.jpg';
+  const thumb = 'file:///Caches/return.webp';
+  const cache = jest.spyOn(previews, 'cachedPhotoPreview').mockReturnValue(thumb);
+  const lookup = jest.spyOn(previews, 'photoPreview').mockReturnValue(new Promise(() => {}));
+  let tree!: ReactTestRenderer;
+  const image = () => tree.root.findAll(node => !!node.props.onDisplay && !!node.props.source)[0];
+  try {
+    act(() => { tree = create(<HeroCalendarPhoto uri={original} />); });
+    expect(image().props.source.uri).toBe(thumb);
+    act(() => image().props.onDisplay());
+    act(() => tree.unmount());
+    act(() => { tree = create(<HeroCalendarPhoto uri={original} />); });
+    expect(image().props.source.uri).toBe(thumb);
+    expect(tree.root.findAllByProps({ testID: 'calendar-photo-skeleton' })).toHaveLength(0);
+  } finally {
+    act(() => tree.unmount()); cache.mockRestore(); lookup.mockRestore();
+  }
+});

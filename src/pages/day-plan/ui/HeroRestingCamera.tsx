@@ -23,7 +23,9 @@ export function HeroRestingCamera({ dark = false, raised = false, onPhotoWall = 
   // Decorative cameras have a taller, centered silhouette than the base camera.
   const foot = theme ? { x: 37.5, y: 49.5, radius: 15, angle: 0 } : cameraFootprints[cameraStyle];
   const levelMiniEvo = !theme && onPhotoWall && cameraStyle === 'mini-evo';
-  return <HeroCameraMotion active={active} cameraId={theme?.id ?? cameraStyle}><View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
+  const compactMiniEvo = !theme && cameraStyle === 'mini-evo';
+  // Scale the complete camera around its contact point to keep it grounded.
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, compactMiniEvo && { transform: [{ scale: 0.88 }], transformOrigin: ['48%', '80.19%', 0] }]}><HeroCameraMotion active={active} cameraId={theme?.id ?? cameraStyle}><View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
     <Svg width="100%" height="100%" viewBox="0 0 75 53" style={StyleSheet.absoluteFill}>
       <Defs>
         <RadialGradient id="duvet-camera-cast" cx="50%" cy="50%" rx="50%" ry="50%">
@@ -42,5 +44,5 @@ export function HeroRestingCamera({ dark = false, raised = false, onPhotoWall = 
     </Svg>
     <Image testID="hero-duvet-camera-image" source={theme?.source ?? appliedCamera} contentFit="contain" cachePolicy="memory-disk" transition={0} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }, levelMiniEvo && { transform: [{ rotate: '2deg' }, { perspective: 220 }, { rotateY: '-6deg' }] }]} />
     {active && <HeroCameraPrintLight testID="hero-camera-print-light" width={75} height={53} />}
-  </View></HeroCameraMotion>;
+  </View></HeroCameraMotion></View>;
 }

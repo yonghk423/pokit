@@ -6,7 +6,6 @@ import Svg, { Rect, Line, Ellipse, Defs, LinearGradient, Stop } from 'react-nati
 import { type PremiumPaper, premiumPapers, isRaisedCalendar } from '../model/premiumCalendarPapers';
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
-import { CalendarPlannerNotes } from './CalendarPlannerNotes';
 import { HeroCalendarPhoto } from './HeroCalendarPhoto';
 import { groupCalendarDiaries } from '../lib/heroCalendar';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
@@ -29,9 +28,7 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   const availableWidth = width * (!miniature && !widgetSize ? compactKraft ? 0.98 : 0.94 : 1 / (1 + 2 * shadowRatio));
   const paperWidth = Math.min(availableWidth, height ? height / (ratio + 2 * shadowRatio) : availableWidth);
   const naturalHeight = paperWidth * ratio;
-  const expandMemo = !miniature && !widgetSize && height != null && (design === 'mint-planner' || design === 'spiral-plan');
-  const paperHeight = expandMemo ? Math.max(naturalHeight, height - 2 * paperWidth * shadowRatio) : naturalHeight;
-  const extraMemoHeight = Math.max(0, paperHeight - naturalHeight);
+  const paperHeight = naturalHeight;
   const canvasHeight = paperHeight / (paperWidth / 330);
   const s = paperWidth / 330;
   const asset = miniature ? null : installedPaper(design);
@@ -48,7 +45,6 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   const kraft = design === 'kraft-clip';
   const spiral = design === 'spiral-plan';
   const ivory = design === 'ivory-paper';
-  const planner = widgetSize !== 'small' && (design === 'mint-planner' || spiral);
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const grouped = groupCalendarDiaries(diaries);
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1, 12).getDay() + 6) % 7;
@@ -126,7 +122,6 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
             </Pressable>;
           })}</View>)}
         </View>
-        {planner && <CalendarPlannerNotes key={`${month.getFullYear()}-${month.getMonth()}`} month={`${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`} scale={s} inkColor={ink} ruleColor={navy ? '#657B95' : undefined} expandedHeight={expandMemo ? 45 * s + extraMemoHeight : undefined} readOnly={miniature || !onSelectDate} />}
       </View>
     </View>
   </View>;

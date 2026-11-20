@@ -1,3 +1,4 @@
+import { ensureMockNoteArchive } from './mockNoteArchive';
 import { buildInitialCustomFlowDetailConfig, normalizeCustomFlowDetailConfig, type CustomFlowTemplateKey } from '@entities/day-plan/lib/customFlowTemplate';
 import { addDaysToLocalDateKey, getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import { COMIC_DIARY_STORAGE_KEY, type ComicDiaryLibrary } from '@pages/day-plan/lib/heroDiaryStorage';
@@ -132,6 +133,7 @@ export function ensureDevelopmentMockData(force = false, date = getLocalDateKey(
   if (!__DEV__) return false;
   const locale = getDevelopmentStorageProfile();
   if (!locale) return false;
+  ensureMockNoteArchive(date);
   const version = `${MOCK_DATA_VERSION}:${date}`;
   // Repair missing home text even when the diary seed version is already current.
   const storyKey = `pokit:canvas-note:${date}`;
