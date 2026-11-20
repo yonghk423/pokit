@@ -1,5 +1,4 @@
 import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
-import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
 import { HeroContentSkeleton } from './HeroContentSkeleton';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
@@ -73,7 +72,6 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
   const ko = locale === 'ko';
   const [tab, setTab] = useState<'story' | 'calendar' | 'event'>('story');
   const monthly = monthlyHeight !== undefined;
-  const ivoryBackground = useWallpaperStore(state => state.wallpaper === 'warm-ivory');
   const day = parseLocalDateKeyToDate(date)!;
   const linked = useDeviceEvents(day.getFullYear(), day.getMonth(), ko, !monthly);
   const events = useMemo(() => eventsOnDay(linked.events, day), [linked.events, date]);
@@ -118,7 +116,7 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
   const [editing, setEditing] = useState(false);
   const [canvasHeight, setCanvasHeight] = useState(initialHeight);
   const dark = useColorScheme() === 'dark';
-  const canvasPaper = ivoryBackground ? '#F3E9DF' : dark ? '#262B28' : '#F7F6F4';
+  const canvasPaper = dark ? '#262B28' : '#F7F6F4';
   const [expanded, setExpanded] = useState(() => localStorageClient.getJson<boolean>('pokit:canvas-panel-expanded') === true);
   useEffect(() => { if (monthly && !archiveView) setMonthlyCanvasExpanded(expanded); }, [monthly, expanded, archiveView]);
   const expansion = useRef(new Animated.Value(expanded ? 1 : 0)).current;
@@ -207,7 +205,6 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
   }, []);
   return <KeyboardAvoidingView enabled={editing} keyboardVerticalOffset={Platform.OS === 'ios' ? keyboardVerticalOffset : 0} pointerEvents="box-none" behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[StyleSheet.absoluteFill, { zIndex: editing ? 20 : 2 }]}>
     <View pointerEvents={editing ? 'auto' : 'box-none'} onLayout={({ nativeEvent: { layout } }) => setCanvasHeight(previous => previous === layout.height ? previous : layout.height)} style={{ flex: 1, backgroundColor: editing ? canvasPaper : 'transparent' }}>
-      {editing && ivoryBackground ? <AppWallpaperBackground /> : null}
       {monthly && !editing && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: canvasPaper, opacity: expansion }]}><AppWallpaperBackground /></Animated.View>}
       {!editing && !archiveView ? <Animated.View
         testID="hero-canvas-decoration-overlays"

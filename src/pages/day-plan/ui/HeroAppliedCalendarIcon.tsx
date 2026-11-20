@@ -1,36 +1,26 @@
-import { isPremiumPaper } from '../model/premiumCalendarPapers';
-import { isPhotoCalendar } from '../model/freePhotoCalendars';
-import { useEffect, useState } from 'react';
-import { Image } from 'expo-image';
-import { View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { CITY_CALENDAR_THEMES, useHeroCalendarDesign } from '../model/heroCalendarDesign';
-import { loadIllustrationCalendarAssets } from '../lib/illustrationCalendarAssets';
-import { photoPreview } from '../lib/heroPhotoPreview';
-import { CalendarPaper } from './HeroCalendarDesigns';
+import { memo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { resolveAppFontFamily, useEffectiveAppFontId } from '@shared/lib/ui-font';
 
-/** A scaled preview of the selected calendar, using the same paper renderer. */
-export function HeroAppliedCalendarIcon({ month, today }: { month: Date; today: Date }) {
-  const design = useHeroCalendarDesign();
-  const theme = CITY_CALENDAR_THEMES.find(item => item.design === design);
-  const illustrated = design === 'illustration' || !!theme;
-  const themeId = theme?.themeId ?? '01-rush-hour-commute';
-  const [art, setArt] = useState<{ themeId: string; uri: string } | null>(null);
-  useEffect(() => {
-    if (!illustrated) return;
-    let active = true;
-    // 39pt at 3x needs 117px. Keep a little headroom in a reusable WebP.
-    loadIllustrationCalendarAssets(themeId)
-      .then(value => photoPreview(value.background, 128))
-      .then(uri => { if (active) setArt({ themeId, uri }); }).catch(() => undefined);
-    return () => { active = false; };
-  }, [illustrated, themeId]);
-  return <View pointerEvents="none" accessible={false} style={{ width: 30, height: 39, backgroundColor: design === 'clipboard' ? 'transparent' : '#FAFAF6', shadowColor: '#302C24', shadowOpacity: 0.22, shadowRadius: 2, shadowOffset: { width: 0, height: 2 } }}>
-    {illustrated ? <Image cachePolicy="memory-disk" source={art?.themeId === themeId ? { uri: art.uri } : undefined} recyclingKey={themeId} transition={0} contentFit="cover" style={{ width: 30, height: 39 }} /> : <View style={{ width: 300, height: 390, transform: [{ translateX: -135 }, { translateY: -175.5 }, { scale: 0.1 }] }}>
-      <CalendarPaper design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'bold' || design === 'grid' || design === 'photo' ? design : 'bold'} month={month} today={today} diaries={[]} miniature previewSavedCover layoutWidth={300} layoutHeight={390} />
-    </View>}
-    <View testID="calendar-return-arrow" pointerEvents="none" style={{ position: 'absolute', right: -5, bottom: -4, width: 17, height: 17, borderRadius: 9, backgroundColor: '#FAFAF6', alignItems: 'center', justifyContent: 'center', shadowColor: '#302C24', shadowOpacity: 0.18, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }}>
-      <Feather name="corner-up-left" size={12} color="#32372F" />
+/** Lettering fits inside the existing 44pt touch target, even on narrow phones. */
+export const HeroAppliedCalendarIcon = memo(function HeroAppliedCalendarIcon() {
+  const fontId = useEffectiveAppFontId();
+  const fontFamily = resolveAppFontFamily(fontId, '400');
+  return <View pointerEvents="none" accessible={false} style={styles.root}>
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} allowFontScaling={false} style={[styles.label, { fontFamily, fontWeight: '400' }]}>CALENDAR</Text>
+    <View testID="calendar-return-arrow" style={styles.arrow}>
+      <View style={styles.line} />
+      <View style={styles.head} />
     </View>
   </View>;
-}
+});
+
+const styles = StyleSheet.create({
+  root: { width: 44, maxWidth: '100%', height: 32, justifyContent: 'center', alignItems: 'center' },
+  // The parent button supplies the localized accessibility label. Treat this as
+  // an icon: use the selected family without app or system font-size scaling.
+  label: { width: '100%', color: '#393C34', fontSize: 8.5, lineHeight: 12, letterSpacing: 0.25, textAlign: 'center', flexShrink: 1 },
+  arrow: { width: 24, height: 8, marginTop: 3, justifyContent: 'center' },
+  line: { height: 1, width: 24, backgroundColor: '#393C34' },
+  head: { position: 'absolute', left: 0, width: 5, height: 5, borderLeftWidth: 1, borderBottomWidth: 1, borderColor: '#393C34', transform: [{ rotate: '45deg' }] },
+});

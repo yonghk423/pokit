@@ -10,15 +10,12 @@ export const useWallpaperStore = create<{
 }>((set) => ({
   wallpaper: 'default',
   // Retain the compatibility API while migrating old installations to the default.
-  setWallpaper: (value) => {
-    const wallpaper = value === 'warm-ivory' ? value : 'default';
-    if (wallpaper === 'default') localStorageClient.removeItem(WALLPAPER_KEY);
-    else localStorageClient.setItemRaw(WALLPAPER_KEY, wallpaper);
-    set({ wallpaper });
+  setWallpaper: () => {
+    localStorageClient.removeItem(WALLPAPER_KEY);
+    set({ wallpaper: 'default' });
   },
   hydrate: () => {
-    const wallpaper = localStorageClient.getItemRaw(WALLPAPER_KEY) === 'warm-ivory' ? 'warm-ivory' : 'default';
-    if (wallpaper === 'default') localStorageClient.removeItem(WALLPAPER_KEY);
-    set({ wallpaper });
+    localStorageClient.removeItem(WALLPAPER_KEY);
+    set({ wallpaper: 'default' });
   },
 }));

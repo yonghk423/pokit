@@ -143,9 +143,9 @@ export function ComicDayPage() {
   </View>, [ink, selectedDate, calendarVisible, photoActive, movePhotoDate, diaryFocused]);
   useLayoutEffect(() => { registerCenterActions?.(todayButton); return () => registerCenterActions?.(null); }, [registerCenterActions, todayButton, calendarVisible]);
   const leadingActions = useMemo(() => <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    {!photoActive && !calendarVisible ? <Pressable testID="comic-return-calendar" accessibilityRole="button" accessibilityLabel={t('comicCalendar.open')} accessibilityHint={t('comicCalendar.returnHint')} onPress={() => { tapHaptic('select'); Keyboard.dismiss(); setCalendarBackdropVisible(true); setCalendarVisible(true); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: -8 }] }}>
-      <HeroAppliedCalendarIcon month={calendarMonth} today={today} />
-    </Pressable> : null}
+    <Pressable disabled={photoActive || calendarVisible} pointerEvents={photoActive || calendarVisible ? "none" : "auto"} accessibilityElementsHidden={photoActive || calendarVisible} importantForAccessibility={photoActive || calendarVisible ? "no-hide-descendants" : "auto"} testID="comic-return-calendar" accessibilityRole="button" accessibilityLabel={t('comicCalendar.open')} accessibilityHint={t('comicCalendar.returnHint')} onPress={() => { tapHaptic('select'); Keyboard.dismiss(); setCalendarBackdropVisible(true); setCalendarVisible(true); }} style={{ position: photoActive || calendarVisible ? "absolute" : "relative", opacity: photoActive || calendarVisible ? 0 : 1, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: -8 }] }}>
+      <HeroAppliedCalendarIcon />
+    </Pressable>
   </View>, [photoActive, calendarVisible, t, ink, calendarMonth, todayKey]);
   useLayoutEffect(() => { registerWeatherActions?.(leadingActions); return () => registerWeatherActions?.(null); }, [registerWeatherActions, leadingActions]);
   useEffect(() => { setOverviewOpen(true); }, [todayKey, photoActive]);

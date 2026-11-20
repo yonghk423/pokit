@@ -1,6 +1,5 @@
 import { matchesStoreAccess, type StoreAccessFilter } from '../../src/pages/day-plan/model/storeAccessFilter';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
-import { WARM_IVORY_PAPER } from '@shared/ui/app-wallpaper';
 import { useSyncExternalStore } from 'react';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { resetDiaryItem } from '../../src/pages/day-plan/model/resetDiaryItem';
@@ -279,11 +278,11 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
           ? { paddingHorizontal: 12, paddingVertical: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }
           : { padding: 20, paddingBottom: 120, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 12 }}>
           {renderLegacyItems(false)}
-          {diaryCategory === 'background' && matchesStoreAccess(accessFilter, false) ? (['default', 'warm-ivory'] as const).map(id => <Pressable key={id} testID={`diary-background-${id}`} accessibilityRole="button" accessibilityState={{ selected: wallpaper === id }} onPress={() => { tapHaptic('select'); setWallpaper(id); }} style={{ width: diaryItemWidth, padding: 8, gap: 8 }}>
+          {diaryCategory === 'background' && matchesStoreAccess(accessFilter, false) ? (['default'] as const).map(id => <Pressable key={id} testID={`diary-background-${id}`} accessibilityRole="button" accessibilityState={{ selected: wallpaper === id }} onPress={() => { tapHaptic('select'); setWallpaper(id); }} style={{ width: diaryItemWidth, padding: 8, gap: 8 }}>
             <View style={{ height: 100, borderRadius: 6, backgroundColor: '#F7F6F4', shadowColor: '#51463B', shadowOpacity: 0.16, shadowRadius: 5, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}>
-              <View style={{ flex: 1, borderRadius: 6, overflow: 'hidden', borderWidth: 0.7, borderColor: '#D8D1C8' }}>{id === 'warm-ivory' ? <Image source={WARM_IVORY_PAPER} resizeMode="cover" style={{ width: '100%', height: '100%' }} /> : null}</View>
+              <View style={{ flex: 1, borderRadius: 6, overflow: 'hidden', borderWidth: 0.7, borderColor: '#D8D1C8' }} />
             </View>
-            <ThemedText style={{ textAlign: 'center', color: ink, fontSize: 13 }}>{id === 'default' ? (locale === 'ko' ? '기본 배경' : 'Default') : (locale === 'ko' ? '웜 아이보리 페이퍼' : 'Warm Ivory Paper')}</ThemedText>
+            <ThemedText style={{ textAlign: 'center', color: ink, fontSize: 13 }}>{locale === 'ko' ? '기본 배경' : 'Default'}</ThemedText>
             <ThemedText style={{ textAlign: 'center', color: wallpaper === id ? '#278B77' : ink, fontSize: 13 }}>{wallpaper === id ? translateUiText('적용 중') : translateUiText('무료')}</ThemedText>
           </Pressable>) : null}
           {diaryCategory !== 'wall' ? null : <View testID="diary-wall-decor-category" style={{ width: '100%', gap: 16 }}>

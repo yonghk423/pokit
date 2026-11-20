@@ -16,11 +16,15 @@ it('falls back safely for an unknown stored wallpaper', () => {
   useWallpaperStore.getState().hydrate();
   expect(useWallpaperStore.getState().wallpaper).toBe('default');
 });
-it('persists warm ivory paper and restores it after hydration', () => {
+it('retires saved warm ivory and prevents reapplying it', () => {
+  localStorageClient.setItemRaw(WALLPAPER_KEY, 'warm-ivory');
+  useWallpaperStore.getState().hydrate();
+  expect(useWallpaperStore.getState().wallpaper).toBe('default');
+  expect(localStorageClient.getItemRaw(WALLPAPER_KEY)).toBeNull();
   useWallpaperStore.getState().setWallpaper('warm-ivory');
   useWallpaperStore.setState({ wallpaper: 'default' });
   useWallpaperStore.getState().hydrate();
-  expect(useWallpaperStore.getState().wallpaper).toBe('warm-ivory');
+  expect(useWallpaperStore.getState().wallpaper).toBe('default');
   useWallpaperStore.getState().setWallpaper('default');
   useWallpaperStore.getState().hydrate();
   expect(useWallpaperStore.getState().wallpaper).toBe('default');
