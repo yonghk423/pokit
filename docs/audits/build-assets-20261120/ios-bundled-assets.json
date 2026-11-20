@@ -1,0 +1,4614 @@
+[
+  {
+    "file": "node_modules/@expo-google-fonts/hi-melody/400Regular/HiMelody_400Regular.ttf",
+    "bytes": 12622312
+  },
+  {
+    "file": "assets/fonts/cafe24-shiningstar/Cafe24Shiningstar-v2.0.otf",
+    "bytes": 3927988
+  },
+  {
+    "file": "assets/textures/polaroid-handled-v1.png",
+    "bytes": 2245076
+  },
+  {
+    "file": "assets/fonts/school-gongryongal/HakgyoansimGongryongalR.ttf",
+    "bytes": 2228340
+  },
+  {
+    "file": "assets/textures/polaroid-stock-v1.png",
+    "bytes": 1990687
+  },
+  {
+    "file": "assets/fonts/cafe24-syongsyong/Cafe24Syongsyong-v2.0.otf",
+    "bytes": 1952708
+  },
+  {
+    "file": "assets/fonts/ownglyph-corncorn/Ownglyph_corncorn-Rg.ttf",
+    "bytes": 1597236
+  },
+  {
+    "file": "assets/fonts/school-nalgae/HakgyoansimNalgaeR.ttf",
+    "bytes": 1475328
+  },
+  {
+    "file": "assets/fonts/school-kkokkoma/TTHakgyoansimKkokkomaR.ttf",
+    "bytes": 1439280
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf",
+    "bytes": 1307660
+  },
+  {
+    "file": "assets/fonts/single-day/SingleDay-Regular.ttf",
+    "bytes": 816524
+  },
+  {
+    "file": "assets/control-illustrations/mesh-trash-bin.webp",
+    "bytes": 517696
+  },
+  {
+    "file": "assets/control-illustrations/mesh-trash-bin-paper.webp",
+    "bytes": 440008
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Solid.ttf",
+    "bytes": 423676
+  },
+  {
+    "file": "assets/control-illustrations/personal-camera-hands.webp",
+    "bytes": 392648
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf",
+    "bytes": 389724
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf",
+    "bytes": 356840
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf",
+    "bytes": 313528
+  },
+  {
+    "file": "assets/pro-photo-calendars/kissing-shadows.webp",
+    "bytes": 289374
+  },
+  {
+    "file": "assets/classic-diary/classic-pocket-3d.webp",
+    "bytes": 282594
+  },
+  {
+    "file": "assets/classic-diary/classic-corner-3d.webp",
+    "bytes": 215748
+  },
+  {
+    "file": "assets/pro-photo-calendars/mint-sneakers.webp",
+    "bytes": 210122
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Brands.ttf",
+    "bytes": 209376
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf",
+    "bytes": 202744
+  },
+  {
+    "file": "assets/basic-store-thumbs/clip-red.webp",
+    "bytes": 189844
+  },
+  {
+    "file": "assets/pro-introduction/film-full-screen-switch.webp",
+    "bytes": 185214
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome.ttf",
+    "bytes": 165548
+  },
+  {
+    "file": "assets/store-previews/city-animation-couch.webp",
+    "bytes": 164160
+  },
+  {
+    "file": "assets/pro-photo-calendars/daylight-cassette.webp",
+    "bytes": 160818
+  },
+  {
+    "file": "assets/classic-diary/classic-pin-3d.webp",
+    "bytes": 154226
+  },
+  {
+    "file": "assets/basic-store-thumbs/clip-blue.webp",
+    "bytes": 139826
+  },
+  {
+    "file": "assets/classic-diary/classic-memo-3d.webp",
+    "bytes": 138980
+  },
+  {
+    "file": "assets/control-illustrations/cherry-binder-clip.webp",
+    "bytes": 134634
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf",
+    "bytes": 134040
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/AntDesign.ttf",
+    "bytes": 130484
+  },
+  {
+    "file": "assets/classic-diary/classic-tab-3d-v2.webp",
+    "bytes": 120258
+  },
+  {
+    "file": "assets/basic-store-thumbs/camera-mini-evo.webp",
+    "bytes": 120022
+  },
+  {
+    "file": "assets/classic-diary/classic-charm-3d.webp",
+    "bytes": 118850
+  },
+  {
+    "file": "assets/store-cameras/instax-mini-evo.webp",
+    "bytes": 113264
+  },
+  {
+    "file": "assets/control-illustrations/sage-enamel-trash-bin-paper.webp",
+    "bytes": 113172
+  },
+  {
+    "file": "assets/classic-diary/classic-mark-3d.webp",
+    "bytes": 111962
+  },
+  {
+    "file": "assets/pro-photo-calendars/lemon-slice.webp",
+    "bytes": 106572
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-pocket.webp",
+    "bytes": 105752
+  },
+  {
+    "file": "assets/control-illustrations/clipboard-calendar-jet-black.webp",
+    "bytes": 100650
+  },
+  {
+    "file": "assets/basic-store-thumbs/clip-cherry-binder.webp",
+    "bytes": 96254
+  },
+  {
+    "file": "assets/free-photo-calendars/pink-vinyl.webp",
+    "bytes": 96064
+  },
+  {
+    "file": "assets/pro-introduction/icons.webp",
+    "bytes": 94280
+  },
+  {
+    "file": "assets/basic-store-thumbs/clip-black.webp",
+    "bytes": 93484
+  },
+  {
+    "file": "assets/pro-introduction/colors.webp",
+    "bytes": 92774
+  },
+  {
+    "file": "assets/control-illustrations/sage-enamel-trash-bin.webp",
+    "bytes": 82612
+  },
+  {
+    "file": "assets/basic-store-thumbs/trash-mesh-empty.webp",
+    "bytes": 78112
+  },
+  {
+    "file": "assets/basic-store-thumbs/trash-mesh-filled.webp",
+    "bytes": 74142
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-corner.webp",
+    "bytes": 73896
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Octicons.ttf",
+    "bytes": 69436
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-memo.webp",
+    "bytes": 68632
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Regular.ttf",
+    "bytes": 67976
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Entypo.ttf",
+    "bytes": 66200
+  },
+  {
+    "file": "assets/pro-introduction/trash.webp",
+    "bytes": 61528
+  },
+  {
+    "file": "assets/control-illustrations/ivory-ceramic-trash-bin-paper.webp",
+    "bytes": 61416
+  },
+  {
+    "file": "assets/control-illustrations/ivory-ceramic-trash-bin.webp",
+    "bytes": 60674
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-pin.webp",
+    "bytes": 57188
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Foundation.ttf",
+    "bytes": 56976
+  },
+  {
+    "file": "assets/pro-introduction/cameras.webp",
+    "bytes": 56488
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf",
+    "bytes": 55596
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/SimpleLineIcons.ttf",
+    "bytes": 54056
+  },
+  {
+    "file": "assets/basic-store-thumbs/trash-sage-filled.webp",
+    "bytes": 52970
+  },
+  {
+    "file": "assets/pro-introduction/cameras-en.webp",
+    "bytes": 52900
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-tab.webp",
+    "bytes": 52798
+  },
+  {
+    "file": "assets/pro-introduction/film-full-screen-poster.webp",
+    "bytes": 48806
+  },
+  {
+    "file": "assets/basic-store-thumbs/trash-sage-empty.webp",
+    "bytes": 47618
+  },
+  {
+    "file": "assets/free-photo-calendars/mono-cafe.webp",
+    "bytes": 43640
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-charm.webp",
+    "bytes": 43562
+  },
+  {
+    "file": "assets/pro-introduction/trash-en.webp",
+    "bytes": 43054
+  },
+  {
+    "file": "assets/basic-store-thumbs/trash-ivory-filled.webp",
+    "bytes": 42494
+  },
+  {
+    "file": "assets/free-photo-calendars/cream-kitten.webp",
+    "bytes": 41644
+  },
+  {
+    "file": "assets/basic-store-thumbs/trash-ivory-empty.webp",
+    "bytes": 41184
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-mark.webp",
+    "bytes": 39280
+  },
+  {
+    "file": "assets/pro-store-previews/polaroid-now-gen2.webp",
+    "bytes": 36802
+  },
+  {
+    "file": "assets/pro-introduction/clips-en.webp",
+    "bytes": 36786
+  },
+  {
+    "file": "assets/classic-diary/classic-date-paper-v3.webp",
+    "bytes": 36178
+  },
+  {
+    "file": "assets/pro-store-previews/leica-sofort-2.webp",
+    "bytes": 35742
+  },
+  {
+    "file": "assets/pro-introduction/05-ko.webp",
+    "bytes": 34880
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf",
+    "bytes": 33736
+  },
+  {
+    "file": "assets/weather/outfits/09.webp",
+    "bytes": 30770
+  },
+  {
+    "file": "assets/control-illustrations/cherry-black-long-photo-wall.webp",
+    "bytes": 30406
+  },
+  {
+    "file": "assets/basic-store-thumbs/polaroid-handled.webp",
+    "bytes": 29626
+  },
+  {
+    "file": "assets/control-illustrations/red-clipboard-clip.webp",
+    "bytes": 26482
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Zocial.ttf",
+    "bytes": 25788
+  },
+  {
+    "file": "assets/color-textures/clean-paper.webp",
+    "bytes": 22534
+  },
+  {
+    "file": "assets/control-illustrations/blue-clipboard-clip.webp",
+    "bytes": 22118
+  },
+  {
+    "file": "assets/control-illustrations/black-clipboard-clip.webp",
+    "bytes": 22104
+  },
+  {
+    "file": "assets/basic-store-thumbs/polaroid-stock.webp",
+    "bytes": 21432
+  },
+  {
+    "file": "assets/pro-store-previews/rattan-trash-bin.webp",
+    "bytes": 20630
+  },
+  {
+    "file": "assets/pro-store-previews/rattan-trash-bin-paper.webp",
+    "bytes": 20404
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-clover.webp",
+    "bytes": 18444
+  },
+  {
+    "file": "assets/basic-store-thumbs/classic-date.webp",
+    "bytes": 17830
+  },
+  {
+    "file": "assets/pro-store-previews/walnut-trash-bin.webp",
+    "bytes": 17648
+  },
+  {
+    "file": "assets/store-previews/premium-scene.webp",
+    "bytes": 16642
+  },
+  {
+    "file": "assets/weather/outfits/07.webp",
+    "bytes": 15442
+  },
+  {
+    "file": "assets/weather/outfits/15.webp",
+    "bytes": 15422
+  },
+  {
+    "file": "assets/weather/outfits/12.webp",
+    "bytes": 14936
+  },
+  {
+    "file": "assets/control-illustrations/button-border.webp",
+    "bytes": 14896
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-berry-trash-filled.webp",
+    "bytes": 14848
+  },
+  {
+    "file": "assets/store-previews/citypop-retro.webp",
+    "bytes": 14764
+  },
+  {
+    "file": "assets/weather/outfits/05.webp",
+    "bytes": 14654
+  },
+  {
+    "file": "assets/weather/outfits/17.webp",
+    "bytes": 14458
+  },
+  {
+    "file": "assets/weather/outfits/18.webp",
+    "bytes": 14168
+  },
+  {
+    "file": "assets/weather/outfits/06.webp",
+    "bytes": 14160
+  },
+  {
+    "file": "assets/weather/outfits/10.webp",
+    "bytes": 14034
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-stamp-trash-filled.webp",
+    "bytes": 13546
+  },
+  {
+    "file": "assets/weather/outfits/14.webp",
+    "bytes": 13534
+  },
+  {
+    "file": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/EvilIcons.ttf",
+    "bytes": 13456
+  },
+  {
+    "file": "assets/basic-store-thumbs/photo-wall-black.webp",
+    "bytes": 13418
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-berry-camera.webp",
+    "bytes": 13366
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-berry-trash.webp",
+    "bytes": 13270
+  },
+  {
+    "file": "assets/weather/outfits/08.webp",
+    "bytes": 13250
+  },
+  {
+    "file": "assets/pro-store-previews/walnut-trash-bin-paper.webp",
+    "bytes": 13190
+  },
+  {
+    "file": "assets/weather/outfits/13.webp",
+    "bytes": 13108
+  },
+  {
+    "file": "assets/weather/outfits/16.webp",
+    "bytes": 12990
+  },
+  {
+    "file": "assets/weather/outfits/11.webp",
+    "bytes": 12892
+  },
+  {
+    "file": "assets/pro-store-previews/kodak-mini-shot-3-retro.webp",
+    "bytes": 12598
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-ribbon-trash-filled.webp",
+    "bytes": 12586
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-cat-trash-filled.webp",
+    "bytes": 12460
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-clover-trash-filled.webp",
+    "bytes": 12452
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-bunny-trash-filled.webp",
+    "bytes": 12236
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-stamp-trash.webp",
+    "bytes": 12170
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-stamp-camera.webp",
+    "bytes": 12106
+  },
+  {
+    "file": "assets/weather/outfits/20.webp",
+    "bytes": 12066
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-carrot.webp",
+    "bytes": 11926
+  },
+  {
+    "file": "assets/weather/outfits/02.webp",
+    "bytes": 11890
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-chick-trash-filled.webp",
+    "bytes": 11768
+  },
+  {
+    "file": "assets/weather/outfits/04.webp",
+    "bytes": 11642
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-toast-trash-filled.webp",
+    "bytes": 11638
+  },
+  {
+    "file": "assets/pro-store-previews/canvas-trash-bin.webp",
+    "bytes": 11552
+  },
+  {
+    "file": "assets/weather/outfits/19.webp",
+    "bytes": 11536
+  },
+  {
+    "file": "assets/weather/outfits/01.webp",
+    "bytes": 11348
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-cat-trash.webp",
+    "bytes": 11244
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-mail.webp",
+    "bytes": 11166
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-ribbon-camera.webp",
+    "bytes": 11162
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-17-dog-walk.webp",
+    "bytes": 11114
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-clover-trash.webp",
+    "bytes": 11100
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-ribbon-trash.webp",
+    "bytes": 11078
+  },
+  {
+    "file": "assets/pro-photo-calendars/sunshine-yellow.webp",
+    "bytes": 10998
+  },
+  {
+    "file": "assets/pro-store-previews/instax-mini-12.webp",
+    "bytes": 10894
+  },
+  {
+    "file": "assets/store-previews/textured-watercolor.webp",
+    "bytes": 10888
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-ears.webp",
+    "bytes": 10826
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-29-flower-market.webp",
+    "bytes": 10818
+  },
+  {
+    "file": "assets/pro-store-previews/powder-blue-trash-bin.webp",
+    "bytes": 10810
+  },
+  {
+    "file": "assets/pro-store-previews/canvas-trash-bin-paper.webp",
+    "bytes": 10802
+  },
+  {
+    "file": "assets/weather/outfits/03.webp",
+    "bytes": 10774
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-shell-trash-filled.webp",
+    "bytes": 10770
+  },
+  {
+    "file": "assets/pro-store-previews/pink-trash-bin-paper.webp",
+    "bytes": 10758
+  },
+  {
+    "file": "assets/pro-store-previews/pink-trash-bin.webp",
+    "bytes": 10616
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-bunny.webp",
+    "bytes": 10600
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-45-textile-market.webp",
+    "bytes": 10568
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-cat-camera.webp",
+    "bytes": 10550
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-bunny-trash.webp",
+    "bytes": 10456
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-shell-camera.webp",
+    "bytes": 10196
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-08-flower-shop.webp",
+    "bytes": 9980
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-chick-camera.webp",
+    "bytes": 9976
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-49-flower-mural.webp",
+    "bytes": 9954
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-12-riverside-bike.webp",
+    "bytes": 9920
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-toast.webp",
+    "bytes": 9848
+  },
+  {
+    "file": "assets/pro-store-previews/powder-blue-trash-bin-paper.webp",
+    "bytes": 9802
+  },
+  {
+    "file": "assets/pro-store-previews/leather-trash-bin-paper.webp",
+    "bytes": 9724
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-15-badminton.webp",
+    "bytes": 9722
+  },
+  {
+    "file": "assets/pro-store-previews/charcoal-trash-bin.webp",
+    "bytes": 9512
+  },
+  {
+    "file": "node_modules/expo-router/assets/arrow_down.png",
+    "bytes": 9456
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-07-summer-festival.webp",
+    "bytes": 9428
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-airmail.webp",
+    "bytes": 9420
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-19-kite-flying.webp",
+    "bytes": 9410
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-40-bicycle-repair.webp",
+    "bytes": 9390
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-toast-trash.webp",
+    "bytes": 9372
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-28-stream-stepping-stones.webp",
+    "bytes": 9368
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-14-jump-rope.webp",
+    "bytes": 9178
+  },
+  {
+    "file": "assets/pro-diary-thumbs/print-border-chick.webp",
+    "bytes": 9168
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-21-windy-crosswalk.webp",
+    "bytes": 9122
+  },
+  {
+    "file": "assets/pro-diary-thumbs/print-border-shell.webp",
+    "bytes": 9112
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-shell-trash.webp",
+    "bytes": 9076
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-01-bus-stop.webp",
+    "bytes": 9018
+  },
+  {
+    "file": "assets/pro-diary-thumbs/decor-chick-trash.webp",
+    "bytes": 8952
+  },
+  {
+    "file": "assets/pro-diary-thumbs/print-border-stamp.webp",
+    "bytes": 8878
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-43-sewing-studio.webp",
+    "bytes": 8850
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-31-ferry-boarding.webp",
+    "bytes": 8818
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-11-city-photography.webp",
+    "bytes": 8784
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-10-balcony-laundry.webp",
+    "bytes": 8754
+  },
+  {
+    "file": "assets/pro-diary-thumbs/print-border-cat.webp",
+    "bytes": 8704
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-48-archery.webp",
+    "bytes": 8684
+  },
+  {
+    "file": "assets/pro-store-previews/ash-trash-bin-paper.webp",
+    "bytes": 8682
+  },
+  {
+    "file": "assets/pro-store-previews/charcoal-trash-bin-paper.webp",
+    "bytes": 8676
+  },
+  {
+    "file": "assets/control-illustrations/scale@3x.webp",
+    "bytes": 8612
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-38-snowball-park.webp",
+    "bytes": 8612
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-41-night-photography.webp",
+    "bytes": 8594
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-06-rainy-walk.webp",
+    "bytes": 8576
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-02-bookshop.webp",
+    "bytes": 8540
+  },
+  {
+    "file": "assets/control-illustrations/warm-ivory-paper-v2.webp",
+    "bytes": 8528
+  },
+  {
+    "file": "assets/pro-store-previews/leather-trash-bin.webp",
+    "bytes": 8458
+  },
+  {
+    "file": "assets/store-previews/everyday-cinema-top-only.webp",
+    "bytes": 8456
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-50-commuter-train.webp",
+    "bytes": 8454
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-35-city-sketching.webp",
+    "bytes": 8422
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-letter.webp",
+    "bytes": 8400
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-47-basketball.webp",
+    "bytes": 8400
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-20-roller-skating.webp",
+    "bytes": 8394
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-19-pool-swimming.webp",
+    "bytes": 8358
+  },
+  {
+    "file": "assets/pro-diary-thumbs/print-border-ribbon.webp",
+    "bytes": 8354
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-22-apartment-stairs.webp",
+    "bytes": 8350
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-bunny.webp",
+    "bytes": 8336
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-25-rooftop-guitar.webp",
+    "bytes": 8316
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-34-bookstore.webp",
+    "bytes": 8314
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-39-ski-slope.webp",
+    "bytes": 8314
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-09-seaside-evening.webp",
+    "bytes": 8300
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-18-pottery-studio.webp",
+    "bytes": 8288
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-03-train-platform.webp",
+    "bytes": 8280
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-36-rainy-night.webp",
+    "bytes": 8278
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-44-street-food.webp",
+    "bytes": 8276
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-29-city-dog-walk.webp",
+    "bytes": 8208
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-22-seaside-cycling.webp",
+    "bytes": 8200
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-35-cafe-service.webp",
+    "bytes": 8198
+  },
+  {
+    "file": "assets/pro-store-previews/ash-trash-bin.webp",
+    "bytes": 8192
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-16-boxing-gym.webp",
+    "bytes": 8176
+  },
+  {
+    "file": "assets/control-illustrations/memo@3x.webp",
+    "bytes": 8086
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-chick.webp",
+    "bytes": 8058
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-18-bakery-window.webp",
+    "bytes": 8052
+  },
+  {
+    "file": "assets/routine-icons/shopping@3x.webp",
+    "bytes": 8042
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-33-grocery-shopping.webp",
+    "bytes": 8024
+  },
+  {
+    "file": "assets/pro-store-previews/steel-trash-bin-paper.webp",
+    "bytes": 7996
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-30-rooftop-garden.webp",
+    "bytes": 7954
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-10-rainy-crosswalk.webp",
+    "bytes": 7954
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-44-surfing.webp",
+    "bytes": 7918
+  },
+  {
+    "file": "assets/control-illustrations/checklist@3x.webp",
+    "bytes": 7892
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-05-cafe.webp",
+    "bytes": 7892
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-24-record-shop.webp",
+    "bytes": 7830
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-cat.webp",
+    "bytes": 7780
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-95-picnic.webp",
+    "bytes": 7758
+  },
+  {
+    "file": "assets/pro-store-previews/kraft-clip.webp",
+    "bytes": 7750
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-23-home-cooking.webp",
+    "bytes": 7712
+  },
+  {
+    "file": "assets/control-illustrations/timer@3x.webp",
+    "bytes": 7708
+  },
+  {
+    "file": "assets/control-illustrations/sun@3x.webp",
+    "bytes": 7668
+  },
+  {
+    "file": "assets/control-illustrations/bell@3x.webp",
+    "bytes": 7666
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-clover.webp",
+    "bytes": 7650
+  },
+  {
+    "file": "assets/control-illustrations/pills@3x.webp",
+    "bytes": 7592
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-toast-label.webp",
+    "bytes": 7588
+  },
+  {
+    "file": "assets/control-illustrations/letters@3x.webp",
+    "bytes": 7562
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-04-birthday-surprise.webp",
+    "bytes": 7560
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-berry.webp",
+    "bytes": 7550
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-56-bookstore.webp",
+    "bytes": 7524
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-74-clock-tower.webp",
+    "bytes": 7514
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-04-laundromat.webp",
+    "bytes": 7510
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-96-feed-ducks.webp",
+    "bytes": 7498
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-31-aquarium.webp",
+    "bytes": 7490
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-32-climbing-gym.webp",
+    "bytes": 7486
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-37-board-game.webp",
+    "bytes": 7472
+  },
+  {
+    "file": "assets/control-illustrations/plus-circle@3x.webp",
+    "bytes": 7458
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-11-home-kitchen.webp",
+    "bytes": 7454
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-14-waterfront-run.webp",
+    "bytes": 7448
+  },
+  {
+    "file": "assets/routine-icons/music@3x.webp",
+    "bytes": 7430
+  },
+  {
+    "file": "assets/routine-icons/bus@3x.webp",
+    "bytes": 7428
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-40-guitar.webp",
+    "bytes": 7428
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-ribbon.webp",
+    "bytes": 7424
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-49-library-reading.webp",
+    "bytes": 7412
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-89-jazz-concert.webp",
+    "bytes": 7394
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-62-windblown-umbrella.webp",
+    "bytes": 7390
+  },
+  {
+    "file": "assets/control-illustrations/clock@3x.webp",
+    "bytes": 7384
+  },
+  {
+    "file": "assets/pro-store-previews/steel-trash-bin.webp",
+    "bytes": 7348
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-42-ice-skating.webp",
+    "bytes": 7318
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-79-puddle-jumping.webp",
+    "bytes": 7306
+  },
+  {
+    "file": "assets/color-textures/grain-overlay.webp",
+    "bytes": 7302
+  },
+  {
+    "file": "assets/control-illustrations/chart@3x.webp",
+    "bytes": 7286
+  },
+  {
+    "file": "assets/control-illustrations/list@3x.webp",
+    "bytes": 7282
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-71-street-food.webp",
+    "bytes": 7282
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-03-pottery-wheel.webp",
+    "bytes": 7272
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-27-arcade-racing.webp",
+    "bytes": 7236
+  },
+  {
+    "file": "assets/routine-icons/plant@3x.webp",
+    "bytes": 7210
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-33-karaoke-night.webp",
+    "bytes": 7200
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-26-washing-dishes.webp",
+    "bytes": 7198
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-order.webp",
+    "bytes": 7160
+  },
+  {
+    "file": "assets/routine-icons/lunchbox@3x.webp",
+    "bytes": 7150
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-47-ice-skating.webp",
+    "bytes": 7138
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-100-city-ferry-deck.webp",
+    "bytes": 7134
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-41-arcade-claw.webp",
+    "bytes": 7126
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-46-city-rowing.webp",
+    "bytes": 7086
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-31-vacuuming.webp",
+    "bytes": 7066
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-26-harbor-fishing.webp",
+    "bytes": 7052
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-46-rushing-stairs.webp",
+    "bytes": 7052
+  },
+  {
+    "file": "assets/control-illustrations/megaphone@3x.webp",
+    "bytes": 7046
+  },
+  {
+    "file": "assets/routine-icons/gift@3x.webp",
+    "bytes": 7006
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-25-pancake-flip.webp",
+    "bytes": 7006
+  },
+  {
+    "file": "assets/routine-icons/finance@3x.webp",
+    "bytes": 6982
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-toast.webp",
+    "bytes": 6964
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-36-cookie-baking.webp",
+    "bytes": 6960
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-71-lighthouse-room.webp",
+    "bytes": 6936
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-21-airport-wait.webp",
+    "bytes": 6936
+  },
+  {
+    "file": "assets/pro-diary-thumbs/print-border-berry.webp",
+    "bytes": 6930
+  },
+  {
+    "file": "assets/control-illustrations/grid@3x.webp",
+    "bytes": 6930
+  },
+  {
+    "file": "assets/routine-icons/blood-pressure@3x.webp",
+    "bytes": 6916
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-57-carpentry-workshop.webp",
+    "bytes": 6904
+  },
+  {
+    "file": "assets/routine-icons/walking@3x.webp",
+    "bytes": 6876
+  },
+  {
+    "file": "assets/routine-icons/camera@3x.webp",
+    "bytes": 6866
+  },
+  {
+    "file": "assets/routine-icons/laundry@3x.webp",
+    "bytes": 6830
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-16-cinema-exit.webp",
+    "bytes": 6826
+  },
+  {
+    "file": "assets/control-illustrations/stack@3x.webp",
+    "bytes": 6822
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-27-piano-practice.webp",
+    "bytes": 6822
+  },
+  {
+    "file": "assets/routine-icons/sewing@3x.webp",
+    "bytes": 6818
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-01-fly-kite.webp",
+    "bytes": 6812
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-38-seaside-camping.webp",
+    "bytes": 6790
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-90-robotics-workshop.webp",
+    "bytes": 6782
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-50-delivery-surprise.webp",
+    "bytes": 6760
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-stamp.webp",
+    "bytes": 6758
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-butter.webp",
+    "bytes": 6752
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-65-florist-shopping.webp",
+    "bytes": 6750
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-83-cockpit-simulator.webp",
+    "bytes": 6740
+  },
+  {
+    "file": "assets/routine-icons/watercolor@3x.webp",
+    "bytes": 6720
+  },
+  {
+    "file": "assets/routine-icons/cycling@3x.webp",
+    "bytes": 6718
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-13-bowling-alley.webp",
+    "bytes": 6688
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-09-cafe-tablet.webp",
+    "bytes": 6668
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-43-home-coffee.webp",
+    "bytes": 6666
+  },
+  {
+    "file": "assets/routine-icons/breakfast@3x.webp",
+    "bytes": 6660
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-73-midnight-convenience.webp",
+    "bytes": 6624
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-berry.webp",
+    "bytes": 6614
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-45-rooftop-sunset.webp",
+    "bytes": 6610
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-26-night-market.webp",
+    "bytes": 6606
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-85-waterworks-control-room.webp",
+    "bytes": 6590
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-93-badminton.webp",
+    "bytes": 6586
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-02-midnight-shop.webp",
+    "bytes": 6538
+  },
+  {
+    "file": "assets/routine-icons/train@3x.webp",
+    "bytes": 6534
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-shell.webp",
+    "bytes": 6520
+  },
+  {
+    "file": "assets/routine-icons/beach@3x.webp",
+    "bytes": 6518
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-27-arcade.webp",
+    "bytes": 6482
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-06-cafe-reading.webp",
+    "bytes": 6482
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-41-tattoo-studio.webp",
+    "bytes": 6460
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-bunny.webp",
+    "bytes": 6458
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-08-late-study.webp",
+    "bytes": 6448
+  },
+  {
+    "file": "assets/pro-diary-thumbs/clip-strawberry.webp",
+    "bytes": 6424
+  },
+  {
+    "file": "assets/routine-icons/recycling@3x.webp",
+    "bytes": 6418
+  },
+  {
+    "file": "assets/control-illustrations/book@3x.webp",
+    "bytes": 6412
+  },
+  {
+    "file": "assets/routine-icons/hiking@3x.webp",
+    "bytes": 6378
+  },
+  {
+    "file": "assets/routine-icons/abstain@3x.webp",
+    "bytes": 6368
+  },
+  {
+    "file": "assets/routine-icons/running@3x.webp",
+    "bytes": 6366
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-05-bakery.webp",
+    "bytes": 6360
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-65-go-kart-track.webp",
+    "bytes": 6360
+  },
+  {
+    "file": "assets/routine-icons/knitting@3x.webp",
+    "bytes": 6346
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-32-closet-organization.webp",
+    "bytes": 6334
+  },
+  {
+    "file": "assets/control-illustrations/tag@3x.webp",
+    "bytes": 6332
+  },
+  {
+    "file": "assets/routine-icons/vacuum@3x.webp",
+    "bytes": 6324
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-58-opera-box.webp",
+    "bytes": 6304
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-35-grocery-store.webp",
+    "bytes": 6288
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-59-public-library.webp",
+    "bytes": 6282
+  },
+  {
+    "file": "assets/routine-icons/birdwatching@3x.webp",
+    "bytes": 6270
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-22-auto-garage.webp",
+    "bytes": 6262
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-bunny-clip.webp",
+    "bytes": 6244
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/citypop-retro-37-beach-volleyball.webp",
+    "bytes": 6232
+  },
+  {
+    "file": "assets/routine-icons/travel@3x.webp",
+    "bytes": 6202
+  },
+  {
+    "file": "assets/routine-icons/planning@3x.webp",
+    "bytes": 6182
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-34-bookshop.webp",
+    "bytes": 6172
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-64-vintage-shop.webp",
+    "bytes": 6172
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-28-video-call.webp",
+    "bytes": 6164
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-77-balloon-hangar.webp",
+    "bytes": 6144
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-15-spicy-noodles.webp",
+    "bytes": 6142
+  },
+  {
+    "file": "assets/control-illustrations/reset@3x.webp",
+    "bytes": 6124
+  },
+  {
+    "file": "assets/control-illustrations/photos@3x.webp",
+    "bytes": 6122
+  },
+  {
+    "file": "assets/routine-icons/salad@3x.webp",
+    "bytes": 6092
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-clover-clip.webp",
+    "bytes": 6084
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-89-wine-cellar.webp",
+    "bytes": 6084
+  },
+  {
+    "file": "assets/control-illustrations/desk-bell@3x.webp",
+    "bytes": 6076
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-80-build-snowman.webp",
+    "bytes": 6070
+  },
+  {
+    "file": "assets/routine-icons/watering@3x.webp",
+    "bytes": 6056
+  },
+  {
+    "file": "assets/routine-icons/car@3x.webp",
+    "bytes": 6054
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-66-glassblowing-studio.webp",
+    "bytes": 6054
+  },
+  {
+    "file": "assets/routine-icons/measuring@3x.webp",
+    "bytes": 6046
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-15-climbing-gym.webp",
+    "bytes": 6042
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-50-printmaking-studio.webp",
+    "bytes": 6038
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-53-radio-studio.webp",
+    "bytes": 6038
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-80-photo-darkroom.webp",
+    "bytes": 6038
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-60-cooking-class.webp",
+    "bytes": 6034
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-88-costume-fitting-room.webp",
+    "bytes": 6034
+  },
+  {
+    "file": "assets/routine-icons/map@3x.webp",
+    "bytes": 6032
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-45-bike-repair.webp",
+    "bytes": 6010
+  },
+  {
+    "file": "assets/control-illustrations/search@3x.webp",
+    "bytes": 5986
+  },
+  {
+    "file": "assets/routine-icons/tennis@3x.webp",
+    "bytes": 5986
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-48-bowling.webp",
+    "bytes": 5984
+  },
+  {
+    "file": "assets/routine-icons/journal@3x.webp",
+    "bytes": 5978
+  },
+  {
+    "file": "assets/control-illustrations/keyboard@3x.webp",
+    "bytes": 5970
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-84-lost-map.webp",
+    "bytes": 5966
+  },
+  {
+    "file": "assets/routine-icons/flower@3x.webp",
+    "bytes": 5960
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-96-weather-studio.webp",
+    "bytes": 5960
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-59-pottery-studio.webp",
+    "bytes": 5956
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-22-driving.webp",
+    "bytes": 5952
+  },
+  {
+    "file": "assets/routine-icons/focus@3x.webp",
+    "bytes": 5946
+  },
+  {
+    "file": "assets/control-illustrations/calendar@3x.webp",
+    "bytes": 5914
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-94-roller-skating.webp",
+    "bytes": 5912
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-54-barbershop.webp",
+    "bytes": 5888
+  },
+  {
+    "file": "assets/routine-icons/game@3x.webp",
+    "bytes": 5876
+  },
+  {
+    "file": "assets/routine-icons/skiing.webp",
+    "bytes": 5872
+  },
+  {
+    "file": "assets/control-illustrations/sliders@3x.webp",
+    "bytes": 5860
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-79-maritime-museum.webp",
+    "bytes": 5860
+  },
+  {
+    "file": "assets/routine-icons/piano@3x.webp",
+    "bytes": 5856
+  },
+  {
+    "file": "assets/routine-icons/coffee@3x.webp",
+    "bytes": 5850
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-64-cobblers-workshop.webp",
+    "bytes": 5850
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-60-origami-cranes.webp",
+    "bytes": 5842
+  },
+  {
+    "file": "assets/routine-icons/passport@3x.webp",
+    "bytes": 5838
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-09-tailor.webp",
+    "bytes": 5828
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-73-trampoline-park.webp",
+    "bytes": 5822
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-02-pottery.webp",
+    "bytes": 5818
+  },
+  {
+    "file": "assets/control-illustrations/info@3x.webp",
+    "bytes": 5810
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-13-yoga-stretch.webp",
+    "bytes": 5794
+  },
+  {
+    "file": "assets/routine-icons/exam@3x.webp",
+    "bytes": 5790
+  },
+  {
+    "file": "assets/routine-icons/organizing@3x.webp",
+    "bytes": 5786
+  },
+  {
+    "file": "assets/routine-icons/football@3x.webp",
+    "bytes": 5782
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-10-swimming-pool.webp",
+    "bytes": 5776
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-48-dining-car.webp",
+    "bytes": 5754
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-36-cycling.webp",
+    "bytes": 5752
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-69-sailing-simulator.webp",
+    "bytes": 5728
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-19-night-diner.webp",
+    "bytes": 5720
+  },
+  {
+    "file": "assets/routine-icons/vitamins@3x.webp",
+    "bytes": 5718
+  },
+  {
+    "file": "assets/routine-icons/drawing@3x.webp",
+    "bytes": 5716
+  },
+  {
+    "file": "assets/routine-icons/basketball@3x.webp",
+    "bytes": 5710
+  },
+  {
+    "file": "assets/routine-icons/volunteer@3x.webp",
+    "bytes": 5702
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-08-bus-stop.webp",
+    "bytes": 5696
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-61-fire-station.webp",
+    "bytes": 5684
+  },
+  {
+    "file": "assets/routine-icons/pet-care@3x.webp",
+    "bytes": 5662
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-12-gym-weights.webp",
+    "bytes": 5658
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-56-subway-concourse.webp",
+    "bytes": 5656
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-92-animation-studio.webp",
+    "bytes": 5650
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-moon.webp",
+    "bytes": 5638
+  },
+  {
+    "file": "assets/store-previews/warm-sepia-open-panel.webp",
+    "bytes": 5638
+  },
+  {
+    "file": "assets/routine-icons/exercise@3x.webp",
+    "bytes": 5636
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-20-subway-ride.webp",
+    "bytes": 5620
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-81-film-soundstage.webp",
+    "bytes": 5618
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-90-arcade-claw-machine.webp",
+    "bytes": 5608
+  },
+  {
+    "file": "assets/routine-icons/collage@3x.webp",
+    "bytes": 5588
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-61-rainy-window.webp",
+    "bytes": 5588
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-38-rooftop-cinema.webp",
+    "bytes": 5578
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-16-ferry-deck.webp",
+    "bytes": 5566
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-25-jazz-club.webp",
+    "bytes": 5548
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-32-boxing-gym.webp",
+    "bytes": 5546
+  },
+  {
+    "file": "assets/routine-icons/stethoscope.webp",
+    "bytes": 5524
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-daisy.webp",
+    "bytes": 5516
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-63-records-archive.webp",
+    "bytes": 5516
+  },
+  {
+    "file": "assets/routine-icons/bed-making@3x.webp",
+    "bytes": 5508
+  },
+  {
+    "file": "assets/routine-icons/crafts@3x.webp",
+    "bytes": 5504
+  },
+  {
+    "file": "assets/pro-diary-thumbs/clip-pearl-lilac.webp",
+    "bytes": 5502
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-76-repot-plant.webp",
+    "bytes": 5502
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-24-skincare.webp",
+    "bytes": 5500
+  },
+  {
+    "file": "assets/control-illustrations/moon@3x.webp",
+    "bytes": 5498
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-03-laundromat.webp",
+    "bytes": 5498
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-98-indoor-surfing.webp",
+    "bytes": 5492
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-82-baseball-cage.webp",
+    "bytes": 5464
+  },
+  {
+    "file": "assets/routine-icons/meal@3x.webp",
+    "bytes": 5460
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-86-dog-agility-hall.webp",
+    "bytes": 5456
+  },
+  {
+    "file": "assets/pro-diary-thumbs/clip-satin-bow.webp",
+    "bytes": 5446
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-36-rocky-pier.webp",
+    "bytes": 5446
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-63-delayed-train.webp",
+    "bytes": 5434
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-34-journaling.webp",
+    "bytes": 5424
+  },
+  {
+    "file": "assets/routine-icons/dishes@3x.webp",
+    "bytes": 5418
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-85-postcard.webp",
+    "bytes": 5416
+  },
+  {
+    "file": "assets/routine-icons/anniversary@3x.webp",
+    "bytes": 5390
+  },
+  {
+    "file": "assets/routine-icons/research@3x.webp",
+    "bytes": 5388
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-30-meditation.webp",
+    "bytes": 5386
+  },
+  {
+    "file": "assets/pro-diary-thumbs/tab-label-shell.webp",
+    "bytes": 5382
+  },
+  {
+    "file": "assets/control-illustrations/send@3x.webp",
+    "bytes": 5378
+  },
+  {
+    "file": "assets/free-photo-calendars/pink-vinyl-thumb.webp",
+    "bytes": 5376
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-23-making-bed.webp",
+    "bytes": 5372
+  },
+  {
+    "file": "assets/routine-icons/breathing@3x.webp",
+    "bytes": 5370
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-17-karaoke.webp",
+    "bytes": 5370
+  },
+  {
+    "file": "assets/routine-icons/weight@3x.webp",
+    "bytes": 5368
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-70-baking-bread.webp",
+    "bytes": 5362
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-07-airport.webp",
+    "bytes": 5352
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-67-ballroom-dance.webp",
+    "bytes": 5342
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-91-wedding-reception.webp",
+    "bytes": 5336
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-51-beach-bikini.webp",
+    "bytes": 5328
+  },
+  {
+    "file": "assets/routine-icons/reading@3x.webp",
+    "bytes": 5306
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-72-indoor-ski-slope.webp",
+    "bytes": 5306
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-11-cinema.webp",
+    "bytes": 5304
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-77-feed-balcony-birds.webp",
+    "bytes": 5304
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-70-roller-skate-park.webp",
+    "bytes": 5300
+  },
+  {
+    "file": "assets/routine-icons/handwashing@3x.webp",
+    "bytes": 5298
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-clover.webp",
+    "bytes": 5278
+  },
+  {
+    "file": "assets/routine-icons/film@3x.webp",
+    "bytes": 5272
+  },
+  {
+    "file": "assets/routine-icons/cooking@3x.webp",
+    "bytes": 5266
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-05-indoor-badminton.webp",
+    "bytes": 5262
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-43-sketching.webp",
+    "bytes": 5260
+  },
+  {
+    "file": "assets/routine-icons/yoga@3x.webp",
+    "bytes": 5258
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-94-squash-court.webp",
+    "bytes": 5252
+  },
+  {
+    "file": "assets/routine-icons/lecture@3x.webp",
+    "bytes": 5236
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-24-observatory.webp",
+    "bytes": 5234
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-99-watch-fireworks.webp",
+    "bytes": 5226
+  },
+  {
+    "file": "assets/routine-icons/work@3x.webp",
+    "bytes": 5212
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-14-headphone-run.webp",
+    "bytes": 5212
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-10-park-walk.webp",
+    "bytes": 5208
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-07-movie-night.webp",
+    "bytes": 5208
+  },
+  {
+    "file": "assets/control-illustrations/plus@3x.webp",
+    "bytes": 5202
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-19-hiking.webp",
+    "bytes": 5202
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-97-bookbinding-workshop.webp",
+    "bytes": 5198
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-berry.webp",
+    "bytes": 5194
+  },
+  {
+    "file": "assets/routine-icons/bath@3x.webp",
+    "bytes": 5186
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-20-science-lab.webp",
+    "bytes": 5186
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-stamp.webp",
+    "bytes": 5182
+  },
+  {
+    "file": "assets/routine-icons/water@3x.webp",
+    "bytes": 5182
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-55-cable-car.webp",
+    "bytes": 5180
+  },
+  {
+    "file": "assets/routine-icons/sunshine@3x.webp",
+    "bytes": 5178
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-01-platform.webp",
+    "bytes": 5168
+  },
+  {
+    "file": "assets/routine-icons/boxing@3x.webp",
+    "bytes": 5142
+  },
+  {
+    "file": "assets/routine-icons/sleep@3x.webp",
+    "bytes": 5138
+  },
+  {
+    "file": "assets/routine-icons/coding@3x.webp",
+    "bytes": 5126
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-72-spicy-noodles.webp",
+    "bytes": 5124
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-39-folding-laundry.webp",
+    "bytes": 5124
+  },
+  {
+    "file": "assets/control-illustrations/star@3x.webp",
+    "bytes": 5112
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-39-watch-repair.webp",
+    "bytes": 5112
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-35-bus-ride.webp",
+    "bytes": 5108
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-83-train-window.webp",
+    "bytes": 5108
+  },
+  {
+    "file": "assets/routine-icons/alarm-clock.webp",
+    "bytes": 5106
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-11-photography.webp",
+    "bytes": 5094
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-66-arranging-bouquet.webp",
+    "bytes": 5092
+  },
+  {
+    "file": "assets/routine-icons/bibimbap.webp",
+    "bytes": 5086
+  },
+  {
+    "file": "assets/routine-icons/checkup@3x.webp",
+    "bytes": 5056
+  },
+  {
+    "file": "assets/routine-icons/medicine@3x.webp",
+    "bytes": 5048
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-42-bowling.webp",
+    "bytes": 5048
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-mail.webp",
+    "bytes": 5036
+  },
+  {
+    "file": "assets/routine-icons/climbing-rope.webp",
+    "bytes": 5024
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-68-knitting-scarf.webp",
+    "bytes": 5012
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-82-ferry-deck.webp",
+    "bytes": 5012
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-42-origami.webp",
+    "bytes": 5008
+  },
+  {
+    "file": "assets/routine-icons/swimming@3x.webp",
+    "bytes": 5002
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-46-camping.webp",
+    "bytes": 4988
+  },
+  {
+    "file": "assets/routine-icons/exercise-bike.webp",
+    "bytes": 4954
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-52-resort-pool-bikini.webp",
+    "bytes": 4954
+  },
+  {
+    "file": "assets/routine-icons/guitar@3x.webp",
+    "bytes": 4950
+  },
+  {
+    "file": "assets/routine-icons/budget@3x.webp",
+    "bytes": 4936
+  },
+  {
+    "file": "assets/routine-icons/offline@3x.webp",
+    "bytes": 4912
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-68-mri-control-room.webp",
+    "bytes": 4894
+  },
+  {
+    "file": "assets/routine-icons/spaghetti.webp",
+    "bytes": 4890
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-69-tea-ceremony.webp",
+    "bytes": 4888
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-100-kitchen-dance.webp",
+    "bytes": 4882
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-75-model-studio.webp",
+    "bytes": 4876
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-58-aquarium-visit.webp",
+    "bytes": 4866
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-33-grocery-shopping.webp",
+    "bytes": 4856
+  },
+  {
+    "file": "assets/control-illustrations/save@3x.webp",
+    "bytes": 4846
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-84-wind-tunnel.webp",
+    "bytes": 4846
+  },
+  {
+    "file": "assets/routine-icons/kimchi-stew.webp",
+    "bytes": 4844
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-29-city-hall.webp",
+    "bytes": 4840
+  },
+  {
+    "file": "assets/routine-icons/pilates@3x.webp",
+    "bytes": 4820
+  },
+  {
+    "file": "assets/routine-icons/fruit@3x.webp",
+    "bytes": 4782
+  },
+  {
+    "file": "assets/routine-icons/laundry-basket.webp",
+    "bytes": 4780
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-97-fly-kite.webp",
+    "bytes": 4772
+  },
+  {
+    "file": "assets/routine-icons/stretching@3x.webp",
+    "bytes": 4770
+  },
+  {
+    "file": "node_modules/expo-router/assets/unmatched.png",
+    "bytes": 4752
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-99-badminton-court.webp",
+    "bytes": 4750
+  },
+  {
+    "file": "assets/routine-icons/camping@3x.webp",
+    "bytes": 4746
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-03-meeting.webp",
+    "bytes": 4712
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-87-antique-auction-room.webp",
+    "bytes": 4702
+  },
+  {
+    "file": "assets/routine-icons/yarn-ball.webp",
+    "bytes": 4692
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-23-table-tennis.webp",
+    "bytes": 4690
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-37-parking-garage.webp",
+    "bytes": 4688
+  },
+  {
+    "file": "assets/routine-icons/shower@3x.webp",
+    "bytes": 4684
+  },
+  {
+    "file": "assets/routine-icons/candle@3x.webp",
+    "bytes": 4670
+  },
+  {
+    "file": "assets/routine-icons/face-mask.webp",
+    "bytes": 4668
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-67-sewing-button.webp",
+    "bytes": 4652
+  },
+  {
+    "file": "assets/routine-icons/backpack.webp",
+    "bytes": 4632
+  },
+  {
+    "file": "assets/routine-icons/sunscreen@3x.webp",
+    "bytes": 4622
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-45-board-game.webp",
+    "bytes": 4622
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-78-sushi-kitchen.webp",
+    "bytes": 4610
+  },
+  {
+    "file": "assets/routine-icons/desk-calendar.webp",
+    "bytes": 4598
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-21-backstage.webp",
+    "bytes": 4598
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/textured-watercolor-17-clothes-shopping.webp",
+    "bytes": 4588
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-cat.webp",
+    "bytes": 4578
+  },
+  {
+    "file": "assets/routine-icons/baking@3x.webp",
+    "bytes": 4576
+  },
+  {
+    "file": "assets/routine-icons/meeting@3x.webp",
+    "bytes": 4574
+  },
+  {
+    "file": "assets/pro-diary-thumbs/mini-toast-clip.webp",
+    "bytes": 4552
+  },
+  {
+    "file": "assets/routine-icons/dental-floss.webp",
+    "bytes": 4526
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-87-planetarium.webp",
+    "bytes": 4526
+  },
+  {
+    "file": "assets/routine-icons/jump-rope@3x.webp",
+    "bytes": 4524
+  },
+  {
+    "file": "assets/routine-icons/email@3x.webp",
+    "bytes": 4518
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-14-post-office.webp",
+    "bytes": 4518
+  },
+  {
+    "file": "assets/routine-icons/tteokbokki.webp",
+    "bytes": 4502
+  },
+  {
+    "file": "assets/control-illustrations/up@3x.webp",
+    "bytes": 4500
+  },
+  {
+    "file": "assets/routine-icons/meditation@3x.webp",
+    "bytes": 4500
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-47-ice-cream-shop.webp",
+    "bytes": 4488
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-78-polish-shoes.webp",
+    "bytes": 4484
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-33-piano-hall.webp",
+    "bytes": 4480
+  },
+  {
+    "file": "assets/routine-icons/cutting-board.webp",
+    "bytes": 4478
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-43-courtroom.webp",
+    "bytes": 4478
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-74-assemble-furniture.webp",
+    "bytes": 4454
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-08-study-hoodie.webp",
+    "bytes": 4438
+  },
+  {
+    "file": "assets/control-illustrations/cherry-photo-clip.webp",
+    "bytes": 4436
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-76-tennis-court.webp",
+    "bytes": 4432
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-41-pet-walk.webp",
+    "bytes": 4430
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-40-home-kitchen.webp",
+    "bytes": 4416
+  },
+  {
+    "file": "assets/control-illustrations/down@3x.webp",
+    "bytes": 4400
+  },
+  {
+    "file": "assets/store-previews/season-summer.webp",
+    "bytes": 4400
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-34-subway-commute.webp",
+    "bytes": 4380
+  },
+  {
+    "file": "assets/routine-icons/id-card.webp",
+    "bytes": 4378
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-93-planetarium-booth.webp",
+    "bytes": 4372
+  },
+  {
+    "file": "assets/routine-icons/bandage-roll.webp",
+    "bytes": 4364
+  },
+  {
+    "file": "assets/routine-icons/letter@3x.webp",
+    "bytes": 4356
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-81-sandcastle.webp",
+    "bytes": 4344
+  },
+  {
+    "file": "assets/routine-icons/language@3x.webp",
+    "bytes": 4334
+  },
+  {
+    "file": "assets/routine-icons/tea@3x.webp",
+    "bytes": 4328
+  },
+  {
+    "file": "assets/routine-icons/badminton-racket.webp",
+    "bytes": 4322
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-46-hair-salon.webp",
+    "bytes": 4318
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-95-aircraft-deicing-hangar.webp",
+    "bytes": 4312
+  },
+  {
+    "file": "assets/routine-icons/kettlebell.webp",
+    "bytes": 4310
+  },
+  {
+    "file": "assets/routine-icons/baseball-glove.webp",
+    "bytes": 4308
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-13-billiards.webp",
+    "bytes": 4308
+  },
+  {
+    "file": "assets/tab-icons/puzzle@3x.webp",
+    "bytes": 4292
+  },
+  {
+    "file": "assets/routine-icons/call@3x.webp",
+    "bytes": 4276
+  },
+  {
+    "file": "assets/control-illustrations/left@3x.webp",
+    "bytes": 4270
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-86-hotel-breakfast.webp",
+    "bytes": 4264
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-91-karaoke.webp",
+    "bytes": 4256
+  },
+  {
+    "file": "assets/routine-icons/shopping@2x.webp",
+    "bytes": 4254
+  },
+  {
+    "file": "assets/routine-icons/hot-water-bottle.webp",
+    "bytes": 4252
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-31-organizing-closet.webp",
+    "bytes": 4246
+  },
+  {
+    "file": "assets/routine-icons/desk-lamp.webp",
+    "bytes": 4240
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-09-coffee-tablet.webp",
+    "bytes": 4234
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-bakery.webp",
+    "bytes": 4218
+  },
+  {
+    "file": "assets/routine-icons/calculator.webp",
+    "bytes": 4212
+  },
+  {
+    "file": "assets/routine-icons/nap@3x.webp",
+    "bytes": 4194
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-06-record-shop.webp",
+    "bytes": 4190
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-21-airport-travel.webp",
+    "bytes": 4190
+  },
+  {
+    "file": "assets/routine-icons/gyoza.webp",
+    "bytes": 4182
+  },
+  {
+    "file": "assets/routine-icons/paint-palette.webp",
+    "bytes": 4170
+  },
+  {
+    "file": "assets/routine-icons/ballet-shoes.webp",
+    "bytes": 4164
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-49-guitar.webp",
+    "bytes": 4160
+  },
+  {
+    "file": "assets/free-photo-calendars/mono-cafe-thumb.webp",
+    "bytes": 4148
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-53-diary-in-bed.webp",
+    "bytes": 4134
+  },
+  {
+    "file": "assets/routine-icons/roller-skates.webp",
+    "bytes": 4132
+  },
+  {
+    "file": "assets/control-illustrations/scale@2x.webp",
+    "bytes": 4126
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-44-baking.webp",
+    "bytes": 4122
+  },
+  {
+    "file": "assets/routine-icons/pancakes.webp",
+    "bytes": 4120
+  },
+  {
+    "file": "assets/routine-icons/curry-rice.webp",
+    "bytes": 4118
+  },
+  {
+    "file": "assets/routine-icons/cake-slice.webp",
+    "bytes": 4118
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-ribbon.webp",
+    "bytes": 4116
+  },
+  {
+    "file": "assets/control-illustrations/mail@3x.webp",
+    "bytes": 4116
+  },
+  {
+    "file": "assets/routine-icons/fried-chicken.webp",
+    "bytes": 4114
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-02-study.webp",
+    "bytes": 4106
+  },
+  {
+    "file": "assets/routine-icons/painting-room@3x.webp",
+    "bytes": 4102
+  },
+  {
+    "file": "assets/routine-icons/stapler.webp",
+    "bytes": 4100
+  },
+  {
+    "file": "assets/routine-icons/noodle-soup.webp",
+    "bytes": 4092
+  },
+  {
+    "file": "assets/routine-icons/cookie.webp",
+    "bytes": 4092
+  },
+  {
+    "file": "assets/pro-store-previews/vivid-purple-clipboard-clip.webp",
+    "bytes": 4090
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-52-reading-cafe.webp",
+    "bytes": 4088
+  },
+  {
+    "file": "assets/routine-icons/ice-pack.webp",
+    "bytes": 4076
+  },
+  {
+    "file": "assets/routine-icons/repair@3x.webp",
+    "bytes": 4076
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-18-shopping.webp",
+    "bytes": 4076
+  },
+  {
+    "file": "assets/store-previews/season-autumn.webp",
+    "bytes": 4074
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-92-bowling.webp",
+    "bytes": 4074
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-bunny.webp",
+    "bytes": 4066
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-75-fix-drawer.webp",
+    "bytes": 4066
+  },
+  {
+    "file": "assets/routine-icons/power-drill.webp",
+    "bytes": 4062
+  },
+  {
+    "file": "assets/pro-store-previews/vivid-orange-clipboard-clip.webp",
+    "bytes": 4058
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-49-dance-studio.webp",
+    "bytes": 4052
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-57-blue-bottle-cafe.webp",
+    "bytes": 4050
+  },
+  {
+    "file": "assets/routine-icons/donut.webp",
+    "bytes": 4046
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-30-hotel-lobby.webp",
+    "bytes": 4042
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-32-watering-plants.webp",
+    "bytes": 4042
+  },
+  {
+    "file": "assets/routine-icons/first-aid-kit.webp",
+    "bytes": 4034
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-40-video-call.webp",
+    "bytes": 4034
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-20-swimming.webp",
+    "bytes": 4014
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-04-laundry.webp",
+    "bytes": 4012
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-17-web-browsing.webp",
+    "bytes": 4012
+  },
+  {
+    "file": "assets/pro-store-previews/pastel-pink-clipboard-clip.webp",
+    "bytes": 4006
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-55-window-magazine.webp",
+    "bytes": 4000
+  },
+  {
+    "file": "assets/control-illustrations/memo@2x.webp",
+    "bytes": 3996
+  },
+  {
+    "file": "assets/routine-icons/keyboard.webp",
+    "bytes": 3996
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-47-fold-laundry.webp",
+    "bytes": 3996
+  },
+  {
+    "file": "assets/routine-icons/hairbrush.webp",
+    "bytes": 3994
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-18-ice-rink.webp",
+    "bytes": 3992
+  },
+  {
+    "file": "assets/routine-icons/gimbap.webp",
+    "bytes": 3990
+  },
+  {
+    "file": "assets/pro-store-previews/pastel-yellow-clipboard-clip.webp",
+    "bytes": 3976
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-88-art-museum.webp",
+    "bytes": 3972
+  },
+  {
+    "file": "assets/control-illustrations/right@3x.webp",
+    "bytes": 3970
+  },
+  {
+    "file": "assets/pro-store-previews/pastel-lavender-clipboard-clip.webp",
+    "bytes": 3964
+  },
+  {
+    "file": "assets/routine-icons/iron.webp",
+    "bytes": 3958
+  },
+  {
+    "file": "assets/routine-icons/hamburger.webp",
+    "bytes": 3956
+  },
+  {
+    "file": "assets/routine-icons/rowing-machine.webp",
+    "bytes": 3954
+  },
+  {
+    "file": "assets/routine-icons/grilled-fish.webp",
+    "bytes": 3954
+  },
+  {
+    "file": "assets/routine-icons/oven-mitt.webp",
+    "bytes": 3946
+  },
+  {
+    "file": "assets/routine-icons/music@2x.webp",
+    "bytes": 3934
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-37-journaling.webp",
+    "bytes": 3934
+  },
+  {
+    "file": "assets/routine-icons/dustpan.webp",
+    "bytes": 3926
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-28-dental-clinic.webp",
+    "bytes": 3926
+  },
+  {
+    "file": "assets/routine-icons/scissors.webp",
+    "bytes": 3910
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-28-cooking.webp",
+    "bytes": 3908
+  },
+  {
+    "file": "assets/routine-icons/stopwatch.webp",
+    "bytes": 3894
+  },
+  {
+    "file": "assets/header-icons/calendar@3x.webp",
+    "bytes": 3882
+  },
+  {
+    "file": "assets/routine-icons/mouthwash.webp",
+    "bytes": 3880
+  },
+  {
+    "file": "assets/routine-icons/sandwich.webp",
+    "bytes": 3880
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-stamp.webp",
+    "bytes": 3874
+  },
+  {
+    "file": "assets/control-illustrations/checklist@2x.webp",
+    "bytes": 3870
+  },
+  {
+    "file": "assets/pro-diary-thumbs/wall-chick.webp",
+    "bytes": 3868
+  },
+  {
+    "file": "assets/routine-icons/plant@2x.webp",
+    "bytes": 3866
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-12-coworking.webp",
+    "bytes": 3866
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-15-eating.webp",
+    "bytes": 3858
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-27-breakfast.webp",
+    "bytes": 3858
+  },
+  {
+    "file": "assets/routine-icons/sushi.webp",
+    "bytes": 3830
+  },
+  {
+    "file": "assets/routine-icons/bus@2x.webp",
+    "bytes": 3830
+  },
+  {
+    "file": "assets/pro-store-previews/vivid-golden-yellow-clipboard-clip.webp",
+    "bytes": 3830
+  },
+  {
+    "file": "assets/routine-icons/teapot.webp",
+    "bytes": 3828
+  },
+  {
+    "file": "assets/routine-icons/spray-bottle.webp",
+    "bytes": 3826
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-62-archery-range.webp",
+    "bytes": 3808
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-05-work.webp",
+    "bytes": 3808
+  },
+  {
+    "file": "assets/control-illustrations/letters@2x.webp",
+    "bytes": 3806
+  },
+  {
+    "file": "assets/pro-store-previews/vivid-emerald-clipboard-clip.webp",
+    "bytes": 3802
+  },
+  {
+    "file": "assets/routine-icons/cleaning@3x.webp",
+    "bytes": 3800
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-39-piano-practice.webp",
+    "bytes": 3800
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-shell.webp",
+    "bytes": 3788
+  },
+  {
+    "file": "assets/routine-icons/comb.webp",
+    "bytes": 3786
+  },
+  {
+    "file": "assets/control-illustrations/pills@2x.webp",
+    "bytes": 3772
+  },
+  {
+    "file": "assets/control-illustrations/sun@2x.webp",
+    "bytes": 3770
+  },
+  {
+    "file": "assets/routine-icons/monitor.webp",
+    "bytes": 3768
+  },
+  {
+    "file": "assets/routine-icons/taco.webp",
+    "bytes": 3766
+  },
+  {
+    "file": "assets/routine-icons/eye-rest@3x.webp",
+    "bytes": 3762
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-25-skincare.webp",
+    "bytes": 3754
+  },
+  {
+    "file": "assets/routine-icons/blood-pressure@2x.webp",
+    "bytes": 3752
+  },
+  {
+    "file": "assets/routine-icons/milk-carton.webp",
+    "bytes": 3742
+  },
+  {
+    "file": "assets/routine-icons/lunchbox@2x.webp",
+    "bytes": 3740
+  },
+  {
+    "file": "assets/control-illustrations/bell@2x.webp",
+    "bytes": 3734
+  },
+  {
+    "file": "assets/routine-icons/sponge.webp",
+    "bytes": 3734
+  },
+  {
+    "file": "assets/routine-icons/rice-bowl.webp",
+    "bytes": 3732
+  },
+  {
+    "file": "assets/header-icons/daily@3x.webp",
+    "bytes": 3716
+  },
+  {
+    "file": "assets/control-illustrations/timer@2x.webp",
+    "bytes": 3716
+  },
+  {
+    "file": "assets/control-illustrations/clock@2x.webp",
+    "bytes": 3700
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-98-telescope-stargazing.webp",
+    "bytes": 3698
+  },
+  {
+    "file": "assets/routine-icons/steak.webp",
+    "bytes": 3688
+  },
+  {
+    "file": "assets/routine-icons/gift@2x.webp",
+    "bytes": 3678
+  },
+  {
+    "file": "assets/routine-icons/finance@2x.webp",
+    "bytes": 3660
+  },
+  {
+    "file": "assets/routine-icons/gardening@3x.webp",
+    "bytes": 3652
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-38-listening-music.webp",
+    "bytes": 3652
+  },
+  {
+    "file": "assets/control-illustrations/list@2x.webp",
+    "bytes": 3650
+  },
+  {
+    "file": "assets/control-illustrations/chart@2x.webp",
+    "bytes": 3646
+  },
+  {
+    "file": "assets/routine-icons/pen-cup.webp",
+    "bytes": 3646
+  },
+  {
+    "file": "assets/routine-icons/laundry@2x.webp",
+    "bytes": 3642
+  },
+  {
+    "file": "assets/routine-icons/hair-dryer.webp",
+    "bytes": 3640
+  },
+  {
+    "file": "assets/routine-icons/pizza-slice.webp",
+    "bytes": 3636
+  },
+  {
+    "file": "assets/routine-icons/pencil@3x.webp",
+    "bytes": 3632
+  },
+  {
+    "file": "assets/routine-icons/abstain@2x.webp",
+    "bytes": 3624
+  },
+  {
+    "file": "assets/routine-icons/measuring-cup.webp",
+    "bytes": 3622
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-07-movie-home.webp",
+    "bytes": 3608
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-44-sculpture-plaza.webp",
+    "bytes": 3604
+  },
+  {
+    "file": "assets/routine-icons/camera@2x.webp",
+    "bytes": 3602
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-23-morning-stretch.webp",
+    "bytes": 3602
+  },
+  {
+    "file": "assets/routine-icons/cycling@2x.webp",
+    "bytes": 3598
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-42-meditation.webp",
+    "bytes": 3582
+  },
+  {
+    "file": "assets/pro-store-previews/pastel-mint-clipboard-clip.webp",
+    "bytes": 3580
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-cat.webp",
+    "bytes": 3572
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-30-vacuuming.webp",
+    "bytes": 3570
+  },
+  {
+    "file": "assets/routine-icons/walking@2x.webp",
+    "bytes": 3568
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-29-dishes.webp",
+    "bytes": 3566
+  },
+  {
+    "file": "assets/routine-icons/sewing@2x.webp",
+    "bytes": 3562
+  },
+  {
+    "file": "assets/pro-store-previews/pastel-peach-clipboard-clip.webp",
+    "bytes": 3562
+  },
+  {
+    "file": "assets/routine-icons/watercolor@2x.webp",
+    "bytes": 3560
+  },
+  {
+    "file": "assets/control-illustrations/plus-circle@2x.webp",
+    "bytes": 3538
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-chick.webp",
+    "bytes": 3530
+  },
+  {
+    "file": "assets/routine-icons/toolbox.webp",
+    "bytes": 3528
+  },
+  {
+    "file": "assets/routine-icons/frying-pan.webp",
+    "bytes": 3526
+  },
+  {
+    "file": "assets/control-illustrations/megaphone@2x.webp",
+    "bytes": 3500
+  },
+  {
+    "file": "assets/routine-icons/mug.webp",
+    "bytes": 3498
+  },
+  {
+    "file": "assets/routine-icons/breakfast@2x.webp",
+    "bytes": 3498
+  },
+  {
+    "file": "assets/routine-icons/inhaler.webp",
+    "bytes": 3490
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-ribbon.webp",
+    "bytes": 3482
+  },
+  {
+    "file": "assets/routine-icons/earplugs.webp",
+    "bytes": 3472
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-54-seaside-trip.webp",
+    "bytes": 3472
+  },
+  {
+    "file": "assets/routine-icons/skincare@3x.webp",
+    "bytes": 3464
+  },
+  {
+    "file": "assets/control-illustrations/grid@2x.webp",
+    "bytes": 3458
+  },
+  {
+    "file": "assets/routine-icons/toothbrush@3x.webp",
+    "bytes": 3458
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-12-weights.webp",
+    "bytes": 3454
+  },
+  {
+    "file": "assets/routine-icons/train@2x.webp",
+    "bytes": 3450
+  },
+  {
+    "file": "assets/routine-icons/pencil-sharpener.webp",
+    "bytes": 3448
+  },
+  {
+    "file": "assets/routine-icons/tablet-stylus.webp",
+    "bytes": 3446
+  },
+  {
+    "file": "assets/routine-icons/toast.webp",
+    "bytes": 3446
+  },
+  {
+    "file": "assets/routine-icons/adjustable-wrench.webp",
+    "bytes": 3426
+  },
+  {
+    "file": "assets/routine-icons/beach@2x.webp",
+    "bytes": 3426
+  },
+  {
+    "file": "assets/routine-icons/whisk.webp",
+    "bytes": 3420
+  },
+  {
+    "file": "assets/routine-icons/hiking@2x.webp",
+    "bytes": 3420
+  },
+  {
+    "file": "assets/routine-icons/binder.webp",
+    "bytes": 3418
+  },
+  {
+    "file": "assets/routine-icons/knitting@2x.webp",
+    "bytes": 3418
+  },
+  {
+    "file": "assets/routine-icons/vacuum@2x.webp",
+    "bytes": 3414
+  },
+  {
+    "file": "assets/routine-icons/training-cones.webp",
+    "bytes": 3412
+  },
+  {
+    "file": "assets/routine-icons/juice-glass.webp",
+    "bytes": 3406
+  },
+  {
+    "file": "assets/routine-icons/fried-egg.webp",
+    "bytes": 3404
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-06-reading.webp",
+    "bytes": 3404
+  },
+  {
+    "file": "assets/routine-icons/printer.webp",
+    "bytes": 3396
+  },
+  {
+    "file": "assets/routine-icons/eye-drops.webp",
+    "bytes": 3394
+  },
+  {
+    "file": "assets/routine-icons/hand-lotion.webp",
+    "bytes": 3392
+  },
+  {
+    "file": "assets/routine-icons/hand-broom.webp",
+    "bytes": 3390
+  },
+  {
+    "file": "assets/pro-store-previews/pastel-sky-clipboard-clip.webp",
+    "bytes": 3384
+  },
+  {
+    "file": "assets/routine-icons/hammer.webp",
+    "bytes": 3382
+  },
+  {
+    "file": "assets/routine-icons/planning@2x.webp",
+    "bytes": 3374
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-50-nap.webp",
+    "bytes": 3372
+  },
+  {
+    "file": "assets/routine-icons/onigiri.webp",
+    "bytes": 3364
+  },
+  {
+    "file": "assets/routine-icons/crochet-hook.webp",
+    "bytes": 3358
+  },
+  {
+    "file": "assets/routine-icons/running@2x.webp",
+    "bytes": 3358
+  },
+  {
+    "file": "assets/routine-icons/paperclip.webp",
+    "bytes": 3352
+  },
+  {
+    "file": "assets/routine-icons/recycling@2x.webp",
+    "bytes": 3344
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-16-cinema.webp",
+    "bytes": 3338
+  },
+  {
+    "file": "assets/tab-icons/routine@3x.webp",
+    "bytes": 3330
+  },
+  {
+    "file": "assets/routine-icons/sticky-notes.webp",
+    "bytes": 3326
+  },
+  {
+    "file": "assets/routine-icons/watering@2x.webp",
+    "bytes": 3318
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-51-sleeping-in-bed.webp",
+    "bytes": 3306
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-autumn-04-open-air-painting.webp",
+    "bytes": 3296
+  },
+  {
+    "file": "assets/tab-icons/story-pen@3x.png",
+    "bytes": 3289
+  },
+  {
+    "file": "assets/routine-icons/tennis@2x.webp",
+    "bytes": 3286
+  },
+  {
+    "file": "assets/routine-icons/map@2x.webp",
+    "bytes": 3284
+  },
+  {
+    "file": "assets/routine-icons/ice-cream.webp",
+    "bytes": 3282
+  },
+  {
+    "file": "assets/routine-icons/travel@2x.webp",
+    "bytes": 3282
+  },
+  {
+    "file": "assets/control-illustrations/stack@2x.webp",
+    "bytes": 3276
+  },
+  {
+    "file": "assets/routine-icons/pillow.webp",
+    "bytes": 3272
+  },
+  {
+    "file": "assets/routine-icons/birdwatching@2x.webp",
+    "bytes": 3272
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-13-yoga.webp",
+    "bytes": 3268
+  },
+  {
+    "file": "assets/routine-icons/sleep-mask.webp",
+    "bytes": 3250
+  },
+  {
+    "file": "assets/routine-icons/salad@2x.webp",
+    "bytes": 3246
+  },
+  {
+    "file": "assets/pro-store-previews/vivid-pink-clipboard-clip.webp",
+    "bytes": 3234
+  },
+  {
+    "file": "assets/routine-icons/foam-roller.webp",
+    "bytes": 3222
+  },
+  {
+    "file": "assets/routine-icons/focus@2x.webp",
+    "bytes": 3222
+  },
+  {
+    "file": "assets/control-illustrations/book@2x.webp",
+    "bytes": 3220
+  },
+  {
+    "file": "assets/control-illustrations/reset@2x.webp",
+    "bytes": 3216
+  },
+  {
+    "file": "assets/routine-icons/flower@2x.webp",
+    "bytes": 3216
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-01-exercise.webp",
+    "bytes": 3214
+  },
+  {
+    "file": "assets/control-illustrations/brush@3x.webp",
+    "bytes": 3210
+  },
+  {
+    "file": "assets/routine-icons/shoulder-bag.webp",
+    "bytes": 3206
+  },
+  {
+    "file": "assets/routine-icons/document-folder.webp",
+    "bytes": 3198
+  },
+  {
+    "file": "assets/routine-icons/hot-dog.webp",
+    "bytes": 3194
+  },
+  {
+    "file": "assets/routine-icons/journal@2x.webp",
+    "bytes": 3192
+  },
+  {
+    "file": "assets/routine-icons/car@2x.webp",
+    "bytes": 3192
+  },
+  {
+    "file": "assets/routine-icons/coffee@2x.webp",
+    "bytes": 3184
+  },
+  {
+    "file": "assets/routine-icons/skateboard.webp",
+    "bytes": 3180
+  },
+  {
+    "file": "assets/routine-icons/exam@2x.webp",
+    "bytes": 3176
+  },
+  {
+    "file": "assets/routine-icons/thermos.webp",
+    "bytes": 3172
+  },
+  {
+    "file": "assets/routine-icons/measuring@2x.webp",
+    "bytes": 3168
+  },
+  {
+    "file": "assets/control-illustrations/desk-bell@2x.webp",
+    "bytes": 3160
+  },
+  {
+    "file": "assets/routine-icons/croissant.webp",
+    "bytes": 3160
+  },
+  {
+    "file": "assets/control-illustrations/tag@2x.webp",
+    "bytes": 3154
+  },
+  {
+    "file": "assets/routine-icons/volunteer@2x.webp",
+    "bytes": 3152
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-48-recycling.webp",
+    "bytes": 3152
+  },
+  {
+    "file": "assets/control-illustrations/sliders@2x.webp",
+    "bytes": 3142
+  },
+  {
+    "file": "assets/routine-icons/spatula.webp",
+    "bytes": 3122
+  },
+  {
+    "file": "assets/control-illustrations/keyboard@2x.webp",
+    "bytes": 3120
+  },
+  {
+    "file": "assets/routine-icons/volleyball.webp",
+    "bytes": 3120
+  },
+  {
+    "file": "assets/routine-icons/organizing@2x.webp",
+    "bytes": 3120
+  },
+  {
+    "file": "assets/routine-icons/football@2x.webp",
+    "bytes": 3118
+  },
+  {
+    "file": "assets/routine-icons/golf-club.webp",
+    "bytes": 3112
+  },
+  {
+    "file": "assets/routine-icons/thermometer.webp",
+    "bytes": 3112
+  },
+  {
+    "file": "assets/header-icons/list@3x.webp",
+    "bytes": 3110
+  },
+  {
+    "file": "assets/routine-icons/passport@2x.webp",
+    "bytes": 3108
+  },
+  {
+    "file": "assets/pro-diary-thumbs/date-label-mail.webp",
+    "bytes": 3102
+  },
+  {
+    "file": "assets/routine-icons/drawing@2x.webp",
+    "bytes": 3102
+  },
+  {
+    "file": "assets/control-illustrations/photos@2x.webp",
+    "bytes": 3094
+  },
+  {
+    "file": "assets/routine-icons/basketball@2x.webp",
+    "bytes": 3092
+  },
+  {
+    "file": "assets/routine-icons/step-platform.webp",
+    "bytes": 3088
+  },
+  {
+    "file": "assets/pro-store-previews/vivid-burgundy-clipboard-clip.webp",
+    "bytes": 3088
+  },
+  {
+    "file": "assets/routine-icons/ruler.webp",
+    "bytes": 3082
+  },
+  {
+    "file": "assets/routine-icons/pull-up-bar.webp",
+    "bytes": 3076
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-24-making-bed.webp",
+    "bytes": 3074
+  },
+  {
+    "file": "assets/routine-icons/game@2x.webp",
+    "bytes": 3072
+  },
+  {
+    "file": "assets/routine-icons/computer-mouse.webp",
+    "bytes": 3070
+  },
+  {
+    "file": "assets/routine-icons/surfboard.webp",
+    "bytes": 3068
+  },
+  {
+    "file": "assets/routine-icons/piano@2x.webp",
+    "bytes": 3064
+  },
+  {
+    "file": "assets/routine-icons/collage@2x.webp",
+    "bytes": 3058
+  },
+  {
+    "file": "assets/control-illustrations/search@2x.webp",
+    "bytes": 3054
+  },
+  {
+    "file": "assets/routine-icons/toothbrush-cup.webp",
+    "bytes": 3054
+  },
+  {
+    "file": "assets/routine-icons/crafts@2x.webp",
+    "bytes": 3054
+  },
+  {
+    "file": "assets/routine-icons/pet-care@2x.webp",
+    "bytes": 3050
+  },
+  {
+    "file": "assets/routine-icons/vitamins@2x.webp",
+    "bytes": 3044
+  },
+  {
+    "file": "assets/routine-icons/breathing@2x.webp",
+    "bytes": 3044
+  },
+  {
+    "file": "assets/routine-icons/water-bottle.webp",
+    "bytes": 3038
+  },
+  {
+    "file": "assets/routine-icons/research@2x.webp",
+    "bytes": 3002
+  },
+  {
+    "file": "assets/routine-icons/rolling-pin.webp",
+    "bytes": 3000
+  },
+  {
+    "file": "assets/routine-icons/bed-making@2x.webp",
+    "bytes": 2996
+  },
+  {
+    "file": "assets/control-illustrations/calendar@2x.webp",
+    "bytes": 2972
+  },
+  {
+    "file": "assets/routine-icons/screwdriver.webp",
+    "bytes": 2954
+  },
+  {
+    "file": "assets/routine-icons/exercise@2x.webp",
+    "bytes": 2950
+  },
+  {
+    "file": "assets/routine-icons/anniversary@2x.webp",
+    "bytes": 2920
+  },
+  {
+    "file": "assets/header-icons/settings@3x.webp",
+    "bytes": 2916
+  },
+  {
+    "file": "assets/routine-icons/film@2x.webp",
+    "bytes": 2916
+  },
+  {
+    "file": "assets/routine-icons/punching-bag.webp",
+    "bytes": 2912
+  },
+  {
+    "file": "assets/routine-icons/meal@2x.webp",
+    "bytes": 2906
+  },
+  {
+    "file": "assets/routine-icons/weight@2x.webp",
+    "bytes": 2894
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/warm-sepia-open-panel-26-getting-dressed.webp",
+    "bytes": 2886
+  },
+  {
+    "file": "assets/routine-icons/dishes@2x.webp",
+    "bytes": 2878
+  },
+  {
+    "file": "assets/routine-icons/work@2x.webp",
+    "bytes": 2874
+  },
+  {
+    "file": "assets/routine-icons/yoga@2x.webp",
+    "bytes": 2872
+  },
+  {
+    "file": "assets/routine-icons/sunshine@2x.webp",
+    "bytes": 2868
+  },
+  {
+    "file": "assets/control-illustrations/info@2x.webp",
+    "bytes": 2862
+  },
+  {
+    "file": "assets/routine-icons/cooking@2x.webp",
+    "bytes": 2856
+  },
+  {
+    "file": "assets/routine-icons/handwashing@2x.webp",
+    "bytes": 2848
+  },
+  {
+    "file": "assets/routine-icons/checkup@2x.webp",
+    "bytes": 2836
+  },
+  {
+    "file": "assets/routine-icons/reading@2x.webp",
+    "bytes": 2828
+  },
+  {
+    "file": "assets/routine-icons/sleep@2x.webp",
+    "bytes": 2814
+  },
+  {
+    "file": "assets/routine-icons/bath@2x.webp",
+    "bytes": 2814
+  },
+  {
+    "file": "assets/control-illustrations/moon@2x.webp",
+    "bytes": 2792
+  },
+  {
+    "file": "assets/routine-icons/usb-drive.webp",
+    "bytes": 2782
+  },
+  {
+    "file": "assets/routine-icons/lecture@2x.webp",
+    "bytes": 2772
+  },
+  {
+    "file": "assets/control-illustrations/send@2x.webp",
+    "bytes": 2758
+  },
+  {
+    "file": "assets/routine-icons/swimming@2x.webp",
+    "bytes": 2756
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-autumn-05-bench-book.webp",
+    "bytes": 2750
+  },
+  {
+    "file": "assets/routine-icons/water@2x.webp",
+    "bytes": 2738
+  },
+  {
+    "file": "assets/routine-icons/boxing@2x.webp",
+    "bytes": 2734
+  },
+  {
+    "file": "assets/routine-icons/coding@2x.webp",
+    "bytes": 2718
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-autumn-02-chestnut-basket.webp",
+    "bytes": 2708
+  },
+  {
+    "file": "assets/routine-icons/budget@2x.webp",
+    "bytes": 2700
+  },
+  {
+    "file": "assets/header-icons/clock@3x.webp",
+    "bytes": 2694
+  },
+  {
+    "file": "assets/routine-icons/pilates@2x.webp",
+    "bytes": 2686
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-winter-05-snow-confetti.webp",
+    "bytes": 2662
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-summer-01-shoreline-walk.webp",
+    "bytes": 2662
+  },
+  {
+    "file": "assets/routine-icons/keys.webp",
+    "bytes": 2658
+  },
+  {
+    "file": "assets/routine-icons/offline@2x.webp",
+    "bytes": 2650
+  },
+  {
+    "file": "assets/tab-icons/routine@2x.webp",
+    "bytes": 2648
+  },
+  {
+    "file": "assets/routine-icons/guitar@2x.webp",
+    "bytes": 2632
+  },
+  {
+    "file": "assets/routine-icons/medicine@2x.webp",
+    "bytes": 2630
+  },
+  {
+    "file": "assets/routine-icons/rowing-paddle.webp",
+    "bytes": 2610
+  },
+  {
+    "file": "assets/free-photo-calendars/cream-kitten-thumb.webp",
+    "bytes": 2596
+  },
+  {
+    "file": "assets/routine-icons/stretching@2x.webp",
+    "bytes": 2586
+  },
+  {
+    "file": "assets/routine-icons/shower@2x.webp",
+    "bytes": 2584
+  },
+  {
+    "file": "assets/routine-icons/jump-rope@2x.webp",
+    "bytes": 2580
+  },
+  {
+    "file": "assets/header-icons/note@3x.webp",
+    "bytes": 2576
+  },
+  {
+    "file": "assets/control-illustrations/star@2x.webp",
+    "bytes": 2576
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/everyday-cinema-04-museum.webp",
+    "bytes": 2570
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-autumn-03-windy-bus-stop.webp",
+    "bytes": 2570
+  },
+  {
+    "file": "assets/routine-icons/fruit@2x.webp",
+    "bytes": 2568
+  },
+  {
+    "file": "assets/control-illustrations/plus@2x.webp",
+    "bytes": 2560
+  },
+  {
+    "file": "assets/routine-icons/camping@2x.webp",
+    "bytes": 2560
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-autumn-01-dog-leaf-walk.webp",
+    "bytes": 2552
+  },
+  {
+    "file": "assets/routine-icons/email@2x.webp",
+    "bytes": 2548
+  },
+  {
+    "file": "assets/routine-icons/baking@2x.webp",
+    "bytes": 2548
+  },
+  {
+    "file": "assets/routine-icons/meeting@2x.webp",
+    "bytes": 2544
+  },
+  {
+    "file": "assets/control-illustrations/mail@2x.webp",
+    "bytes": 2538
+  },
+  {
+    "file": "assets/routine-icons/umbrella.webp",
+    "bytes": 2524
+  },
+  {
+    "file": "assets/routine-icons/sunscreen@2x.webp",
+    "bytes": 2512
+  },
+  {
+    "file": "assets/header-icons/lock-memo@3x.webp",
+    "bytes": 2496
+  },
+  {
+    "file": "assets/routine-icons/glue-bottle.webp",
+    "bytes": 2490
+  },
+  {
+    "file": "assets/control-illustrations/save@2x.webp",
+    "bytes": 2488
+  },
+  {
+    "file": "assets/routine-icons/candle@2x.webp",
+    "bytes": 2448
+  },
+  {
+    "file": "assets/routine-icons/meditation@2x.webp",
+    "bytes": 2444
+  },
+  {
+    "file": "assets/routine-icons/tea@2x.webp",
+    "bytes": 2442
+  },
+  {
+    "file": "assets/routine-icons/letter@2x.webp",
+    "bytes": 2416
+  },
+  {
+    "file": "assets/routine-icons/language@2x.webp",
+    "bytes": 2378
+  },
+  {
+    "file": "assets/routine-icons/call@2x.webp",
+    "bytes": 2340
+  },
+  {
+    "file": "assets/control-illustrations/down@2x.webp",
+    "bytes": 2312
+  },
+  {
+    "file": "assets/routine-icons/painting-room@2x.webp",
+    "bytes": 2308
+  },
+  {
+    "file": "assets/routine-icons/nap@2x.webp",
+    "bytes": 2302
+  },
+  {
+    "file": "assets/tab-icons/puzzle@2x.webp",
+    "bytes": 2296
+  },
+  {
+    "file": "assets/header-icons/reading@3x.webp",
+    "bytes": 2260
+  },
+  {
+    "file": "assets/routine-icons/wallet.webp",
+    "bytes": 2258
+  },
+  {
+    "file": "assets/control-illustrations/up@2x.webp",
+    "bytes": 2202
+  },
+  {
+    "file": "assets/routine-icons/repair@2x.webp",
+    "bytes": 2190
+  },
+  {
+    "file": "assets/tab-icons/story-pen@2x.png",
+    "bytes": 2182
+  },
+  {
+    "file": "assets/control-illustrations/left@2x.webp",
+    "bytes": 2166
+  },
+  {
+    "file": "assets/store-previews/season-winter.webp",
+    "bytes": 2158
+  },
+  {
+    "file": "assets/header-icons/calendar@2x.webp",
+    "bytes": 2156
+  },
+  {
+    "file": "assets/routine-icons/eye-rest@2x.webp",
+    "bytes": 2142
+  },
+  {
+    "file": "assets/routine-icons/cleaning@2x.webp",
+    "bytes": 2050
+  },
+  {
+    "file": "assets/header-icons/daily@2x.webp",
+    "bytes": 2042
+  },
+  {
+    "file": "assets/routine-icons/gardening@2x.webp",
+    "bytes": 2040
+  },
+  {
+    "file": "assets/routine-icons/pencil@2x.webp",
+    "bytes": 2014
+  },
+  {
+    "file": "assets/control-illustrations/right@2x.webp",
+    "bytes": 2006
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-summer-05-pool-float.webp",
+    "bytes": 1996
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-summer-04-pier-fishing.webp",
+    "bytes": 1976
+  },
+  {
+    "file": "assets/routine-icons/hanger.webp",
+    "bytes": 1964
+  },
+  {
+    "file": "assets/tab-icons/comic-portrait-v2.webp",
+    "bytes": 1964
+  },
+  {
+    "file": "assets/routine-icons/skincare@2x.webp",
+    "bytes": 1956
+  },
+  {
+    "file": "assets/routine-icons/toothbrush@2x.webp",
+    "bytes": 1918
+  },
+  {
+    "file": "assets/store-previews/season-spring.webp",
+    "bytes": 1866
+  },
+  {
+    "file": "assets/header-icons/list@2x.webp",
+    "bytes": 1780
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-summer-03-parasol-reading.webp",
+    "bytes": 1740
+  },
+  {
+    "file": "assets/header-icons/settings@2x.webp",
+    "bytes": 1724
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-summer-02-surfboard-morning.webp",
+    "bytes": 1696
+  },
+  {
+    "file": "assets/control-illustrations/brush@2x.webp",
+    "bytes": 1658
+  },
+  {
+    "file": "assets/header-icons/clock@2x.webp",
+    "bytes": 1594
+  },
+  {
+    "file": "assets/header-icons/note@2x.webp",
+    "bytes": 1504
+  },
+  {
+    "file": "assets/routine-icons/shopping.webp",
+    "bytes": 1496
+  },
+  {
+    "file": "assets/routine-icons/music.webp",
+    "bytes": 1446
+  },
+  {
+    "file": "assets/header-icons/lock-memo@2x.webp",
+    "bytes": 1436
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-winter-01-snow-walk.webp",
+    "bytes": 1392
+  },
+  {
+    "file": "assets/routine-icons/blood-pressure.webp",
+    "bytes": 1386
+  },
+  {
+    "file": "assets/routine-icons/lunchbox.webp",
+    "bytes": 1382
+  },
+  {
+    "file": "assets/control-illustrations/memo.webp",
+    "bytes": 1378
+  },
+  {
+    "file": "assets/routine-icons/plant.webp",
+    "bytes": 1346
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-spring-05-meadow-picnic.webp",
+    "bytes": 1346
+  },
+  {
+    "file": "assets/routine-icons/abstain.webp",
+    "bytes": 1338
+  },
+  {
+    "file": "assets/routine-icons/laundry.webp",
+    "bytes": 1336
+  },
+  {
+    "file": "assets/routine-icons/gift.webp",
+    "bytes": 1332
+  },
+  {
+    "file": "assets/header-icons/reading@2x.webp",
+    "bytes": 1324
+  },
+  {
+    "file": "assets/routine-icons/finance.webp",
+    "bytes": 1320
+  },
+  {
+    "file": "assets/control-illustrations/scale.webp",
+    "bytes": 1310
+  },
+  {
+    "file": "assets/routine-icons/sewing.webp",
+    "bytes": 1306
+  },
+  {
+    "file": "assets/control-illustrations/timer.webp",
+    "bytes": 1296
+  },
+  {
+    "file": "assets/routine-icons/bus.webp",
+    "bytes": 1296
+  },
+  {
+    "file": "assets/control-illustrations/checklist.webp",
+    "bytes": 1290
+  },
+  {
+    "file": "assets/routine-icons/breakfast.webp",
+    "bytes": 1284
+  },
+  {
+    "file": "assets/routine-icons/camera.webp",
+    "bytes": 1282
+  },
+  {
+    "file": "assets/routine-icons/focus.webp",
+    "bytes": 1278
+  },
+  {
+    "file": "assets/control-illustrations/pills.webp",
+    "bytes": 1276
+  },
+  {
+    "file": "assets/routine-icons/watercolor.webp",
+    "bytes": 1276
+  },
+  {
+    "file": "assets/routine-icons/exam.webp",
+    "bytes": 1274
+  },
+  {
+    "file": "assets/routine-icons/knitting.webp",
+    "bytes": 1272
+  },
+  {
+    "file": "assets/routine-icons/watering.webp",
+    "bytes": 1272
+  },
+  {
+    "file": "assets/routine-icons/recycling.webp",
+    "bytes": 1270
+  },
+  {
+    "file": "assets/control-illustrations/bell.webp",
+    "bytes": 1268
+  },
+  {
+    "file": "assets/routine-icons/planning.webp",
+    "bytes": 1268
+  },
+  {
+    "file": "assets/control-illustrations/list.webp",
+    "bytes": 1264
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-spring-03-riverside-bicycle.webp",
+    "bytes": 1264
+  },
+  {
+    "file": "assets/control-illustrations/letters.webp",
+    "bytes": 1258
+  },
+  {
+    "file": "assets/routine-icons/hiking.webp",
+    "bytes": 1254
+  },
+  {
+    "file": "assets/routine-icons/train.webp",
+    "bytes": 1250
+  },
+  {
+    "file": "assets/routine-icons/walking.webp",
+    "bytes": 1250
+  },
+  {
+    "file": "assets/routine-icons/map.webp",
+    "bytes": 1248
+  },
+  {
+    "file": "assets/routine-icons/football.webp",
+    "bytes": 1242
+  },
+  {
+    "file": "assets/control-illustrations/sun.webp",
+    "bytes": 1240
+  },
+  {
+    "file": "assets/routine-icons/cycling.webp",
+    "bytes": 1238
+  },
+  {
+    "file": "assets/routine-icons/vacuum.webp",
+    "bytes": 1234
+  },
+  {
+    "file": "assets/routine-icons/beach.webp",
+    "bytes": 1232
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-winter-02-sled-afternoon.webp",
+    "bytes": 1230
+  },
+  {
+    "file": "assets/routine-icons/organizing.webp",
+    "bytes": 1228
+  },
+  {
+    "file": "assets/routine-icons/volunteer.webp",
+    "bytes": 1226
+  },
+  {
+    "file": "assets/control-illustrations/clock.webp",
+    "bytes": 1224
+  },
+  {
+    "file": "assets/routine-icons/coffee.webp",
+    "bytes": 1220
+  },
+  {
+    "file": "assets/control-illustrations/chart.webp",
+    "bytes": 1216
+  },
+  {
+    "file": "assets/routine-icons/running.webp",
+    "bytes": 1212
+  },
+  {
+    "file": "assets/routine-icons/passport.webp",
+    "bytes": 1208
+  },
+  {
+    "file": "assets/control-illustrations/mail.webp",
+    "bytes": 1202
+  },
+  {
+    "file": "assets/control-illustrations/grid.webp",
+    "bytes": 1198
+  },
+  {
+    "file": "assets/routine-icons/journal.webp",
+    "bytes": 1192
+  },
+  {
+    "file": "assets/routine-icons/drawing.webp",
+    "bytes": 1192
+  },
+  {
+    "file": "assets/routine-icons/flower.webp",
+    "bytes": 1190
+  },
+  {
+    "file": "assets/control-illustrations/megaphone.webp",
+    "bytes": 1188
+  },
+  {
+    "file": "assets/routine-icons/basketball.webp",
+    "bytes": 1184
+  },
+  {
+    "file": "assets/routine-icons/weight.webp",
+    "bytes": 1182
+  },
+  {
+    "file": "assets/routine-icons/birdwatching.webp",
+    "bytes": 1182
+  },
+  {
+    "file": "assets/control-illustrations/plus-circle.webp",
+    "bytes": 1178
+  },
+  {
+    "file": "assets/routine-icons/vitamins.webp",
+    "bytes": 1178
+  },
+  {
+    "file": "assets/routine-icons/research.webp",
+    "bytes": 1174
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-winter-04-little-snowman.webp",
+    "bytes": 1174
+  },
+  {
+    "file": "assets/routine-icons/handwashing.webp",
+    "bytes": 1168
+  },
+  {
+    "file": "assets/routine-icons/travel.webp",
+    "bytes": 1160
+  },
+  {
+    "file": "assets/routine-icons/car.webp",
+    "bytes": 1160
+  },
+  {
+    "file": "assets/routine-icons/bed-making.webp",
+    "bytes": 1158
+  },
+  {
+    "file": "assets/routine-icons/breathing.webp",
+    "bytes": 1156
+  },
+  {
+    "file": "assets/routine-icons/work.webp",
+    "bytes": 1150
+  },
+  {
+    "file": "assets/routine-icons/salad.webp",
+    "bytes": 1148
+  },
+  {
+    "file": "assets/routine-icons/film.webp",
+    "bytes": 1148
+  },
+  {
+    "file": "assets/routine-icons/tennis.webp",
+    "bytes": 1146
+  },
+  {
+    "file": "assets/routine-icons/crafts.webp",
+    "bytes": 1146
+  },
+  {
+    "file": "assets/tab-icons/routine.webp",
+    "bytes": 1142
+  },
+  {
+    "file": "assets/routine-icons/measuring.webp",
+    "bytes": 1138
+  },
+  {
+    "file": "assets/routine-icons/collage.webp",
+    "bytes": 1136
+  },
+  {
+    "file": "assets/routine-icons/pet-care.webp",
+    "bytes": 1136
+  },
+  {
+    "file": "assets/routine-icons/game.webp",
+    "bytes": 1128
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-spring-01-light-footsteps.webp",
+    "bytes": 1128
+  },
+  {
+    "file": "assets/routine-icons/piano.webp",
+    "bytes": 1126
+  },
+  {
+    "file": "assets/routine-icons/reading.webp",
+    "bytes": 1124
+  },
+  {
+    "file": "assets/routine-icons/sunshine.webp",
+    "bytes": 1124
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-winter-03-ice-skaters.webp",
+    "bytes": 1122
+  },
+  {
+    "file": "assets/control-illustrations/book.webp",
+    "bytes": 1112
+  },
+  {
+    "file": "assets/routine-icons/checkup.webp",
+    "bytes": 1112
+  },
+  {
+    "file": "assets/control-illustrations/search.webp",
+    "bytes": 1106
+  },
+  {
+    "file": "assets/control-illustrations/reset.webp",
+    "bytes": 1104
+  },
+  {
+    "file": "assets/routine-icons/sleep.webp",
+    "bytes": 1104
+  },
+  {
+    "file": "assets/routine-icons/email.webp",
+    "bytes": 1104
+  },
+  {
+    "file": "assets/control-illustrations/photos.webp",
+    "bytes": 1102
+  },
+  {
+    "file": "assets/control-illustrations/stack.webp",
+    "bytes": 1102
+  },
+  {
+    "file": "assets/control-illustrations/info.webp",
+    "bytes": 1090
+  },
+  {
+    "file": "assets/routine-icons/cooking.webp",
+    "bytes": 1088
+  },
+  {
+    "file": "assets/routine-icons/meal.webp",
+    "bytes": 1086
+  },
+  {
+    "file": "assets/control-illustrations/keyboard.webp",
+    "bytes": 1084
+  },
+  {
+    "file": "assets/routine-icons/dishes.webp",
+    "bytes": 1084
+  },
+  {
+    "file": "assets/control-illustrations/sliders.webp",
+    "bytes": 1082
+  },
+  {
+    "file": "assets/routine-icons/exercise.webp",
+    "bytes": 1080
+  },
+  {
+    "file": "assets/routine-icons/offline.webp",
+    "bytes": 1080
+  },
+  {
+    "file": "assets/routine-icons/anniversary.webp",
+    "bytes": 1080
+  },
+  {
+    "file": "assets/control-illustrations/tag.webp",
+    "bytes": 1078
+  },
+  {
+    "file": "assets/control-illustrations/desk-bell.webp",
+    "bytes": 1072
+  },
+  {
+    "file": "assets/routine-icons/bath.webp",
+    "bytes": 1068
+  },
+  {
+    "file": "assets/routine-icons/yoga.webp",
+    "bytes": 1064
+  },
+  {
+    "file": "assets/routine-icons/budget.webp",
+    "bytes": 1062
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-spring-02-first-jog.webp",
+    "bytes": 1062
+  },
+  {
+    "file": "assets/routine-icons/jump-rope.webp",
+    "bytes": 1060
+  },
+  {
+    "file": "assets/routine-icons/boxing.webp",
+    "bytes": 1054
+  },
+  {
+    "file": "assets/control-illustrations/calendar.webp",
+    "bytes": 1050
+  },
+  {
+    "file": "assets/routine-icons/fruit.webp",
+    "bytes": 1048
+  },
+  {
+    "file": "assets/paid-calendar-thumbs/season-spring-04-roller-skating.webp",
+    "bytes": 1048
+  },
+  {
+    "file": "assets/routine-icons/medicine.webp",
+    "bytes": 1046
+  },
+  {
+    "file": "assets/routine-icons/swimming.webp",
+    "bytes": 1046
+  },
+  {
+    "file": "assets/routine-icons/baking.webp",
+    "bytes": 1038
+  },
+  {
+    "file": "assets/routine-icons/letter.webp",
+    "bytes": 1038
+  },
+  {
+    "file": "assets/routine-icons/water.webp",
+    "bytes": 1036
+  },
+  {
+    "file": "assets/tab-icons/story-pen.png",
+    "bytes": 1026
+  },
+  {
+    "file": "assets/routine-icons/pilates.webp",
+    "bytes": 1022
+  },
+  {
+    "file": "assets/control-illustrations/down.webp",
+    "bytes": 1020
+  },
+  {
+    "file": "assets/routine-icons/eye-rest.webp",
+    "bytes": 1020
+  },
+  {
+    "file": "assets/routine-icons/lecture.webp",
+    "bytes": 1016
+  },
+  {
+    "file": "assets/control-illustrations/moon.webp",
+    "bytes": 1006
+  },
+  {
+    "file": "assets/routine-icons/stretching.webp",
+    "bytes": 1002
+  },
+  {
+    "file": "assets/routine-icons/language.webp",
+    "bytes": 1002
+  },
+  {
+    "file": "assets/routine-icons/guitar.webp",
+    "bytes": 1002
+  },
+  {
+    "file": "assets/routine-icons/shower.webp",
+    "bytes": 1000
+  },
+  {
+    "file": "assets/routine-icons/sunscreen.webp",
+    "bytes": 998
+  },
+  {
+    "file": "assets/routine-icons/camping.webp",
+    "bytes": 998
+  },
+  {
+    "file": "assets/routine-icons/meeting.webp",
+    "bytes": 986
+  },
+  {
+    "file": "assets/header-icons/calendar.webp",
+    "bytes": 984
+  },
+  {
+    "file": "assets/routine-icons/coding.webp",
+    "bytes": 974
+  },
+  {
+    "file": "assets/routine-icons/meditation.webp",
+    "bytes": 974
+  },
+  {
+    "file": "assets/routine-icons/pencil.webp",
+    "bytes": 968
+  },
+  {
+    "file": "assets/routine-icons/tea.webp",
+    "bytes": 954
+  },
+  {
+    "file": "assets/routine-icons/gardening.webp",
+    "bytes": 952
+  },
+  {
+    "file": "assets/header-icons/daily.webp",
+    "bytes": 948
+  },
+  {
+    "file": "assets/control-illustrations/send.webp",
+    "bytes": 946
+  },
+  {
+    "file": "assets/routine-icons/candle.webp",
+    "bytes": 946
+  },
+  {
+    "file": "assets/control-illustrations/up.webp",
+    "bytes": 942
+  },
+  {
+    "file": "assets/control-illustrations/save.webp",
+    "bytes": 936
+  },
+  {
+    "file": "assets/control-illustrations/plus.webp",
+    "bytes": 936
+  },
+  {
+    "file": "assets/routine-icons/cleaning.webp",
+    "bytes": 936
+  },
+  {
+    "file": "assets/control-illustrations/left.webp",
+    "bytes": 934
+  },
+  {
+    "file": "assets/routine-icons/painting-room.webp",
+    "bytes": 928
+  },
+  {
+    "file": "assets/routine-icons/skincare.webp",
+    "bytes": 916
+  },
+  {
+    "file": "assets/routine-icons/nap.webp",
+    "bytes": 914
+  },
+  {
+    "file": "assets/routine-icons/call.webp",
+    "bytes": 914
+  },
+  {
+    "file": "assets/control-illustrations/star.webp",
+    "bytes": 910
+  },
+  {
+    "file": "assets/routine-icons/toothbrush.webp",
+    "bytes": 888
+  },
+  {
+    "file": "assets/control-illustrations/right.webp",
+    "bytes": 860
+  },
+  {
+    "file": "assets/routine-icons/repair.webp",
+    "bytes": 856
+  },
+  {
+    "file": "assets/header-icons/list.webp",
+    "bytes": 842
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/search-icon@3x.ios.png",
+    "bytes": 839
+  },
+  {
+    "file": "assets/header-icons/settings.webp",
+    "bytes": 816
+  },
+  {
+    "file": "assets/tab-icons/puzzle.webp",
+    "bytes": 810
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/back-icon@4x.ios.png",
+    "bytes": 809
+  },
+  {
+    "file": "assets/header-icons/note.webp",
+    "bytes": 792
+  },
+  {
+    "file": "assets/header-icons/clock.webp",
+    "bytes": 786
+  },
+  {
+    "file": "assets/control-illustrations/brush.webp",
+    "bytes": 762
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/back-icon@3x.ios.png",
+    "bytes": 761
+  },
+  {
+    "file": "assets/header-icons/reading.webp",
+    "bytes": 728
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/back-icon-mask.png",
+    "bytes": 653
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/clear-icon.png",
+    "bytes": 645
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/clear-icon@4x.png",
+    "bytes": 645
+  },
+  {
+    "file": "assets/control-illustrations/calendar-white-tape.webp",
+    "bytes": 596
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/search-icon@2x.ios.png",
+    "bytes": 589
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/search-icon@4x.ios.png",
+    "bytes": 589
+  },
+  {
+    "file": "assets/header-icons/lock-memo.webp",
+    "bytes": 566
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/clear-icon@3x.png",
+    "bytes": 502
+  },
+  {
+    "file": "node_modules/expo-router/assets/error.png",
+    "bytes": 469
+  },
+  {
+    "file": "node_modules/expo-router/assets/sitemap.png",
+    "bytes": 465
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/back-icon@2x.ios.png",
+    "bytes": 405
+  },
+  {
+    "file": "node_modules/expo-router/assets/pkg.png",
+    "bytes": 364
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/clear-icon@2x.png",
+    "bytes": 334
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/close-icon.png",
+    "bytes": 332
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/close-icon@4x.png",
+    "bytes": 332
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/search-icon@1x.ios.png",
+    "bytes": 317
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/back-icon@1x.ios.png",
+    "bytes": 290
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/close-icon@3x.png",
+    "bytes": 266
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/clear-icon@1x.png",
+    "bytes": 220
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/close-icon@2x.png",
+    "bytes": 201
+  },
+  {
+    "file": "node_modules/expo-router/assets/forward.png",
+    "bytes": 188
+  },
+  {
+    "file": "node_modules/expo-router/assets/react-navigation/elements/close-icon@1x.png",
+    "bytes": 141
+  },
+  {
+    "file": "node_modules/expo-router/assets/file.png",
+    "bytes": 138
+  },
+  {
+    "file": "assets/images/empty-artwork.png",
+    "bytes": 68
+  }
+]
