@@ -1,3 +1,4 @@
+jest.mock('@features/subscriptions/lib/downloadClient', () => ({ invokeDownload: (...args: unknown[]) => require('@shared/lib/supabase/heroAiAuth').getHeroAiAuthClient().functions.invoke(...args) }));
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///documents/',
   makeDirectoryAsync: jest.fn(async () => {}),

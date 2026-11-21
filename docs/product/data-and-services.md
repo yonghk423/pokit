@@ -36,7 +36,7 @@
 
 한국 스토어의 Daylight Pro 책정가는 월 3,900원, 연 27,900원입니다.
 
-설정의 Pro 화면은 RevenueCat의 현재 Offering에서 월간·연간 패키지와 현지화 가격을 조회하고, 구매·복원 결과의 `daylight_pro` 권한을 구독 상태에 반영합니다. 개발 빌드는 SDK가 활성화되며, 배포 빌드는 `EXPO_PUBLIC_REVENUECAT_ENABLED=true`를 명시해야 활성화됩니다. iOS 개발 빌드는 App Store용 iOS 키를 우선합니다. 해당 키가 없는 개발 빌드는 `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`가 있으면 Test Store에 우선 연결합니다. 이 값이 없으면 플랫폼별 키, 공통 키, 개발용 폴백 순으로 사용합니다. 배포 빌드는 개발용 키를 무시하고 플랫폼 키가 `test_`로 시작하면 초기화하지 않습니다. 제품 소개의 명칭은 **Daylight Pro**입니다. 기존 구독자의 `yourday_pro` 권한도 인정합니다.
+설정의 Pro 화면은 RevenueCat의 현재 Offering에서 월간·연간 패키지와 현지화 가격을 조회하고, 구매·복원 결과의 `daylight_pro` 권한을 구독 상태에 반영합니다. 개발 빌드는 SDK가 활성화되며, 배포 빌드는 `EXPO_PUBLIC_REVENUECAT_ENABLED=true`를 명시해야 활성화됩니다. 개발·배포 모두 플랫폼별 실제 SDK 키(iOS `appl_`, Android `goog_`)를 사용하며 Test Store 키와 개발용 폴백은 사용하지 않습니다. 테스트는 스토어 Sandbox 구매·복원으로 진행합니다. RevenueCat은 로그인 없이 익명 고객 ID를 관리하고, 유료 다운로드 서버는 Apple 구매 증명을 검증합니다. 제품 소개의 명칭은 **Daylight Pro**입니다. 기존 구독자의 `yourday_pro` 권한도 인정합니다.
 
 유료 일러스트 팩·장식과 유료 필름 적용·저장·공유에는 Pro 권한 처리가 연결되어 있습니다. 일반 캘린더와 무료 필름·수동 보정은 무료입니다. 정확한 혜택은 [현재 기능](current-product.md), `featureFlags.ts`와 해당 기능 코드를 함께 확인합니다. 코드 연결 여부와 실제 스토어 판매·결제 검증은 별개이며, 구매·취소·복원·만료는 스토어 샌드박스에서 확인합니다.
 

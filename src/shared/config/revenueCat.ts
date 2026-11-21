@@ -11,7 +11,7 @@ import { FEATURE_FLAGS } from '@shared/config/featureFlags';
  * - lifetime → Product: lifetime
  *
  * API 키는 EXPO_PUBLIC_REVENUECAT_* 환경 변수를 우선한다.
- * 개발 빌드에서만 온보딩 Test 키로 폴백하며, 배포 빌드는 키가 없으면 설정을 건너뛴다.
+ * 개발·배포 모두 앱 SDK 키를 사용하며 키가 없으면 설정을 건너뛴다.
  */
 
 export const REVENUECAT_ENTITLEMENT_PRO = 'daylight_pro' as const;
@@ -26,24 +26,12 @@ export const REVENUECAT_PRODUCT_IDS = {
   lifetime: 'lifetime',
 } as const;
 
-const FALLBACK_TEST_API_KEY = 'test_rCafnJQaqbCdcLovsnhhvYdKKSV';
-
-export function getRevenueCatApiKey(platform: 'ios' | 'android' | 'web' | string): string | null {
-  if (platform === 'web') return null;
-  const iosKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim();
-  if (platform === 'ios' && iosKey?.startsWith('appl_')) return iosKey;
-  const testKey = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY?.trim();
-  if (__DEV__ && testKey?.startsWith('test_')) return testKey;
-
-  const shared = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY?.trim();
-  const developmentFallback = __DEV__ ? FALLBACK_TEST_API_KEY : null;
-  if (platform === 'ios') {
-    const key = iosKey || shared || developmentFallback;
-    return !__DEV__ && key?.startsWith('test_') ? null : key;
-  }
-  if (platform === 'android') {
-    const key = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY?.trim() || shared || developmentFallback;
-    return !__DEV__ && key?.startsWith('test_') ? null : key;
-  }
-  return shared || developmentFallback;
+/** Development uses the real app SDK key too; StoreKit Sandbox handles test purchases. */
+export function getRevenueCatApiKey(platform: string): string | null {
+  const key = (platform === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY :
+    platform === 'android' ? process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY : undefined)?.trim()
+    || process.env.EXPO_PUBLIC_REVENUECAT_API_KEY?.trim();
+  if (platform === 'ios') return key?.startsWith('appl_') ? key : null;
+  if (platform === 'android') return key?.startsWith('goog_') ? key : null;
+  return null;
 }

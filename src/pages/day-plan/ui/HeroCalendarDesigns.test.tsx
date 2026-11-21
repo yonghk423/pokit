@@ -4,6 +4,12 @@ import { CalendarPaper, HeroCalendarDesigns, calendarPaperDays } from './HeroCal
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 
 jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ useSubscriptionStore: () => false, selectIsPro: () => false }));
+jest.mock('../lib/storeArtwork', () => ({ useStoreArtwork: () => ({ artwork: { board: 1 } }) }));
+jest.mock('../lib/calendarStoreDownload', () => ({
+  installedPaper: () => ({ paper: '#fff', edge: '#ddd', revision: 1 }),
+  installPaper: jest.fn(async () => {}), diaryImages: () => undefined,
+  installDiaryItem: jest.fn(async () => {}), storeDownloadErrorMessage: () => 'download error',
+}));
 jest.mock('./WeatherSummary', () => ({ WeatherSummary: () => null, getCalendarWeatherReport: () => null }));
 jest.mock('./usePremiumPackPaywall', () => ({ usePremiumPackPaywall: () => ({ present: async () => 'cancelled', modal: null }) }));
 jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { getJson: jest.fn(), setJson: jest.fn() } }));
@@ -38,7 +44,7 @@ it('applies and persists the selected free design', () => {
   act(() => { void button.props.onPress(); });
   expect(localStorageClient.setJson).toHaveBeenCalledWith('pokit:calendar-design', 'photo');
   expect(button.props.accessibilityState.selected).toBe(true);
-  expect(tree.root.findAllByType(CalendarPaper).map(paper => paper.props.design)).toContain('emerald');
+  expect(tree.root.findAllByType(CalendarPaper).map(paper => paper.props.design)).toContain('cream-kitten');
   expect(tree.root.findAllByType(CalendarPaper).every(paper => paper.props.miniature)).toBe(true);
   expect(tree.root.findAllByType(CalendarPaper).every(paper => paper.props.layoutWidth > 0)).toBe(true);
   act(() => tree.unmount());
@@ -102,7 +108,7 @@ it.each(['bold', 'photo'] as const)('fits %s preview dates inside all seven colu
 it('offers a weather calendar and persists it across reads', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroCalendarDesigns month={new Date(2026, 10, 1)} today={new Date(2026, 10, 13)} diaries={[]} onSelectDate={jest.fn()} />); });
-  const card = tree.root.findByProps({ accessibilityLabel: 'Weather Calendar, 무료, 현재 날씨와 날짜를 함께 보는 달력' });
+  const card = tree.root.findByProps({ accessibilityLabel: 'Weather Calendar, 무료 · 적용하기, 현재 날씨와 날짜를 함께 보는 달력' });
   act(() => { void card.props.onPress(); });
   expect(localStorageClient.setJson).toHaveBeenCalledWith('pokit:calendar-design', 'weather');
   expect(require('../model/heroCalendarDesign').readHeroCalendarDesign()).toBe('weather');

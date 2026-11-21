@@ -1,6 +1,7 @@
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { Alert, Image } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { POLAROID_FILMS, isProPolaroidFilm } from './HeroPolaroidEffects';
 import { HeroPolaroidEditor } from './HeroPolaroidEditor';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 jest.mock('./HeroSceneImage', () => ({ ComicSceneImage: 'ComicSceneImage' }));
@@ -288,3 +289,20 @@ it('keeps the warm preview and final image selected after switching films', asyn
     }
   } finally { act(() => tree.unmount()); }
 });
+
+it.each(POLAROID_FILMS.flatMap(({value: film}) => [false, true].flatMap(pro => ['save', 'share'].map(action => ({film, pro, action})))))(
+  'checks $film $action with Pro=$pro', async ({film, pro, action}) => {
+    mockState.pro = pro;
+    const onExport = jest.fn(async () => {});
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = create(<HeroPolaroidEditor initial={{ title: 'QA', date: '2026.11.21', film }} busy={false} onClose={jest.fn()} onExport={onExport} />); });
+    try {
+      await act(async () => tree.root.findAllByProps({ testID: 'polaroid-editor-' + action })[0].props.onPress());
+      if (!pro && isProPolaroidFilm(film)) {
+        expect(onExport).not.toHaveBeenCalled();
+        expect(tree.root.findAllByType('AppProScreen' as never)).toHaveLength(1);
+      } else {
+        expect(onExport).toHaveBeenCalledWith(action, expect.objectContaining({film}));
+      }
+    } finally { act(() => tree.unmount()); }
+  });

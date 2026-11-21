@@ -13,5 +13,21 @@ verify_jwt = false
 [functions.calendar-store]
 verify_jwt = false
 
-[functions.developer-pro]
+
+[functions.calendar-theme]
+verify_jwt = false
+
+[functions.calendar-artwork-download]
+verify_jwt = false
+
+[functions.calendar-store-sandbox]
+verify_jwt = false
+
+[functions.calendar-theme-sandbox]
+verify_jwt = false
+
+[functions.calendar-artwork-download-sandbox]
+verify_jwt = false
+
+[functions.character-pack-sandbox]
 verify_jwt = false

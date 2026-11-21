@@ -5,7 +5,7 @@ import * as fs from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { proDiaryCatalog } from '../model/proDiaryCatalog';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
+import { invokeDownload } from '@features/subscriptions/lib/downloadClient';
 
 type PaperAsset = { revision: number; id: string; paper: string; edge: string; binding?: string };
 const revisedItems = new Set<string>(proDiaryCatalog.map(item => item.id));
@@ -16,8 +16,7 @@ export function installedPaper(id: string) {
   return localStorageClient.getJson<PaperAsset>(key(id));
 }
 async function requestAsset(id: string) {
-  const token = await getHeroAiAccessToken();
-  const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-store', { body: { id, format: 2 }, headers: { Authorization: 'Bearer ' + token } });
+  const { data, error } = await invokeDownload('calendar-store', { body: { id, format: 2 } });
   if (error) {
     let code = 'download_unavailable';
     try {

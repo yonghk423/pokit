@@ -11,6 +11,8 @@ PODS:
     - PromisesObjC (~> 2.4)
     - PromisesSwift (~> 2.4)
     - RecaptchaInterop (~> 101.0)
+  - DaylightPurchaseProof (1.0.0):
+    - ExpoModulesCore
   - EXApplication (57.0.3):
     - ExpoModulesCore
   - EXConstants (57.0.22):
@@ -2833,6 +2835,7 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
+  - DaylightPurchaseProof (from `../modules/daylight-purchase-proof/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - EXJSONUtils (from `../node_modules/expo-json-utils/ios`)
@@ -3007,6 +3010,8 @@ SPEC REPOS:
     - SDWebImageWebPCoder
 
 EXTERNAL SOURCES:
+  DaylightPurchaseProof:
+    :path: "../modules/daylight-purchase-proof/ios"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXConstants:
@@ -3284,6 +3289,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AppAuth: 5dec4b6a833eb0342b26bacbc5f3af694f71274a
   AppCheckCore: be8fce5469f68d7f6a29aa94b25f097409ff7fdc
+  DaylightPurchaseProof: 55cc5cbad7b9769ac915a23a20d0182185b99591
   EXApplication: a727f05eb8592f0bc764f6ab8d51eacc158652ec
   EXConstants: 8a0eb5e2553569c0e6710b73a8d90d1ce358c153
   EXJSONUtils: a49e3ef80dff762108e5690c7b2f360675dcf7f6
@@ -3453,4 +3459,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: ff51377b57fe03347fdece494a0dae593e6e08a1
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

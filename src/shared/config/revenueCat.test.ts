@@ -13,7 +13,7 @@ it('prefers the App Store key on iOS when a development Test Store key is also p
   process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = 'test_example';
   process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = 'appl_example';
   expect(getRevenueCatApiKey('ios')).toBe('appl_example');
-  expect(getRevenueCatApiKey('android')).toBe('test_example');
+  expect(getRevenueCatApiKey('android')).toBeNull();
   expect(getRevenueCatApiKey('web')).toBeNull();
 });
 it('ignores the development key in release and retains the App Store key', () => {
@@ -23,8 +23,8 @@ it('ignores the development key in release and retains the App Store key', () =>
   expect(getRevenueCatApiKey('ios')).toBe('appl_example');
   expect(getRevenueCatApiKey('android')).toBeNull();
 });
-it('rejects a Test Store key in release platform configuration', () => {
-  Object.assign(globalThis, { __DEV__: false });
+it.each([true, false])('rejects a Test Store platform key when development=%s', development => {
+  Object.assign(globalThis, { __DEV__: development });
   process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = 'test_example';
   expect(getRevenueCatApiKey('ios')).toBeNull();
 });

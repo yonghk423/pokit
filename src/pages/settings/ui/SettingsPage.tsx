@@ -421,6 +421,12 @@ export function SettingsPage() {
             </SettingsSection>
           ) : null}
 
+
+          {process.env.EXPO_PUBLIC_DOWNLOAD_ENVIRONMENT === 'Sandbox' ? (
+            <Pressable onPress={() => router.push('./purchase-sandbox')} accessibilityRole="button" accessibilityLabel="Sandbox 구매 검증">
+              <ThemedText style={{ padding: 20 }}>Sandbox 구매 검증</ThemedText>
+            </Pressable>
+          ) : null}
           <CalendarConnectionsSection isDark={isDark} />
           {FEATURE_FLAGS.driveBackupSettings ? <DriveBackupSection isDark={isDark} /> : null}
 

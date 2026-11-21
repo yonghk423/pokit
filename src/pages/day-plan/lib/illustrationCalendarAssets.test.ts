@@ -1,6 +1,6 @@
 jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///docs/', getInfoAsync: jest.fn(), makeDirectoryAsync: jest.fn(), downloadAsync: jest.fn(), moveAsync: jest.fn(), deleteAsync: jest.fn(), readDirectoryAsync: jest.fn() }));
 jest.mock('expo-image', () => ({ Image: { clearDiskCache: jest.fn(), clearMemoryCache: jest.fn() } }));
-jest.mock('@shared/lib/supabase/heroAiAuth', () => ({ getHeroAiAccessToken: jest.fn(), getHeroAiAuthClient: () => ({ functions: { invoke: mockInvoke } }) }));
+jest.mock('@features/subscriptions/lib/downloadClient', () => ({ invokeDownload: (...args: unknown[]) => mockInvoke(...args) }));
 import * as fs from 'expo-file-system/legacy';
 import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
 import { isIllustrationCalendarInstalled, downloadIllustrationCalendarAssets, removeRetiredEverydayFiles, CALENDAR_ASSET_REVISION } from './illustrationCalendarAssets';

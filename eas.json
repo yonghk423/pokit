@@ -20,11 +20,20 @@
     "production": {
       "environment": "production",
       "env": {
-        "EXPO_PUBLIC_REVENUECAT_ENABLED": "true"
+        "EXPO_PUBLIC_REVENUECAT_ENABLED": "true",
+        "EXPO_PUBLIC_DOWNLOAD_ENVIRONMENT": "Production"
       },
       "autoIncrement": true,
       "ios": {
         "scheme": "Pokit"
+      }
+    },
+    "testflight": {
+      "extends": "production",
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_ENABLED": "true",
+        "EXPO_PUBLIC_DOWNLOAD_ENVIRONMENT": "Sandbox"
       }
     }
   },
@@ -33,6 +42,9 @@
       "ios": {
         "ascAppId": "6762331629"
       }
+    },
+    "testflight": {
+      "extends": "production"
     }
   }
 }

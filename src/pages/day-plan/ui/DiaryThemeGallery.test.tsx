@@ -51,7 +51,7 @@ it('applies every classic item without a subscription or a download', () => {
 it.each([false, true])('unapplies an active item directly without downloading again (Pro=%s)', pro => {
   const item = pro ? proDiaryCatalog.find(item => item.id === 'mini-toast')! : require('../model/classicDiaryCatalog').classicDiaryCatalog.find((item: { id: string }) => item.id === 'classic-memo');
   const previous = localStorageClient.getJson('pokit:diary-theme-items');
-  const cacheKey = 'pokit:calendar-store:v2:' + item.id;
+  const cacheKey = 'pokit:calendar-store:v4:' + item.id;
   const previousImages = localStorageClient.getJson(cacheKey);
   mockPro = pro;
   if (pro) localStorageClient.setJson(cacheKey, { image: 'data:image/webp;base64,test' });

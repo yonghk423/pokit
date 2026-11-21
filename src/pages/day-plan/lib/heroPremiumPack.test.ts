@@ -1,3 +1,4 @@
+jest.mock('@features/subscriptions/lib/downloadClient', () => ({ invokeDownload: (...args: unknown[]) => require('@shared/lib/supabase/heroAiAuth').getHeroAiAuthClient().functions.invoke(...args) }));
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { getJson: jest.fn() } }));
 import * as fs from 'expo-file-system/legacy';

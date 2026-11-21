@@ -3,7 +3,7 @@ import { REVENUECAT_ENABLED } from '@shared/config/revenueCat';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
-import { activateDeveloperProForPurchase, getActiveProEntitlement, manageSubscription, restorePurchases, isProEntitlementActive, useSubscriptionStore } from '@features/subscriptions';
+import { getActiveProEntitlement, manageSubscription, restorePurchases, isProEntitlementActive, useSubscriptionStore } from '@features/subscriptions';
 
 export type ProPlan = 'monthly' | 'yearly';
 async function refreshAfterManagement(enabled: boolean) {
@@ -77,11 +77,6 @@ export function useProSubscription(storeItems = false) {
     setBusy(true);
     try {
       if (plan) {
-        const developerInfo = await activateDeveloperProForPurchase();
-        if (developerInfo) {
-          useSubscriptionStore.getState().applyCustomerInfo(developerInfo);
-          return 'active';
-        }
         if (!packages[plan]) return 'unavailable';
         const result = await Purchases.purchasePackage(packages[plan]!);
         useSubscriptionStore.getState().applyCustomerInfo(result.customerInfo);

@@ -1,7 +1,7 @@
 import * as fs from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
 import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
-import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
+import { invokeDownload } from '@features/subscriptions/lib/downloadClient';
 export type CalendarAssets = { background: string };
 export const CALENDAR_ASSET_REVISION = '20261112-everyday-cinema-v1';
 const previousRevision = '20261109-fullbleed-v2';
@@ -56,8 +56,7 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
   const citypopRetro = isCitypopRetro(themeId);
   const texturedWatercolor = isTexturedWatercolor(themeId);
   const revision = collectionSeason(themeId) ? `season-${collectionSeason(themeId)}-v1` : themeId.startsWith('season-winter-') ? 'season-winter-v2' : everyday ? 'everyday-cinema-v2' : warmSepia ? 'warm-sepia-open-panel-v2' : citypopRetro ? 'citypop-retro-v1' : texturedWatercolor ? themeId === 'textured-watercolor-01-fly-kite' ? 'textured-watercolor-v1' : 'textured-watercolor-v2' : 'fullbleed-v2';
-  await getHeroAiAccessToken();
-  const { data, error } = await getHeroAiAuthClient().functions.invoke('calendar-theme', { body: { themeId, revision } });
+  const { data, error } = await invokeDownload('calendar-theme', { body: { themeId, revision } });
   if (error || data?.themeId !== themeId || data?.revision !== revision || !Array.isArray(data?.files)) {
     throw new Error('theme_download_unavailable');
   }

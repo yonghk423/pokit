@@ -1,7 +1,7 @@
 import { Asset } from 'expo-asset';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import * as fs from 'expo-file-system/legacy';
-import { getHeroAiAccessToken, getHeroAiAuthClient } from '@shared/lib/supabase/heroAiAuth';
+import { invokeDownload } from '@features/subscriptions/lib/downloadClient';
 
 export function premiumSceneTitle(id: string): string {
   const titles: Record<string, string> = {
@@ -27,8 +27,7 @@ let downloading: Promise<{ id: string; uri: string }[]> | undefined;
 export function downloadPremiumPack(): Promise<{ id: string; uri: string }[]> {
   if (downloading) return downloading;
   downloading = (async () => {
-    const token = await getHeroAiAccessToken();
-    const { data, error } = await getHeroAiAuthClient().functions.invoke('character-pack', { body: { action: 'download' }, headers: { Authorization: 'Bearer ' + token } });
+    const { data, error } = await invokeDownload('character-pack', { body: { action: 'download' } });
     if (error) throw error;
     const file = data?.files?.find((entry: { name: string; url: string }) => entry.name === 'p7-01.webp');
     if (!file || !file.url.startsWith('https://') || !decodeURIComponent(new URL(file.url).pathname).endsWith('/protagonist-7/card-960/p7-01.webp')) throw new Error('invalid_pack');
