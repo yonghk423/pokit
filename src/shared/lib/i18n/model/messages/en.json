@@ -3728,5 +3728,7 @@
   "ui.cinema.50fe77e814": "Bookbinding Workshop",
   "ui.cinema.14b6ce3aba": "Indoor Surfing",
   "ui.cinema.e05e06a8a8": "Badminton Court",
-  "ui.cinema.c267617451": "City Ferry Deck"
+  "ui.cinema.c267617451": "City Ferry Deck",
+  "archive.notes.deleteTitle": "Delete this notebook?",
+  "archive.notes.deleteManyMessage": "Monthly and daily note text and decorations for the selected {count} months will be deleted. Photos and events will be kept. Deleted notes cannot be recovered."
 }

@@ -3728,5 +3728,7 @@
   "ui.cinema.50fe77e814": "製本工房",
   "ui.cinema.14b6ce3aba": "屋内サーフィン",
   "ui.cinema.e05e06a8a8": "バドミントンコート",
-  "ui.cinema.c267617451": "街のフェリーデッキ"
+  "ui.cinema.c267617451": "街のフェリーデッキ",
+  "archive.notes.deleteTitle": "月別ノートを削除しますか？",
+  "archive.notes.deleteManyMessage": "選択した{count}か月の月別・日別ノートの本文と装飾をすべて削除します。写真と予定は残ります。削除したノートは復元できません。"
 }

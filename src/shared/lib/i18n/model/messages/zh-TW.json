@@ -3728,5 +3728,7 @@
   "ui.cinema.50fe77e814": "裝訂工坊",
   "ui.cinema.14b6ce3aba": "室內衝浪",
   "ui.cinema.e05e06a8a8": "羽球場",
-  "ui.cinema.c267617451": "城市渡輪甲板"
+  "ui.cinema.c267617451": "城市渡輪甲板",
+  "archive.notes.deleteTitle": "要刪除此月的筆記嗎？",
+  "archive.notes.deleteManyMessage": "將刪除所選 {count} 個月的所有月筆記與每日筆記內容及裝飾。照片和行程會保留。刪除後無法復原。"
 }

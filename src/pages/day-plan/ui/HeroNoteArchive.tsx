@@ -33,7 +33,7 @@ const notebookColors = [
 ];
 const monthName = (month: string) => new Date(`${month}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
 
-export function HeroNoteArchive({ year }: { year: number }) {
+export function HeroNoteArchive({ year, selecting = false, selectedMonths = [], onToggleMonth }: { year: number; selecting?: boolean; selectedMonths?: string[]; onToggleMonth?: (month: string) => void }) {
   const insets = useSafeAreaInsets();
   const [months, setMonths] = useState(loadNoteArchive);
   const [opened, setOpened] = useState<ArchivedNoteMonth | null>(null);
@@ -50,7 +50,7 @@ export function HeroNoteArchive({ year }: { year: number }) {
           const colors = notebookColors[(Number(group.month.slice(0, 4)) + Number(group.month.slice(5)) - 1) % notebookColors.length];
           const placement = notebookPlacements[(Number(group.month.slice(5)) - 1) % notebookPlacements.length];
           return <View key={group.month} style={s.cell}>
-          <Pressable testID={`archive-notebook-${group.month}`} accessibilityRole="button" accessibilityLabel={`${monthName(group.month)} ${year}, ${group.entries.length} ${group.entries.length === 1 ? 'entry' : 'entries'}`} onPress={() => { tapHaptic(); setSelected(0); setOpened(group); }} style={[s.notebook, { backgroundColor: colors.cover, transform: [{ translateX: placement.x }, { translateY: placement.y }, { rotate: `${placement.angle}deg` }] }]}>
+          <Pressable testID={`archive-notebook-${group.month}`} accessibilityRole={selecting ? "checkbox" : "button"} accessibilityState={selecting ? { checked: selectedMonths.includes(group.month) } : undefined} accessibilityLabel={`${monthName(group.month)} ${year}, ${group.entries.length} ${group.entries.length === 1 ? 'entry' : 'entries'}`} onPress={() => { tapHaptic(); if (selecting) onToggleMonth?.(group.month); else { setSelected(0); setOpened(group); } }} style={[s.notebook, { backgroundColor: colors.cover, transform: [{ translateX: placement.x }, { translateY: placement.y }, { rotate: `${placement.angle}deg` }] }]}>
             <PaperGrain opacity={0.55} />
             <View pointerEvents="none" style={[s.spine, { backgroundColor: colors.spine }]} />
             <View pointerEvents="none" style={s.pages} />
@@ -60,6 +60,9 @@ export function HeroNoteArchive({ year }: { year: number }) {
             <ThemedText numberOfLines={1} adjustsFontSizeToFit style={s.count}>{group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}</ThemedText>
             <View pointerEvents="none" style={s.band} />
           </Pressable>
+          {selecting ? <View testID={`archive-notebook-check-${group.month}`} pointerEvents="none" style={[s.selection, { backgroundColor: selectedMonths.includes(group.month) ? '#B95D46' : 'rgba(255,255,255,0.92)', borderColor: selectedMonths.includes(group.month) ? '#B95D46' : '#9B958B' }]}>
+            {selectedMonths.includes(group.month) ? <ThemedText style={{ color: '#FFFFFF', fontSize: 14, lineHeight: 18 }}>✓</ThemedText> : null}
+          </View> : null}
         </View>; })}
       </View>
       {!visible.length ? <ThemedText style={s.empty}>No notes this year.</ThemedText> : null}
@@ -87,6 +90,7 @@ const s = StyleSheet.create({
   content: { paddingHorizontal: 18, paddingTop: 22, paddingBottom: 120, alignItems: 'center' },
   grid: { width: '100%', maxWidth: 520, flexDirection: 'row', flexWrap: 'wrap', rowGap: 32 },
   cell: { width: '33.333333%', paddingHorizontal: 7, alignItems: 'center' },
+  selection: { position: 'absolute', right: 16, top: 12, width: 24, height: 24, borderRadius: 12, borderWidth: 1.3, alignItems: 'center', justifyContent: 'center' },
   notebook: { width: '86%', aspectRatio: 0.79, backgroundColor: '#EFE7D2', borderTopRightRadius: 12, borderBottomRightRadius: 12, paddingTop: 12, paddingLeft: 7, paddingRight: 16, paddingBottom: 12, boxShadow: '2px 5px 7px rgba(65,53,32,0.22)' },
   spine: { position: 'absolute', top: 0, bottom: 3, left: 3, width: 2, backgroundColor: '#D8CFBA' },
   pages: { position: 'absolute', bottom: 2, left: 4, right: 4, height: 3, backgroundColor: '#D5CCB7', borderBottomRightRadius: 8 },

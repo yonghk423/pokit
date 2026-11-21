@@ -2,7 +2,9 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { loadNoteArchive } from '../lib/heroNoteArchive';
 import { HeroCanvasNote } from './HeroCanvasNote';
 import { HeroNoteArchive } from './HeroNoteArchive';
-jest.mock('../lib/heroNoteArchive', () => ({ loadNoteArchive: jest.fn() }));
+jest.mock('../lib/heroNoteArchive', () => ({ loadNoteArchive: jest.fn(), deleteNoteArchiveMonth: jest.fn() }));
+jest.mock('@shared/lib/app-alert', () => ({ AppAlert: { alert: jest.fn() } }));
+jest.mock('./HeroTrashIcon', () => ({ HeroTrashIcon: () => null }));
 jest.mock('./HeroCanvasNote', () => ({ HeroCanvasNote: jest.fn(() => null) }));
 jest.mock('expo-router', () => ({ useFocusEffect: (callback: () => void) => jest.requireActual('react').useEffect(callback, [callback]) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 54, bottom: 34 }) }));
@@ -23,5 +25,21 @@ it('opens original daily and monthly editors and refreshes notes after closing',
     act(() => tree.root.findAllByProps({ testID: 'archive-note-close' })[0].props.onPress());
     expect(tree.root.findAllByType(HeroCanvasNote)).toHaveLength(0);
     expect(tree.root.findAllByProps({ testID: 'archive-notebook-2026-11' })).toHaveLength(0);
+  } finally { act(() => tree.unmount()); }
+});
+
+it('selects months without opening the editor in selection mode', () => {
+  const entries = [{ key: 'pokit:monthly-album-note:2026-11', date: '2026-11-01', monthly: true }];
+  jest.mocked(loadNoteArchive).mockReturnValue([{ month: '2026-11', entries }]);
+  const toggle = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroNoteArchive year={2026} selecting selectedMonths={['2026-11']} onToggleMonth={toggle} />); });
+  try {
+    const book = tree.root.findAllByProps({ testID: 'archive-notebook-2026-11' })[0];
+    expect(book.props.accessibilityState).toEqual({ checked: true });
+    act(() => book.props.onPress());
+    expect(toggle).toHaveBeenCalledWith('2026-11');
+    expect(tree.root.findAllByType(HeroCanvasNote)).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'archive-notebook-delete-2026-11' })).toHaveLength(0);
   } finally { act(() => tree.unmount()); }
 });

@@ -1,7 +1,7 @@
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
-import { loadNoteArchive } from './heroNoteArchive';
+import { deleteNoteArchiveMonth, loadNoteArchive } from './heroNoteArchive';
 
-jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { listKeys: jest.fn(), getJson: jest.fn(), getItemRaw: jest.fn() } }));
+jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient: { removeItem: jest.fn(), listKeys: jest.fn(), getJson: jest.fn(), getItemRaw: jest.fn() } }));
 function storage(values: Record<string, unknown>) {
   jest.mocked(localStorageClient.listKeys).mockReturnValue(Object.keys(values));
   jest.mocked(localStorageClient.getItemRaw).mockImplementation(key => typeof values[key] === 'string' ? values[key] as string : null);
@@ -38,4 +38,26 @@ it('rereads storage so edits and deletions are reflected without migrating notes
   expect(loadNoteArchive()).toHaveLength(1);
   storage({ 'pokit:canvas-note:2026-11-18': '' });
   expect(loadNoteArchive()).toEqual([]);
+});
+
+it('deletes all note representations for one month without deleting photos, events or adjacent months', () => {
+  const removed = [
+    'pokit:monthly-album-note:2026-11',
+    'pokit:monthly-album-note:2026-11:inline',
+    'pokit:monthly-album-note:2026-11:colors',
+    'pokit:canvas-note:2026-11-18',
+    'pokit:canvas-note:2026-11-18:inline',
+    'pokit:canvas-note:2026-11-18:illustrations',
+  ];
+  const kept = ['pokit:monthly-album-note:2026-12:inline', 'pokit:canvas-note:2026-10-31',
+    'pokit:canvas-events:2026-11-18', 'pokit:photo:2026-11-18', 'pokit:monthly-mini-memo:2026-11'];
+  storage(Object.fromEntries([...removed, ...kept].map(key => [key, 'saved'])));
+  jest.mocked(localStorageClient.removeItem).mockClear();
+  deleteNoteArchiveMonth('2026-11');
+  expect(jest.mocked(localStorageClient.removeItem).mock.calls.map(([key]) => key)).toEqual(removed);
+});
+it('rejects invalid month deletion scopes', () => {
+  jest.mocked(localStorageClient.removeItem).mockClear();
+  for (const month of ['', '2026', '2026-1', '2026-13']) deleteNoteArchiveMonth(month);
+  expect(localStorageClient.removeItem).not.toHaveBeenCalled();
 });

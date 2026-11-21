@@ -10,7 +10,7 @@ Server secrets:
 - `REVENUECAT_DEVELOPER_GRANT_KEY`: separate V2 key with Customers Configuration read/write only. Never place this value in app configuration, source, or logs.
 
 Registered on 2026-11-19:
-- Physical iPhone 16 Pro: `3cadc399-96f9-49ff-9970-e6a6854feace`
+- Physical iPhone 16 Pro: `3cadc399-96f9-49ff-9970-e6a6854feace` — removed from the server allowlist on 2026-11-21 at the owner’s request; complimentary RevenueCat entitlement revoked.
 - iPhone 18 Pro Max simulator: `ae6ae776-7c9d-4069-8d7f-634e47a0b1a4`
 - iPhone 17 simulator: `79488aee-ade4-43a1-88fd-0d01e390ba5a`
 

@@ -1,3 +1,5 @@
+import { deleteNoteArchiveMonth } from '../lib/heroNoteArchive';
+jest.mock('../lib/heroNoteArchive', () => ({ deleteNoteArchiveMonth: jest.fn() }));
 jest.mock('react-native-purchases', () => ({ __esModule: true, default: {} }));
 jest.mock('../model/heroTrashBinStyle', () => ({ useHeroTrashBinStyle: () => 'mesh' }));
 jest.mock('../model/diaryTheme', () => ({ useDiaryTheme: () => undefined }));
@@ -99,11 +101,41 @@ it('switches between photos and notes while preserving the selected year', () =>
   try {
     act(() => tree.root.findAllByProps({ testID: 'archive-tab-notes' })[0].props.onPress());
     expect(tree.root.findByType('NoteArchive' as never).props.year).toBe(2025);
-    expect(tree.root.findAllByProps({ testID: 'history-selection-toggle' })).toHaveLength(0);
+    expect(tree.root.findAllByProps({ testID: 'history-selection-toggle' }).length).toBeGreaterThan(0);
     act(() => tree.root.findAllByProps({ testID: 'history-next-year' })[0].props.onPress());
     expect(tree.root.findByType('NoteArchive' as never).props.year).toBe(2026);
     act(() => tree.root.findAllByProps({ testID: 'archive-tab-photo' })[0].props.onPress());
     expect(tree.root.findAllByType('NoteArchive' as never)).toHaveLength(0);
     expect(tree.root.findAllByProps({ testID: 'history-selection-toggle' }).length).toBeGreaterThan(0);
   } finally { act(() => tree.unmount()); }
+});
+
+it('selects multiple notebooks and deletes them together only after confirmation', () => {
+  const alert = jest.spyOn(AppAlert, 'alert').mockImplementation(() => {});
+  const removePhotos = jest.fn();
+  const diaries = [{ id: 'one', date: '2026-11-18', title: '', characterId: 'protagonist-1', scenes: [], createdAt: 1, updatedAt: 1 }];
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroHistoryPackets diaries={diaries} onCreate={jest.fn()} onDeleteMany={removePhotos} onUpdateScene={jest.fn()} />); });
+  try {
+    act(() => tree.root.findAllByProps({ testID: 'archive-tab-notes' })[0].props.onPress());
+    act(() => tree.root.findAllByProps({ testID: 'history-selection-toggle' })[0].props.onPress());
+    const archive = () => tree.root.findByType('NoteArchive' as never);
+    expect(archive().props.selecting).toBe(true);
+    expect(tree.root.findAllByProps({ testID: 'history-delete-selected' })[0].props.disabled).toBe(true);
+    act(() => archive().props.onToggleMonth('2026-11'));
+    act(() => archive().props.onToggleMonth('2026-10'));
+    act(() => archive().props.onToggleMonth('2026-09'));
+    act(() => archive().props.onToggleMonth('2026-09'));
+    expect(archive().props.selectedMonths).toEqual(['2026-11', '2026-10']);
+    act(() => tree.root.findAllByProps({ testID: 'history-delete-selected' })[0].props.onPress());
+    expect(deleteNoteArchiveMonth).not.toHaveBeenCalled();
+    const buttons = alert.mock.calls[0][2]!;
+    act(() => buttons.find(b => b.style === 'cancel')?.onPress?.());
+    expect(deleteNoteArchiveMonth).not.toHaveBeenCalled();
+    act(() => buttons.find(b => b.style === 'destructive')?.onPress?.());
+    expect(jest.mocked(deleteNoteArchiveMonth).mock.calls.map(([month]) => month)).toEqual(['2026-11', '2026-10']);
+    expect(removePhotos).not.toHaveBeenCalled();
+    expect(archive().props.selecting).toBe(false);
+    expect(archive().props.selectedMonths).toEqual([]);
+  } finally { act(() => tree.unmount()); alert.mockRestore(); }
 });

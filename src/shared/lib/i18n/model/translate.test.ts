@@ -44,3 +44,11 @@ it('interpolates diary section counts in every supported language', () => {
   expect(t('comicCalendar.diaryCount', 'ja', { count: 3 })).toBe('日記 3件');
   expect(t('comicCalendar.diaryCount', 'zh-TW', { count: 3 })).toBe('3篇日記');
 });
+
+it.each(['ko', 'en', 'ja', 'zh-TW'] as const)('interpolates archive deletion counts in %s', locale => {
+  for (const count of [1, 3]) {
+    const message = t('archive.notes.deleteManyMessage', locale, { count });
+    expect(message).toContain(String(count));
+    expect(message).not.toMatch(/[{}]/);
+  }
+});

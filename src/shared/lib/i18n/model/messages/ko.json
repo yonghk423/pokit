@@ -3728,5 +3728,7 @@
   "ui.cinema.50fe77e814": "Bookbinding Workshop",
   "ui.cinema.14b6ce3aba": "Indoor Surfing",
   "ui.cinema.e05e06a8a8": "Badminton Court",
-  "ui.cinema.c267617451": "City Ferry Deck"
+  "ui.cinema.c267617451": "City Ferry Deck",
+  "archive.notes.deleteTitle": "월간 노트를 삭제할까요?",
+  "archive.notes.deleteManyMessage": "선택한 {count}개월의 월간·일별 노트 본문과 장식이 모두 삭제돼요. 사진과 일정은 유지되며, 삭제한 노트는 복구할 수 없어요."
 }
