@@ -1,3 +1,4 @@
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroPrintStaple } from './HeroPrintStaple';
 import { HeroPolaroidSurface } from './HeroPolaroidSurface';
@@ -45,13 +46,16 @@ export function ComicScenePicker({ scenes, onChange, onClose, library = SELECTAB
   const nameFor = useComicCharacterNames();
   const generated = useHeroGeneratedImages();
   const originals = useHeroGeneratedImages(true);
+  const pro = useSubscriptionStore(selectCanTestProStoreItems);
   const [premium, setPremium] = useState<HeroAiLibraryImage[]>([]);
   useEffect(() => {
+    if (!pro) { setPremium([]); return; }
     let live = true;
     void loadPremiumPack().then(images => { if (live) setPremium(images.map(image => ({ uri: image.uri, title: premiumSceneTitle(image.id) }))); });
     return () => { live = false; };
-  }, []);
+  }, [pro]);
   const chooseSaved = (image: HeroAiLibraryImage) => {
+    if (image.uri.includes('/character-packs/protagonist-7/') && !selectCanTestProStoreItems(useSubscriptionStore.getState())) return;
     if (onSelectArtwork) { onSelectArtwork(image); return; }
     onChange([...scenes, { ...newComicScene(''), image: image.sceneId ?? library[0]?.id ?? COMIC_SCENES[0].id, artworkUri: image.uri }]);
     onClose();

@@ -39,6 +39,7 @@ export function useHeroCameraStyle() {
 }
 
 export function applyHeroCameraStyle(style: HeroCameraStyle) {
+  if (isProCameraStyle(style) && !selectCanTestProStoreItems(useSubscriptionStore.getState())) return;
   applyTheme(null, 'camera');
   localStorageClient.setJson(KEY, style);
   listeners.forEach(listener => listener());

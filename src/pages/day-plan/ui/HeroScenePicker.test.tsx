@@ -1,3 +1,8 @@
+jest.mock('@features/subscriptions/lib/downloadClient', () => ({ invokeDownload: jest.fn() }));
+jest.mock('@features/subscriptions', () => ({
+  useSubscriptionStore: Object.assign((select: () => boolean) => select(), { getState: () => ({}) }),
+  selectCanTestProStoreItems: () => true,
+}));
 jest.mock('../lib/heroPremiumPack', () => ({ PREMIUM_CHARACTER_ID: 'protagonist-7', premiumSceneTitle: () => '꽃집 앞에서', loadPremiumPack: jest.fn(async () => []) }));
 import { useHeroGeneratedImages } from './useHeroGeneratedImages';
 import { useState } from 'react';

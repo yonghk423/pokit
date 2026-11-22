@@ -1,3 +1,4 @@
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { applyTheme } from './diaryTheme';
 import { useSyncExternalStore } from 'react';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
@@ -9,8 +10,13 @@ const read = (): DiaryClip => {
   const saved = localStorageClient.getJson(KEY);
   return DIARY_CLIPS.some(clip => clip.id === saved) ? saved as DiaryClip : 'rose-pink-bookmark';
 };
-export function useHeroDiaryClip() { return useSyncExternalStore(subscribe, read, read); }
-export function applyHeroDiaryClip(clip: DiaryClip) { applyTheme(null, 'mark'); applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
+export const isProDiaryClip = (clip: DiaryClip) => DIARY_CLIPS.some(item => item.id === clip && item.pro);
+export function useHeroDiaryClip() {
+  const clip = useSyncExternalStore(subscribe, read, read);
+  const pro = useSubscriptionStore(selectCanTestProStoreItems);
+  return !pro && isProDiaryClip(clip) ? 'rose-pink-bookmark' : clip;
+}
+export function applyHeroDiaryClip(clip: DiaryClip) { if (isProDiaryClip(clip) && !selectCanTestProStoreItems(useSubscriptionStore.getState())) return; applyTheme(null, 'mark'); applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
 export const DIARY_CLIP_IMAGES = {
   'rose-pink-bookmark': require('../../../../assets/control-illustrations/rose-pink-bookmark.png'),
   'cherry-binder': require('../../../../assets/control-illustrations/cherry-binder-clip.webp'),

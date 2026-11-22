@@ -1,3 +1,4 @@
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { RETIRED_CALENDAR_DESIGNS } from './retiredCalendarDesigns';
 import { freePhotoCalendar, type FreePhotoCalendar } from './freePhotoCalendars';
 import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
@@ -87,12 +88,19 @@ export function readHeroCalendarDesign(): HeroCalendarDesign {
   if (saved && RETIRED_CALENDAR_DESIGNS.has(saved)) return 'cream-kitten';
   return freePhotoCalendar(saved) || isPremiumPaper(saved) || saved === 'clipboard' || saved === 'bold' || saved === 'photo' || saved === 'weather' || CITY_CALENDAR_THEMES.some(theme => theme.design === saved) ? saved as HeroCalendarDesign : 'cream-kitten';
 }
+export const isProCalendarDesign = (design: HeroCalendarDesign) => {
+  const theme = freePhotoCalendar(design);
+  return !!theme && 'pro' in theme && theme.pro;
+};
 export function applyHeroCalendarDesign(design: HeroCalendarDesign) {
+  if (isProCalendarDesign(design) && !selectCanTestProStoreItems(useSubscriptionStore.getState())) return;
   localStorageClient.setJson(KEY, design);
   listeners.forEach(listener => listener());
 }
 export function useHeroCalendarDesign() {
-  return useSyncExternalStore(subscribe, readHeroCalendarDesign, readHeroCalendarDesign);
+  const design = useSyncExternalStore(subscribe, readHeroCalendarDesign, readHeroCalendarDesign);
+  const pro = useSubscriptionStore(selectCanTestProStoreItems);
+  return !pro && isProCalendarDesign(design) ? 'cream-kitten' : design;
 }
 
 const coverKey = (month: string) => `pokit:calendar-cover:${month}`;

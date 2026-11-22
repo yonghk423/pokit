@@ -24,6 +24,7 @@ export function useHeroTrashBinStyle() {
 }
 
 export function applyHeroTrashBinStyle(style: TrashBinStyle) {
+  if (isProTrashBinStyle(style) && !selectCanTestProStoreItems(useSubscriptionStore.getState())) return;
   applyTheme(null, 'trash');
   localStorageClient.setJson(KEY, style);
   listeners.forEach(listener => listener());

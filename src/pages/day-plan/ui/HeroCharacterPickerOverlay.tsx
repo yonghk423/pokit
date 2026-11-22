@@ -1,3 +1,4 @@
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
 import { premiumSceneTitle, loadPremiumPack, PREMIUM_CHARACTER_ID } from '../lib/heroPremiumPack';
@@ -62,15 +63,17 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
     const scene = character.scenes[Math.floor(Math.random() * character.scenes.length)];
     return [character.id, scene ? COMIC_SCENE_THUMBNAILS[scene.id] ?? scene.source : character.cover];
   })));
+  const pro = useSubscriptionStore(selectCanTestProStoreItems);
   const [premiumImages, setPremiumImages] = useState<{ id: string; uri: string }[]>([]);
   const [premiumOpen, setPremiumOpen] = useState(false);
   useEffect(() => {
+    if (!pro) { setPremiumImages([]); setPremiumOpen(false); return; }
     let mounted = true;
     void loadPremiumPack().then(images => { if (mounted) setPremiumImages(images); });
     return () => { mounted = false; };
-  }, []);
+  }, [pro]);
   const openPremium = () => {
-    if (!premiumImages.length) return;
+    if (!premiumImages.length || !selectCanTestProStoreItems(useSubscriptionStore.getState())) return;
     tapHaptic('select');
     setPremiumOpen(true);
   };
@@ -231,11 +234,11 @@ export function HeroCharacterPickerOverlay({ selectedId, isDark, onSelect, onClo
 
       </Animated.View>
     </View>
-    {premiumOpen ? <AppModal visible animationType="none" onRequestClose={() => setPremiumOpen(false)}>
+    {premiumOpen && pro ? <AppModal visible animationType="none" onRequestClose={() => setPremiumOpen(false)}>
       <View style={{ flex: 1, backgroundColor: paper, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}><ThemedText style={{ flex: 1, color: ink }}>{nameFor(PREMIUM_CHARACTER_ID, translateUiText("시티팝 레트로"))}</ThemedText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setPremiumOpen(false)} style={{ padding: 16 }}><HanddrawnControl name="xmark" color={ink} size={20} /></Pressable></View>
         <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 10 }}>
-          {premiumImages.map((image, index) => <Pressable key={image.id} accessibilityRole="button" accessibilityLabel={`${premiumSceneTitle(image.id)} 선택`} onPress={() => { tapHaptic('select'); setPremiumOpen(false); close(() => onChooseGenerated?.({ uri: image.uri, title: premiumSceneTitle(image.id) })); }} style={{ width: (width - 44) / 3, padding: 5, backgroundColor: paper }}><Image source={{ uri: image.uri }} contentFit="contain" style={{ width: '100%', aspectRatio: 0.75 }} /><ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12 }}>{premiumSceneTitle(image.id)}</ThemedText></Pressable>)}
+          {premiumImages.map((image, index) => <Pressable key={image.id} accessibilityRole="button" accessibilityLabel={`${premiumSceneTitle(image.id)} 선택`} onPress={() => { if (!selectCanTestProStoreItems(useSubscriptionStore.getState())) return; tapHaptic('select'); setPremiumOpen(false); close(() => onChooseGenerated?.({ uri: image.uri, title: premiumSceneTitle(image.id) })); }} style={{ width: (width - 44) / 3, padding: 5, backgroundColor: paper }}><Image source={{ uri: image.uri }} contentFit="contain" style={{ width: '100%', aspectRatio: 0.75 }} /><ThemedText numberOfLines={2} style={{ color: ink, fontSize: 12 }}>{premiumSceneTitle(image.id)}</ThemedText></Pressable>)}
         </ScrollView>
       </View>
     </AppModal> : null}

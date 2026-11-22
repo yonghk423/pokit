@@ -1,3 +1,4 @@
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { ensurePremiumScene } from '../lib/heroPremiumPack';
 import { photoPreview } from '../lib/heroPhotoPreview';
 import { Image, type ImageProps } from 'expo-image';
@@ -69,6 +70,10 @@ function imageSize(source: ImageProps['source']): ImageSize | null {
 
 /** A separate load session prevents recycled cells from inheriting a previous image's error. */
 export function ComicSceneImage(props: Props) {
+  const pro = useSubscriptionStore(selectCanTestProStoreItems);
+  if (!pro && imageIdentity(props.source)?.includes('/character-packs/protagonist-7/')) {
+    return <View testID="premium-scene-locked" style={[{ alignItems: 'center', justifyContent: 'center' }, props.style]}><ThemedText>Pro</ThemedText></View>;
+  }
   return <ComicImageSession key={props.imageKey} {...props} />;
 }
 function ComicImageSession({ source, fallbackSource, imageKey, style, priority = 'normal', contentFit = 'contain', contentPosition, backgroundColor = '#FFFFFF', onReady, showSkeletonOnMount = false, transitionDuration = 0, fillPortrait = false, fitToCard = false, preserveFullImage = false }: Props) {

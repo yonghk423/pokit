@@ -1,3 +1,9 @@
+let mockPro = true;
+jest.mock('@features/subscriptions', () => ({
+  useSubscriptionStore: (select: () => boolean) => select(),
+  selectCanTestProStoreItems: () => mockPro,
+}));
+beforeEach(() => { mockPro = true; });
 import { act, create } from 'react-test-renderer';
 import { ComicSceneImage } from './HeroSceneImage';
 import { ensurePremiumScene } from '../lib/heroPremiumPack';
@@ -34,4 +40,35 @@ it('offers retry after a failed restoration without displaying a low-resolution 
     act(() => { tree.unmount(); });
     jest.useRealTimers();
   }
+});
+
+it('unmounts downloaded paid artwork on expiry and restores it on renewal', async () => {
+  jest.mocked(ensurePremiumScene).mockResolvedValue(true);
+  const props = { source: { uri: 'file:///documents/character-packs/protagonist-7/p7-01.webp' }, imageKey: 'expiry', style: { width: 300, height: 400 } };
+  let tree!: ReturnType<typeof create>;
+  await act(async () => { tree = create(<ComicSceneImage {...props} />); });
+  expect(tree.root.findAllByProps({ testID: 'premium-scene-locked' })).toHaveLength(0);
+  mockPro = false;
+  act(() => tree.update(<ComicSceneImage {...props} />));
+  expect(tree.root.findAllByProps({ testID: 'premium-scene-locked' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAll(n => typeof n.props.onDisplay === 'function')).toHaveLength(0);
+  mockPro = true;
+  await act(async () => { tree.update(<ComicSceneImage {...props} />); });
+  expect(tree.root.findAllByProps({ testID: 'premium-scene-locked' })).toHaveLength(0);
+  act(() => tree.unmount());
+});
+
+jest.mock('./HeroPolaroidExport', () => ({ HeroPolaroidExport: () => null, formatHeroPolaroidDate: jest.fn() }));
+jest.mock('./HeroTrashIcon', () => ({ HeroTrashIcon: () => null }));
+import { HeroImageActions } from './HeroImageActions';
+it('blocks editing and exporting a downloaded paid scene after expiry', () => {
+  mockPro = false;
+  const onClose = jest.fn();
+  let tree!: ReturnType<typeof create>;
+  act(() => { tree = create(<HeroImageActions uri="file:///documents/character-packs/protagonist-7/p7-01.webp" editorOnly onEditorClose={onClose} />); });
+  const locked = tree.root.findAll(n => n.props.testID === 'premium-image-actions-locked' && typeof n.props.onPress === 'function')[0];
+  expect(locked).toBeDefined();
+  act(() => locked.props.onPress());
+  expect(onClose).toHaveBeenCalledTimes(1);
+  act(() => tree.unmount());
 });

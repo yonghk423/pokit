@@ -79,3 +79,33 @@ it.each(HERO_TRASH_BIN_ITEMS)('keeps bin $id selection across expiry and renewal
   expect(selected!).toBe(id);
   act(() => tree.unmount());
 });
+
+import { DIARY_CLIPS, applyHeroDiaryClip, useHeroDiaryClip } from './heroDiaryClip';
+import { PHOTO_CALENDARS } from './freePhotoCalendars';
+import { applyHeroCalendarDesign, useHeroCalendarDesign } from './heroCalendarDesign';
+
+const selections = [
+  ...DIARY_CLIPS.map(item => ({ id: item.id, paid: item.pro, key: 'yourday:diary-clip', fallback: 'rose-pink-bookmark', apply: () => applyHeroDiaryClip(item.id), useSelected: useHeroDiaryClip })),
+  ...PHOTO_CALENDARS.map(item => ({ id: item.id, paid: 'pro' in item && item.pro, key: 'pokit:calendar-design', fallback: 'cream-kitten', apply: () => applyHeroCalendarDesign(item.id), useSelected: useHeroCalendarDesign })),
+];
+it.each(selections)('gates saved $id on expiry and restores on renewal', async item => {
+  mockPro = true;
+  mockInstalled = true;
+  item.apply();
+  let selected: string;
+  function Probe() { selected = item.useSelected(); return null; }
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<Probe />); });
+  expect(selected!).toBe(item.id);
+  mockPro = false;
+  act(() => tree.update(<Probe />));
+  expect(selected!).toBe(item.paid ? item.fallback : item.id);
+  expect(localStorageClient.getJson(item.key)).toBe(item.id);
+  localStorageClient.removeItem(item.key);
+  act(() => item.apply());
+  expect(localStorageClient.getJson(item.key)).toBe(item.paid ? null : item.id);
+  mockPro = true;
+  act(() => { item.apply(); tree.update(<Probe />); });
+  expect(selected!).toBe(item.id);
+  act(() => tree.unmount());
+});

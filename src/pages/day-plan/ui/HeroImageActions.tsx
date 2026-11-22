@@ -1,3 +1,6 @@
+import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
+import type { ComponentProps } from 'react';
+import { ThemedText } from '@shared/ui/themed-text';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroTrashIcon } from './HeroTrashIcon';
 import type { HeroCardText } from './HeroCardCaption';
@@ -11,7 +14,14 @@ import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '@shared/lib/i18n';
 import { formatHeroPolaroidDate, HeroPolaroidExport, type HeroPolaroidContent } from './HeroPolaroidExport';
 
-export function HeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, source, title = '', memo, paper, pen, fontId, exportDate, compact = false, saveOnly = false, directDownload = false, onDelete, embeddedEditor = false, editorOnly = false, onEditorClose, onSaveText }: { initialDraft?: PolaroidDraft; imageSize?: { width: number; height: number }; onSaveDraft?: (draft: PolaroidDraft) => Promise<void>; onSaveText?: (text: HeroCardText) => void; embeddedEditor?: boolean; editorOnly?: boolean; onEditorClose?: () => void; onDelete?: () => void; uri?: string; source?: number; title?: string; memo?: string; paper?: string; pen?: string; fontId?: AppFontId; exportDate?: string | number; compact?: boolean; saveOnly?: boolean; directDownload?: boolean }) {
+export function HeroImageActions(props: ComponentProps<typeof AllowedHeroImageActions>) {
+  const pro = useSubscriptionStore(selectCanTestProStoreItems);
+  if (!pro && props.uri?.includes('/character-packs/protagonist-7/')) {
+    return <Pressable testID="premium-image-actions-locked" accessibilityRole="button" onPress={props.onEditorClose}><ThemedText>Pro</ThemedText></Pressable>;
+  }
+  return <AllowedHeroImageActions {...props} />;
+}
+function AllowedHeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, source, title = '', memo, paper, pen, fontId, exportDate, compact = false, saveOnly = false, directDownload = false, onDelete, embeddedEditor = false, editorOnly = false, onEditorClose, onSaveText }: { initialDraft?: PolaroidDraft; imageSize?: { width: number; height: number }; onSaveDraft?: (draft: PolaroidDraft) => Promise<void>; onSaveText?: (text: HeroCardText) => void; embeddedEditor?: boolean; editorOnly?: boolean; onEditorClose?: () => void; onDelete?: () => void; uri?: string; source?: number; title?: string; memo?: string; paper?: string; pen?: string; fontId?: AppFontId; exportDate?: string | number; compact?: boolean; saveOnly?: boolean; directDownload?: boolean }) {
   const { t } = useTranslation();
   const [editorOpen, setEditorOpen] = useState(editorOnly);
   const lock = useRef(false);
@@ -28,7 +38,7 @@ export function HeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, so
     return () => clearTimeout(timer);
   }, [saved]);
   const run = async (action: 'save' | 'share' | 'download', draft?: PolaroidDraft) => {
-    if (lock.current) return;
+    if (lock.current || (uri?.includes('/character-packs/protagonist-7/') && !selectCanTestProStoreItems(useSubscriptionStore.getState()))) return;
     tapHaptic();
     lock.current = true; setBusy(true);
     if (action !== 'share') setSaved(false);

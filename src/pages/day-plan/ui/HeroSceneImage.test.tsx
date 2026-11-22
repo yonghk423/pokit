@@ -1,3 +1,8 @@
+jest.mock('@features/subscriptions/lib/downloadClient', () => ({ invokeDownload: jest.fn() }));
+jest.mock('@features/subscriptions', () => ({
+  useSubscriptionStore: Object.assign((select: () => boolean) => select(), { getState: () => ({}) }),
+  selectCanTestProStoreItems: () => true,
+}));
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Animated, Image as NativeImage, StyleSheet } from 'react-native';
 import { ComicSceneImage } from './HeroSceneImage';

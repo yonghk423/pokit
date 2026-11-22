@@ -1,3 +1,4 @@
+jest.mock('../lib/calendarStoreDownload', () => ({ diaryImages: jest.fn(), installDiaryItem: jest.fn() }));
 jest.mock('@features/subscriptions', () => ({
   useSubscriptionStore: Object.assign(jest.fn(), { getState: () => ({}) }),
   selectCanTestProStoreItems: () => false,

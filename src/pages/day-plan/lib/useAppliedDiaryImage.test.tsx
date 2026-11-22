@@ -1,3 +1,9 @@
+let mockPro = true;
+jest.mock('@features/subscriptions', () => ({
+  useSubscriptionStore: (select: () => boolean) => select(),
+  selectCanTestProStoreItems: () => mockPro,
+}));
+beforeEach(() => { mockPro = true; });
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { useAppliedDiaryImage } from './useAppliedDiaryImage';
@@ -40,4 +46,24 @@ it('keeps bundled full-resolution free artwork available without a download', ()
   act(() => { tree = create(<Probe id="clip-blue" />); });
   expect(observed).toBe(123);
   act(() => { tree.unmount(); });
+});
+
+it('withdraws cached artwork on expiry, including an in-flight recovery', async () => {
+  let finish!: () => void;
+  jest.mocked(installDiaryItem).mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
+  jest.mocked(diaryImages).mockReturnValue({ image: 'file:///original.webp' });
+  let tree!: ReturnType<typeof create>;
+  act(() => { tree = create(<Probe />); });
+  mockPro = false;
+  act(() => tree.update(<Probe />));
+  await act(async () => { finish(); });
+  expect(observed).toBeUndefined();
+  mockPro = true;
+  jest.mocked(installDiaryItem).mockResolvedValue(undefined);
+  await act(async () => { tree.update(<Probe />); });
+  expect(observed).toEqual({ uri: 'file:///original.webp' });
+  mockPro = false;
+  act(() => tree.update(<Probe />));
+  expect(observed).toBeUndefined();
+  act(() => tree.unmount());
 });
