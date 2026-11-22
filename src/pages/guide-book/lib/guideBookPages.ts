@@ -1,4 +1,3 @@
-import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 /**
  * POKIT 사용 설명서 — 실제 구현과 맞춘 탭·버튼 안내 (읽기 전용).
  */
@@ -24,8 +23,6 @@ export type GuideBookFigureId =
   | 'routine-templates'
   | 'my-routine'
   | 'my-routine-apply'
-  | 'puzzle'
-  | 'puzzle-start'
   | 'history'
   | 'story'
   | 'settings';
@@ -61,8 +58,6 @@ const PAGE_SPECS: readonly PageSpec[] = [
   { id: 'routine-templates', chapterKey: 'routinesTab', figureId: 'routine-templates', callouts: 5, notes: 0, hasLead: true },
   { id: 'my-routine', chapterKey: 'myRoutinesTab', figureId: 'my-routine', callouts: 4, notes: 0, hasLead: true },
   { id: 'my-routine-apply', chapterKey: 'myRoutinesTab', figureId: 'my-routine-apply', callouts: 3, notes: 2, hasLead: true },
-  { id: 'puzzle', chapterKey: 'puzzleTab', figureId: 'puzzle', callouts: 5, notes: 2, hasLead: true },
-  { id: 'puzzle-start', chapterKey: 'puzzleTab', figureId: 'puzzle-start', callouts: 4, notes: 1, hasLead: true },
   { id: 'history', chapterKey: 'historyTab', figureId: 'history', callouts: 4, notes: 2, hasLead: true },
   { id: 'story', chapterKey: 'storyTab', figureId: 'story', callouts: 3, notes: 0, hasLead: true },
   { id: 'settings', chapterKey: 'settings', figureId: 'settings', callouts: 6, notes: 1, hasLead: true },
@@ -83,7 +78,6 @@ const CHAPTER_META: Record<string, { icon: string; subtitleKey: I18nKey }> = {
   todayTab: { icon: 'calendar', subtitleKey: 'guideBook.chapter.todayTab.subtitle' },
   routinesTab: { icon: 'list.bullet.rectangle', subtitleKey: 'guideBook.chapter.routinesTab.subtitle' },
   myRoutinesTab: { icon: 'figure.walk', subtitleKey: 'guideBook.chapter.myRoutinesTab.subtitle' },
-  puzzleTab: { icon: 'rectangle.stack', subtitleKey: 'guideBook.chapter.puzzleTab.subtitle' },
   historyTab: { icon: 'clock.arrow.circlepath', subtitleKey: 'guideBook.chapter.historyTab.subtitle' },
   storyTab: { icon: 'book', subtitleKey: 'guideBook.chapter.storyTab.subtitle' },
   settings: { icon: 'gearshape', subtitleKey: 'guideBook.chapter.settings.subtitle' },
@@ -96,7 +90,7 @@ function pageKey(pageId: string, suffix: string): I18nKey {
 function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
   const callouts: GuideBookCallout[] = [];
   for (let n = 1; n <= spec.callouts; n += 1) {
-    if (!FEATURE_FLAGS.puzzle && spec.id === 'cover' && n === 3) continue;
+    if (spec.id === 'cover' && n === 3) continue;
     callouts.push({
       n,
       label: t(pageKey(spec.id, `c${n}.label`), locale),
@@ -106,7 +100,7 @@ function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
 
   const notes: string[] = [];
   for (let i = 1; i <= spec.notes; i += 1) {
-    if (!FEATURE_FLAGS.puzzle && (spec.id === 'cover' || spec.id === 'history') && i === 1) continue;
+    if ((spec.id === 'cover' || spec.id === 'history') && i === 1) continue;
     notes.push(t(pageKey(spec.id, `note${i}`), locale));
   }
 
@@ -114,9 +108,9 @@ function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
     id: spec.id,
     chapter: t(`guideBook.chapter.${spec.chapterKey}.name` as I18nKey, locale),
     title: t(pageKey(spec.id, 'title'), locale),
-    lead: !FEATURE_FLAGS.puzzle && spec.id === 'cover'
+    lead: spec.id === 'cover'
       ? t('guideBook.page.cover.leadWithoutPuzzle', locale)
-      : !FEATURE_FLAGS.puzzle && spec.id === 'history'
+      : spec.id === 'history'
         ? t('guideBook.chapter.historyTab.subtitle', locale)
         : spec.hasLead ? t(pageKey(spec.id, 'lead'), locale) : undefined,
     figureId: spec.figureId,
@@ -126,7 +120,7 @@ function localizePage(spec: PageSpec, locale: AppLocale): GuideBookPage {
 }
 
 export function getGuideBookPages(locale: AppLocale): readonly GuideBookPage[] {
-  return PAGE_SPECS.filter((spec) => FEATURE_FLAGS.puzzle || spec.chapterKey !== 'puzzleTab').map((spec) => localizePage(spec, locale));
+  return PAGE_SPECS.map((spec) => localizePage(spec, locale));
 }
 
 /** 목차용 — chapter 순서대로 묶음 */

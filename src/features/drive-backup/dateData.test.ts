@@ -48,7 +48,6 @@ it('backs up the record date, story, events and photo captions without global se
   expect(data.story).toBe('My story\nSecond line');
   expect(data.events).toEqual([{ id: 'event', title: 'Birthday' }]);
   expect(data.dependencies).toBeUndefined();
-  expect(data.puzzles).toEqual([]);
   expect(localDates()).toEqual(['2026-11-06']);
 });
 it('restores new content only for the selected date and keeps unrelated settings and records', () => {
@@ -76,4 +75,14 @@ it('includes the selected month in the date backup and preserves notes when rest
   expect(mergeDate(data)[key]).toBe('이달의 기록');
   expect(mergeDate({ ...data, monthlyNote: undefined })).not.toHaveProperty(key);
   expect(mergeDate({ ...data, monthlyNote: '' })[key]).toBe('');
+});
+
+it('ignores retired puzzle data in older backups without reading or overwriting stored puzzle records', () => {
+  const stored = { v: 2, state: { histories: [{ id: 'old', imageUri: 'file:///keep.jpg' }] } };
+  storage.setJson('pokit:puzzle-history', stored);
+  const oldBackup = { ...collectDate('2026-11-06'), contentVersion: undefined, puzzles: [{ id: 'retired' }] };
+  const writes = mergeDate(oldBackup);
+  expect(writes).not.toHaveProperty('pokit:puzzle-history');
+  expect(collectDate('2026-11-06')).not.toHaveProperty('puzzles');
+  expect(storage.getJson('pokit:puzzle-history')).toEqual(stored);
 });

@@ -43,7 +43,6 @@ const TABS: TabDef[] = [
   { route: 'index', labelKey: 'tabs.comicDay' },
   { route: 'history', labelKey: 'comicDiary.history' },
   { route: 'fixed-routines', icon: require('../../../../assets/tab-icons/routine.webp'), labelKey: 'tabs.routines' },
-  { route: 'puzzle-history', icon: require('../../../../assets/tab-icons/puzzle.webp'), labelKey: 'tabs.puzzle' },
   { route: 'pokit-story', icon: require('../../../../assets/tab-icons/story-pen.png'), labelKey: 'tabs.story' },
   { route: 'calendar', labelKey: 'tabs.calendar' },
 ];
@@ -114,8 +113,7 @@ export function DayPlanCustomTabBar({ state, navigation }: BottomTabBarProps) {
   }, [isDark]);
 
   const visibleTabs = TABS.filter(tab =>
-    (FEATURE_FLAGS.puzzle || tab.route !== 'puzzle-history')
-    && (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines')
+    (FEATURE_FLAGS.routinesManageTab || tab.route !== 'fixed-routines')
     && (FEATURE_FLAGS.pokitStory || tab.route !== 'pokit-story'));
   const slotCount = visibleTabs.length + (FEATURE_FLAGS.heroAiCameraTab ? 1 : 0);
   const itemWidth = Math.min(88, (width - 48 - 12 - (slotCount - 1) * 2) / slotCount);

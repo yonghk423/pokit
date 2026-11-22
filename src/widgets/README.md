@@ -12,6 +12,5 @@
 | `day-plan-meal-slot-timeline` | 식사 구간 타임라인 |
 | `custom-flow-template-session` | 템플릿·실행 관련 복합 UI |
 | `study-note-document` | 노트 문서와 키보드 대응 |
-| `puzzle-history-board` | 퍼즐 기록 보드; 공개 여부는 기능 플래그 확인 |
 
 작업 기준은 [개발 구조](../../docs/development.md)와 [디자인](../../docs/design/paper-and-ink.md)을 따릅니다. 디렉터리가 존재한다는 이유로 숨긴 기능을 공개하지 않습니다.

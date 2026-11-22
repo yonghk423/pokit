@@ -6,7 +6,7 @@ export function dateOf(value: unknown): string {
   const d = new Date(value as string | number);
   return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-export type DateData = { contentVersion?: 2; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null; puzzles: Row[] };
+export type DateData = { contentVersion?: 2; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null };
 const read = (key: string): Row => storage.getJson<Row>(key) ?? {};
 const diaryDate = (diary: Row): string => validDate(diary.date) ? diary.date : /^legacy:.+:(\d{4}-\d{2}-\d{2})$/.exec(diary.id ?? '')?.[1] ?? dateOf(diary.createdAt);
 export function collectDate(date: string): DateData {
@@ -17,7 +17,7 @@ export function collectDate(date: string): DateData {
     story: storage.getItemRaw(`pokit:canvas-note:${date}`),
     events: storage.getJson<Row[]>(`pokit:canvas-events:${date}`) ?? [],
     diaries: (read('pokit:comic-diaries:v1').diaries ?? []).filter((diary: Row) => diaryDate(diary) === date),
-    originals: [], gallery: [], scenes: {}, stats: [], memo: null, assignment: null, plan: null, puzzles: [],
+    originals: [], gallery: [], scenes: {}, stats: [], memo: null, assignment: null, plan: null,
   };
 }
 export function localDates(): string[] {
@@ -52,9 +52,9 @@ export function mergeDate(source: DateData, restorePreferences = false): Record<
   if (source.contentVersion === 2) return mergePhotoDate(source);
   const { writes: dependencyWrites, mapping } = mergeDependencies(source.dependencies, restorePreferences);
   const data = replaceReferences(source, mapping);
-  if (!validDate(data.date) || !Array.isArray(data.diaries) || !Array.isArray(data.stats) || !Array.isArray(data.puzzles) || !data.scenes || typeof data.scenes !== 'object') throw new Error('지원하지 않는 백업 데이터예요.');
+  if (!validDate(data.date) || !Array.isArray(data.diaries) || !Array.isArray(data.stats) || !data.scenes || typeof data.scenes !== 'object') throw new Error('지원하지 않는 백업 데이터예요.');
   const { date } = data;
-  if (data.diaries.some(r => !r || typeof r.id !== 'string' || dateOf(r.createdAt) !== date) || data.stats.some(r => !r || r.dateKey !== date) || data.puzzles.some(r => !r || typeof r.id !== 'string' || dateOf(r.createdAt) !== date) || (data.plan && data.plan.dateKey !== date)) throw new Error('백업 날짜가 일치하지 않아요.');
+  if (data.diaries.some(r => !r || typeof r.id !== 'string' || dateOf(r.createdAt) !== date) || data.stats.some(r => !r || r.dateKey !== date) || (data.plan && data.plan.dateKey !== date)) throw new Error('백업 날짜가 일치하지 않아요.');
   const out: Record<string, unknown> = { ...dependencyWrites };
   if (!Array.isArray(data.gallery)) throw new Error('이미지 목록이 손상됐어요.');
   out['pokit:drive-gallery'] = { images: [...(read('pokit:drive-gallery').images ?? []).filter((r: Row) => dateOf(r.createdAt) !== date), ...data.gallery] };
@@ -77,10 +77,5 @@ export function mergeDate(source: DateData, restorePreferences = false): Record<
   // The app keeps only one active day plan. Do not replace a different day's plan.
   if (data.plan && (!read('pokit:day-plan').dateKey || read('pokit:day-plan').dateKey === date)) out['pokit:day-plan'] = data.plan;
   else if (data.plan) out[`pokit:drive-restored-plan:${date}`] = data.plan;
-  const puzzle = read('pokit:puzzle-history');
-  const otherPuzzles = (puzzle.state?.histories ?? []).filter((r: Row) => dateOf(r.createdAt) !== date);
-  if (otherPuzzles.some((r: Row) => data.puzzles.some(p => p.id === r.id))) throw new Error('다른 날짜의 퍼즐과 ID가 겹쳐요.');
-  const histories = [...otherPuzzles, ...data.puzzles];
-  out['pokit:puzzle-history'] = { v: 2, state: { ...puzzle.state, schemaVersion: 2, histories, activeHistoryId: histories.some(r => r.id === puzzle.state?.activeHistoryId) ? puzzle.state.activeHistoryId : null } };
   return out;
 }

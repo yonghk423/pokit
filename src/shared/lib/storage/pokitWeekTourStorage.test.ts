@@ -2,9 +2,7 @@ import { localStorageClient } from './localStorageClient';
 import {
   BUILTIN_POKIT_WEEK_TOUR_FLOW_ID,
   hideStandardCatalogKey,
-  loadPokitWeekTourPuzzleNudgeSeen,
   loadPokitWeekTourSeeded,
-  markPokitWeekTourPuzzleNudgeSeen,
   markPokitWeekTourSeeded,
   nextOrderWithPokitWeekTourSeed,
   saveGoalDetailCategoryConfig,
@@ -14,7 +12,6 @@ import { StorageKeys } from './storageKeys';
 describe('pokitWeekTourStorage', () => {
   beforeEach(() => {
     localStorageClient.removeItem(StorageKeys.pokitWeekTourSeeded);
-    localStorageClient.removeItem(StorageKeys.pokitWeekTourPuzzleNudgeSeen);
     localStorageClient.removeItem(StorageKeys.goalDetailSettings);
     localStorageClient.removeItem(StorageKeys.hiddenStandardCatalogKeys);
   });
@@ -60,9 +57,4 @@ describe('pokitWeekTourStorage', () => {
     expect(nextOrderWithPokitWeekTourSeed([])).toBeNull();
   });
 
-  it('tracks puzzle nudge seen flag', () => {
-    expect(loadPokitWeekTourPuzzleNudgeSeen()).toBe(false);
-    markPokitWeekTourPuzzleNudgeSeen();
-    expect(loadPokitWeekTourPuzzleNudgeSeen()).toBe(true);
-  });
 });

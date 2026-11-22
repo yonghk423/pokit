@@ -1,11 +1,12 @@
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { Image as ExpoImage } from 'expo-image';
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useMemo, useCallback, useEffect } from 'react';
+import * as fs from 'expo-file-system/legacy';
 import { Pressable, View } from 'react-native';
 import { CITY_CALENDAR_THEMES } from '../model/heroCalendarDesign';
 import { illustrationCalendarBackgroundUri } from '../lib/illustrationCalendarAssets';
-import { PAID_CALENDAR_THUMBNAILS } from '../lib/paidCalendarThumbnails';
+import { PAID_CALENDAR_ORIGINALS } from '../lib/paidCalendarOriginals';
 import { useTodayDate } from '@shared/lib/time/useTodayDate';
 import { ThemedText } from '@shared/ui/themed-text';
 import { IllustrationCalendarThumbnailOverlay } from './IllustrationCalendarThumbnailOverlay';
@@ -18,6 +19,16 @@ export const IllustrationThemeCard = memo(function IllustrationThemeCard(props: 
 function ThemeCardContent({ theme, width, height, dark, selected, error, pro = false, onApply }: CardProps) {
   useTranslation();
   const [previewReady, setPreviewReady] = useState(false);
+  const [installedSource, setInstalledSource] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    const uri = illustrationCalendarBackgroundUri(theme.themeId);
+    // Downloaded packs used their full artwork before store thumbnails were added.
+    void fs.getInfoAsync(uri, { md5: true }).then(info => {
+      if (active && info.exists && !info.isDirectory && info.size > 0 && info.md5 === CALENDAR_ARTWORK_LAYOUTS[theme.themeId]?.md5) setInstalledSource(uri);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [theme.themeId]);
   const today = useTodayDate();
   const month = useMemo(() => new Date(today.getFullYear(), today.getMonth(), 1, 12), [today]);
   const ink = dark ? '#E8E5DF' : '#242321';
@@ -33,7 +44,7 @@ function ThemeCardContent({ theme, width, height, dark, selected, error, pro = f
   return <Pressable testID={`illustration-theme-${theme.themeId}`} accessibilityRole="button" accessibilityLabel={translateUiText("{title} 캘린더 적용", { title: theme.title }) + (pro ? ", Pro" : "")} accessibilityState={{ selected }} onPress={apply} style={{ width }}>
     <View style={{ width, height: visibleHeight, borderRadius: 14, shadowColor: '#27231E', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 7 } }}>
       <View style={{ width, height: visibleHeight, borderRadius: 14, overflow: 'hidden' }}>
-        <ExpoImage source={PAID_CALENDAR_THUMBNAILS[theme.themeId] ?? { uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling onDisplay={() => setPreviewReady(true)} style={{ position: 'absolute', top: 0, left: 0, width, height }} />
+        <ExpoImage source={installedSource ? { uri: installedSource } : PAID_CALENDAR_ORIGINALS[theme.themeId] ?? { uri: illustrationCalendarBackgroundUri(theme.themeId) }} contentFit="cover" cachePolicy="memory" transition={0} allowDownscaling={false} onDisplay={() => setPreviewReady(true)} style={{ position: 'absolute', top: 0, left: 0, width, height }} />
         {previewReady ? <IllustrationCalendarThumbnailOverlay themeId={theme.themeId} month={month} width={width} height={height} /> : <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height: visibleHeight, backgroundColor: dark ? '#383633' : '#E6E5E1', padding: 12, gap: 10 }}>
           <View style={{ height: '48%', borderRadius: 8, backgroundColor: dark ? '#484643' : '#D7D5D0' }} />
           <View style={{ width: '46%', height: 8, alignSelf: 'center', borderRadius: 4, backgroundColor: dark ? '#55524E' : '#CFCCC6' }} />

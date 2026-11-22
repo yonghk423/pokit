@@ -1,0 +1,12 @@
+{
+  "minimumSourceWidth": 800,
+  "minimumSourceHeight": 1700,
+  "minimumDownloadWidth": 1290,
+  "downloadEncoding": "lossless-webp",
+  "allowUpscaling": false,
+  "allowSourceOverwrite": false,
+  "coordinateTemplate": "docs/design/photo-diary/city-calendar-template.json",
+  "storeEncoding": "byte-for-byte-server-copy",
+  "allowStoreResizing": false,
+  "allowStoreRecompression": false
+}

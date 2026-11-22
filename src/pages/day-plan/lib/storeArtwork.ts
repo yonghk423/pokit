@@ -19,13 +19,14 @@ const sources = {
 
 };
 type Artwork = Record<keyof typeof sources, ImageRef>;
-// Retain the bounded bundled product set, decoded to at most 768px per edge.
+// Calendar covers keep their native decoded resolution, matching the server originals.
+const calendarCoverKeys = new Set(['legacyCover', 'cover', 'warmSepiaCover', 'texturedWatercolorCover', 'citypopRetroCover']);
 let ready: Artwork | null = null;
 let pending: Promise<Artwork> | null = null;
 function prepare() {
   if (ready) return Promise.resolve(ready);
   if (!pending) pending = Promise.all(Object.entries(sources).map(async ([key, source]) =>
-    [key, await Image.loadAsync(source, { maxWidth: 768, maxHeight: 768 })] as const,
+    [key, await (calendarCoverKeys.has(key) ? Image.loadAsync(source) : Image.loadAsync(source, { maxWidth: 768, maxHeight: 768 }))] as const,
   )).then(entries => (ready = Object.fromEntries(entries) as Artwork)).catch(error => { pending = null; throw error; });
   return pending;
 }

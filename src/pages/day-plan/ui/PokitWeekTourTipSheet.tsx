@@ -1,4 +1,3 @@
-import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { AppModal as Modal } from '@shared/ui/app-modal';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -138,8 +137,8 @@ export function PokitWeekTourTipSheet({
           <PostItCardShell isDark={isDark} faceColor={face} contentStyle={styles.card}>
             <ThemedText style={[styles.kicker, { color: muted }, cityPopFont('500')]}>
               {t('tour.pokitWeek.tipKicker', {
-                current: safeIndex + 1 - (!FEATURE_FLAGS.puzzle && safeIndex > 2 ? 1 : 0),
-                total: POKIT_WEEK_TOUR_STEP_COUNT - (FEATURE_FLAGS.puzzle ? 0 : 1),
+                current: safeIndex + 1 - (safeIndex > 2 ? 1 : 0),
+                total: POKIT_WEEK_TOUR_STEP_COUNT - 1,
               })}
             </ThemedText>
             <ThemedText style={[styles.title, { color: ink }, cityPopFont('700')]}>{title}</ThemedText>

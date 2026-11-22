@@ -34,3 +34,11 @@ it('resolves existing item and theme titles after switching language without rei
   for (const theme of CITY_CALENDAR_THEMES) expect(theme.title).not.toMatch(/[가-힣]/);
   expect(translateUiText('Plans & notes')).toBe('Plans & notes');
 });
+
+it('calls the illustration calendar a calendar in every locale', () => {
+  const labels = { ko: '일러스트 캘린더', en: 'Illustration calendar', ja: 'イラストカレンダー', 'zh-TW': '插畫月曆' };
+  for (const locale of SUPPORTED_APP_LOCALES) {
+    useAppLocaleStore.setState({ locale });
+    expect(translateUiText('일러스트 캘린더')).toBe(labels[locale]);
+  }
+});

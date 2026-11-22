@@ -11,7 +11,6 @@ jest.mock('@shared/ui/icon-symbol', () => ({ IconSymbol: () => null }));
 jest.mock('@shared/ui/pencil-checkbox', () => ({ PencilCheckbox: () => null }));
 jest.mock('@shared/ui/paper-action-icon', () => ({ PaperActionIcon: () => null }));
 jest.mock('./PokitWeekTourLayoutNudgeSheet', () => ({ PokitWeekTourLayoutNudgeSheet: () => null }));
-jest.mock('./PokitWeekTourPuzzleNudgeSheet', () => ({ PokitWeekTourPuzzleNudgeSheet: () => null }));
 jest.mock('./PokitWeekTourTipSheet', () => ({ PokitWeekTourTipSheet: () => null }));
 
 it('saves the last summary edit when closing before debounce, preserving later task changes', () => {

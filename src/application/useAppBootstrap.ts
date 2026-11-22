@@ -33,7 +33,6 @@ import {
 } from '@entities/day-plan';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
-import { usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { useAppSessionStore } from '@shared/lib/app-session';
 import {
   reconcileLiveActivityFromPlan,
@@ -78,7 +77,6 @@ function hydrateAppState() {
   useGoalDetailSettingsStore.getState().reloadAllFromStorage();
   useHistoryStore.getState().reloadFromStorage();
   useHorizonCompletionStore.getState().reloadFromStorage();
-  usePuzzleHistoryStore.getState().reloadFromStorage();
   seedRoutineStartTimesFromLegacySources();
   useDayPlanDraftStore.getState().rollPriorityPlanForwardIfEnded();
   useDayPlanStore.getState().prunePastEndedBlocks();

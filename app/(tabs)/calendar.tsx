@@ -166,6 +166,9 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const setWallpaper = useWallpaperStore(state => state.setWallpaper);
   const [illustrationCategory, setIllustrationCategory] = useState<IllustrationCalendarCategoryId>('character');
   const illustrationPacks = ILLUSTRATION_CALENDAR_CATEGORIES.find(category => category.id === illustrationCategory)?.packs ?? [];
+  const seasonOnly = view === 'illustrationGallery' && illustrationCategory === 'season';
+  const accessFilters: readonly StoreAccessFilter[] = seasonOnly ? ['all', 'pro'] : ['all', 'free', 'pro'];
+  const effectiveAccessFilter = seasonOnly && accessFilter === 'free' ? 'all' : accessFilter;
   const windowSize = useWindowDimensions();
   const [diaryGalleryWidth, setDiaryGalleryWidth] = useState<number | null>(null);
   const diaryItemWidth = Math.max(1, Math.floor(((diaryGalleryWidth ?? windowSize.width) - 40 - 24) / 3));
@@ -209,7 +212,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const selector = <View accessibilityRole="tablist" style={{ alignSelf: 'center', flexDirection: 'row', borderRadius: 20, padding: 4, gap: 3, backgroundColor: '#EEEEEE', borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E2E2E2', borderBottomColor: '#DCDCDC', shadowColor: '#000000', shadowOffset: { width: 5, height: 7 }, shadowOpacity: 0.18, shadowRadius: 7, elevation: 6, marginTop: -6, marginBottom: 10 }}>
     {([
       ['calendar', t('comicCalendar.viewCalendar')],
-      ['illustrationGallery', t('comicCalendar.viewIllustrationDiary')],
+      ['illustrationGallery', t('comicCalendar.viewIllustrationCalendar')],
       ['diary', translateUiText("다이어리")],
     ] as const).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: view === key }} onPress={() => { tapHaptic('select'); setView(key); }} style={({ pressed }) => ({ minHeight: 40, minWidth: 0, paddingHorizontal: 14, flexShrink: 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: view === key || pressed ? '#FFFFFF' : 'transparent', borderWidth: 1, borderColor: view === key || pressed ? '#FFFFFF' : 'transparent', borderBottomColor: view === key || pressed ? '#DCDCDC' : 'transparent', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: view === key ? (pressed ? 0.10 : 0.18) : 0, shadowRadius: pressed ? 3 : 7, elevation: view === key ? (pressed ? 2 : 6) : 0 })}>
       <ThemedText numberOfLines={1} style={{ color: '#000000', fontSize: 13 }}>{label}</ThemedText>
@@ -257,8 +260,8 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   return <View style={{ flex: 1, minHeight: 0 }}>
     {view !== 'illustrationDiary' ? <>{selector}
       <View accessibilityRole="tablist" style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 8 }}>
-        {(['all', 'free', 'pro'] as const).map(filter => <Pressable key={filter} testID={`store-access-${filter}`} accessibilityRole="tab" accessibilityState={{ selected: accessFilter === filter }} onPress={() => { tapHaptic('select'); setAccessFilter(filter); }} style={({ pressed }) => ({ minHeight: 40, minWidth: 70, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: accessFilter === filter || pressed ? '#FFFFFF' : '#EEEEEE', borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E2E2E2', borderBottomColor: '#DCDCDC', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: pressed ? 0.10 : 0.18, shadowRadius: pressed ? 3 : 7, elevation: pressed ? 2 : 6 })}>
-          <ThemedText style={{ fontSize: 13, color: '#242321', opacity: accessFilter === filter ? 1 : 0.55 }}>{filter === 'all' ? (locale === 'ko' ? '전체' : 'All') : filter === 'free' ? translateUiText('무료') : 'Pro'}</ThemedText>
+        {accessFilters.map(filter => <Pressable key={filter} testID={`store-access-${filter}`} accessibilityRole="tab" accessibilityState={{ selected: effectiveAccessFilter === filter }} onPress={() => { tapHaptic('select'); setAccessFilter(filter); }} style={({ pressed }) => ({ minHeight: 40, minWidth: 70, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: effectiveAccessFilter === filter || pressed ? '#FFFFFF' : '#EEEEEE', borderWidth: 1, borderTopColor: '#FFFFFF', borderLeftColor: '#FFFFFF', borderRightColor: '#E2E2E2', borderBottomColor: '#DCDCDC', shadowColor: '#000000', shadowOffset: { width: pressed ? 2 : 5, height: pressed ? 3 : 7 }, shadowOpacity: pressed ? 0.10 : 0.18, shadowRadius: pressed ? 3 : 7, elevation: pressed ? 2 : 6 })}>
+          <ThemedText style={{ fontSize: 13, color: '#242321', opacity: effectiveAccessFilter === filter ? 1 : 0.55 }}>{filter === 'all' ? (locale === 'ko' ? '전체' : 'All') : filter === 'free' ? translateUiText('무료') : 'Pro'}</ThemedText>
         </Pressable>)}
       </View>
     </> : null}
@@ -320,7 +323,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
           })}
         </View>
         <ScrollView key={illustrationCategory} testID="illustration-calendar-gallery" onLayout={({ nativeEvent: { layout } }) => setIllustrationGalleryWidth(previous => previous === layout.width ? previous : layout.width)} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 20, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 8, rowGap: 20 }}>
-          {illustrationGalleryWidth !== null && illustrationPacks.filter(pack => matchesStoreAccess(accessFilter, (pack.startsWith('season-') || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack))).map(pack => <CalendarPackStore key={pack} pack={pack} width={calendarThemeWidth} month={month} dark={isDark} />)}
+          {illustrationGalleryWidth !== null && illustrationPacks.filter(pack => matchesStoreAccess(effectiveAccessFilter, (pack.startsWith('season-') || FEATURE_FLAGS.proIllustrationPacks) && isProCalendarPack(pack))).map(pack => <CalendarPackStore key={pack} pack={pack} width={calendarThemeWidth} month={month} dark={isDark} />)}
         </ScrollView>
       </View>
       : <View testID="illustration-diary-calendar" style={{ flex: 1, minHeight: 0, backgroundColor: '#F7F6F4' }} onLayout={({ nativeEvent: { layout } }) => setIllustrationCanvas(old => old.width === layout.width && old.height === layout.height ? old : { width: layout.width, height: layout.height })}>

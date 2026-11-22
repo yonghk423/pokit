@@ -7,7 +7,6 @@ export const StorageKeys = {
   /** 히스토리 메타(최근 계산 시각/버전 등) */
   historyMeta: 'pokit:history-meta',
   /** 사진 퍼즐 History(활성·앨범) */
-  puzzleHistory: 'pokit:puzzle-history',
   goalDetailSettings: 'pokit:goal-detail-settings',
   /** 담기 탭 상단「내 고정 루틴」에 넣을 카테고리 키 순서(사용자 구성) */
   priorityCatalogFixedRoutines: 'pokit:priority-catalog-fixed-routines',
@@ -28,7 +27,6 @@ export const StorageKeys = {
   /** 「포킷 빠르게 둘러보기」완료 후 레이아웃 설정 안내 모달 */
   pokitWeekTourLayoutNudgeSeen: 'pokit:pokit-week-tour-layout-nudge-seen',
   /** 투어 후 「퍼즐 설명서」안내를 이미 봤는지 */
-  pokitWeekTourPuzzleNudgeSeen: 'pokit:pokit-week-tour-puzzle-nudge-seen',
   /** 데이플랜 화면 드래프트(모드/시작·마무리/순서 등) */
   dayPlanDraft: 'pokit:day-plan-draft',
   /** 위클리·먼슬리 목표 텍스트(주 시작일·연-월 키) */
@@ -89,7 +87,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   dayPlan: 'lockflow:day-plan',
   historyDailyStats: 'lockflow:history-daily-stats',
   historyMeta: 'lockflow:history-meta',
-  puzzleHistory: 'lockflow:puzzle-history',
   goalDetailSettings: 'lockflow:goal-detail-settings',
   priorityCatalogFixedRoutines: 'lockflow:priority-catalog-fixed-routines',
   fixedFlowSets: 'lockflow:fixed-flow-sets',
@@ -100,7 +97,6 @@ export const LegacyStorageKeys: Record<keyof typeof StorageKeys, string> = {
   pokitWeekTourSeeded: 'lockflow:pokit-week-tour-seeded',
   pokitWeekTourFirstTipSeen: 'lockflow:pokit-week-tour-first-tip-seen',
   pokitWeekTourLayoutNudgeSeen: 'lockflow:pokit-week-tour-layout-nudge-seen',
-  pokitWeekTourPuzzleNudgeSeen: 'lockflow:pokit-week-tour-puzzle-nudge-seen',
   dayPlanDraft: 'lockflow:day-plan-draft',
   horizonGoals: 'lockflow:horizon-goals',
   horizonCompletions: 'lockflow:horizon-completions',

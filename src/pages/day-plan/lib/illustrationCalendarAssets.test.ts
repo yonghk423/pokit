@@ -36,7 +36,7 @@ it('does not download uninstalled themes during an installation check', async ()
 });
 
 it('reuses a verified current-revision download', async () => {
-  (fs.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, isDirectory: false, size: 100 });
+  (fs.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, isDirectory: false, size: 100, md5: CALENDAR_ARTWORK_LAYOUTS[themeId].md5 });
   const assets = await downloadIllustrationCalendarAssets(themeId);
   expect(assets.background).toBe(`file:///docs/calendar-themes/${CALENDAR_ASSET_REVISION}/${themeId}/background.webp`);
   expect(fs.downloadAsync).not.toHaveBeenCalled();
@@ -50,7 +50,7 @@ it('rejects a stale CDN image before replacing the installed file', async () => 
 });
 
 it('accepts a pack without decorations and removes both obsolete files', async () => {
-  (fs.getInfoAsync as jest.Mock).mockImplementation(async (uri: string) => ({ exists: uri.endsWith('/background.webp'), isDirectory: false, size: 100 }));
+  (fs.getInfoAsync as jest.Mock).mockImplementation(async (uri: string) => ({ exists: uri.endsWith('/background.webp'), isDirectory: false, size: 100, md5: CALENDAR_ARTWORK_LAYOUTS[themeId].md5 }));
   expect(await isIllustrationCalendarInstalled(themeId)).toBe(true);
   expect(fs.deleteAsync).toHaveBeenCalledWith(`file:///docs/calendar-themes/${CALENDAR_ASSET_REVISION}/shared/paper.webp`, { idempotent: true });
   expect(mockInvoke).not.toHaveBeenCalled();
@@ -117,4 +117,22 @@ it.each([
   expect(mockInvoke).toHaveBeenCalledWith('calendar-theme', { body: { themeId: id, revision } });
   expect(assets.background).toContain(`/${id === 'textured-watercolor-01-fly-kite' ? 'textured-watercolor-kite-v2' : revision}/${id}/background.webp`);
   expect(fs.moveAsync).toHaveBeenCalledWith(expect.objectContaining({ to: assets.background }));
+});
+
+
+it('replaces a thumbnail or stale artwork at the current cache path before reporting it installed', async () => {
+  (fs.getInfoAsync as jest.Mock).mockImplementation(async (uri: string) => ({
+    exists: uri.endsWith('/background.webp') || uri.endsWith('.part'), isDirectory: false, size: 100,
+    md5: uri.endsWith('.part') ? CALENDAR_ARTWORK_LAYOUTS[themeId].md5 : 'thumbnail-hash',
+  }));
+  expect(await isIllustrationCalendarInstalled(themeId)).toBe(true);
+  expect(fs.downloadAsync).toHaveBeenCalledTimes(1);
+  expect(fs.moveAsync).toHaveBeenCalledWith(expect.objectContaining({ to: expect.stringContaining('/background.webp') }));
+});
+
+it('does not report an outdated current cache as ready when restoration is offline', async () => {
+  (fs.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, isDirectory: false, size: 100, md5: 'stale' });
+  (fs.downloadAsync as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+  expect(await isIllustrationCalendarInstalled(themeId)).toBe(false);
+  expect(fs.deleteAsync).not.toHaveBeenCalled();
 });

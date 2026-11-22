@@ -2458,7 +2458,7 @@
   "다음 연도": "comicDiary.nextYear",
   "아직 이 해의 기록이 없어요.": "comicDiary.yearEmpty",
   "달력 열기": "comicCalendar.open",
-  "일러스트 캘린더": "comicCalendar.viewIllustrationDiary",
+  "일러스트 캘린더": "comicCalendar.viewIllustrationCalendar",
   "봄 여름 가을 겨울": "comicCalendar.categorySeason",
   "캐릭터 일러스트": "comicCalendar.categoryCharacterIllustration",
   "일기 {count}개": "comicCalendar.diaryCount",

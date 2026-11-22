@@ -49,8 +49,9 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
   const folder = `${cacheRoot(themeId)}${themeId}/`;
   await fs.makeDirectoryAsync(folder, { intermediates: true });
   const assets: CalendarAssets = { background: `${folder}background.webp` };
-  const existing = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
-  if (!refresh && existing.every(file => file.exists && !file.isDirectory && file.size > 0)) { await pruneOlderThemes(themeId).catch(() => undefined); await removeUnusedCalendarDecorations(); return assets; }
+  const existing = await Promise.all(names.map(name => fs.getInfoAsync(assets[name], { md5: true })));
+  const expectedMd5 = CALENDAR_ARTWORK_LAYOUTS[themeId]?.md5;
+  if (!refresh && expectedMd5 && existing.every(file => file.exists && !file.isDirectory && file.size > 0 && file.md5 === expectedMd5)) { await pruneOlderThemes(themeId).catch(() => undefined); await removeUnusedCalendarDecorations(); return assets; }
   const everyday = isEveryday(themeId);
   const warmSepia = isWarmSepia(themeId);
   const citypopRetro = isCitypopRetro(themeId);
@@ -61,8 +62,8 @@ async function installFiles(themeId = '01-rush-hour-commute', refresh = false): 
     throw new Error('theme_download_unavailable');
   }
   for (const name of names) {
-    const info = await fs.getInfoAsync(assets[name]);
-    if (!refresh && info.exists && !info.isDirectory && info.size > 0) continue;
+    const info = await fs.getInfoAsync(assets[name], { md5: true });
+    if (!refresh && expectedMd5 && info.exists && !info.isDirectory && info.size > 0 && info.md5 === expectedMd5) continue;
     const file = data.files.find((item: { name: string; url: string }) => item.name === `${name}.webp`);
     if (!file?.url?.startsWith('https://')) throw new Error('invalid_theme');
     const expectedPath = collectionSeason(themeId) ? `/calendar-themes/season-${collectionSeason(themeId)}/20261115-v1/${themeId.replace(`season-${collectionSeason(themeId)}-`, '')}.webp` : themeId.startsWith('season-winter-') ? `/calendar-themes/season-winter/20261114-v2/${themeId.replace('season-winter-', '')}.webp` : everyday
@@ -143,9 +144,10 @@ async function hasLegacyDownload(themeId: string) {
 export async function isIllustrationCalendarInstalled(themeId: string): Promise<boolean> {
   if (!fs.documentDirectory) return false;
   const assets: CalendarAssets = { background: `${cacheRoot(themeId)}${themeId}/background.webp` };
-  const files = await Promise.all(names.map(name => fs.getInfoAsync(assets[name])));
-  if (files.every(file => file.exists && !file.isDirectory && file.size > 0)) { await pruneOlderThemes(themeId).catch(() => undefined); await removeUnusedCalendarDecorations(); return true; }
-  if (await hasLegacyDownload(themeId)) {
+  const files = await Promise.all(names.map(name => fs.getInfoAsync(assets[name], { md5: true })));
+  const expectedMd5 = CALENDAR_ARTWORK_LAYOUTS[themeId]?.md5;
+  if (expectedMd5 && files.every(file => file.exists && !file.isDirectory && file.size > 0 && file.md5 === expectedMd5)) { await pruneOlderThemes(themeId).catch(() => undefined); await removeUnusedCalendarDecorations(); return true; }
+  if (files.some(file => file.exists && !file.isDirectory && file.size > 0) || await hasLegacyDownload(themeId)) {
     try { await install(themeId); return true; } catch { return false; }
   }
   return false;

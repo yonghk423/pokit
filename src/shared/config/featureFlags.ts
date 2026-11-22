@@ -1,6 +1,4 @@
-/** 임시 보류 기능. 퍼즐을 다시 공개할 때 puzzle을 true로 바꾼다.
- * 저장된 사진·진행 기록은 유지하며 메뉴, 가이드, 직접 접근과 자동 동기화만 중단한다.
- */
+/** 서비스 기능 노출 설정. */
 export const FEATURE_FLAGS = {
   /** 설정에서 Google Drive 날짜별 백업·복구를 다시 노출한다. */
   driveBackupSettings: true,
@@ -30,7 +28,6 @@ export const FEATURE_FLAGS = {
   quickMemoShortcut: false,
   /** 오늘 노트는 기능·저장 내용을 유지하고 상단 진입 아이콘만 임시로 숨긴다. */
   dayNoteShortcut: false,
-  puzzle: false,
   /** 루틴 템플릿은 기능과 데이터를 보존한 채 탭을 숨긴다. */
   routineTemplates: false,
   /** 오늘의 한 줄은 데이터·설정을 보존한 채 임시로 숨긴다. */

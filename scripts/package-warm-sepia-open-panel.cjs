@@ -29,6 +29,6 @@ export const WARM_SEPIA_OPEN_PANEL_LAYOUTS = {
  'warm-sepia-open-panel-01-exercise': { ...EVERYDAY_CINEMA_GEOMETRY, sha256: '${entry.webpSha256}', md5: '${entry.webpMd5}' },
 };
 `);
- await sharp(png).resize({width:415}).webp({quality:90}).toFile('assets/store-previews/warm-sepia-open-panel.webp');
+ await fs.writeFile('assets/store-previews/warm-sepia-open-panel.webp', webp);
  console.log(out);
 })().catch(e=>{console.error(e);process.exitCode=1;});

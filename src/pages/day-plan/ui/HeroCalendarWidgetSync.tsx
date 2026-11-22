@@ -3,7 +3,8 @@ import { isPremiumPaper } from '../model/premiumCalendarPapers';
 import { isPhotoCalendar } from '../model/freePhotoCalendars';
 import { CalendarWidgetRenderReadyContext } from '../model/calendarWidgetRenderReady';
 import { getLoadedIllustrationCalendarAssets } from '../lib/illustrationCalendarAssets';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCalendarPhotosHidden } from '@shared/lib/calendarLayoutPreferences';
 import { AppState, NativeModules, Platform, View } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { CalendarPaper } from './HeroCalendarDesigns';
@@ -15,6 +16,10 @@ import type { ComicDiary } from '../lib/heroDiaryStorage';
 export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDates }: {
   design: HeroCalendarDesign; month: Date; today: Date; diaries: ComicDiary[]; eventDates: string[];
 }) {
+  const hidePhotos = useCalendarPhotosHidden();
+  const displayDiaries = useMemo(() => hidePhotos
+    ? diaries.map(diary => ({ ...diary, scenes: diary.scenes.map(scene => ({ ...scene, artworkUri: undefined })) }))
+    : diaries, [diaries, hidePhotos]);
   const targets = useRef<Record<'small' | 'large', View | null>>({ small: null, large: null });
   const scheduleCapture = useRef<(() => void) | undefined>(undefined);
   // Decoder notifications must not rerender images and trigger another onLoad.
@@ -24,7 +29,7 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
   const enabled = Platform.OS === 'ios' && !!(native?.syncCalendarWidgetImageForFamily || native?.syncCalendarWidgetImage);
   const theme = CITY_CALENDAR_THEMES.find(value => value.design === design);
   const eventKey = eventDates.join(',');
-  const diaryKey = JSON.stringify(diaries);
+  const diaryKey = JSON.stringify(displayDiaries);
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
   useEffect(() => {
     if (!enabled) return;
@@ -86,8 +91,8 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
         const height = family === 'large' ? 346 : 330;
         return <View key={family} ref={view => { targets.current[family] = view; }} collapsable={false} style={{ width: 330, height, backgroundColor: '#FAFAF6', overflow: 'hidden' }}>
           {theme || design === 'illustration'
-            ? <HeroIllustrationCalendar widget themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={height} month={month} today={today} diaries={diaries} eventDates={eventDates} onSelectDate={() => undefined} />
-            : <CalendarPaper widgetSize={family} design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'photo' || design === 'grid' || design === 'weather' ? design : 'bold'} month={month} today={today} diaries={diaries} eventDates={eventDates} layoutWidth={330} layoutHeight={height} />}
+            ? <HeroIllustrationCalendar widget themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={height} month={month} today={today} diaries={displayDiaries} eventDates={eventDates} onSelectDate={() => undefined} />
+            : <CalendarPaper widgetSize={family} design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'photo' || design === 'grid' || design === 'weather' ? design : 'bold'} month={month} today={today} diaries={displayDiaries} eventDates={eventDates} layoutWidth={330} layoutHeight={height} />}
         </View>;
       })}
     </CalendarWidgetRenderReadyContext.Provider>

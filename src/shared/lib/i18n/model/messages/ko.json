@@ -2901,7 +2901,7 @@
   "comicCalendar.previous": "이전 달",
   "comicCalendar.next": "다음 달",
   "comicCalendar.viewCalendar": "캘린더",
-  "comicCalendar.viewIllustrationDiary": "일러스트 캘린더",
+  "comicCalendar.viewIllustrationCalendar": "일러스트 캘린더",
   "comicCalendar.categorySeason": "봄 여름 가을 겨울",
   "comicCalendar.categoryCharacterIllustration": "캐릭터 일러스트",
   "comicCalendar.diaryCount": "일기 {count}개",

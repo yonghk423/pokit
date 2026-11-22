@@ -3,6 +3,7 @@ import { NativeModules, Platform } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { HeroCalendarWidgetSync } from './HeroCalendarWidgetSync';
 import { CalendarPaper } from './HeroCalendarDesigns';
+import { setCalendarPhotosHidden } from '@shared/lib/calendarLayoutPreferences';
 jest.mock('./HeroCalendarDesigns', () => ({ CalendarPaper: () => null }));
 jest.mock('./HeroIllustrationCalendar', () => ({ HeroIllustrationCalendar: () => null }));
 jest.mock('../model/heroCalendarDesign', () => ({ CITY_CALENDAR_THEMES: [], useHeroCalendarCover: () => null }));
@@ -55,4 +56,27 @@ it('prepares separate small and large calendars with size-specific layouts', () 
   const calendars = tree!.root.findAllByType(CalendarPaper);
   expect(calendars.map(calendar => calendar.props.widgetSize)).toEqual(['small', 'large']);
   expect(calendars.map(calendar => calendar.props.layoutHeight)).toEqual([330, 346]);
+});
+
+it('replaces both widget snapshots when the photo visibility preference changes', async () => {
+  const diaries = [{ id: 'record', date: '2026-11-09', scenes: [{ id: 'photo', artworkUri: 'file:///saved.jpg' }] }] as any;
+  const sync = jest.fn(async () => undefined);
+  NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: sync };
+  act(() => { setCalendarPhotosHidden(false); tree = create(<HeroCalendarWidgetSync {...props} design="cream-kitten" diaries={diaries} />); });
+  try {
+    await act(async () => { jest.advanceTimersByTime(400); });
+    expect(sync).toHaveBeenCalledTimes(2);
+    act(() => setCalendarPhotosHidden(true));
+    expect(tree!.root.findAllByType(CalendarPaper)[0].props.diaries[0].scenes[0].artworkUri).toBeUndefined();
+    await act(async () => { jest.advanceTimersByTime(400); });
+    expect(sync.mock.calls.slice(2)).toEqual([
+      ['file:///widget.png', '2026-11', 'small'],
+      ['file:///widget.png', '2026-11', 'large'],
+    ]);
+    expect(diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
+    act(() => setCalendarPhotosHidden(false));
+    expect(tree!.root.findAllByType(CalendarPaper)[0].props.diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
+    await act(async () => { jest.advanceTimersByTime(400); });
+    expect(sync).toHaveBeenCalledTimes(6);
+  } finally { act(() => setCalendarPhotosHidden(false)); }
 });

@@ -1,9 +1,7 @@
 import { PencilCheckbox } from '@shared/ui/pencil-checkbox';
-import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { PaperActionIcon } from '@shared/ui/paper-action-icon';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 
@@ -26,12 +24,8 @@ import { resolvePokitWeekTourTaskLabel } from '@shared/lib/i18n/lib/pokitWeekTou
 import {
   isPokitWeekTourFlowId,
   loadGoalDetailCategoryConfig,
-  loadPokitWeekTourFirstTipSeen,
-  loadPokitWeekTourLayoutNudgeSeen,
-  loadPokitWeekTourPuzzleNudgeSeen,
   markPokitWeekTourFirstTipSeen,
   markPokitWeekTourLayoutNudgeSeen,
-  markPokitWeekTourPuzzleNudgeSeen,
   POKIT_WEEK_TOUR_STEP_COUNT,
   POST_IT_LIGHT_INK,
   resolvePokitWeekTourStepIndex,
@@ -43,7 +37,6 @@ import { ThemedText } from '@shared/ui/themed-text';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 
 import { useDayPlanTabBridge } from '../model/dayPlanTabBridge';
-import { PokitWeekTourPuzzleNudgeSheet } from './PokitWeekTourPuzzleNudgeSheet';
 import { PokitWeekTourTipSheet } from './PokitWeekTourTipSheet';
 
 type ChecklistTask = { id: string; text: string; done: boolean };
@@ -207,9 +200,6 @@ export function PriorityBagRowAccordionPanel({
   const [revision, setRevision] = useState(0);
   const [tourTipStep, setTourTipStep] = useState<number | null>(null);
   const [tourTipTaskId, setTourTipTaskId] = useState<string | null>(null);
-  const layoutNudgeVisible = false;
-  const [puzzleNudgeVisible, setPuzzleNudgeVisible] = useState(false);
-  const router = useRouter();
   const goalKey = asGoalDetailCategoryKey(categoryKey);
   const summaryPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSummaryCommitRef = useRef<(() => void) | null>(null);
@@ -273,11 +263,11 @@ export function PriorityBagRowAccordionPanel({
     return `${s} – ${e}`;
   }, [startMinutes, endMinutes]);
 
-  const visibleTourTasks = tasks.filter((task, index) => FEATURE_FLAGS.puzzle || !isWeekTour || (resolvePokitWeekTourStepIndex(task.id) ?? index) !== 2);
+  const visibleTourTasks = tasks.filter((task, index) => !isWeekTour || (resolvePokitWeekTourStepIndex(task.id) ?? index) !== 2);
   const doneCount = visibleTourTasks.filter((task) => task.done).length;
   const firstUndoneTourIndex = useMemo(() => {
     if (!isWeekTour) return -1;
-    return tasks.findIndex((task, index) => !task.done && (FEATURE_FLAGS.puzzle || (resolvePokitWeekTourStepIndex(task.id) ?? index) !== 2));
+    return tasks.findIndex((task, index) => !task.done && (resolvePokitWeekTourStepIndex(task.id) ?? index) !== 2);
   }, [isWeekTour, tasks]);
   const showTourTapNudge =
     isWeekTour && tourTipStep == null && firstUndoneTourIndex >= 0;
@@ -413,39 +403,6 @@ export function PriorityBagRowAccordionPanel({
     [persistChecklist, tasks, toggleTask],
   );
 
-  const puzzleNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tourTipStepRef = useRef(tourTipStep);
-  const layoutNudgeVisibleRef = useRef(layoutNudgeVisible);
-  const puzzleNudgeVisibleRef = useRef(puzzleNudgeVisible);
-  tourTipStepRef.current = tourTipStep;
-  layoutNudgeVisibleRef.current = layoutNudgeVisible;
-  puzzleNudgeVisibleRef.current = puzzleNudgeVisible;
-
-  const clearPuzzleNudgeTimer = useCallback(() => {
-    if (puzzleNudgeTimerRef.current) {
-      clearTimeout(puzzleNudgeTimerRef.current);
-      puzzleNudgeTimerRef.current = null;
-    }
-  }, []);
-
-  const queuePuzzleNudgeSoon = useCallback(() => {
-    if (!FEATURE_FLAGS.puzzle) return;
-    if (loadPokitWeekTourPuzzleNudgeSeen()) return;
-    clearPuzzleNudgeTimer();
-    puzzleNudgeTimerRef.current = setTimeout(() => {
-      puzzleNudgeTimerRef.current = null;
-      if (loadPokitWeekTourPuzzleNudgeSeen()) return;
-      setPuzzleNudgeVisible(true);
-    }, 280);
-  }, [clearPuzzleNudgeTimer]);
-
-  useEffect(
-    () => () => {
-      clearPuzzleNudgeTimer();
-    },
-    [clearPuzzleNudgeTimer],
-  );
-
   const closeTourTip = useCallback(() => {
     if (tourTipStep === 0) {
       markPokitWeekTourFirstTipSeen();
@@ -454,62 +411,11 @@ export function PriorityBagRowAccordionPanel({
     setTourTipTaskId(null);
     // 「닫기」「알겠어요」모두 여기로 옴 — 체크리스트 전부 완료 여부와 무관, 1회만
     markPokitWeekTourLayoutNudgeSeen();
-    queuePuzzleNudgeSoon();
-  }, [queuePuzzleNudgeSoon, tourTipStep]);
+  }, [tourTipStep]);
 
   const confirmTourTip = useCallback(() => {
     closeTourTip();
   }, [closeTourTip]);
-
-  const dismissPuzzleNudge = useCallback(() => {
-    markPokitWeekTourPuzzleNudgeSeen();
-    setPuzzleNudgeVisible(false);
-  }, []);
-
-  const openPuzzleGuideFromNudge = useCallback(() => {
-    markPokitWeekTourPuzzleNudgeSeen();
-    setPuzzleNudgeVisible(false);
-    router.push('/puzzle-guide');
-  }, [router]);
-
-  /**
-   * 레이아웃 안내 → 퍼즐 안내.
-   * - 「닫기」: 직전 단계 dismiss가 다음을 즉시 큐잉
-   * - 「확인해 보기」: 설정/설명서에서 돌아온 화면 포커스에서 큐잉
-   *   (탭 isDayPlanFocused는 스택 푸시 때 안 바뀌므로 useFocusEffect 사용)
-   */
-  useFocusEffect(
-    useCallback(() => {
-      if (!isWeekTour) return;
-
-      const anySheetOpen = () =>
-        tourTipStepRef.current != null ||
-        layoutNudgeVisibleRef.current ||
-        puzzleNudgeVisibleRef.current;
-
-      const tryShowPuzzleNudge = () => {
-        if (!loadPokitWeekTourFirstTipSeen()) return;
-        if (!loadPokitWeekTourLayoutNudgeSeen()) return;
-        if (loadPokitWeekTourPuzzleNudgeSeen()) return;
-        if (anySheetOpen()) return;
-        queuePuzzleNudgeSoon();
-      };
-
-      // 레이아웃 설정에서 돌아온 직후 바로 뜨지 않게 한 틱 뒤
-      const focusTimer = setTimeout(() => {
-        tryShowPuzzleNudge();
-      }, 0);
-
-      return () => {
-        clearTimeout(focusTimer);
-        clearPuzzleNudgeTimer();
-      };
-    }, [
-      clearPuzzleNudgeTimer,
-      isWeekTour,
-      queuePuzzleNudgeSoon,
-    ]),
-  );
 
   const removeTask = useCallback(
     (id: string) => {
@@ -594,7 +500,7 @@ export function PriorityBagRowAccordionPanel({
           {showTourTapNudge ? <TourChecklistTapNudge color={ink} /> : null}
 
           {tasks.map((task, index) => {
-            if (!FEATURE_FLAGS.puzzle && isWeekTour && (resolvePokitWeekTourStepIndex(task.id) ?? index) === 2) return null;
+            if (isWeekTour && (resolvePokitWeekTourStepIndex(task.id) ?? index) === 2) return null;
             const isNudgeTarget = showTourTapNudge && index === firstUndoneTourIndex;
             const checkBox = (
               <View style={s.check}>
@@ -688,12 +594,6 @@ export function PriorityBagRowAccordionPanel({
           isDark={isDark}
           onClose={closeTourTip}
           onConfirm={confirmTourTip}
-        />
-        <PokitWeekTourPuzzleNudgeSheet
-          visible={FEATURE_FLAGS.puzzle && puzzleNudgeVisible}
-          isDark={isDark}
-          onClose={dismissPuzzleNudge}
-          onOpenPuzzleGuide={openPuzzleGuideFromNudge}
         />
 
         <View style={s.toolbar}>

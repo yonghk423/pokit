@@ -64,10 +64,6 @@ export default function TabLayout() {
           name="fixed-routines"
           options={{ title: t('tabs.routines'), href: FEATURE_FLAGS.routinesManageTab ? undefined : null }}
         />
-        <Tabs.Screen
-          name="puzzle-history"
-          options={{ title: t('tabs.puzzle'), href: FEATURE_FLAGS.puzzle ? undefined : null }}
-        />
         <Tabs.Screen name="pokit-story" options={{ title: t('tabs.story'), href: FEATURE_FLAGS.pokitStory ? undefined : null }} />
       </Tabs>
       </View>

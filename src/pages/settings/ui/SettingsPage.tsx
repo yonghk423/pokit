@@ -34,7 +34,6 @@ import {
 } from '@entities/announcement';
 import { useHistoryStore } from '@entities/history';
 import { useHorizonCompletionStore } from '@entities/horizon-completion';
-import { clearPuzzleRevealSeen, usePuzzleHistoryStore } from '@entities/puzzle-history';
 import { registerOtherCategoryResolverFromStorage } from '@features/other-category-resolve';
 import {
   restorePurchases,
@@ -265,8 +264,6 @@ export function SettingsPage() {
       useHistoryStore.getState().reloadFromStorage();
       useHorizonCompletionStore.getState().reloadFromStorage();
       // 스토리지만 비우고 퍼즐 스토어를 안 비우면 sync 시 목업이 다시 저장된다
-      clearPuzzleRevealSeen();
-      usePuzzleHistoryStore.getState().reloadFromStorage();
       resetServiceTutorialSession();
       // Return to the normal home after resetting local data.
       if (router.canDismiss()) router.dismissAll();
@@ -455,27 +452,6 @@ export function SettingsPage() {
 
             </SettingsSection>
           ) : null}
-
-          {FEATURE_FLAGS.puzzle ? <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
-              <Pressable
-                style={[chrome.item, { borderTopColor: p.border }]}
-                onPress={tap(() => router.push('/puzzle-guide'))}
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.a11y.puzzleGuide', locale)}>
-                <View style={chrome.itemLeft}>
-                  <SettingsRowIcon name="rectangle.stack" color={p.icon} boxBg={p.iconBoxBg} border={p.iconBorder} shadow={p.shadow} />
-                  <View style={chrome.itemTextWrap}>
-                    <ThemedText style={[chrome.itemTitle, { color: p.title }]} lightColor={p.title} darkColor={p.title}>
-                      {t('settings.puzzleGuideTitle', locale)}
-                    </ThemedText>
-                    <ThemedText style={[chrome.itemDesc, { color: p.desc }]} lightColor={p.desc} darkColor={p.desc}>
-                      {t('settings.puzzleGuideDesc', locale)}
-                    </ThemedText>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={14} color={p.chevron} />
-              </Pressable>
-          </SettingsSection> : null}
 
           {SHOW_APPEARANCE_SETTINGS ? (
             <SettingsSection border={p.border} surface={p.surface} isDark={isDark}>
