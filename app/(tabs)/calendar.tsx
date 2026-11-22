@@ -131,6 +131,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const { artwork: storeArtwork, failed: storeArtworkFailed, retry: retryStoreArtwork } = useStoreArtwork();
   const selectedDesign = useHeroCalendarDesign();
   const themedClip = useDiaryTheme('clip');
+  const themedBookmark = useDiaryTheme('mark');
   const themedWall = useDiaryTheme('photoWall');
   const selectedClip = useHeroDiaryClip();
   const isPro = useSubscriptionStore(selectCanTestProStoreItems);
@@ -161,7 +162,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
   const diaryCategoryScroll = useRef({ height: 170, content: 0, offset: 0 });
   const updateCategoryHint = () => { const { height, content, offset } = diaryCategoryScroll.current; setMoreDiaryCategories(offset <= 2 && content - height > 4); };
   const [accessFilter, setAccessFilter] = useState<StoreAccessFilter>('all');
-  const [diaryCategory, setDiaryCategory] = useState<ThemeSlot | 'wall' | 'background'>('clip');
+  const [diaryCategory, setDiaryCategory] = useState<ThemeSlot | 'wall' | 'background'>('mark');
   const wallpaper = useWallpaperStore(state => state.wallpaper);
   const setWallpaper = useWallpaperStore(state => state.setWallpaper);
   const [illustrationCategory, setIllustrationCategory] = useState<IllustrationCalendarCategoryId>('character');
@@ -218,12 +219,12 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
       <ThemedText numberOfLines={1} style={{ color: '#000000', fontSize: 13 }}>{label}</ThemedText>
     </Pressable>)}
   </View>;
-  const renderLegacyItems = (paidItems: boolean) => !matchesStoreAccess(accessFilter, paidItems) ? null : (diaryCategory === 'clip' ? DIARY_CLIPS.filter(item => item.pro === paidItems).map(({ id: clip, name, english, pro }) => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: !themedClip && selectedClip === clip }} onPress={() => { if (!themedClip && selectedClip === clip) { tapHaptic('select'); resetDiaryItem('clip'); } else void chooseItem('clip-' + clip, pro, () => applyHeroDiaryClip(clip)); }} style={{ width: diaryItemWidth, padding: 8, gap: 6 }}>
+  const renderLegacyItems = (paidItems: boolean) => !matchesStoreAccess(accessFilter, paidItems) ? null : ((diaryCategory === 'clip' || diaryCategory === 'mark') ? DIARY_CLIPS.filter(item => item.pro === paidItems && (diaryCategory === 'mark' ? item.id === 'rose-pink-bookmark' : item.id !== 'rose-pink-bookmark')).map(({ id: clip, name, english, pro }) => <Pressable key={clip} testID={`diary-item-${clip}-clip`} accessibilityRole="button" accessibilityState={{ selected: !themedClip && !themedBookmark && selectedClip === clip }} onPress={() => { if (!themedClip && !themedBookmark && selectedClip === clip) { tapHaptic('select'); resetDiaryItem('clip'); } else void chooseItem('clip-' + clip, pro, () => applyHeroDiaryClip(clip)); }} style={{ width: diaryItemWidth, padding: 8, gap: 6 }}>
             <HeroBlueClipPreview dark={isDark} clip={clip} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <ThemedText numberOfLines={1} adjustsFontSizeToFit style={{ color: ink, fontSize: 14, flexShrink: 1 }}>{locale === 'en' ? english : translateUiText(name)}</ThemedText>
             </View>
-            <ThemedText style={{ color: !themedClip && selectedClip === clip ? '#278B77' : ink, opacity: !themedClip && selectedClip === clip ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{!themedClip && selectedClip === clip && (!pro || !!diaryImages('clip-' + clip)) ? (translateUiText("적용 중")) : pro ? itemStatus('clip-' + clip) : (translateUiText("무료"))}</ThemedText>
+            <ThemedText style={{ color: !themedClip && !themedBookmark && selectedClip === clip ? '#278B77' : ink, opacity: !themedClip && !themedBookmark && selectedClip === clip ? 1 : 0.6, textAlign: 'center', fontSize: 13 }}>{!themedClip && !themedBookmark && selectedClip === clip && (!pro || !!diaryImages('clip-' + clip)) ? (translateUiText("적용 중")) : pro ? itemStatus('clip-' + clip) : (translateUiText("무료"))}</ThemedText>
           </Pressable>) : diaryCategory === 'trash' ? HERO_TRASH_BIN_ITEMS.filter(item => isProTrashBinStyle(item.id) === paidItems).map(item => {
             const style = item.id;
             const selected = !themedTrash && selectedTrashBinStyle === style;
@@ -270,7 +271,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
         <View style={{ flexShrink: 0 }}>
         <ScrollView onLayout={event => { diaryCategoryScroll.current.height = event.nativeEvent.layout.height; updateCategoryHint(); }} onContentSizeChange={(_, height) => { diaryCategoryScroll.current.content = height; updateCategoryHint(); }} onScroll={event => { diaryCategoryScroll.current.offset = event.nativeEvent.contentOffset.y; updateCategoryHint(); }} scrollEventThrottle={32} testID="diary-category-grid" nestedScrollEnabled showsVerticalScrollIndicator style={{ height: 170, flexGrow: 0, flexShrink: 0, marginHorizontal: 12, borderRadius: 18 }} contentContainerStyle={{ padding: 12 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 10 }}>
-          {([['clip', categoryNames.clip], ['trash', categoryNames.trash], ['camera', categoryNames.camera], ['wall', ['벽장식', 'Wall decor']], ['background', ['배경', 'Backgrounds']], ...Object.entries(categoryNames).filter(([key]) => !['clip','trash','camera','photoWall'].includes(key) && proDiaryCatalog.some(item => item.category === key))] as [ThemeSlot | 'wall' | 'background', string[]][]).map(([category, labels]) => <Pressable key={category} testID={`diary-category-${category}`} accessibilityRole="tab" accessibilityLabel={locale === 'en' ? labels[1] : translateUiText(labels[0])} accessibilityState={{ selected: diaryCategory === category }} onPress={() => { tapHaptic('select'); setDiaryCategory(category); }} style={{ width: '33.33%', height: 42, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: diaryCategory === category ? '#F8F8FA' : '#F0EFEC', boxShadow: diaryCategory === category ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : '-2px -2px 5px rgba(255,255,255,0.75), 2px 2px 5px rgba(126,127,145,0.13)' }}>
+          {([['mark', categoryNames.mark], ['clip', categoryNames.clip], ['trash', categoryNames.trash], ['camera', categoryNames.camera], ['wall', ['벽장식', 'Wall decor']], ['background', ['배경', 'Backgrounds']], ...Object.entries(categoryNames).filter(([key]) => !['mark','clip','trash','camera','photoWall'].includes(key) && proDiaryCatalog.some(item => item.category === key))] as [ThemeSlot | 'wall' | 'background', string[]][]).map(([category, labels]) => <Pressable key={category} testID={`diary-category-${category}`} accessibilityRole="tab" accessibilityLabel={locale === 'en' ? labels[1] : translateUiText(labels[0])} accessibilityState={{ selected: diaryCategory === category }} onPress={() => { tapHaptic('select'); setDiaryCategory(category); }} style={{ width: '33.33%', height: 42, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: diaryCategory === category ? '#F8F8FA' : '#F0EFEC', boxShadow: diaryCategory === category ? '-3px -3px 8px rgba(255,255,255,0.95), 3px 3px 8px rgba(126,127,145,0.22)' : '-2px -2px 5px rgba(255,255,255,0.75), 2px 2px 5px rgba(126,127,145,0.13)' }}>
             <ThemedText style={{ color: ink, fontSize: 14, textAlign: 'center', opacity: diaryCategory === category ? 1 : 0.55 }}>{locale === 'en' ? labels[1] : translateUiText(labels[0])}</ThemedText>
           </Pressable>)}
           </View>

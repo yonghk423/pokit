@@ -45,6 +45,7 @@ export function FreePhotoCalendarPaper({ widgetSize, design, width, height, mont
  <View testID="photo-calendar-weekday-region" style={{ position:'absolute', ...weekdays, flexDirection:'row', alignItems:'center' }}>{['MON','TUE','WED','THU','FRI','SAT','SUN'].map(day=><Text key={day} allowFontScaling={false} style={{ width:'14.2857%', textAlign:'center', color:ink, fontFamily:font, fontSize:weekdaySize, lineHeight:weekdays.height }}>{day}</Text>)}</View>
  <View testID="photo-calendar-grid-region" style={{ position:'absolute', ...grid, flexDirection:'row', flexWrap:'wrap' }}>{Array.from({length:42},(_,slot)=>{
  const date=new Date(month.getFullYear(),month.getMonth(),slot-offset+1,12), key=getLocalDateKey(date), active=date.getMonth()===month.getMonth();
+ if (!active) return <View key={key} testID={`photo-calendar-empty-${slot}`} pointerEvents="none" style={{ width:'14.2857%', height:rowHeight }} />;
  const uri=records.get(key)?.flatMap(record=>record.scenes).find(scene=>scene.artworkUri)?.artworkUri;
  const selected=key===getLocalDateKey(today);
  return <Pressable key={key} accessibilityLabel={key} disabled={miniature || !onSelectDate} onPress={() => { tapHaptic('select'); onSelectDate?.(key); }} style={{ width:'14.2857%', height:rowHeight, alignItems:'center', overflow:'hidden' }}>

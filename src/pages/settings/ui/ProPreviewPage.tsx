@@ -1,3 +1,4 @@
+import { BrandColors } from '@shared/config/retroFlat';
 import { Image } from 'expo-image';
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
 import { AccessibilityInfo, AppState, Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
@@ -280,7 +281,7 @@ export function ProPreviewPage({ onClose, onActivated, onBusyChange, storeItems 
     if (result !== 'opened') AppAlert.alert(t('proPreview.manage'), t(result === 'test_store' ? 'proPreview.testManage' : result === 'error' ? 'proPreview.failed' : 'alert.manage.unavailable'));
   };
   const canSubmit = !subscription.busy && (subscription.isPro || (subscription.status === 'ready' && !!subscription.packages[selectedPlan]));
-  const accent = isDark ? '#394B40' : '#E4EBDD';
+  const accent = BrandColors[isDark ? 'dark' : 'light'].surface;
   const submit = async (restore = false) => {
     const result = await subscription.transact(restore ? undefined : selectedPlan);
     if (result === 'cancelled') return;
@@ -343,7 +344,7 @@ export function ProPreviewPage({ onClose, onActivated, onBusyChange, storeItems 
           <View style={[styles.account, { backgroundColor: accent }]}>
             <SettingsInkFrame color={p.title} />
             <ThemedText style={[styles.sectionTitle, text]}>{t('proPreview.currentPlan')}</ThemedText>
-            <ThemedText style={[styles.benefitTitle, text]}>{subscription.currentPlan ? t(`proPreview.${subscription.currentPlan}`) : subscription.entitlement?.productIdentifier}</ThemedText>
+            <ThemedText style={[styles.benefitTitle, text]}>{subscription.entitlement?.productIdentifier.startsWith('rc_promo_') ? t('proPreview.promotionalPlan') : subscription.currentPlan ? t(`proPreview.${subscription.currentPlan}`) : 'Pro'}</ThemedText>
             {expiryLabel ? <ThemedText style={[styles.description, muted]}>{t(subscription.entitlement?.willRenew ? 'proPreview.renewalDate' : 'proPreview.expiryDate')}: {expiryLabel}</ThemedText> : null}
             <ThemedText style={[styles.description, muted]}>{t(subscription.entitlement?.store === 'TEST_STORE' ? 'proPreview.testManage' : 'proPreview.changeNotice')}</ThemedText>
           </View>

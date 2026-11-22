@@ -16,7 +16,7 @@ export function installedPaper(id: string) {
   return localStorageClient.getJson<PaperAsset>(key(id));
 }
 async function requestAsset(id: string) {
-  const { data, error } = await invokeDownload('calendar-store', { body: { id, format: 2 } });
+  const { data, error } = await invokeDownload('store-download', { body: { id, format: 2 } });
   if (error) {
     let code = 'download_unavailable';
     try {

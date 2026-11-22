@@ -66,6 +66,7 @@ const CanvasEventRow = memo(function CanvasEventRow({ event, ink, onDelete }: { 
 export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, keyboardVerticalOffset = 0, returnAction, archiveView = false }: { date: string; ink: string; initialHeight?: number; monthlyHeight?: number; keyboardVerticalOffset?: number; returnAction?: ReactNode; archiveView?: boolean }) {
   const { locale, t } = useTranslation();
   const proClip = useDiaryTheme('clip');
+  const bookmark = useDiaryTheme('mark');
   const diaryClip = useHeroDiaryClip();
   const appliedClip = useAppliedDiaryImage('clip-' + diaryClip, 'image', DIARY_CLIP_IMAGES[diaryClip]);
   const insets = useSafeAreaInsets();
@@ -169,7 +170,6 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
     return () => { show.remove(); hide.remove(); };
   }, [tab]);
   const storageKey = monthly ? `pokit:monthly-album-note:${date.slice(0, 7)}` : `pokit:canvas-note:${date}`;
-  const isPro = useSubscriptionStore(selectIsPro);
   const [picker, setPicker] = useState<NoteColor | null>(null);
   const paletteProgress = useRef(new Animated.Value(0)).current;
   useLayoutEffect(() => {
@@ -182,7 +182,8 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
   const colorKey = storageKey + ':colors';
   const [colors, setColors] = useState(() => localStorageClient.getJson<Partial<Record<NoteColor, string>>>(colorKey) ?? {});
   function chooseColor(color?: string) {
-    if (!picker || !selectIsPro(useSubscriptionStore.getState())) return;
+    if (!picker) return;
+    if (!selectIsPro(useSubscriptionStore.getState())) { router.push('/pro-preview'); return; }
     const next = { ...colors, [picker]: color };
     localStorageClient.setJson(colorKey, next);
     setColors(next);
@@ -281,10 +282,10 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
       </View> : null}
       {!editing && !archiveView ? <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 20, width: 76, height: 44, top: expansion.interpolate({ inputRange: [0, 1], outputRange: [collapsedTop - clipOffset, expandedTop - clipOffset] }), zIndex: 31, elevation: 31 }}>
           <View testID="hero-canvas-clip-handle"  {...clipGesture.panHandlers} accessible accessibilityRole="button" accessibilityLabel={translateUiText("내용 영역 펼치기 또는 접기")} accessibilityHint={translateUiText("위로 끌면 펼쳐지고 아래로 끌면 접힙니다")} accessibilityState={{ expanded }} accessibilityActions={[{ name: 'activate' }]} onAccessibilityAction={() => settlePanel(!expanded)} style={{ width: 76, height: 44, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}>
-            <Image testID="hero-canvas-blue-clip" source={proClip?.source ?? appliedClip} contentFit="contain" transition={0} cachePolicy="memory-disk" useAppleWebpCodec={false} accessible={false} pointerEvents="none" style={{ width: 60, height: proClip || diaryClip === 'cherry-binder' ? 36 : 20 }} />
+            <Image testID="hero-canvas-blue-clip" source={bookmark?.source ?? proClip?.source ?? appliedClip} contentFit="contain" transition={0} cachePolicy="memory-disk" useAppleWebpCodec={false} accessible={false} pointerEvents="none" style={bookmark || (diaryClip === 'rose-pink-bookmark' && !proClip) ? { width: 26, height: 48 } : { width: 60, height: proClip || diaryClip === 'cherry-binder' ? 36 : 20 }} />
           </View>
       </Animated.View> : null}
-      {editing && tab === 'story' && illustrationsOpen && isPro ? <FlatList
+      {editing && tab === 'story' && illustrationsOpen ? <FlatList
         testID="hero-canvas-illustration-picker"
         data={noteIllustrations}
         numColumns={8}
@@ -295,11 +296,11 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
         windowSize={3}
         style={{ position: 'absolute', left: 0, right: 0, bottom: 54, height: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}
         contentContainerStyle={{ padding: 8 }}
-        renderItem={({ item: id }) => <Pressable accessibilityRole="button" accessibilityLabel={`${translateUiText("이모티콘 추가")} ${routineIllustrationLabel(noteIllustrationLabels.get(id), locale) ?? id}`} onPress={() => inlineNote.current?.insertIllustration(id)} style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+        renderItem={({ item: id }) => <Pressable accessibilityRole="button" accessibilityLabel={`${translateUiText("이모티콘 추가")} ${routineIllustrationLabel(noteIllustrationLabels.get(id), locale) ?? id}`} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { router.push('/pro-preview'); return; } inlineNote.current?.insertIllustration(id); }} style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={noteIllustrationSources[id]} contentFit="contain" style={{ width: 28, height: 28 }} />
         </Pressable>}
       /> : null}
-      {editing && tab === 'story' && picker && isPro ? <Animated.ScrollView key={picker} keyboardShouldPersistTaps="always" style={{ position: 'absolute', left: 0, right: 0, bottom: 54, opacity: paletteProgress, transform: [{ translateY: paletteProgress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }], maxHeight: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}>
+      {editing && tab === 'story' && picker ? <Animated.ScrollView key={picker} keyboardShouldPersistTaps="always" style={{ position: 'absolute', left: 0, right: 0, bottom: 54, opacity: paletteProgress, transform: [{ translateY: paletteProgress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }], maxHeight: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}>
         <PostItColorGrid texture="pigment" isDark={dark}
           label={picker === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}
           clearLabel={translateUiText("기본색")}
@@ -315,13 +316,12 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
           <HanddrawnControl name="keyboard.chevron.compact.down" size={26} color={ink} />
         </Pressable>
         {tab === 'story' && (['pen', 'paper'] as const).map(kind => <Pressable key={kind} accessibilityRole="button" onPress={() => {
-          if (!isPro) { router.push('/pro-preview'); return; }
           setIllustrationsOpen(false);
           setPicker(current => current === kind ? null : kind);
         }} style={{ minHeight: 44, justifyContent: 'center' }}>
-          <ThemedText style={{ color: ink, fontSize: 15 }}>{kind === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}{isPro ? '' : ' · Pro'}</ThemedText>
+          <ThemedText style={{ color: ink, fontSize: 15 }}>{kind === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}</ThemedText>
         </Pressable>)}
-        {tab === 'story' ? <Pressable testID="hero-canvas-illustrations" accessibilityRole="button" accessibilityLabel={translateUiText("이모티콘 모음")} accessibilityState={{ expanded: illustrationsOpen }} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { router.push('/pro-preview'); return; } setPicker(null); setIllustrationsOpen(value => !value); }} style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+        {tab === 'story' ? <Pressable testID="hero-canvas-illustrations" accessibilityRole="button" accessibilityLabel={translateUiText("이모티콘 모음")} accessibilityState={{ expanded: illustrationsOpen }} onPress={() => { setPicker(null); setIllustrationsOpen(value => !value); }} style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={noteIllustrationSources[recentIllustration]} contentFit="contain" style={{ width: 28, height: 30 }} />
         </Pressable> : null}
         <Pressable accessibilityRole="button" testID="hero-canvas-edit-done" accessibilityLabel={tab === 'event' ? translateUiText("이벤트 저장") : translateUiText("글쓰기 완료")} disabled={tab === 'event' && !showTime && !eventTitle.trim()} onPress={() => { if (tab === 'event' && showTime) { localStorageClient.setJson(`${eventKey}:draft-time`, eventTime ?? '09:00'); setShowTime(false); eventInput.current?.focus(); } else if (tab === 'event') { addEvent(); } else { inlineNote.current?.blur(); Keyboard.dismiss(); setEditing(false); } }} style={{ minWidth: 60, height: 48, alignItems: 'center', justifyContent: 'center' }}>

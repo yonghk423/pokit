@@ -47,3 +47,20 @@ it('retains diary photos in the app calendar', () => {
   expect(tree.root.findAllByType(HeroCalendarPhoto)).toHaveLength(1);
   act(() => tree.unmount());
 });
+
+it('leaves neighbouring months empty and only opens dates in the displayed month', () => {
+  const select = jest.fn();
+  let tree!: ReturnType<typeof create>;
+  act(() => { tree = create(<FreePhotoCalendarPaper {...props} design="cream-kitten" height={800} onSelectDate={select} />); });
+  try {
+    const dates = tree.root.findAll(node => typeof node.props.accessibilityLabel === 'string' && /^2026-\d{2}-\d{2}$/.test(node.props.accessibilityLabel) && typeof node.props.onPress === 'function');
+    expect(new Set(dates.map(node => node.props.accessibilityLabel)).size).toBe(30);
+    expect(dates.every(node => node.props.accessibilityLabel.startsWith('2026-11-'))).toBe(true);
+    expect(tree.root.findAll(node => node.props.accessibilityLabel === '2026-12-03')).toHaveLength(0);
+    const empty = tree.root.findAll(node => typeof node.props.testID === 'string' && node.props.testID.startsWith('photo-calendar-empty-'));
+    expect(empty.length).toBeGreaterThan(0);
+    expect(empty.every(node => !node.props.onPress && node.props.pointerEvents === 'none')).toBe(true);
+    act(() => dates.find(node => node.props.accessibilityLabel === '2026-11-03')!.props.onPress());
+    expect(select).toHaveBeenCalledWith('2026-11-03');
+  } finally { act(() => tree.unmount()); }
+});

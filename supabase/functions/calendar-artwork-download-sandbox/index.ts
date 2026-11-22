@@ -1,3 +1,3 @@
 import { createDownloadHandler } from '../calendar-artwork-download/handler.ts';
-import { checkSandboxPurchaseAccess } from '../_shared/applePurchaseAccess.ts';
-Deno.serve(createDownloadHandler(checkSandboxPurchaseAccess));
+import { sandboxAccessForRequest } from '../_shared/simulatorRevenueCatAccess.ts';
+Deno.serve(request => createDownloadHandler(sandboxAccessForRequest(request))(request));

@@ -7,11 +7,12 @@ const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 const read = (): DiaryClip => {
   const saved = localStorageClient.getJson(KEY);
-  return DIARY_CLIPS.some(clip => clip.id === saved) ? saved as DiaryClip : 'cherry-binder';
+  return DIARY_CLIPS.some(clip => clip.id === saved) ? saved as DiaryClip : 'rose-pink-bookmark';
 };
 export function useHeroDiaryClip() { return useSyncExternalStore(subscribe, read, read); }
-export function applyHeroDiaryClip(clip: DiaryClip) { applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
+export function applyHeroDiaryClip(clip: DiaryClip) { applyTheme(null, 'mark'); applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
 export const DIARY_CLIP_IMAGES = {
+  'rose-pink-bookmark': require('../../../../assets/control-illustrations/rose-pink-bookmark.png'),
   'cherry-binder': require('../../../../assets/control-illustrations/cherry-binder-clip.webp'),
   'purple': require('../../../../assets/pro-store-previews/vivid-purple-clipboard-clip.webp'),
   'burgundy': require('../../../../assets/pro-store-previews/vivid-burgundy-clipboard-clip.webp'),
@@ -31,6 +32,7 @@ export const DIARY_CLIP_IMAGES = {
 };
 
 export const DIARY_CLIPS: { id: DiaryClip; name: string; english: string; pro: boolean }[] = [
+  { id: 'rose-pink-bookmark', name: '로즈 핑크 책갈피', english: 'Rose Pink Bookmark', pro: false },
   { id: 'cherry-binder', name: '체리 바인더 집게', english: 'Cherry Binder Clip', pro: false },
   { id: 'blue', name: '파란 집게', english: 'Blue Clip', pro: false },
   { id: 'black', name: '검은 집게', english: 'Black Clip', pro: false },

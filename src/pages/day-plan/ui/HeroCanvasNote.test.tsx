@@ -134,7 +134,7 @@ it.each(['pen', 'paper'] as const)('gates %s color edits and stale callbacks aft
   act(() => note.props.onFocusChange(true));
   const label = kind === 'pen' ? '글자색' : '배경색';
   const button = () => tree.root.findAll(node => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function' &&
-    node.findAll(child => Array.isArray(child.props.children) && child.props.children[0] === label).length > 0)[0];
+    node.findAll(child => child.props.children === label).length > 0)[0];
   act(() => button().props.onPress());
   const grid = tree.root.findByType(PostItColorGrid);
   const choice = grid.props.choices[0];
@@ -146,7 +146,11 @@ it.each(['pen', 'paper'] as const)('gates %s color edits and stale callbacks aft
   expect(localStorageClient.setJson).not.toHaveBeenCalled();
   act(() => tree.update(<HeroCanvasNote date="2026-11-21" ink="#222222" />));
   expect(tree.root.findAllByType(PostItColorGrid)).toHaveLength(0);
+  jest.mocked(router.push).mockClear();
   act(() => button().props.onPress());
+  expect(tree.root.findAllByType(PostItColorGrid)).toHaveLength(1);
+  expect(router.push).not.toHaveBeenCalled();
+  act(() => tree.root.findByType(PostItColorGrid).props.choices[0].onSelect());
   expect(router.push).toHaveBeenCalledWith('/pro-preview');
   act(() => tree.unmount());
 });
@@ -156,7 +160,11 @@ it.each([false, true])('gates illustration picker with Pro=%s', pro => {
   act(() => { tree = create(<HeroCanvasNote date="2026-11-21" ink="#222222" />); });
   act(() => tree.root.findAll(node => typeof node.props.onFocusChange === 'function' && typeof node.props.storageKey === 'string')[0].props.onFocusChange(true));
   act(() => tree.root.findByProps({testID:'hero-canvas-illustrations'}).props.onPress());
-  expect(tree.root.findByProps({testID:'hero-canvas-illustrations'}).props.accessibilityState.expanded).toBe(pro);
+  expect(tree.root.findByProps({testID:'hero-canvas-illustrations'}).props.accessibilityState.expanded).toBe(true);
+  expect(router.push).not.toHaveBeenCalled();
+  const picker = tree.root.findByProps({ testID: 'hero-canvas-illustration-picker' });
+  const item = picker.props.renderItem({ item: picker.props.data[0] });
+  act(() => item.props.onPress());
   if (!pro) expect(router.push).toHaveBeenCalledWith('/pro-preview');
   act(() => tree.unmount());
 });

@@ -7,7 +7,7 @@ import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import type { ThemeSlot } from './diaryTheme';
 
 it.each([
-  ['clip', 'yourday:diary-clip', 'red', 'blue'],
+  ['clip', 'yourday:diary-clip', 'red', 'rose-pink-bookmark'],
   ['trash', 'yourday:diary-trash-bin-style', 'ivory', 'mesh'],
   ['camera', 'yourday:diary-camera-style', 'polaroid-now', 'mini-evo'],
   ['photoWall', 'pokit:photo-wall:v1', 'black', 'none'],
@@ -33,4 +33,18 @@ it.each(['frame', 'tab', 'date', 'mark', 'memo', 'corner', 'pin', 'charm', 'pock
     resetDiaryItem(slot);
     expect(localStorageClient.getJson('pokit:diary-theme-items')).toEqual({});
   } finally { localStorageClient.setJson('pokit:diary-theme-items', previous); }
+});
+
+it('replaces a photo bookmark selection when restoring the default control', () => {
+  const previous = localStorageClient.getJson('pokit:diary-theme-items');
+  const previousClip = localStorageClient.getJson('yourday:diary-clip');
+  try {
+    localStorageClient.setJson('pokit:diary-theme-items', { mark: 'classic-mark', memo: 'classic-memo' });
+    resetDiaryItem('clip');
+    expect(localStorageClient.getJson('pokit:diary-theme-items')).toEqual({ memo: 'classic-memo' });
+    expect(localStorageClient.getJson('yourday:diary-clip')).toBe('rose-pink-bookmark');
+  } finally {
+    localStorageClient.setJson('pokit:diary-theme-items', previous);
+    localStorageClient.setJson('yourday:diary-clip', previousClip);
+  }
 });

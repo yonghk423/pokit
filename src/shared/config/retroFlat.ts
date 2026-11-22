@@ -6,21 +6,26 @@ import { appFontStyle, getEffectiveAppFontId } from '@shared/lib/ui-font';
  * City Pop Minimalist — Flat Brutalism Lite design tokens.
  * 2px 검정 테두리, 0 radius, 파스텔 단색, 그림자·그라데이션 없음.
  */
+export const BrandColors = {
+  light: { surface: '#F5DDE5', accent: '#D99AAF' },
+  dark: { surface: '#513842', accent: '#E8B4C5' },
+} as const;
+
 export const RetroFlatColors = {
   light: {
     bg: '#FEFEFF',
-    bgMint: '#E8E2D8',
+    bgMint: BrandColors.light.surface,
     surface: '#FBF8FF',
     surfaceAlt: '#F4F2FF',
-    surfacePink: '#E8E2D8',
+    surfacePink: BrandColors.light.surface,
     surfaceContainer: '#EDECFF',
-    /** 기본 강조·잉크 — 순수 검정. CTA 면색은 따뜻한 종이색. */
+    /** 기본 강조·잉크 — 순수 검정. CTA 면색은 파스텔 핑크. */
     primary: '#000000',
     primaryOn: '#FFFFFF',
-    primaryContainer: '#E8E2D8',
+    primaryContainer: BrandColors.light.surface,
     tertiary: '#436086',
     tertiaryOn: '#FFFFFF',
-    accent: '#C9A8A8',
+    accent: BrandColors.light.accent,
     accentMuted: '#E0E0FC',
     text: '#000000',
     textMuted: '#404848',
@@ -33,17 +38,17 @@ export const RetroFlatColors = {
   },
   dark: {
     bg: '#2D2F44',
-    bgMint: '#49453E',
+    bgMint: BrandColors.dark.surface,
     surface: '#2D2F44',
     surfaceAlt: '#3A3C52',
-    surfacePink: '#4A463F',
+    surfacePink: BrandColors.dark.surface,
     surfaceContainer: '#3A3C52',
     primary: '#E8E2D8',
     primaryOn: '#24211D',
-    primaryContainer: '#3F3B35',
+    primaryContainer: BrandColors.dark.surface,
     tertiary: '#ABC8F4',
     tertiaryOn: '#001C39',
-    accent: '#C9A8A8',
+    accent: BrandColors.dark.accent,
     accentMuted: '#4A5560',
     text: '#F1EFFF',
     textMuted: '#C0C8C8',

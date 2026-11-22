@@ -214,6 +214,7 @@
   "settings.a11y.reset": "Reset app data",
   "settings.pro.active": "Pro active",
   "settings.pro.start": "Start Pro",
+  "proPreview.promotionalPlan": "Pro · Promotional access",
   "proPreview.currentPlan": "Current plan",
   "proPreview.renewalDate": "Next renewal",
   "proPreview.expiryDate": "Access ends",

@@ -33,7 +33,7 @@ export default function PurchaseSandbox() {
       return Purchases.beginRefundRequestForEntitlement(entitlement);
     })} />
     <Button title="유료 다운로드 권한 확인" disabled={busy} onPress={() => void run(async () => {
-      const result = await invokeDownload('calendar-store', { body: { id: 'kissing-shadows', format: 2 } });
+      const result = await invokeDownload('store-download', { body: { id: 'kissing-shadows', format: 2 } });
       if (result.error) return { allowed: false, ...await result.error.context.json() };
       return { allowed: true };
     })} />

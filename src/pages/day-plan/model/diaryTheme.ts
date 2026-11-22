@@ -27,6 +27,8 @@ export function applyTheme(item: DiaryItem | null, slot: ThemeSlot) {
   const free = item && classicDiaryCatalog.some(entry => entry.id === item.id && entry.category === slot);
   if (item && (item.category !== slot || (!free && (!selectCanTestProStoreItems(useSubscriptionStore.getState()) || !diaryImages(item.id)?.image)))) return;
   const selection = read();
+  if (item && slot === 'mark') delete selection.clip;
+  if (item && slot === 'clip') delete selection.mark;
   if (item) selection[slot] = item.id;
   else delete selection[slot];
   localStorageClient.setJson(key, selection);

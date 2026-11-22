@@ -1,3 +1,4 @@
+import { BrandColors } from '@shared/config/retroFlat';
 import { removeSavedPickerFile } from '@shared/lib/media/removeSavedPickerFile';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { FEATURE_FLAGS } from '@shared/config/featureFlags';
@@ -447,7 +448,7 @@ export function HeroInlineComposer({ visible = true, sceneId, title = '', memo =
           <View testID="hero-inline-quota-slot" accessibilityState={{ busy: quotaLoading }} style={[s.remainingSlot, FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proAiUpgrade && remaining === 0 && !quotaLoading && !isPro && s.upgradeSlot]}>
             <ThemedText testID="hero-inline-remaining" accessibilityLiveRegion="polite" accessibilityElementsHidden={quotaLoading} importantForAccessibility={quotaLoading ? 'no-hide-descendants' : 'auto'} numberOfLines={2} style={[s.remaining, { color: uiInk }, remaining === 0 && s.remainingExhausted, quotaLoading && { opacity: 0 }]}>{remaining == null ? '…' : remaining === 0 ? t('comicDay.ai.exhausted') : t(remaining >= 100000 ? 'comicDay.inline.unlimited' : 'comicDay.inline.remaining', { count: remaining })}</ThemedText>
             {quotaLoading ? <View testID="hero-inline-quota-skeleton" pointerEvents="none" accessible={false} style={s.remainingSkeleton} /> : null}
-            {FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proAiUpgrade && remaining === 0 && !quotaLoading && !isPro && !job ? <Pressable testID="hero-inline-upgrade" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); tapHaptic(); setStylesOpen(false); setUpgradeOpen(true); }} style={[s.upgradeButton, { backgroundColor: isDark ? '#394B40' : '#E4EBDD' }]}>
+            {FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proAiUpgrade && remaining === 0 && !quotaLoading && !isPro && !job ? <Pressable testID="hero-inline-upgrade" accessibilityRole="button" onPress={() => { Keyboard.dismiss(); tapHaptic(); setStylesOpen(false); setUpgradeOpen(true); }} style={[s.upgradeButton, { backgroundColor: BrandColors[isDark ? 'dark' : 'light'].surface }]}>
               <ThemedText style={{ color: uiInk, fontSize: 13, lineHeight: 19, textAlign: 'center' }}>{t('comicDay.ai.upgrade')}</ThemedText>
             </Pressable> : null}
           </View>

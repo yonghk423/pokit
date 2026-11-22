@@ -213,6 +213,7 @@
   "settings.a11y.reset": "アプリデータをリセット",
   "settings.pro.active": "Pro利用中",
   "settings.pro.start": "Proをはじめる",
+  "proPreview.promotionalPlan": "Pro · プロモーション利用権",
   "proPreview.currentPlan": "現在のプラン",
   "proPreview.renewalDate": "次回更新日",
   "proPreview.expiryDate": "利用終了日",

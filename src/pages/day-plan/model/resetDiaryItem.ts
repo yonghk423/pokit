@@ -7,7 +7,7 @@ import { applyHeroPhotoWall } from './heroPhotoWall';
 /** Restore the four built-in controls; optional decorations have no fallback. */
 export function resetDiaryItem(category: ThemeSlot) {
   switch (category) {
-    case 'clip': return applyHeroDiaryClip('blue');
+    case 'clip': return applyHeroDiaryClip('rose-pink-bookmark');
     case 'trash': return applyHeroTrashBinStyle('mesh');
     case 'camera': return applyHeroCameraStyle('mini-evo');
     case 'photoWall': return applyHeroPhotoWall('none');

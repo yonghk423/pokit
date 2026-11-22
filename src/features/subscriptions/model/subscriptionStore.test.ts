@@ -18,7 +18,7 @@ it.each([
   [false, 'ios', true, false],
   [true, 'web', false, false],
   [true, 'android', false, false],
-])('requires real entitlements on every device (%s, %s, device=%s)', (dev, os, device, expected) => {
+])('requires actual entitlements on all devices (%s, %s, device=%s)', (dev, os, device, expected) => {
   Object.assign(globalThis, { __DEV__: dev });
   Object.defineProperty(Platform, 'OS', { value: os, configurable: true });
   jest.requireMock('expo-device').isDevice = device;

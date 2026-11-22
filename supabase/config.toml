@@ -31,3 +31,10 @@ verify_jwt = false
 
 [functions.character-pack-sandbox]
 verify_jwt = false
+
+# Store-wide names; calendar-store endpoints remain for released app compatibility.
+[functions.store-download]
+verify_jwt = false
+
+[functions.store-download-sandbox]
+verify_jwt = false
