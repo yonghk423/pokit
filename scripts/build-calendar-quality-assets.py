@@ -1,4 +1,4 @@
-"""Copy exact server originals for store display; never resize or recompress them.
+"""Copy exact server originals for pack covers only; never resize or recompress them.
 
 Store repair:
   python3 scripts/build-calendar-quality-assets.py --source-root <storage backup>
@@ -86,9 +86,7 @@ def main():
     for item in audit['calendars']:
         theme = item['themeId']
         source = args.source_root / item['remotePath']
-        destination = ROOT / 'assets/paid-calendar-originals' / f'{theme}.webp'
         sources[theme] = source
-        jobs.append((source, destination, theme))
     # Derive the representative theme from each catalog's first entry rather than assuming slugs.
     for cover in audit['packPreviews']:
         theme = next(x['themeId'] for x in audit['calendars'] if x['pack'] == cover['pack'])
@@ -102,14 +100,8 @@ def main():
                 raise ValueError('Store source must be server WebP')
     for source, dest, theme in jobs:
         generated.append({'themeId': theme, **export(source, dest)})
-    # Rebuild the map separately from the image sources.
-    module = '/** Byte-identical Supabase originals for offline store display; no thumbnail variants. */\nexport const PAID_CALENDAR_ORIGINALS: Record<string, number> = {\n'
-    for item in audit['calendars']:
-        theme = item['themeId']
-        module += f"  '{theme}': require('../../../../assets/paid-calendar-originals/{theme}.webp'),\n"
-    (ROOT / 'src/pages/day-plan/lib/paidCalendarOriginals.ts').write_text(module + '};\n')
     report = ROOT / 'docs/audits/calendar-quality-repair-20261122.json'
-    report.write_text(json.dumps({'policy': POLICY, 'downloadAssetsChanged': False, 'files': generated}, indent=2) + '\n')
+    report.write_text(json.dumps({'policy': POLICY, 'bundledAssets': 'pack-covers-only', 'downloadAssetsChanged': False, 'files': generated}, indent=2) + '\n')
     print(f'Copied {len(generated)} byte-identical server originals; no resize or recompression')
 
 

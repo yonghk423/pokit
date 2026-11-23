@@ -1,5 +1,3 @@
-jest.mock('expo-file-system/legacy', () => ({ getInfoAsync: jest.fn().mockResolvedValue({ exists: false }) }));
-import * as fs from 'expo-file-system/legacy';
 import { View } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Image } from 'expo-image';
@@ -60,8 +58,7 @@ it('keeps the full thumbnail height for city animation while cropping the paper 
 });
 
 
-it('uses the downloaded original instead of a bundled store thumbnail', async () => {
-  (fs.getInfoAsync as jest.Mock).mockResolvedValueOnce({ exists: true, isDirectory: false, size: 113012, md5: CALENDAR_ARTWORK_LAYOUTS[theme.themeId].md5 });
+it('uses only the downloaded file URI without downscaling', async () => {
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<IllustrationThemeCard theme={theme} width={180} height={411} dark={false} selected={false} error={false} onApply={jest.fn()} />); });
   expect(tree.root.findByType(Image).props.source).toEqual({ uri: 'file:///calendar.webp' });
