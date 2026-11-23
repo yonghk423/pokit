@@ -134,5 +134,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
         localStorageClient.setItemRaw(storageKey, document.text.replace(/\uFFFC/g, ''));
       }
     }} />
+    {initialized && empty && !focused ? <Pressable testID="hero-canvas-note-focus" accessibilityRole="button" accessibilityLabel={placeholder}
+      onPress={() => send('focus')} style={StyleSheet.absoluteFill} /> : null}
   </View>;
 });

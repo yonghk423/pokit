@@ -16,12 +16,20 @@ document.addEventListener('selectionchange',()=>{const selection=window.getSelec
 function reportFocus(){post('focus',{focused:document.activeElement===editor});}
 editor.addEventListener('focus',reportFocus);
 editor.addEventListener('blur',()=>post('focus',{focused:false}));
-editor.addEventListener('click',reportFocus);
+// A tap on blank space (including the placeholder row) must focus the editor
+// in the same WebKit user gesture, just like a tap directly on its text.
+function focusFromTap(){
+ if(editor.contentEditable==='true'&&document.activeElement!==editor)editor.focus();
+ reportFocus();
+}
+editor.addEventListener('touchend',focusFromTap);
+editor.addEventListener('click',focusFromTap);
 editor.addEventListener('input',serialize);
 editor.addEventListener('paste',event=>{event.preventDefault();document.execCommand('insertText',false,event.clipboardData.getData('text/plain'));});
 function image(id,uri){const img=document.createElement('img');img.dataset.id=id;img.alt='';if(uri)img.src=uri;img.draggable=false;return img;}
 window.note={
  reportFocus,
+ focus(){editor.focus();reportFocus();},
  style(value){editor.style.color=value.ink;editor.style.fontSize=value.size+'px';editor.style.lineHeight=value.lineHeight+'px';},
  font(uri){document.getElementById('font').textContent='@font-face{font-family:diary;src:url('+uri+');}';},
  images(values){editor.querySelectorAll('img').forEach(img=>{const uri=values[img.dataset.id];if(uri&&img.getAttribute('src')!==uri)img.src=uri;});},

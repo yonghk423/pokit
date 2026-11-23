@@ -1,0 +1,60 @@
+Daylight Google OAuth verification preparation
+Prepared: 2026-11-23
+Project: pokit-dc0f7
+
+SAVED IN GOOGLE CLOUD
+Homepage: https://www.pokitstory.com/en/app
+Authorized domain: pokitstory.com
+Scopes: openid, userinfo.email, userinfo.profile, drive.appdata,
+calendar.events.readonly, tasks.readonly (Google API URL prefix where applicable).
+Calendar and Tasks scopes are categorized as sensitive in the console.
+Drive appdata and basic identity scopes are non-sensitive.
+
+SCOPE JUSTIFICATIONS (submission draft)
+calendar.events.readonly:
+Daylight displays events from the signed-in user's primary Google Calendar alongside their photo diary. After the user explicitly connects Google Calendar, the app reads events within the displayed date range and shows event titles, dates, times and all-day status. It does not create, edit or delete Google Calendar events. Read-only access is necessary to display existing private events; public-calendar access cannot provide this functionality.
+
+tasks.readonly:
+Daylight displays dated Google Tasks alongside calendar events in the diary. The app reads the user's task lists and tasks with due dates in the displayed range. It displays task titles and due dates, including completed tasks when returned by Google. It does not create, edit, complete or delete Google Tasks. Read-only access is necessary to display the user's existing tasks.
+
+drive.appdata:
+The user can back up selected diary dates and associated media to Daylight's private application data folder in their own Google Drive and later restore those backups. Daylight creates, reads and deletes its own backup files. It does not request access to arbitrary Drive documents. This permission is requested through the backup connection flow.
+
+IDENTITY
+Google Sign-In identifies the connected Google account. The app uses the account email to display and validate the calendar/backup connection. Basic identity scopes are supplied by the Google Sign-In SDK.
+
+DEMO VIDEO SCRIPT
+Use a dedicated test account with fictional calendar events, Tasks and diary entries.
+1. Show Daylight's app name and homepage.
+2. Open Settings, enter the Pro Google Calendar connection flow.
+3. Show the entire Google OAuth consent flow in English, including requested permissions.
+4. Return to the diary and show the test calendar event and dated task on the matching date.
+5. Demonstrate Google connection disconnection in Settings.
+6. Open Google Drive backup connection; show its consent flow and appdata permission.
+7. Back up a fictional diary date, show the backup list and restore it.
+8. Show the published app privacy policy and its Google-data section.
+Do not record real diary content, access tokens, passwords or private events.
+Provide an accessible video URL to the verification form.
+
+REMAINING BEFORE SUBMISSION
+- Publish a Daylight APP privacy policy on pokitstory.com and link it from /en/app.
+  /en/privacy currently explicitly covers only the website, not the app.
+- Reconcile the existing Drive-hosted app policy with actual app data flows.
+- Include Google data access/use/storage/sharing/retention/deletion, revocation,
+  and applicable Google API Services User Data Policy / Limited Use disclosures.
+  Do not assert retention periods or organization-wide practices without checking them.
+- Verify domain ownership in Google Search Console using a project Owner/Editor.
+  Adding an authorized domain in OAuth branding does not establish ownership.
+- Set the live app policy URL in OAuth Branding and update the app policy link.
+- Prepare the demo video above and ensure reviewers can reach paid functionality.
+- Confirm production OAuth clients correspond to this project.
+- Switch Audience from Testing to In production when ready to submit, then
+  submit brand and sensitive-scope verification using the justifications/video.
+- Google approval remains required before the unverified-app warning is removed.
+
+IMPLEMENTATION EVIDENCE
+src/features/apple-calendar/googleCalendar.ts
+src/features/apple-calendar/googleTasks.ts
+src/features/drive-backup/drive.ts
+src/features/googleSignin.ts
+src/shared/config/privacyPolicy.ts (currently points to a Google Drive document)
