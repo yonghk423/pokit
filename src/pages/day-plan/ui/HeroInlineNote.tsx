@@ -61,6 +61,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
   const callbacks = useRef({ onFocusChange, onIllustrationInserted });
   useEffect(() => { callbacks.current = { onFocusChange, onIllustrationInserted }; }, [onFocusChange, onIllustrationInserted]);
   const ready = useRef(false);
+  const restoreFocusAfterLayout = useRef(false);
   const mounted = useRef(true);
   const generation = useRef(0);
   useEffect(() => {
@@ -77,7 +78,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
         if (mounted.current && selectIsPro(useSubscriptionStore.getState())) send('insert', { id, uri });
       }).catch(() => AppAlert.alert(translateUiText("그림을 불러오지 못했어요. 다시 시도해주세요.")));
     },
-    blur: () => send('blur'),
+    blur: () => { restoreFocusAfterLayout.current = false; send('blur'); },
     reportFocus: () => { if (ready.current) send('reportFocus'); },
   }));
   useEffect(() => {
@@ -93,15 +94,23 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
   return <View style={StyleSheet.absoluteFill}>
     {!initialized && !failed ? <HeroContentSkeleton ink={ink} testID="hero-note-skeleton" /> : null}
     {failed ? <Pressable testID="hero-note-retry" accessibilityRole="button" onPress={() => { generation.current++; ready.current = false; setFailed(false); setInitialized(false); setAttempt(value => value + 1); }} style={{ minHeight: 48, justifyContent: 'center' }}><ThemedText style={{ color: ink }}>{translateUiText('기록을 다시 불러오려면 눌러주세요.')}</ThemedText></Pressable> : null}
-    {initialized && empty && !focused ? <ThemedText testID="hero-canvas-note-loading-hint" pointerEvents="none" style={{ color: ink, fontSize: 17, lineHeight: 25, opacity: 0.55 }}>{placeholder}</ThemedText> : null}
     <WebView key={attempt} ref={web} testID="hero-canvas-note" source={source} originWhitelist={['about:blank']} javaScriptEnabled
+    onLayout={() => {
+      // Entering editing changes the WebView's frame. Restore the selection only
+      // after that native layout has settled, without needing another user tap.
+      if (ready.current && restoreFocusAfterLayout.current) {
+        restoreFocusAfterLayout.current = false;
+        requestAnimationFrame(() => { if (mounted.current) send('focus'); });
+      }
+    }}
     keyboardDisplayRequiresUserAction={false} hideKeyboardAccessoryView automaticallyAdjustContentInsets={false}
     onError={() => { generation.current++; ready.current = false; setInitialized(false); setFailed(true); }}
     onContentProcessDidTerminate={() => { generation.current++; ready.current = false; setFailed(false); setInitialized(false); setAttempt(value => value + 1); }}
     onShouldStartLoadWithRequest={request => request.url === 'about:blank'}
     // WKWebView can pause animation frames at zero opacity, preventing its
     // initialized message (sent after layout) from ever reaching React Native.
-    style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}
+    containerStyle={StyleSheet.absoluteFill}
+    style={{ flex: 1, backgroundColor: 'transparent' }}
     onMessage={event => {
       let message;
       try { message = JSON.parse(event.nativeEvent.data); } catch { return; }
@@ -123,6 +132,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
       } else if (message.type === 'initialized') { setInitialized(true); setFailed(false); }
       else if (message.type === 'focus') {
         const nextFocused = message.focused === true;
+        restoreFocusAfterLayout.current = nextFocused && !focused;
         setFocused(nextFocused);
         callbacks.current.onFocusChange(nextFocused);
       }
@@ -134,7 +144,5 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
         localStorageClient.setItemRaw(storageKey, document.text.replace(/\uFFFC/g, ''));
       }
     }} />
-    {initialized && empty && !focused ? <Pressable testID="hero-canvas-note-focus" accessibilityRole="button" accessibilityLabel={placeholder}
-      onPress={() => send('focus')} style={StyleSheet.absoluteFill} /> : null}
   </View>;
 });
