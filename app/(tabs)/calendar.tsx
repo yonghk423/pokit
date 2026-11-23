@@ -229,7 +229,7 @@ function CalendarContent({ view, setView }: { view: CalendarView; setView: (valu
             const style = item.id;
             const selected = !themedTrash && selectedTrashBinStyle === style;
             const pro = isProTrashBinStyle(style);
-            const status = selected ? (translateUiText("적용 중")) : pro ? itemStatus('trash-' + style) : (translateUiText("선택하기"));
+            const status = selected ? (translateUiText("적용 중")) : pro ? itemStatus('trash-' + style) : (translateUiText("무료"));
             const title = locale === 'en' ? item.en : translateUiText(item.ko);
             const previewSize = style === 'mesh'
               ? { width: 40, height: 48 }
