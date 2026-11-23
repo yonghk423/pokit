@@ -1,3 +1,5 @@
+jest.mock('react-native-purchases', () => ({ __esModule: true, default: {}, LOG_LEVEL: { DEBUG: 'DEBUG' } }));
+jest.mock('@features/subscriptions', () => ({ selectCanTestProStoreItems: () => true, useSubscriptionStore: { getState: () => ({}) } }));
 import { EVERYDAY_CINEMA_THEMES } from '../model/heroCalendarDesign';
 import { getCalendarPackDownload, subscribeCalendarPackDownloads, isCityCalendarPackReady, downloadCityCalendarPack } from './cityCalendarPack';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';

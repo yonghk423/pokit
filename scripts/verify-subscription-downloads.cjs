@@ -9,6 +9,7 @@ const url = env.EXPO_PUBLIC_SUPABASE_URL;
 const key = env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 assert(url && key, 'Supabase public configuration is required');
 const paid = [
+  ['store-download', { id: 'sunshine-yellow', format: 2 }],
   ['calendar-store', { id: 'sunshine-yellow', format: 2 }],
   ['calendar-theme', { themeId: 'textured-watercolor-01-fly-kite', revision: 'textured-watercolor-v1' }],
   ['calendar-artwork-download', { styleId: 'textured-watercolor' }],

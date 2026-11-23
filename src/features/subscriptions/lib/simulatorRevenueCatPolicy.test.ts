@@ -23,3 +23,10 @@ it('rejects missing grants and fails closed when RevenueCat is unavailable', asy
   expect(await checkSimulatorRevenueCatAccess(request(), config, fetcher)).toEqual({ status: 403, error: 'subscription_required' });
   expect(await checkSimulatorRevenueCatAccess(request(), config, fetcher)).toEqual({ status: 503, error: 'subscription_verification_unavailable' });
 });
+it('checks only the explicitly registered physical test customer against RevenueCat', async () => {
+  const fetcher = jest.fn(async () => ({ ok: true, json: async () => ({ subscriber: { entitlements: { daylight_pro: { expires_date: '2999-01-01T00:00:00Z' } } } }) })) as unknown as typeof fetch;
+  const physicalConfig = { ...config, localDeviceCustomers: ' physical-test-customer ' };
+  expect(await checkSimulatorRevenueCatAccess(request('physical-test-customer'), physicalConfig, fetcher)).toBeNull();
+  expect(fetcher).toHaveBeenCalledWith(expect.stringContaining('/physical-test-customer'), expect.anything());
+  expect(await checkSimulatorRevenueCatAccess(request('unregistered'), physicalConfig, fetcher)).toBeUndefined();
+});

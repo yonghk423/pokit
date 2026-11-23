@@ -1,10 +1,12 @@
-type Config = { customer?: string; token?: string; apiKey?: string };
+type Config = { customer?: string; localDeviceCustomers?: string; token?: string; apiKey?: string };
 /** undefined means the normal Apple Sandbox proof check must run. */
 export async function checkSimulatorRevenueCatAccess(request: Request, config: Config, fetcher: typeof fetch = fetch) {
-  const { customer, token, apiKey } = config;
+  const { token, apiKey } = config;
+  const customer = request.headers.get('x-revenuecat-customer');
+  const allowed = [config.customer, ...(config.localDeviceCustomers ?? '').split(',').map(id => id.trim()).filter(Boolean)];
   if (!customer || !token || token.length < 32 || !apiKey ||
       request.headers.get('x-simulator-token') !== token ||
-      request.headers.get('x-revenuecat-customer') !== customer) return undefined;
+      !allowed.includes(customer)) return undefined;
   try {
     const response = await fetcher(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(customer)}`, {
       headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(10000),

@@ -34,6 +34,7 @@ async function run(name, body, scenario, expected) {
     const code = compile(file);
     vm.runInNewContext(code, {
       exports: mod.exports, module: mod, Request, Response, AbortSignal, console, btoa,
+      fetch: async () => { throw new Error('Unexpected network call in isolated handler test'); },
       Deno: { serve: fn => { handler = fn; }, env: { get: () => 'fixture' } },
       require: id => {
         if (id.endsWith('/applePurchaseAccess.ts')) {
@@ -62,6 +63,7 @@ async function run(name, body, scenario, expected) {
 }
 (async () => {
   const paid = [
+    ['store-download', { id: 'camera-kodak-mini-shot' }],
     ['calendar-store', { id: 'camera-kodak-mini-shot' }],
     ['character-pack', { action: 'download' }],
     ['calendar-theme', { themeId: 'everyday-cinema-01-platform', revision: 'everyday-cinema-v2' }],

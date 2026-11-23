@@ -55,3 +55,22 @@ it.each([[true, false, true], [true, true, false], [false, false, false]])('send
   expect(headers['x-simulator-token']).toBe(allowed ? 'local-test-token' : undefined);
   expect(headers['x-revenuecat-customer']).toBe(allowed ? 'simulator-customer' : undefined);
 });
+it.each([true, false])('routes registered physical test device only in dev=%s', async dev => {
+  Object.assign(globalThis, { __DEV__: dev });
+  jest.requireMock('expo-device').isDevice = true;
+  process.env.EXPO_PUBLIC_LOCAL_TEST_CUSTOMER_IDS = 'simulator-customer';
+  process.env.EXPO_PUBLIC_SIMULATOR_DOWNLOAD_TOKEN = 'local-test-token';
+  try {
+    await invokeDownload('calendar-theme', { body: {} });
+    expect(jest.mocked(fetch).mock.calls[0][0]).toBe(`https://storage.example/functions/v1/calendar-theme${dev ? '-sandbox' : ''}`);
+    const headers = jest.mocked(fetch).mock.calls[0][1]!.headers as Record<string, string>;
+    expect(headers['x-simulator-token']).toBe(dev ? 'local-test-token' : undefined);
+  } finally { delete process.env.EXPO_PUBLIC_LOCAL_TEST_CUSTOMER_IDS; }
+});
+
+it('keeps normal downloads independent of RevenueCat when no test token is configured', async () => {
+  const purchases = jest.requireMock('react-native-purchases').default;
+  purchases.getAppUserID.mockClear();
+  await invokeDownload('calendar-theme', { body: {} });
+  expect(purchases.getAppUserID).not.toHaveBeenCalled();
+});
