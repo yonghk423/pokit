@@ -1,4 +1,6 @@
 export const proDiaryFolders: Record<string, string> = {
+  "clip-binder-yellow": "clips",
+  "clip-binder-pink": "clips",
   "date-label-mail": "date-labels",
   "date-label-berry": "date-labels",
   "date-label-stamp": "date-labels",

@@ -25,7 +25,7 @@ function TabWallpaper() {
   const home = segments.every(segment => segment === '(tabs)');
   if (photoActive && home) return null;
   return <>
-    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: photoCalendar?.id === 'cream-kitten' ? '#D8CDBB' : '#FAFAF6' }}>{photoCalendar && <Image source={photoCalendar.background} resizeMode="cover" style={{ position: 'absolute', width: '100%', height: '100%', left: 0, right: 0, top: photoCalendar.id === 'cream-kitten' ? Math.max(0, insets.top - 28) : 0 }} />}</View> : null}
+    {home && calendarVisible ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: photoCalendar?.id === 'pink-puppy' ? '#E9C6CD' : photoCalendar?.id === 'cream-kitten' ? '#D8CDBB' : '#FAFAF6' }}>{photoCalendar && <Image source={photoCalendar.background} resizeMode="cover" style={{ position: 'absolute', width: '100%', height: '100%', left: 0, right: 0, top: (photoCalendar.id === 'cream-kitten' || photoCalendar.id === 'pink-puppy') ? Math.max(0, insets.top - 28) : 0 }} />}</View> : null}
   </>;
 }
 

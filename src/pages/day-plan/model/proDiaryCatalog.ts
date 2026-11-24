@@ -1,5 +1,8 @@
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 export const proDiaryCatalog = [
+  { id: 'clip-binder-yellow', uploadedAt: '2026-11-24T01:30:00+00:00', category: 'clip', get title() { return translateUiText("노란색 바인더 집게"); }, titleEn: "Yellow Binder Clip", preview: require('../../../../assets/pro-diary-thumbs/clip-binder-yellow.webp') },
+  { id: 'clip-binder-pink', uploadedAt: '2026-11-24T01:30:00+00:00', category: 'clip', get title() { return translateUiText("분홍색 바인더 집게"); }, titleEn: "Pink Binder Clip", preview: require('../../../../assets/pro-diary-thumbs/clip-binder-pink.webp') },
+
   { id: 'date-label-mail', uploadedAt: '2026-11-14T05:46:25.259596+00:00', category: 'date', get title() { return translateUiText("편지 날짜표"); }, titleEn: "Letter Date Label", preview: require('../../../../assets/pro-diary-thumbs/date-label-mail.webp') },
   { id: 'date-label-berry', uploadedAt: '2026-11-14T05:46:25.259841+00:00', category: 'date', get title() { return translateUiText("딸기 자수 날짜표"); }, titleEn: "Strawberry Embroidery Date Label", preview: require('../../../../assets/pro-diary-thumbs/date-label-berry.webp') },
   { id: 'date-label-stamp', uploadedAt: '2026-11-14T05:46:25.259847+00:00', category: 'date', get title() { return translateUiText("소다빛 우표 날짜표"); }, titleEn: "Soda Stamp Date Label", preview: require('../../../../assets/pro-diary-thumbs/date-label-stamp.webp') },

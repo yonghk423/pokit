@@ -18,7 +18,7 @@ export function useHeroDiaryClip() {
 }
 export function applyHeroDiaryClip(clip: DiaryClip) { if (isProDiaryClip(clip) && !selectCanTestProStoreItems(useSubscriptionStore.getState())) return; applyTheme(null, 'mark'); applyTheme(null, 'clip'); localStorageClient.setJson(KEY, clip); listeners.forEach(listener => listener()); }
 export const DIARY_CLIP_IMAGES = {
-  'rose-pink-bookmark': require('../../../../assets/control-illustrations/rose-pink-bookmark.png'),
+  'rose-pink-bookmark': require('../../../../assets/control-illustrations/rose-pink-bookmark.webp'),
   'cherry-binder': require('../../../../assets/control-illustrations/cherry-binder-clip.webp'),
   'purple': require('../../../../assets/pro-store-previews/vivid-purple-clipboard-clip.webp'),
   'burgundy': require('../../../../assets/pro-store-previews/vivid-burgundy-clipboard-clip.webp'),

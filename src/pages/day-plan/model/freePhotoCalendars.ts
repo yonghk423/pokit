@@ -1,5 +1,6 @@
 import { diaryImages } from '../lib/calendarStoreDownload';
 export const FREE_PHOTO_CALENDARS = [
+  { id: 'pink-puppy', name: 'Pink Puppy', description: 'A smiling puppy on soft pink bedding', ink: '#49343C', background: require('../../../../assets/free-photo-calendars/pink-puppy.webp'), thumbnail: require('../../../../assets/free-photo-calendars/pink-puppy-thumb.webp') },
   { id: 'cream-kitten', name: 'Cream Kitten', description: 'A cozy cream calendar', ink: '#29251F', background: require('../../../../assets/free-photo-calendars/cream-kitten.webp'), thumbnail: require('../../../../assets/free-photo-calendars/cream-kitten-thumb.webp') },
   { id: 'pink-vinyl', name: 'Pink Vinyl', description: 'A rose vinyl calendar', ink: '#FFF5E4', background: require('../../../../assets/free-photo-calendars/pink-vinyl.webp'), thumbnail: require('../../../../assets/free-photo-calendars/pink-vinyl-thumb.webp') },
   { id: 'mono-cafe', name: 'Mono Café', description: 'A quiet monochrome calendar', ink: '#FFF5E4', background: require('../../../../assets/free-photo-calendars/mono-cafe.webp'), thumbnail: require('../../../../assets/free-photo-calendars/mono-cafe-thumb.webp') },
