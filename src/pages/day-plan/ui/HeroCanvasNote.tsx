@@ -1,3 +1,4 @@
+import { useWritingPromptsEnabled } from '@shared/lib/writingPromptPreferences';
 import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { HeroContentSkeleton } from './HeroContentSkeleton';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
@@ -65,6 +66,7 @@ const CanvasEventRow = memo(function CanvasEventRow({ event, ink, onDelete }: { 
 /** An independent canvas annotation; it never changes the photo layout bounds. */
 export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, keyboardVerticalOffset = 0, returnAction, archiveView = false }: { date: string; ink: string; initialHeight?: number; monthlyHeight?: number; keyboardVerticalOffset?: number; returnAction?: ReactNode; archiveView?: boolean }) {
   const { locale, t } = useTranslation();
+  const writingPromptsEnabled = useWritingPromptsEnabled();
   const proClip = useDiaryTheme('clip');
   const bookmark = useDiaryTheme('mark');
   const diaryClip = useHeroDiaryClip();
@@ -236,6 +238,7 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
 
       <View style={{ display: tab === 'story' && (!lowered || editing) ? 'flex' : 'none', position: 'absolute', left: 20, right: 28, top: editing ? 0 : 8, bottom: 0 }}>
         <HeroInlineNote key={storageKey} ref={inlineNote} storageKey={storageKey} sources={noteIllustrationSources} ink={noteInk} onIllustrationInserted={rememberIllustration}
+          randomPrompts={!monthly && writingPromptsEnabled}
           placeholder={monthly ? (translateUiText("이달의 이야기를 적어보세요.")) : t('comicDay.memoHint')}
           onFocusChange={setEditing} />
       </View>

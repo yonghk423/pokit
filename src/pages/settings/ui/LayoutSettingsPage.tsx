@@ -1,3 +1,4 @@
+import { useWritingPromptsEnabled, setWritingPromptsEnabled } from '@shared/lib/writingPromptPreferences';
 import { useTranslation } from '@shared/lib/i18n/hooks/useTranslation';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { useRouter } from 'expo-router';
@@ -13,7 +14,8 @@ import { ThemedView } from '@shared/ui/themed-view';
 import { buildSettingsPalette, SettingsSection, settingsChromeStyles as chrome } from '../lib/settingsChrome';
 
 export function LayoutSettingsPage() {
-  useTranslation();
+  const { t } = useTranslation();
+  const writingPromptsEnabled = useWritingPromptsEnabled();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
@@ -34,6 +36,13 @@ export function LayoutSettingsPage() {
               <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{translateUiText("메인 달력과 위젯의 날짜 안 사진을 숨겨 간결하게 보여줘요.")}</ThemedText>
             </View>
             <HanddrawnToggle checked={hidden} label={translateUiText("메인 달력 사진 가리기")} isDark={isDark} onChange={value => { tapHaptic('select'); setCalendarPhotosHidden(value); }} />
+          </View>
+          <View style={[chrome.item, { borderTopColor: p.border }]}>
+            <View style={[chrome.itemTextWrap, { flex: 1 }]}>
+              <ThemedText style={[chrome.itemTitle, { color: p.title }]}>{t('settings.writingPrompts.title')}</ThemedText>
+              <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>{t('settings.writingPrompts.description')}</ThemedText>
+            </View>
+            <HanddrawnToggle checked={writingPromptsEnabled} label={t('settings.writingPrompts.title')} isDark={isDark} onChange={value => { tapHaptic('select'); setWritingPromptsEnabled(value); }} />
           </View>
         </SettingsSection>
       </ScrollView>

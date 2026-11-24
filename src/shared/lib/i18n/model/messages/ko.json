@@ -3731,5 +3731,7 @@
   "ui.cinema.e05e06a8a8": "Badminton Court",
   "ui.cinema.c267617451": "City Ferry Deck",
   "archive.notes.deleteTitle": "월간 노트를 삭제할까요?",
-  "archive.notes.deleteManyMessage": "선택한 {count}개월의 월간·일별 노트 본문과 장식이 모두 삭제돼요. 사진과 일정은 유지되며, 삭제한 노트는 복구할 수 없어요."
+  "archive.notes.deleteManyMessage": "선택한 {count}개월의 월간·일별 노트 본문과 장식이 모두 삭제돼요. 사진과 일정은 유지되며, 삭제한 노트는 복구할 수 없어요.",
+  "settings.writingPrompts.title": "글감 질문",
+  "settings.writingPrompts.description": "빈 일기에 질문과 주사위를 표시해요. 끄면 기본 글쓰기 안내가 보여요."
 }

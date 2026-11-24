@@ -3731,5 +3731,7 @@
   "ui.cinema.e05e06a8a8": "バドミントンコート",
   "ui.cinema.c267617451": "街のフェリーデッキ",
   "archive.notes.deleteTitle": "月別ノートを削除しますか？",
-  "archive.notes.deleteManyMessage": "選択した{count}か月の月別・日別ノートの本文と装飾をすべて削除します。写真と予定は残ります。削除したノートは復元できません。"
+  "archive.notes.deleteManyMessage": "選択した{count}か月の月別・日別ノートの本文と装飾をすべて削除します。写真と予定は残ります。削除したノートは復元できません。",
+  "settings.writingPrompts.title": "書くヒント",
+  "settings.writingPrompts.description": "空の日記に質問とサイコロを表示します。オフにすると通常の入力案内に戻ります。"
 }

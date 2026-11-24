@@ -3731,5 +3731,7 @@
   "ui.cinema.e05e06a8a8": "Badminton Court",
   "ui.cinema.c267617451": "City Ferry Deck",
   "archive.notes.deleteTitle": "Delete this notebook?",
-  "archive.notes.deleteManyMessage": "Monthly and daily note text and decorations for the selected {count} months will be deleted. Photos and events will be kept. Deleted notes cannot be recovered."
+  "archive.notes.deleteManyMessage": "Monthly and daily note text and decorations for the selected {count} months will be deleted. Photos and events will be kept. Deleted notes cannot be recovered.",
+  "settings.writingPrompts.title": "Writing prompts",
+  "settings.writingPrompts.description": "Show a question and dice in empty entries. Turn off to show the default writing hint."
 }

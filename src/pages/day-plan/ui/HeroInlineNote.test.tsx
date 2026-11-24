@@ -2,6 +2,7 @@ import { act, create } from 'react-test-renderer';
 import { HeroInlineNote } from './HeroInlineNote';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: () => true, useSubscriptionStore: { getState: () => ({}) } }));
+jest.mock('@shared/lib/i18n/model/localeStore', () => ({ useAppLocaleStore: (select: (state: { locale: string }) => unknown) => select({ locale: 'ko' }) }));
 jest.mock('@shared/lib/ui-font', () => ({ useEffectiveAppFontId: () => 'hiMelody', useAppFontSizeScale: () => 1 }));
 jest.mock('@shared/ui/themed-text', () => ({ ThemedText: 'Text' }));
 jest.mock('react-native-webview', () => ({ WebView: 'WebView' }));
@@ -11,14 +12,17 @@ jest.mock('@shared/lib/storage/localStorageClient', () => ({ localStorageClient:
 jest.mock('@shared/lib/app-alert', () => ({ AppAlert: { alert: jest.fn() } }));
 it('shows guidance only for an empty, unfocused editor', () => {
   let tree: ReturnType<typeof create>;
-  act(() => { tree = create(<HeroInlineNote storageKey="test" sources={{}} ink="#222222" placeholder="안내" onFocusChange={() => {}} onIllustrationInserted={() => {}} />); });
-  const hint = () => tree!.root.findAllByProps({ testID: 'hero-canvas-note-loading-hint' }).length;
+  act(() => { tree = create(<HeroInlineNote storageKey="test" randomPrompts sources={{}} ink="#222222" placeholder="안내" onFocusChange={() => {}} onIllustrationInserted={() => {}} />); });
+  const hint = () => tree!.root.findAllByProps({ testID: 'hero-writing-prompt-dice' }).length;
   const message = (value: object) => act(() => tree!.root.findByProps({ testID: 'hero-canvas-note' }).props.onMessage({ nativeEvent: { data: JSON.stringify(value) } }));
   expect(tree!.root.findAllByProps({ testID: 'hero-note-skeleton' }).length).toBeGreaterThan(0);
   expect(hint()).toBe(0);
   message({ type: 'initialized' });
   expect(tree!.root.findAllByProps({ testID: 'hero-note-skeleton' })).toHaveLength(0);
   expect(hint()).toBeGreaterThan(0);
+  act(() => tree!.root.findByProps({ testID: 'hero-writing-prompt-dice' }).props.onPress());
+  expect(localStorageClient.setJson).toHaveBeenCalledWith('test:writing-prompt', expect.any(Number));
+  expect(localStorageClient.setItemRaw).not.toHaveBeenCalled();
   message({ type: 'focus', focused: true });
   expect(hint()).toBe(0);
   message({ type: 'change', document: { text: '기록', icons: [] } });

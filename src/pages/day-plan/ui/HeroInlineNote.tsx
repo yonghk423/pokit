@@ -1,3 +1,5 @@
+import { useAppLocaleStore } from '@shared/lib/i18n/model/localeStore';
+import { initialWritingPrompt, nextWritingPrompt, writingPrompt, writingPromptCount, writingPromptLabels } from '../model/writingPrompts';
 import { HeroContentSkeleton } from './HeroContentSkeleton';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
@@ -37,11 +39,26 @@ async function assetDataUri(source: number) {
 }
 export type HeroInlineNoteHandle = { insertIllustration: (id: string) => void; blur: () => void; reportFocus: () => void };
 
-export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources, ink, placeholder, onFocusChange, onIllustrationInserted, ref }: {
-  storageKey: string; sources: Record<string, number>; ink: string; placeholder: string;
+export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources, ink, placeholder, randomPrompts = false, onFocusChange, onIllustrationInserted, ref }: {
+  storageKey: string; sources: Record<string, number>; ink: string; placeholder: string; randomPrompts?: boolean;
   onFocusChange: (focused: boolean) => void; onIllustrationInserted: (id: string) => void; ref?: Ref<HeroInlineNoteHandle>;
 }) {
   const web = useRef<WebView>(null);
+  const locale = useAppLocaleStore(state => state.locale);
+  const [promptIndex, setPromptIndex] = useState(() => {
+    const saved = localStorageClient.getJson<number>(storageKey + ':writing-prompt');
+    return Number.isInteger(saved) && saved! >= 0 && saved! < writingPromptCount ? saved! : initialWritingPrompt(storageKey);
+  });
+  const recentPrompts = useRef([promptIndex]);
+  const animatePrompt = useRef(false);
+  const effectivePlaceholder = randomPrompts ? writingPrompt(locale, promptIndex) : placeholder;
+  const rollPrompt = () => {
+    const next = nextWritingPrompt(recentPrompts.current);
+    recentPrompts.current = [...recentPrompts.current.slice(-4), next];
+    localStorageClient.setJson(storageKey + ':writing-prompt', next);
+    animatePrompt.current = true;
+    setPromptIndex(next);
+  };
   const fontId = useEffectiveAppFontId();
   const scale = useAppFontSizeScale();
   // Keep the skeleton until the document and selected font have completed layout.
@@ -55,7 +72,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
   });
   const source = useMemo(() => {
     const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    return { html: inlineNoteHtml.replace('id="editor" role=', `id="editor" data-placeholder="${escape(placeholder)}" style="color:${escape(ink)};font-size:${17 * scale}px;line-height:${25 * scale}px" role=`) };
+    return { html: inlineNoteHtml.replace('id="editor" role=', `id="editor" data-placeholder="${escape(effectivePlaceholder)}" style="color:${escape(ink)};font-size:${17 * scale}px;line-height:${25 * scale}px" role=`) };
     // Keep the document stable; subsequent styles are sent through the bridge.
   }, []);
   const callbacks = useRef({ onFocusChange, onIllustrationInserted });
@@ -84,6 +101,12 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
   useEffect(() => {
     if (ready.current) send('style', { ink, size: 17 * scale, lineHeight: 25 * scale });
   }, [ink, scale]);
+  useEffect(() => {
+    if (ready.current) {
+      send('placeholder', { text: effectivePlaceholder, dice: randomPrompts, animate: animatePrompt.current });
+      animatePrompt.current = false;
+    }
+  }, [effectivePlaceholder, randomPrompts, initialized]);
   useEffect(() => {
     let cancelled = false;
     void assetDataUri(fontSources[fontId]).then(uri => {
@@ -122,7 +145,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
         // Paint the text first. Decorations hydrate independently in fixed-size slots.
         void assetDataUri(fontSources[fontId]).catch(() => null).then(fontUri => {
           if (!mounted.current || generation.current !== currentGeneration) return;
-          send('initialize', { document, images: {}, fontUri, ink, size: 17 * scale, lineHeight: 25 * scale, placeholder });
+          send('initialize', { document, images: {}, fontUri, ink, size: 17 * scale, lineHeight: 25 * scale, placeholder: effectivePlaceholder, dice: randomPrompts });
           ready.current = true;
           for (const id of new Set(document.icons)) {
             if (!sources[id]) continue;
@@ -144,5 +167,18 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
         localStorageClient.setItemRaw(storageKey, document.text.replace(/\uFFFC/g, ''));
       }
     }} />
+    {randomPrompts && initialized && !failed && empty && !focused ? <Pressable
+      testID="hero-writing-prompt-dice" accessibilityRole="button"
+      accessibilityLabel={writingPromptLabels[locale].label} accessibilityHint={writingPromptLabels[locale].hint}
+      onPress={rollPrompt}
+      style={{ position: 'absolute', right: 0, top: 0, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+      {({ pressed }) => <View pointerEvents="none" style={{ width: 29, height: 29, borderRadius: 7,
+        backgroundColor: pressed ? '#E7DFD0' : '#F8F3E8', borderWidth: 1, borderColor: '#D9D1C3',
+        borderBottomWidth: pressed ? 1 : 3, shadowColor: '#443A2E', shadowOpacity: pressed ? 0.08 : 0.19,
+        shadowRadius: pressed ? 1 : 2, shadowOffset: { width: 0, height: pressed ? 1 : 3 }, elevation: pressed ? 1 : 3,
+        transform: [{ rotate: '-8deg' }, { translateY: pressed ? 2 : 0 }, { scale: pressed ? 0.95 : 1 }] }}>
+        {[6, 12, 18].map(position => <View key={position} style={{ position: 'absolute', left: position, top: position - 1, width: 4, height: 4, borderRadius: 2, backgroundColor: '#7B7264' }} />)}
+      </View>}
+    </Pressable> : null}
   </View>;
 });
