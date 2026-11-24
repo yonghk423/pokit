@@ -1,4 +1,6 @@
 let mockPro = false;
+jest.mock('react-native-purchases-ui', () => ({}));
+jest.mock('react-native-purchases', () => ({}));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: jest.fn() }));
 jest.mock('@shared/lib/scheduleIdleTask', () => ({ scheduleIdleTask: (work: () => void) => { work(); return {cancel: jest.fn()}; } }));
 jest.mock('react-native-webview', () => ({ WebView: 'WebView' }));
@@ -154,13 +156,15 @@ it.each(['pen', 'paper'] as const)('gates %s color edits and stale callbacks aft
   expect(router.push).toHaveBeenCalledWith('/pro-preview');
   act(() => tree.unmount());
 });
-it.each([false, true])('gates illustration picker with Pro=%s', pro => {
+it.each([false, true].flatMap(pro => ['mono', 'color'].map(mode => ({ pro, mode }))))('gates $mode illustration picker with Pro=$pro', ({ pro, mode }) => {
   mockPro = pro;
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroCanvasNote date="2026-11-21" ink="#222222" />); });
   act(() => tree.root.findAll(node => typeof node.props.onFocusChange === 'function' && typeof node.props.storageKey === 'string')[0].props.onFocusChange(true));
   act(() => tree.root.findByProps({testID:'hero-canvas-illustrations'}).props.onPress());
   expect(tree.root.findByProps({testID:'hero-canvas-illustrations'}).props.accessibilityState.expanded).toBe(true);
+  expect(router.push).not.toHaveBeenCalled();
+  act(() => tree.root.findByProps({ testID: `hero-illustration-tab-${mode}` }).props.onPress());
   expect(router.push).not.toHaveBeenCalled();
   const picker = tree.root.findByProps({ testID: 'hero-canvas-illustration-picker' });
   const item = picker.props.renderItem({ item: picker.props.data[0] });

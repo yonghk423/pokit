@@ -1,4 +1,6 @@
 {
+  "diary.icons.monochrome": "モノクロ",
+  "diary.icons.color": "カラー",
   "proPreview.table.writing": "日記の文章デコレーション（文字色・背景色・イラストアイコン）",
   "proPreview.table.title": "Pro特典一覧",
   "proPreview.table.note": "月額・年額ともに、購読期間中は同じ特典を利用できます。",

@@ -1,4 +1,6 @@
 {
+  "diary.icons.monochrome": "Black & white",
+  "diary.icons.color": "Color",
   "proPreview.table.writing": "Diary text styling (text colors, background colors, illustrated icons)",
   "proPreview.table.title": "Pro benefits at a glance",
   "proPreview.table.note": "Monthly and yearly plans include the same benefits while subscribed.",

@@ -2,6 +2,13 @@ import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import type { ComicDiary } from './heroDiaryStorage';
 
 export type CalendarCover = { diaryId: string; sceneId: string };
+export function archivePhotoDate(sceneId: string | undefined, diary: ComicDiary): string | undefined {
+  // Imported photos receive a timestamp-based scene ID when added to the diary.
+  const timestamp = sceneId?.match(/^(\d{13})-[a-z0-9]+$/)?.[1];
+  const day = timestamp ? getLocalDateKey(new Date(Number(timestamp))) : comicDiaryDate(diary);
+  return day?.replace(/-/g, '.');
+}
+
 export function comicDiaryDate(diary: ComicDiary): string | null {
   if (diary.date && /^\d{4}-\d{2}-\d{2}$/.test(diary.date)) return diary.date;
   // Dated imports retain their original day, independent of timezone or later edits.

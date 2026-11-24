@@ -4,6 +4,7 @@ import { HeroContentSkeleton } from './HeroContentSkeleton';
 import { scheduleIdleTask } from '@shared/lib/scheduleIdleTask';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroInlineNote, type HeroInlineNoteHandle } from './HeroInlineNote';
+import { noteColorIllustrationSources } from '@shared/ui/icon-symbol/noteColorIllustrationSources';
 import { routineIllustrationSources } from '@shared/ui/icon-symbol/routineIllustrationSources';
 import { ROUTINE_ILLUSTRATIONS, routineIllustrationLabel } from '@shared/lib/routineIllustrationCatalog';
 import { controlIllustrationArtwork } from '@shared/ui/icon-symbol/controlIllustrationSources';
@@ -44,8 +45,9 @@ const notePalette = [
   '#FFFFFF', '#D4D0C9', '#9C9691', '#625F5D', '#222222',
 ];
 type NoteColor = 'pen' | 'paper';
-const noteIllustrationSources: Record<string, number> = { ...controlIllustrationArtwork, ...routineIllustrationSources };
-const noteIllustrations = Object.keys(noteIllustrationSources);
+const graphiteSources = { ...controlIllustrationArtwork, ...routineIllustrationSources };
+const noteIllustrations = Object.keys(graphiteSources);
+const noteIllustrationSources: Record<string, number> = { ...graphiteSources, ...noteColorIllustrationSources };
 const noteIllustrationLabels = new Map(ROUTINE_ILLUSTRATIONS.map(item => [item.id as string, item.labels]));
 
 function paperInk(paper: string) {
@@ -207,6 +209,7 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
   const noteInk = colors.pen ?? (notePaper ? paperInk(notePaper) : ink);
   const renderOwnEvent = useCallback(({ item }: { item: OwnCanvasEvent }) => <CanvasEventRow event={item} ink={noteInk} onDelete={deleteEvent} />, [noteInk, deleteEvent]);
   useEffect(() => { if (!editing) setPicker(null); }, [editing]);
+  const [illustrationMode, setIllustrationMode] = useState<'mono' | 'color'>('mono');
   const [illustrationsOpen, setIllustrationsOpen] = useState(false);
   const inlineNote = useRef<HeroInlineNoteHandle>(null);
   const [recentIllustration, setRecentIllustration] = useState(() => {
@@ -303,7 +306,13 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
             <Image testID="hero-canvas-blue-clip" source={bookmark?.source ?? proClip?.source ?? appliedClip} contentFit="contain" transition={0} cachePolicy="memory-disk" useAppleWebpCodec={false} accessible={false} pointerEvents="none" style={bookmark || (diaryClip === 'rose-pink-bookmark' && !proClip) ? { width: 26, height: 48 } : { width: 60, height: proClip || diaryClip === 'cherry-binder' ? 36 : 20 }} />
           </View>
       </Animated.View> : null}
-      {editing && tab === 'story' && illustrationsOpen ? <FlatList
+      {editing && tab === 'story' && illustrationsOpen ? <View style={{ position: 'absolute', left: 0, right: 0, bottom: 54, height: 216, backgroundColor: dark ? '#323433' : '#F5F3F0' }}>
+        <View accessibilityRole="tablist" style={{ flexDirection: 'row', justifyContent: 'center' }}>
+          {(['mono', 'color'] as const).map(mode => <Pressable key={mode} testID={`hero-illustration-tab-${mode}`} accessibilityRole="tab" accessibilityState={{ selected: mode === illustrationMode }} onPress={() => setIllustrationMode(mode)} style={{ minHeight: 44, minWidth: 58, alignItems: 'center', justifyContent: 'center' }}>
+            <ThemedText style={{ color: dark ? '#F5F3F0' : '#30332D', fontSize: 15, opacity: mode === illustrationMode ? 1 : 0.6, textDecorationLine: mode === illustrationMode ? 'underline' : 'none' }}>{t(mode === 'mono' ? 'diary.icons.monochrome' : 'diary.icons.color')}</ThemedText>
+          </Pressable>)}
+        </View>
+        <FlatList
         testID="hero-canvas-illustration-picker"
         data={noteIllustrations}
         numColumns={8}
@@ -312,12 +321,16 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
         initialNumToRender={40}
         maxToRenderPerBatch={40}
         windowSize={3}
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 54, height: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}
+        style={{ flex: 1 }}
+        extraData={illustrationMode}
         contentContainerStyle={{ padding: 8 }}
-        renderItem={({ item: id }) => <Pressable accessibilityRole="button" accessibilityLabel={`${translateUiText("이모티콘 추가")} ${routineIllustrationLabel(noteIllustrationLabels.get(id), locale) ?? id}`} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { router.push('/pro-preview'); return; } inlineNote.current?.insertIllustration(id); }} style={{ flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+        renderItem={({ item: baseId }) => {
+          const id = illustrationMode === 'color' ? `color:${baseId}` : baseId;
+          return <Pressable accessibilityRole="button" accessibilityLabel={`${translateUiText("이모티콘 추가")} ${routineIllustrationLabel(noteIllustrationLabels.get(baseId), locale) ?? baseId}`} onPress={() => { if (!selectIsPro(useSubscriptionStore.getState())) { router.push('/pro-preview'); return; } inlineNote.current?.insertIllustration(id); }} style={{ width: '12.5%', height: 40, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={noteIllustrationSources[id]} contentFit="contain" style={{ width: 28, height: 28 }} />
-        </Pressable>}
-      /> : null}
+        </Pressable>;
+        }}
+      /></View> : null}
       {editing && tab === 'story' && picker ? <Animated.ScrollView key={picker} keyboardShouldPersistTaps="always" style={{ position: 'absolute', left: 0, right: 0, bottom: 54, opacity: paletteProgress, transform: [{ translateY: paletteProgress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }], maxHeight: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}>
         <PostItColorGrid texture="pigment" isDark={dark}
           label={picker === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}

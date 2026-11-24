@@ -1,3 +1,4 @@
+import { ThemedText } from '@shared/ui/themed-text';
 import { POLAROID_PHOTO_WIDTH, POLAROID_PHOTO_HEIGHT, getPolaroidPrintLayout } from '../lib/heroPolaroidFraming';
 import { HeroDiaryCardSides } from './HeroDiaryCardSides';
 import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
@@ -20,7 +21,7 @@ import { ComicSceneImage } from './HeroSceneImage';
 import { COMIC_SCENE_THUMBNAILS } from '../lib/heroSceneThumbnails';
 import { resolveComicScene, type ComicSceneId } from '../lib/heroSceneImages';
 
-export type ComicDeckItem = { photoFit?: 'cover' | 'contain'; key: string; label: string; artworkUri?: string; exportDate?: string | number; memo?: string; faceColor?: string; inkColor?: string; fontId?: AppFontId };
+export type ComicDeckItem = { photoFit?: 'cover' | 'contain'; key: string; label: string; artworkUri?: string; archiveDate?: string; exportDate?: string | number; memo?: string; faceColor?: string; inkColor?: string; fontId?: AppFontId };
 
 /** Artwork paper. A pure white card plus grain reads as a second sheet behind the drawing. */
 const ILLUSTRATION_PAPER = '#F9F9F6';
@@ -118,7 +119,8 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
   }, [syncMainState, focused, interactive, currentArtwork]);
   const frameTop = Math.min(60, Math.max(8, availableHeight * 0.1));
   const originalCardTop = Math.max(8, frameTop - 28);
-  const maximumCardHeight = Math.max(1, availableHeight - originalCardTop + 8);
+  const dateSpace = items.some(item => item.archiveDate) ? 32 : 0;
+  const maximumCardHeight = Math.max(1, availableHeight - originalCardTop + 8 - dateSpace);
   const frameForItem = (item: ComicDeckItem | undefined) => {
     if (!item) return { width: cardWidth, height: Math.min(cardWidth * 1.55, maximumCardHeight) };
     if (item.photoFit) {
@@ -232,7 +234,8 @@ export function ComicSceneDeck({ syncMainState = true, presentationOverride, foc
           if (next !== safeActive) { tapHaptic('select'); setActive(next); }
         }}>
         {items.map((item, index) => <View key={item.key} style={{ width: itemFrames[index].width, height: size.height }}>
-          <View style={{ marginTop: Math.max(8, ((syncMainState ? availableHeight : size.height) - itemFrames[index].height) / 2) }}>
+          <View style={{ marginTop: Math.max(8, ((syncMainState ? availableHeight : size.height) - itemFrames[index].height - dateSpace) / 2) }}>
+            {item.archiveDate && <ThemedText numberOfLines={1} style={{ height: dateSpace, textAlign: 'center', fontSize: 16, lineHeight: 22, color: ink }}>{item.archiveDate}</ThemedText>}
             {renderPage(index, index === safeActive && focused && interactive && !detailOpen, true)}
           </View>
         </View>)}

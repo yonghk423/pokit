@@ -1,4 +1,6 @@
 {
+  "diary.icons.monochrome": "흑백",
+  "diary.icons.color": "컬러",
   "proPreview.table.writing": "다이어리 글 꾸미기(글자색, 배경색, 일러스트 아이콘)",
   "proPreview.table.title": "Pro 혜택 한눈에 보기",
   "proPreview.table.note": "월간·연간 모두 같은 혜택을 구독 기간 동안 이용해요.",

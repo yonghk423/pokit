@@ -5,7 +5,7 @@ import { HeroPolaroidDatePicker } from './HeroPolaroidDatePicker';
 import { HeroTrashIcon } from './HeroTrashIcon';
 import { useHeroTrashBinStyle } from '../model/heroTrashBinStyle';
 import { getClockNow } from '@shared/lib/time/appClock';
-import { comicDiaryDate } from '../lib/heroCalendar';
+import { archivePhotoDate, comicDiaryDate } from '../lib/heroCalendar';
 import { polaroidScatter } from '../lib/polaroidScatter';
 import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { useWallpaperStore } from '@shared/lib/wallpaper/wallpaperStore';
@@ -150,7 +150,7 @@ export function HeroHistoryPackets({ diaries, onCreate, onDeleteMany, onRemoveSc
       </View>
       <View style={{ flex: 1 }} onLayout={({ nativeEvent }) => setAlbumContentTop(nativeEvent.layout.y)}>
       <View style={StyleSheet.absoluteFill}>
-        <HeroCardToolsProvider><ComicDayBoard syncMainState={false} focusSceneId={detail} diaryTitle={dateLabel(group.date)} hideEntryActions hideCharacterHeading onAdd={() => setPickingDate(true)} historyOverview overviewOpen={dateGridOpen} onOverviewChange={setDateGridOpen} onRemove={key => removeScenes([key])} onRemoveMany={removeScenes} items={entries.map(item => ({ key: item.key, icon: 'photo' as const, label: item.scene?.title ?? '', memo: item.scene?.memo, artworkUri: item.scene?.artworkUri, exportDate: comicDiaryDate(item.diary) ?? item.diary.createdAt, faceColor: item.scene?.paper, inkColor: item.scene?.pen, fontId: item.scene?.fontId, photoFit: item.scene?.polaroidSettings?.photoFit }))} ink="#292E28" muted="#73796C" isDark={false} choices={Object.fromEntries(entries.filter(item => item.scene).map(item => [item.key, item.scene!.image]))} onOpen={key => { const item = entries.find(entry => entry.key === key); if (item?.scene) setSceneDetail(key); }} onEditCard={(key, text) => { const item = entries.find(entry => entry.key === key); if (item?.scene) onUpdateScene(item.diary.id, item.scene.id, text); }} /></HeroCardToolsProvider>
+        <HeroCardToolsProvider><ComicDayBoard syncMainState={false} focusSceneId={detail} diaryTitle={dateLabel(group.date)} hideEntryActions hideCharacterHeading onAdd={() => setPickingDate(true)} historyOverview overviewOpen={dateGridOpen} onOverviewChange={setDateGridOpen} onRemove={key => removeScenes([key])} onRemoveMany={removeScenes} items={entries.map(item => ({ key: item.key, archiveDate: archivePhotoDate(item.scene?.id, item.diary), icon: 'photo' as const, label: item.scene?.title ?? '', memo: item.scene?.memo, artworkUri: item.scene?.artworkUri, exportDate: comicDiaryDate(item.diary) ?? item.diary.createdAt, faceColor: item.scene?.paper, inkColor: item.scene?.pen, fontId: item.scene?.fontId, photoFit: item.scene?.polaroidSettings?.photoFit }))} ink="#292E28" muted="#73796C" isDark={false} choices={Object.fromEntries(entries.filter(item => item.scene).map(item => [item.key, item.scene!.image]))} onOpen={key => { const item = entries.find(entry => entry.key === key); if (item?.scene) setSceneDetail(key); }} onEditCard={(key, text) => { const item = entries.find(entry => entry.key === key); if (item?.scene) onUpdateScene(item.diary.id, item.scene.id, text); }} /></HeroCardToolsProvider>
 
       </View>
       {dateGridOpen && !selectedEntry && !pickingDate && group.date !== 'undated' && <HeroCanvasNote key={group.date} date={group.date + '-01'} ink="#292E28" keyboardVerticalOffset={albumContentTop} monthlyHeight={Math.round((height - insets.top - insets.bottom) * 0.32) - 12} />}

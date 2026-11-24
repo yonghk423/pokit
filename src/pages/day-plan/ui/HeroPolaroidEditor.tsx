@@ -20,8 +20,8 @@ import { formatHeroPolaroidDate, type HeroPolaroidContent } from './HeroPolaroid
 import { hasProPolaroidEffects, isProPolaroidFilm, adjustmentKeys } from './HeroPolaroidEffects';
 import { HeroPolaroidProcessor } from './HeroPolaroidProcessor';
 export type PolaroidDraft = Omit<HeroPolaroidContent, 'uri'>;
-export function HeroPolaroidEditor({ embedded = false, uri, source, initial, busy, children, onExport, onClose, onSaveText, onDelete }: {
-  imageSize?: { width: number; height: number }; onDelete?: () => void; embedded?: boolean; onSaveText?: (text: HeroCardText) => void; uri?: string; source?: number; initial: PolaroidDraft; busy: boolean; children?: ReactNode;
+export function HeroPolaroidEditor({ disableApply = false, embedded = false, uri, source, initial, busy, children, onExport, onClose, onSaveText, onDelete }: {
+  disableApply?: boolean; imageSize?: { width: number; height: number }; onDelete?: () => void; embedded?: boolean; onSaveText?: (text: HeroCardText) => void; uri?: string; source?: number; initial: PolaroidDraft; busy: boolean; children?: ReactNode;
   onExport: (action: 'save' | 'share' | 'download', draft: PolaroidDraft) => Promise<void>; onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -80,7 +80,7 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const toggleDate = useCallback(() => setDatePickerOpen(true), []);
   const exportImage = async (action: 'save' | 'share' | 'download') => {
-    if (lock.current || busy || processing) return;
+    if ((action === 'save' && disableApply) || lock.current || busy || processing) return;
     lock.current = true; setChecking(true);
     try {
       if (FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && isProPolaroidFilm(draft.film)) {
@@ -139,7 +139,7 @@ export function HeroPolaroidEditor({ embedded = false, uri, source, initial, bus
         <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: Math.max(4, insets.bottom), flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#080808' }}>
           <ExportButton icon="share" label={t('polaroid.editor.share')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('share'); }} testID="polaroid-editor-share" />
           <ExportButton icon="download" label={t('polaroid.editor.download_to_photos')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('download'); }} testID="polaroid-editor-download" />
-          <ExportButton icon="save" label={checking || busy ? t('polaroid.editor.preparing') : FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && !isPro && isProPolaroidFilm(draft.film) ? t('polaroid.editor.apply_with_pro') : t('polaroid.editor.apply_to_photo')} disabled={busy || checking || processing} dimmed={busy || checking} onPress={() => { void exportImage('save'); }} testID="polaroid-editor-save" />
+          <ExportButton icon="save" label={checking || busy ? t('polaroid.editor.preparing') : FEATURE_FLAGS.proSubscriptions && FEATURE_FLAGS.proPolaroidExport && !isPro && isProPolaroidFilm(draft.film) ? t('polaroid.editor.apply_with_pro') : t('polaroid.editor.apply_to_photo')} disabled={disableApply || busy || checking || processing} dimmed={disableApply || busy || checking} onPress={() => { void exportImage('save'); }} testID="polaroid-editor-save" />
           <Pressable accessibilityRole="button" accessibilityLabel={t('polaroid.editor.close')} disabled={busy || checking} onPress={onClose} style={{ marginLeft: 'auto', minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: busy || checking ? 0.5 : 1 }}><ThemedText style={{ color: '#F3F2ED' }}>{t('polaroid.editor.close')}</ThemedText></Pressable>
         </View>
         {writing ? <HeroCardEditor number={1} ink={pen} muted="#73796C" paper={draft.paper ?? paper} draft={textDraft} onChange={setTextDraft} onCancel={() => setWriting(false)} onSave={() => { if (!textDraft.title.trim()) return; const text = { ...textDraft, title: textDraft.title.trim(), memo: textDraft.memo.trim() }; patch(text); onSaveText?.(text); setWriting(false); }} /> : null}

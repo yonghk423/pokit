@@ -65,7 +65,7 @@ function LayoutDiagram({ mode, ink, size = 42 }: { mode: ComicBoardMode; ink: st
 /** Last measured grid width, so switching back from the deck paints panels at their final size. */
 let lastBoardWidth = 0;
 
-type BoardItem = Omit<CircularRoutineItem, 'completed'> & { photoFit?: 'cover' | 'contain'; completed?: boolean; memo?: string; artworkUri?: string; exportDate?: string | number; fontId?: AppFontId };
+type BoardItem = Omit<CircularRoutineItem, 'completed'> & { photoFit?: 'cover' | 'contain'; completed?: boolean; memo?: string; artworkUri?: string; archiveDate?: string; exportDate?: string | number; fontId?: AppFontId };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
 type SceneLibrary = readonly typeof COMIC_SCENES[number][];
 export function ComicDayBoard({ syncMainState = true, presentationOverride, emptyContent, focusSceneId, onOpenBag, historyOverview = false, overviewOpen, onOverviewChange, onAddPhoto, onCreateRandom, onDraftChange, onActiveSceneChange, hideEntryActions = false, sceneLibrary = SELECTABLE_COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, trashBinStyle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, character = COMIC_CHARACTERS[0], onSelectCharacter, onRenameCharacter }: Common & {

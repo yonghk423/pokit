@@ -21,7 +21,7 @@ export function HeroImageActions(props: ComponentProps<typeof AllowedHeroImageAc
   }
   return <AllowedHeroImageActions {...props} />;
 }
-function AllowedHeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, source, title = '', memo, paper, pen, fontId, exportDate, compact = false, saveOnly = false, directDownload = false, onDelete, embeddedEditor = false, editorOnly = false, onEditorClose, onSaveText }: { initialDraft?: PolaroidDraft; imageSize?: { width: number; height: number }; onSaveDraft?: (draft: PolaroidDraft) => Promise<void>; onSaveText?: (text: HeroCardText) => void; embeddedEditor?: boolean; editorOnly?: boolean; onEditorClose?: () => void; onDelete?: () => void; uri?: string; source?: number; title?: string; memo?: string; paper?: string; pen?: string; fontId?: AppFontId; exportDate?: string | number; compact?: boolean; saveOnly?: boolean; directDownload?: boolean }) {
+function AllowedHeroImageActions({ disableApply = false, initialDraft, imageSize, onSaveDraft, uri, source, title = '', memo, paper, pen, fontId, exportDate, compact = false, saveOnly = false, directDownload = false, onDelete, embeddedEditor = false, editorOnly = false, onEditorClose, onSaveText }: { disableApply?: boolean; initialDraft?: PolaroidDraft; imageSize?: { width: number; height: number }; onSaveDraft?: (draft: PolaroidDraft) => Promise<void>; onSaveText?: (text: HeroCardText) => void; embeddedEditor?: boolean; editorOnly?: boolean; onEditorClose?: () => void; onDelete?: () => void; uri?: string; source?: number; title?: string; memo?: string; paper?: string; pen?: string; fontId?: AppFontId; exportDate?: string | number; compact?: boolean; saveOnly?: boolean; directDownload?: boolean }) {
   const { t } = useTranslation();
   const [editorOpen, setEditorOpen] = useState(editorOnly);
   const lock = useRef(false);
@@ -38,7 +38,7 @@ function AllowedHeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, so
     return () => clearTimeout(timer);
   }, [saved]);
   const run = async (action: 'save' | 'share' | 'download', draft?: PolaroidDraft) => {
-    if (lock.current || (uri?.includes('/character-packs/protagonist-7/') && !selectCanTestProStoreItems(useSubscriptionStore.getState()))) return;
+    if ((action === 'save' && disableApply) || lock.current || (uri?.includes('/character-packs/protagonist-7/') && !selectCanTestProStoreItems(useSubscriptionStore.getState()))) return;
     tapHaptic();
     lock.current = true; setBusy(true);
     if (action !== 'share') setSaved(false);
@@ -111,7 +111,7 @@ function AllowedHeroImageActions({ initialDraft, imageSize, onSaveDraft, uri, so
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Editor = editorOpen ? (require('./HeroPolaroidEditor') as typeof import('./HeroPolaroidEditor')).HeroPolaroidEditor : null;
   return <View style={embeddedEditor ? { flex: 1 } : [s.row, compact && s.compactRow]}>
-    {Editor ? <Editor imageSize={imageSize} onDelete={onDelete} embedded={embeddedEditor} onSaveText={onSaveText} uri={uri ? resolveHeroArtworkUri(uri) : undefined} source={source} initial={{ title, memo, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate), ...initialDraft }} busy={busy} onClose={() => { setEditorOpen(false); onEditorClose?.(); }} onExport={run}>
+    {Editor ? <Editor disableApply={disableApply} imageSize={imageSize} onDelete={onDelete} embedded={embeddedEditor} onSaveText={onSaveText} uri={uri ? resolveHeroArtworkUri(uri) : undefined} source={source} initial={{ title, memo, paper, pen, fontId, date: formatHeroPolaroidDate(exportDate), ...initialDraft }} busy={busy} onClose={() => { setEditorOpen(false); onEditorClose?.(); }} onExport={run}>
       {captureContent ? <HeroPolaroidExport content={captureContent} onComplete={captureComplete} onError={captureFailed} /> : null}
     </Editor> : null}
     {!editorOpen && captureContent ? <HeroPolaroidExport content={captureContent} onComplete={captureComplete} onError={captureFailed} /> : null}
