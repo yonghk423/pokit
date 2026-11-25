@@ -563,7 +563,7 @@ struct ComicSceneWidget: Widget {
     }
     .configurationDisplayName("나의 달력")
     .description("앱에서 선택한 달력 디자인과 날짜를 보여줘요.")
-    .supportedFamilies([.systemSmall, .systemLarge])
+    .supportedFamilies([.systemLarge])
     .contentMarginsDisabled()
   }
 }

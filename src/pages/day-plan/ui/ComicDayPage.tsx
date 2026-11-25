@@ -60,6 +60,7 @@ export function ComicDayPage() {
     router.setParams({ calendarWidget: undefined });
   }, [calendarWidget, photoActive, router]));
   const selectCalendarDate = useCallback((date: string) => {
+    setOverviewOpen(true);
     setChosenDate(date);
     setCalendarBackdropVisible(false);
     setCalendarVisible(false);

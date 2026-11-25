@@ -4,6 +4,7 @@ import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { HeroCalendarWidgetSync } from './HeroCalendarWidgetSync';
 import { CalendarPaper } from './HeroCalendarDesigns';
 import { setCalendarPhotosHidden } from '@shared/lib/calendarLayoutPreferences';
+jest.mock('../lib/calendarStoreDownload', () => ({ diaryImages: {} }));
 jest.mock('./HeroCalendarDesigns', () => ({ CalendarPaper: () => null }));
 jest.mock('./HeroIllustrationCalendar', () => ({ HeroIllustrationCalendar: () => null }));
 jest.mock('../model/heroCalendarDesign', () => ({ CITY_CALENDAR_THEMES: [], useHeroCalendarCover: () => null }));
@@ -50,33 +51,32 @@ it('captures a settled calendar once and refreshes when its content changes', as
   expect(captureRef).toHaveBeenCalledTimes(2);
 });
 
-it('prepares separate small and large calendars with size-specific layouts', () => {
+it('prepares only the large calendar', () => {
   NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: jest.fn() };
   act(() => { tree = create(<HeroCalendarWidgetSync {...props} />); });
   const calendars = tree!.root.findAllByType(CalendarPaper);
-  expect(calendars.map(calendar => calendar.props.widgetSize)).toEqual(['small', 'large']);
-  expect(calendars.map(calendar => calendar.props.layoutHeight)).toEqual([330, 346]);
+  expect(calendars.map(calendar => calendar.props.widgetSize)).toEqual(['large']);
+  expect(calendars.map(calendar => calendar.props.layoutHeight)).toEqual([346]);
 });
 
-it('replaces both widget snapshots when the photo visibility preference changes', async () => {
+it('replaces the large widget snapshot when the photo visibility preference changes', async () => {
   const diaries = [{ id: 'record', date: '2026-11-09', scenes: [{ id: 'photo', artworkUri: 'file:///saved.jpg' }] }] as any;
   const sync = jest.fn(async () => undefined);
   NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: sync };
   act(() => { setCalendarPhotosHidden(false); tree = create(<HeroCalendarWidgetSync {...props} design="cream-kitten" diaries={diaries} />); });
   try {
     await act(async () => { jest.advanceTimersByTime(400); });
-    expect(sync).toHaveBeenCalledTimes(2);
+    expect(sync).toHaveBeenCalledTimes(1);
     act(() => setCalendarPhotosHidden(true));
     expect(tree!.root.findAllByType(CalendarPaper)[0].props.diaries[0].scenes[0].artworkUri).toBeUndefined();
     await act(async () => { jest.advanceTimersByTime(400); });
-    expect(sync.mock.calls.slice(2)).toEqual([
-      ['file:///widget.png', '2026-11', 'small'],
+    expect(sync.mock.calls.slice(1)).toEqual([
       ['file:///widget.png', '2026-11', 'large'],
     ]);
     expect(diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
     act(() => setCalendarPhotosHidden(false));
     expect(tree!.root.findAllByType(CalendarPaper)[0].props.diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
     await act(async () => { jest.advanceTimersByTime(400); });
-    expect(sync).toHaveBeenCalledTimes(6);
+    expect(sync).toHaveBeenCalledTimes(3);
   } finally { act(() => setCalendarPhotosHidden(false)); }
 });

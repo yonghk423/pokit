@@ -827,3 +827,27 @@ it('appends an imported photo to the current mixed diary without hiding existing
   expect(saved).toHaveBeenCalledWith(uri);
   act(() => tree.unmount());
 });
+
+it.each([false, true])('restores the diary overview after confirmed photo deletion (bulk=%s)', async bulk => {
+  const scene = newComicScene('Photo');
+  const diary = { id: 'delete-photo', title: 'Diary', characterId: COMIC_CHARACTERS[0].id, scenes: [scene], createdAt: new Date(2026, 9, 21, 8).getTime(), updatedAt: 1 };
+  localStorageClient.setJson(COMIC_DIARY_STORAGE_KEY, { version: 1, diaries: [diary], activeId: diary.id, migratedLegacyKeys: [] });
+  saveComicNavigation(diary.characterId, 'board', diary.id);
+  const overview = jest.fn();
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  let tree!: ReactTestRenderer;
+  try {
+    await act(async () => { tree = create(<IndependentComicPlanner date="2026-10-21" ink="#222" muted="#888" isDark={false} overviewOpen={false} onOverviewChange={overview} />); });
+    const board = tree.root.findByType(ComicDayBoard).props;
+    if (bulk) board.onRemoveMany([scene.id]);
+    else board.onRemove(scene.id);
+    const confirm = alert.mock.calls.at(-1)?.[2]?.find(button => button.style === 'destructive');
+    expect(confirm?.onPress).toBeDefined();
+    act(() => confirm?.onPress?.());
+    expect(overview).toHaveBeenCalledWith(true);
+    expect(tree.root.findByType(ComicDayBoard).props.items).toHaveLength(0);
+  } finally {
+    act(() => tree.unmount());
+    alert.mockRestore();
+  }
+});

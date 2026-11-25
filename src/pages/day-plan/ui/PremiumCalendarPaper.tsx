@@ -112,7 +112,7 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
           {Array.from({ length: 6 }, (_, row) => <View key={row} style={{ flex: 1, flexDirection: 'row' }}>{days.slice(row * 7, row * 7 + 7).map(day => {
             const key = getLocalDateKey(day);
             const current = day.getMonth() === month.getMonth();
-            const thumbnail = widgetSize ? undefined : grouped.get(key)?.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri;
+            const thumbnail = grouped.get(key)?.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri;
             const active = key === getLocalDateKey(today) || key === rangeStart;
             return <Pressable key={key} disabled={miniature} accessibilityLabel={key} onPress={() => { tapHaptic('select'); setRangeStart(key); onSelectDate?.(key); }} style={{ width: '14.2857%', padding: 2 * s }}>
               <View style={{ flex: 1, alignItems: 'center', borderWidth: glass || metal || leather || ivory ? 0.5 : 0, borderColor: glass ? '#8AB89A' : '#D7CFC3', backgroundColor: glass ? 'rgba(255,255,255,0.21)' : 'transparent', borderRadius: glass ? 5 * s : 0 }}>

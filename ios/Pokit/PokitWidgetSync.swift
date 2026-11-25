@@ -79,11 +79,12 @@ class PokitWidgetSync: NSObject {
 
   /// Copy the rendered calendar into App Group storage before releasing the JS temporary file.
   @objc func syncCalendarWidgetImage(_ uri: String, month: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
-    syncCalendarWidgetImageForFamily(uri, month: month, family: "small", resolver: resolve, rejecter: reject)
+    syncCalendarWidgetImageForFamily(uri, month: month, family: "large", resolver: resolve, rejecter: reject)
   }
 
   @objc func syncCalendarWidgetImageForFamily(_ uri: String, month: String, family: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
-    let widgetFamily = family == "large" ? "large" : "small"
+    guard family == "large" else { resolve(nil); return }
+    let widgetFamily = family
     comicImageQueue.async {
       guard let source = self.resolveArtworkSourceURL(uri),
             let image = UIImage(contentsOfFile: source.path),

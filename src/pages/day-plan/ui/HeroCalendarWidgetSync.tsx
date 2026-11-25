@@ -20,7 +20,7 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
   const displayDiaries = useMemo(() => hidePhotos
     ? diaries.map(diary => ({ ...diary, scenes: diary.scenes.map(scene => ({ ...scene, artworkUri: undefined })) }))
     : diaries, [diaries, hidePhotos]);
-  const targets = useRef<Record<'small' | 'large', View | null>>({ small: null, large: null });
+  const target = useRef<View>(null);
   const scheduleCapture = useRef<(() => void) | undefined>(undefined);
   // Decoder notifications must not rerender images and trigger another onLoad.
   const imageReady = useCallback(() => scheduleCapture.current?.(), []);
@@ -43,7 +43,7 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
       timer = setTimeout(render, 400);
     };
     const render = async () => {
-      if (cancelled || pending || !targets.current.small || AppState.currentState === 'background') return;
+      if (cancelled || pending || !target.current || AppState.currentState === 'background') return;
       if ((theme || design === 'illustration') && !getLoadedIllustrationCalendarAssets(theme?.themeId ?? '01-rush-hour-commute')) return;
       pending = true;
       dirty = false;
@@ -51,16 +51,10 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
       try {
         // Layer capture avoids drawViewHierarchy(afterScreenUpdates: true), which
         // forces visible screen updates while capturing the offscreen calendar.
-        for (const family of ['small', 'large'] as const) {
-          const target = targets.current[family];
-          if (cancelled || !target || (family === 'large' && !native?.syncCalendarWidgetImageForFamily)) continue;
-          uri = await captureRef(target, { format: 'png', result: 'tmpfile', useRenderInContext: true });
-          if (!cancelled) {
-            if (native?.syncCalendarWidgetImageForFamily) await native.syncCalendarWidgetImageForFamily(uri, monthKey, family);
-            else await native?.syncCalendarWidgetImage?.(uri, monthKey);
-          }
-          releaseCapture(uri);
-          uri = undefined;
+        uri = await captureRef(target.current, { format: 'png', result: 'tmpfile', useRenderInContext: true });
+        if (!cancelled) {
+          if (native?.syncCalendarWidgetImageForFamily) await native.syncCalendarWidgetImageForFamily(uri, monthKey, 'large');
+          else await native?.syncCalendarWidgetImage?.(uri, monthKey);
         }
       } catch {
         // Keep the last complete calendar when capture is unavailable.
@@ -87,14 +81,11 @@ export function HeroCalendarWidgetSync({ design, month, today, diaries, eventDat
   if (!enabled) return null;
   return <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: -2000, top: 0, width: 330 }}>
     <CalendarWidgetRenderReadyContext.Provider value={imageReady}>
-      {(['small', 'large'] as const).map(family => {
-        const height = family === 'large' ? 346 : 330;
-        return <View key={family} ref={view => { targets.current[family] = view; }} collapsable={false} style={{ width: 330, height, backgroundColor: '#FAFAF6', overflow: 'hidden' }}>
+        <View ref={target} collapsable={false} style={{ width: 330, height: 346, backgroundColor: '#FAFAF6', overflow: 'hidden' }}>
           {theme || design === 'illustration'
-            ? <HeroIllustrationCalendar widget themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={height} month={month} today={today} diaries={displayDiaries} eventDates={eventDates} onSelectDate={() => undefined} />
-            : <CalendarPaper widgetSize={family} design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'photo' || design === 'grid' || design === 'weather' ? design : 'bold'} month={month} today={today} diaries={displayDiaries} eventDates={eventDates} layoutWidth={330} layoutHeight={height} />}
-        </View>;
-      })}
+            ? <HeroIllustrationCalendar widget themeId={theme?.themeId ?? '01-rush-hour-commute'} width={330} height={346} month={month} today={today} diaries={displayDiaries} eventDates={eventDates} onSelectDate={() => undefined} />
+            : <CalendarPaper widgetSize="large" design={isPhotoCalendar(design) || isPremiumPaper(design) || design === 'clipboard' || design === 'photo' || design === 'grid' || design === 'weather' ? design : 'bold'} month={month} today={today} diaries={displayDiaries} eventDates={eventDates} layoutWidth={330} layoutHeight={346} />}
+        </View>
     </CalendarWidgetRenderReadyContext.Provider>
   </View>;
 }

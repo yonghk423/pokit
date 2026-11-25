@@ -12,6 +12,7 @@ import { HeroIllustrationCalendar } from './HeroIllustrationCalendar';
 import { useMemo, useState } from 'react';
 import { useCalendarPhotosHidden } from '@shared/lib/calendarLayoutPreferences';
 import { View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { CalendarPaper } from './HeroCalendarDesigns';
 import { isIllustrationCalendarDesign, CITY_CALENDAR_THEMES, useHeroCalendarDesign } from '../model/heroCalendarDesign';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
@@ -23,7 +24,7 @@ export function HeroCalendarBackground({ date, month, diaries, onSelectDate, onP
   const displayDiaries = useMemo(() => hidePhotos
     ? diaries.map(diary => ({ ...diary, scenes: diary.scenes.map(scene => ({ ...scene, artworkUri: undefined })) }))
     : diaries, [diaries, hidePhotos]);
-  const linked = useDeviceEvents(month.getFullYear(), month.getMonth(), locale === 'ko');
+  const linked = useDeviceEvents(month.getFullYear(), month.getMonth(), locale === 'ko', true, true);
   const localEventDates = useCanvasEventDates(month.getFullYear(), month.getMonth());
   const eventDates = [...new Set([...localEventDates, ...Array.from({ length: new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate() }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1)).filter(day => eventsOnDay(linked.events, day).length).map(getLocalDateKey)])];
   const insets = useSafeAreaInsets();
@@ -34,9 +35,20 @@ export function HeroCalendarBackground({ date, month, diaries, onSelectDate, onP
   const paperDesign = isPremiumPaper(design) || design === 'clipboard' || design === 'bold' || design === 'grid' || design === 'photo' || design === 'weather' ? design : 'bold';
   const [paperSize, setPaperSize] = useState({ width: 0, height: 0 });
   const paperWidth = paperSize.width;
+  const monthSwipe = useMemo(() => Gesture.Pan()
+    .enabled(Boolean(onPreviousMonth || onNextMonth))
+    .maxPointers(1)
+    .activeOffsetX([-18, 18])
+    .failOffsetY([-16, 16])
+    .runOnJS(true)
+    .onEnd(({ translationX, translationY }, success) => {
+      if (!success || Math.abs(translationX) < 45 || Math.abs(translationX) < Math.abs(translationY) * 1.5) return;
+      if (translationX < 0) onNextMonth?.();
+      else onPreviousMonth?.();
+    }), [onNextMonth, onPreviousMonth]);
   // Stay in the shell's normal flow: its measured header is the upper boundary.
-  return <View testID="hero-calendar-applied-design" style={{ flex: 1, marginTop: illustrated || freePhoto ? 0 : 8, marginBottom: illustrated ? 0 : -24, alignItems: 'stretch' }} onLayout={({ nativeEvent: { layout } }) => setPaperSize(previous => previous.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height })}>
+  return <GestureDetector gesture={monthSwipe}><View collapsable={false} testID="hero-calendar-applied-design" style={{ flex: 1, marginTop: illustrated || freePhoto ? 0 : 8, marginBottom: illustrated ? 0 : -24, alignItems: 'stretch' }} onLayout={({ nativeEvent: { layout } }) => setPaperSize(previous => previous.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height })}>
     <HeroCalendarWidgetSync design={design} month={month} today={date} diaries={displayDiaries} eventDates={eventDates} />
     {paperWidth > 0 && paperSize.height > 0 ? <View style={{ width: paperWidth, height: paperSize.height }}>{freePhoto ? <FreePhotoCalendarPaper eventDates={eventDates} background={false} design={design} width={paperWidth} height={paperSize.height} month={month} today={date} diaries={displayDiaries} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} /> : illustrated ? <HeroIllustrationCalendar bottomInset={bottomInset} themeId={themeId} onMoveMonth={delta => { if (delta < 0) onPreviousMonth?.(); else onNextMonth?.(); }} topInset={insets.top} width={paperWidth} height={paperSize.height} month={month} today={date} diaries={displayDiaries} eventDates={eventDates} onSelectDate={onSelectDate} /> : <CalendarPaper design={paperDesign} month={month} today={date} diaries={displayDiaries} eventDates={eventDates} onSelectDate={onSelectDate} layoutWidth={paperWidth} layoutHeight={Math.max(1, paperSize.height - (paperDesign === 'mint-planner' || paperDesign === 'spiral-plan' ? 24 : isRaisedCalendar(paperDesign) ? bottomInset / 2 : paperDesign === 'photo' ? Math.min(bottomInset, 72) : bottomInset))} wallpaper onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />}</View> : null}
-  </View>;
+  </View></GestureDetector>;
 }

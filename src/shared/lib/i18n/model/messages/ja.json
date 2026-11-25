@@ -3055,7 +3055,7 @@
   "drive.storage.description": "Google が報告した保存容量です。このアプリが提供する追加容量ではありません。職場や学校のアカウントでは組織全体の容量の場合があります。",
   "canvas.event.deleteTitle": "イベントを削除",
   "canvas.event.deleteMessage": "このイベントを削除しますか？",
-  "canvas.event.placeholder": "覚えておきたいイベントを残しましょう",
+  "canvas.event.placeholder": "予定を立ててみましょう",
   "polaroid.editor.proFilmNotice": "暖かなフィルム・モノクロ・クリームは無料です。ほかのフィルムも無料でプレビューできますが、適用・保存・共有にはProが必要です。",
   "polaroid.editor.proFilmPromotionNotice": "暖かなフィルム・モノクロ・クリームは無料です。11月の無料体験期間中は、ほかのProフィルムも適用・保存・共有できます。",
   "ui.4af5716ff98e": "削除（{count}）",

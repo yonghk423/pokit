@@ -3116,7 +3116,7 @@
   "drive.storage.description": "Google에서 알려준 계정 저장공간이에요. 앱에서 별도로 제공하는 용량이 아니며, 회사·학교 계정은 조직 전체 용량일 수 있어요.",
   "canvas.event.deleteTitle": "이벤트 삭제",
   "canvas.event.deleteMessage": "이 이벤트를 삭제할까요?",
-  "canvas.event.placeholder": "기억하고 싶은 이벤트를 남겨 보세요",
+  "canvas.event.placeholder": "일정을 계획해 보세요",
   "polaroid.editor.proFilmNotice": "따뜻한 필름·흑백 감성·크림톤은 무료예요. 나머지 필름은 미리보기는 무료이며, 적용·저장·공유할 때 Pro가 필요해요.",
   "polaroid.editor.proFilmPromotionNotice": "따뜻한 필름·흑백 감성·크림톤은 무료예요. 나머지 Pro 필름도 11월 무료 체험 기간에는 적용·저장·공유할 수 있어요.",
   "ui.4af5716ff98e": "삭제 ({count})",

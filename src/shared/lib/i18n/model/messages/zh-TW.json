@@ -3055,7 +3055,7 @@
   "drive.storage.description": "這是 Google 回報的儲存空間，並非此 App 額外提供的容量。公司或學校帳戶可能顯示整個機構共用的容量。",
   "canvas.event.deleteTitle": "刪除事件",
   "canvas.event.deleteMessage": "要刪除此事件嗎？",
-  "canvas.event.placeholder": "記下想珍藏的事件",
+  "canvas.event.placeholder": "安排一下行程吧",
   "polaroid.editor.proFilmNotice": "暖色底片、黑白情調、奶油色免費提供。其他底片可免費預覽，套用、儲存與分享需要 Pro。",
   "polaroid.editor.proFilmPromotionNotice": "暖色底片、黑白情調、奶油色免費提供。11月免費體驗期間，其他 Pro 底片也可套用、儲存與分享。",
   "ui.4af5716ff98e": "刪除（{count}）",

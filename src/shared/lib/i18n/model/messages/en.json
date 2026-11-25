@@ -3116,7 +3116,7 @@
   "drive.storage.description": "Storage reported by Google, not extra space provided by this app. Work or school accounts may show shared organization storage.",
   "canvas.event.deleteTitle": "Delete event",
   "canvas.event.deleteMessage": "Delete this event?",
-  "canvas.event.placeholder": "Keep the events you want to remember",
+  "canvas.event.placeholder": "Plan your schedule",
   "polaroid.editor.proFilmNotice": "Warm film, Monochrome and Cream are free. Other films are free to preview; applying, saving or sharing them requires Pro.",
   "polaroid.editor.proFilmPromotionNotice": "Warm film, Monochrome and Cream are free. Other Pro films can also be applied, saved and shared during November’s free trial.",
   "ui.4af5716ff98e": "Delete ({count})",

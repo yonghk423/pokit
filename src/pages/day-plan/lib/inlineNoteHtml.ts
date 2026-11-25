@@ -73,7 +73,9 @@ window.note={
   requestAnimationFrame(()=>requestAnimationFrame(()=>post('initialized')));
  },
  insert(value){
-  editor.focus();const selection=window.getSelection();let range=savedRange;
+  const selection=window.getSelection();
+  let range=selection.rangeCount && editor.contains(selection.anchorNode) ? selection.getRangeAt(0).cloneRange() : savedRange;
+  editor.focus();
   if(!range||!editor.contains(range.startContainer)){range=document.createRange();range.selectNodeContents(editor);range.collapse(false);}
   range.deleteContents();const img=image(value.id,value.uri);range.insertNode(img);range.setStartAfter(img);range.collapse(true);selection.removeAllRanges();selection.addRange(range);savedRange=range.cloneRange();img.scrollIntoView({block:'nearest'});serialize();post('inserted',{id:value.id});
  },

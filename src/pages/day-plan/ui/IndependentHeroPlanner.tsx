@@ -366,6 +366,9 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
     ], { cancelable: true });
   };
   const showEmptyBoard = !diary?.scenes.length;
+  useLayoutEffect(() => {
+    if (showEmptyBoard && props.overviewOpen === false) props.onOverviewChange?.(true);
+  }, [showEmptyBoard, props.overviewOpen, props.onOverviewChange]);
   const showPlanner = Boolean(diary?.scenes.length && character);
   const showChooser = !showEmptyBoard && !showPlanner;
   const inlineRecovery = recoveryJob?.story ? recoveryJob : undefined;
@@ -541,23 +544,22 @@ function CharacterComicPlanner({ onDiarySaved, pendingPrintUri, overviewOpen, on
     }, 700);
     return () => clearTimeout(timer);
   }, [activeTutorialStep, selectedId]);
+  const deleteConfirmedScenes = (keys: Set<string>) => {
+    if (selectedId && keys.has(selectedId)) setSelectedId(null);
+    if (photoId && keys.has(photoId)) setPhotoId(null);
+    onOverviewChange?.(true);
+    update(scenes.filter(scene => !keys.has(scene.id)));
+  };
   const removeScene = (id: string) => Alert.alert(t('comicDay.deleteScene'), `${scenes.find(scene => scene.id === id)?.title ?? ''}\n\n${t('comicDay.deleteHint')}`, [
     { text: t('common.cancel'), style: 'cancel' },
-    { text: t('comicDay.deleteScene'), style: 'destructive', onPress: () => {
-      update(scenes.filter(scene => scene.id !== id));
-      if (selectedId === id) setSelectedId(null);
-      if (photoId === id) setPhotoId(null);
-    } },
+    { text: t('comicDay.deleteScene'), style: 'destructive', onPress: () => deleteConfirmedScenes(new Set([id])) },
   ], { cancelable: true });
   const removeScenes = (ids: string[]) => {
     const keys = new Set(ids.filter(id => scenes.some(scene => scene.id === id)));
     if (!keys.size) return;
     Alert.alert(t('comicDay.deleteSelected', { count: keys.size }), t('comicDay.deleteSelectedHint', { count: keys.size }), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('comicDay.deleteSelected', { count: keys.size }), style: 'destructive', onPress: () => {
-        update(scenes.filter(scene => !keys.has(scene.id)));
-        if (selectedId && keys.has(selectedId)) setSelectedId(null);
-      } },
+      { text: t('comicDay.deleteSelected', { count: keys.size }), style: 'destructive', onPress: () => deleteConfirmedScenes(keys) },
     ], { cancelable: true });
   };
 
