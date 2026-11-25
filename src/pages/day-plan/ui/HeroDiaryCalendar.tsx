@@ -1,3 +1,5 @@
+import { CalendarEventDot } from './CalendarEventDot';
+import { useCanvasEventDates } from '../model/heroCanvasEvents';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { useDeviceEvents } from '@features/apple-calendar/useDeviceEvents';
 import { eventsOnDay } from '@features/apple-calendar/calendarDates';
@@ -77,6 +79,7 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
   const cell = gridWidth / 7;
   const rowHeight = Math.max(86, Math.ceil((cell - 12) * 1.2 + 44));
   const linked = useDeviceEvents(month.getFullYear(), month.getMonth(), locale === 'ko');
+  const localEventDates = useCanvasEventDates(month.getFullYear(), month.getMonth());
   const selectedEvents = eventsOnDay(linked.events, parseLocalDateKeyToDate(selected)!);
   const selectedDiaries = grouped.get(selected) ?? [];
   const selectedDate = parseLocalDateKeyToDate(selected)!;
@@ -109,8 +112,8 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
             const cover = calendarCover(records, covers[key]);
             const chosen = selected === key;
             return <Pressable key={key} testID={`comic-calendar-day-${key}`} accessibilityRole="button" accessibilityLabel={`${key}, ${t('comicCalendar.diaryCount', { count: records.length })}`} accessibilityState={{ selected: chosen }} onPress={() => selectDate(key)} style={[s.day, { width: `${100 / 7}%`, height: rowHeight }]}>
+              <CalendarEventDot date={key} visible={localEventDates.includes(key) || eventsOnDay(linked.events, new Date(month.getFullYear(), month.getMonth(), day)).length > 0} color={ink} />
               <View style={s.dateNumber}>{chosen ? <Svg width={30} height={28} viewBox="0 0 30 28" style={StyleSheet.absoluteFill} accessible={false}><Path d="M15 2C32 0 32 24 15 26C-2 28-3 4 15 2Z" fill="none" stroke={ink} strokeWidth={1} /></Svg> : null}<ThemedText style={{ color: key === today || chosen ? ink : muted, fontSize: 14, lineHeight: 22 }}>{day}</ThemedText></View>
-              {eventsOnDay(linked.events, new Date(month.getFullYear(), month.getMonth(), day)).length ? <View testID={`calendar-event-dot-${key}`} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ink, alignSelf: 'center', marginVertical: 2 }} /> : null}
               {cover ? <View style={{ alignItems: 'center' }}><HangingScene scene={cover.scene} width={Math.max(20, cell - 12)} stacked={records.reduce((sum, diary) => sum + diary.scenes.length, 0) > 1} angle={day % 2 ? -2 : 2} isDark={isDark} /></View> : null}
             </Pressable>;
           })}</View>
@@ -143,7 +146,7 @@ export function HeroDiaryCalendar({ diaries, today, ink, muted, isDark, onClose,
 }
 const s = StyleSheet.create({
   root: { flex: 1 }, header: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, minHeight: 52 }, monthNavigation: { width: '70%', maxWidth: 320, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, previous: { position: 'absolute', left: 0, top: 0, bottom: 0 }, next: { position: 'absolute', right: 0, top: 0, bottom: 0 }, close: { position: 'absolute', right: 10, top: 0, bottom: 0 }, touch: { minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, arrow: { fontSize: 34, lineHeight: 40 }, month: { fontSize: 24, lineHeight: 34, textAlign: 'center', width: 130, flexShrink: 1 },
-  content: { paddingHorizontal: 12, paddingBottom: 24 }, body: { width: '100%', maxWidth: 840, alignSelf: 'center' }, weekdays: { flexDirection: 'row', borderBottomWidth: 0.7, borderColor: '#B9BBB2', paddingVertical: 9 }, weekday: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 14, lineHeight: 22 }, grid: { flexDirection: 'row', flexWrap: 'wrap' }, day: { borderRightWidth: 0.4, borderBottomWidth: 0.4, borderColor: '#C4C5BD', paddingHorizontal: 2 }, dateNumber: { width: 30, height: 28, alignItems: 'center', justifyContent: 'center' },
+  content: { paddingHorizontal: 12, paddingBottom: 24 }, body: { width: '100%', maxWidth: 840, alignSelf: 'center' }, weekdays: { flexDirection: 'row', borderBottomWidth: 0.7, borderColor: '#B9BBB2', paddingVertical: 9 }, weekday: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 14, lineHeight: 22 }, grid: { flexDirection: 'row', flexWrap: 'wrap' }, day: { borderRightWidth: 0.4, borderBottomWidth: 0.4, borderColor: '#C4C5BD', paddingHorizontal: 2 }, dateNumber: { alignSelf: 'center', width: 30, height: 28, alignItems: 'center', justifyContent: 'center' },
   paper: { position: 'absolute', borderRadius: 0, borderWidth: 0.3, borderColor: '#CFCCC3', shadowColor: '#29271F', shadowOffset: { width: 2, height: 3 }, shadowRadius: 3, shadowOpacity: 0.2, elevation: 2 },
   moreSlot: { height: 40, alignItems: 'center', justifyContent: 'center' }, moreButton: { minWidth: 52, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   detail: { borderRadius: 3, marginTop: 20, paddingVertical: 12, overflow: 'hidden' }, detailDate: { fontSize: 19, lineHeight: 28, paddingHorizontal: 14, marginBottom: 6 }, diaryHeading: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, minHeight: 38, alignItems: 'center' }, sceneRow: { gap: 14, paddingHorizontal: 16, paddingBottom: 14 }, sceneHit: { paddingTop: 4, paddingHorizontal: 3, paddingBottom: 8 }, empty: { minHeight: 100, gap: 10, alignItems: 'center', justifyContent: 'center' },

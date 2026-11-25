@@ -1,3 +1,4 @@
+import { CalendarEventDot } from './CalendarEventDot';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { installedPaper } from '../lib/calendarStoreDownload';
 import { useState } from 'react';
@@ -22,6 +23,7 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   onPreviousMonth?: () => void; onNextMonth?: () => void;
 }) {
   const ratio = widgetSize ? (height ?? width) / width : premiumPaperRatios[design];
+  const topDot = ['soft-mint', 'spiral-plan', 'kraft-clip', 'ivory-paper'].includes(design);
   const vivid = isRaisedCalendar(design);
   const compactKraft = design === 'kraft-clip' && !widgetSize;
   const shadowRatio = compactKraft ? 0.06 : 0.14;
@@ -114,7 +116,8 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
             const active = key === getLocalDateKey(today) || key === rangeStart;
             return <Pressable key={key} disabled={miniature} accessibilityLabel={key} onPress={() => { tapHaptic('select'); setRangeStart(key); onSelectDate?.(key); }} style={{ width: '14.2857%', padding: 2 * s }}>
               <View style={{ flex: 1, alignItems: 'center', borderWidth: glass || metal || leather || ivory ? 0.5 : 0, borderColor: glass ? '#8AB89A' : '#D7CFC3', backgroundColor: glass ? 'rgba(255,255,255,0.21)' : 'transparent', borderRadius: glass ? 5 * s : 0 }}>
-                <View style={{ borderWidth: active || eventDates.includes(key) ? 1 : 0, borderColor: navy ? '#94B9D3' : emerald ? '#DAFFEC' : berryPurple ? '#FFE8F4' : cobaltBlue ? '#E2ECFF' : soft ? '#419C82' : '#BC7565', borderRadius: soft ? 5 * s : 20 * s, backgroundColor: active && soft ? navy ? '#456D94' : vivid ? activeDayBackground : '#65B99C' : 'transparent', paddingHorizontal: 3 * s }}>
+                {topDot && !miniature && <CalendarEventDot date={key} visible={eventDates.includes(key)} color="#A64C37" size={Math.min(4, 3 * s)} />}
+                <View style={{ borderWidth: active || (!topDot && eventDates.includes(key)) ? 1 : 0, borderColor: navy ? '#94B9D3' : emerald ? '#DAFFEC' : berryPurple ? '#FFE8F4' : cobaltBlue ? '#E2ECFF' : soft ? '#419C82' : '#BC7565', borderRadius: soft ? 5 * s : 20 * s, backgroundColor: active && soft ? navy ? '#456D94' : vivid ? activeDayBackground : '#65B99C' : 'transparent', paddingHorizontal: 3 * s }}>
                   <Text allowFontScaling={false} style={[font(13), { color: current ? active && soft ? vivid ? activeDayInk : '#FFFFFF' : ink : mutedInk, fontFamily: metal || ivory || leather ? 'Georgia' : undefined }]}>{day.getDate()}</Text>
                 </View>
                 {thumbnail && current && <View style={{ flex: 1, minHeight: 0, width: '70%' }}><HeroCalendarPhoto uri={thumbnail} /></View>}

@@ -1,3 +1,4 @@
+import { CalendarEventDot } from './CalendarEventDot';
 import { Image, Platform, Pressable, Text, View } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { freePhotoCalendar } from '../model/freePhotoCalendars';
@@ -7,7 +8,7 @@ import { HeroCalendarPhoto } from './HeroCalendarPhoto';
 import { useCalendarWidgetImageReady } from '../model/calendarWidgetRenderReady';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
 const template = require('../../../../docs/design/photo-diary/city-calendar-template.json');
-export function FreePhotoCalendarPaper({ widgetSize, design, width, height, month, today, diaries, miniature, onSelectDate, onPreviousMonth, onNextMonth, background = true }: { widgetSize?: 'small' | 'large'; design: string; width: number; height: number; month: Date; today: Date; diaries: ComicDiary[]; miniature?: boolean; background?: boolean; onSelectDate?: (key: string) => void; onPreviousMonth?: () => void; onNextMonth?: () => void }) {
+export function FreePhotoCalendarPaper({ eventDates = [], widgetSize, design, width, height, month, today, diaries, miniature, onSelectDate, onPreviousMonth, onNextMonth, background = true }: { eventDates?: string[]; widgetSize?: 'small' | 'large'; design: string; width: number; height: number; month: Date; today: Date; diaries: ComicDiary[]; miniature?: boolean; background?: boolean; onSelectDate?: (key: string) => void; onPreviousMonth?: () => void; onNextMonth?: () => void }) {
  const imageReady = useCalendarWidgetImageReady();
  const theme = freePhotoCalendar(design)!;
  const records = groupCalendarDiaries(diaries);
@@ -33,6 +34,9 @@ export function FreePhotoCalendarPaper({ widgetSize, design, width, height, mont
  const weekdaySize = Math.min(width * .026, weekdays.height * .74);
  const rowHeight = grid.height / 6;
  const dateSize = Math.min(width * .037, rowHeight * .42);
+ const dotSize = Math.max(2, Math.min(4, dateSize * .3));
+ const outlineEventDot = design === 'kissing-shadows' || design === 'daylight-cassette' || design === 'mint-sneakers';
+ const dotSpace = miniature ? 0 : dotSize + 2;
  const dateHeight = dateSize * 1.25;
  const font = Platform.OS === 'ios' ? 'Baskerville' : 'serif';
  return <View style={{ width, height }}>
@@ -49,8 +53,9 @@ export function FreePhotoCalendarPaper({ widgetSize, design, width, height, mont
  const uri=records.get(key)?.flatMap(record=>record.scenes).find(scene=>scene.artworkUri)?.artworkUri;
  const selected=key===getLocalDateKey(today);
  return <Pressable key={key} accessibilityLabel={key} disabled={miniature || !onSelectDate} onPress={() => { tapHaptic('select'); onSelectDate?.(key); }} style={{ width:'14.2857%', height:rowHeight, alignItems:'center', overflow:'hidden' }}>
+ {!miniature && <CalendarEventDot date={key} visible={eventDates.includes(key)} size={dotSize} color={ink === '#FFF5E4' ? '#FFE19D' : '#A64C37'} outline={outlineEventDot ? '#FFF5E4' : undefined} />}
  <Text allowFontScaling={false} style={{ color:ink, opacity:active?1:.4, fontFamily:font, fontSize:dateSize, lineHeight:dateHeight, height:dateHeight + 2, flexShrink:0, borderWidth:selected?1:0, borderColor:ink, borderRadius:20, paddingHorizontal:3 }}>{date.getDate()}</Text>
- {uri && !miniature && <View style={{ width:grid.width/7*.8, height:Math.max(0, rowHeight - dateHeight - 3), borderWidth:1, borderColor:'#F8F0E5', borderRadius:2, overflow:'hidden' }}><HeroCalendarPhoto uri={uri}/></View>}
+ {uri && !miniature && <View style={{ width:grid.width/7*.8, height:Math.max(0, rowHeight - dotSpace - dateHeight - 3), borderWidth:1, borderColor:'#F8F0E5', borderRadius:2, overflow:'hidden' }}><HeroCalendarPhoto uri={uri}/></View>}
  </Pressable>;
  })}</View>
  </View>;
