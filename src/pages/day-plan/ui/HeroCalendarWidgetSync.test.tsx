@@ -1,14 +1,14 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, Platform, StyleSheet, Text } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { HeroCalendarWidgetSync } from './HeroCalendarWidgetSync';
+import { LargeWidgetCalendar } from './LargeWidgetCalendar';
 import { CalendarPaper } from './HeroCalendarDesigns';
 import { setCalendarPhotosHidden } from '@shared/lib/calendarLayoutPreferences';
 jest.mock('../lib/calendarStoreDownload', () => ({ diaryImages: {} }));
 jest.mock('./HeroCalendarDesigns', () => ({ CalendarPaper: () => null }));
-jest.mock('./HeroIllustrationCalendar', () => ({ HeroIllustrationCalendar: () => null }));
 jest.mock('../model/heroCalendarDesign', () => ({ CITY_CALENDAR_THEMES: [], useHeroCalendarCover: () => null }));
-jest.mock('../lib/illustrationCalendarAssets', () => ({ getLoadedIllustrationCalendarAssets: () => null }));
+jest.mock('./WeatherSummary', () => ({ getCalendarWeatherReport: () => null }));
 jest.mock('react-native-view-shot', () => ({ captureRef: jest.fn(async () => 'file:///widget.png'), releaseCapture: jest.fn() }));
 const props = { design: 'photo' as const, month: new Date(2026, 10, 1), today: new Date(2026, 10, 10), diaries: [], eventDates: ['2026-11-10'] };
 let tree: ReactTestRenderer | undefined;
@@ -66,17 +66,56 @@ it('replaces the large widget snapshot when the photo visibility preference chan
   act(() => { setCalendarPhotosHidden(false); tree = create(<HeroCalendarWidgetSync {...props} design="cream-kitten" diaries={diaries} />); });
   try {
     await act(async () => { jest.advanceTimersByTime(400); });
+    expect(sync).not.toHaveBeenCalled();
+    act(() => { tree!.root.findByProps({ testID: 'large-widget-background' }).props.onDisplay(); });
+    await act(async () => { jest.advanceTimersByTime(400); });
     expect(sync).toHaveBeenCalledTimes(1);
     act(() => setCalendarPhotosHidden(true));
-    expect(tree!.root.findAllByType(CalendarPaper)[0].props.diaries[0].scenes[0].artworkUri).toBeUndefined();
+    expect(tree!.root.findByType(LargeWidgetCalendar).props.diaries[0].scenes[0].artworkUri).toBeUndefined();
     await act(async () => { jest.advanceTimersByTime(400); });
     expect(sync.mock.calls.slice(1)).toEqual([
       ['file:///widget.png', '2026-11', 'large'],
     ]);
     expect(diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
     act(() => setCalendarPhotosHidden(false));
-    expect(tree!.root.findAllByType(CalendarPaper)[0].props.diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
+    expect(tree!.root.findByType(LargeWidgetCalendar).props.diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
     await act(async () => { jest.advanceTimersByTime(400); });
     expect(sync).toHaveBeenCalledTimes(3);
   } finally { act(() => setCalendarPhotosHidden(false)); }
+});
+
+it('waits for the newly selected collection before replacing the large snapshot', async () => {
+  const sync = jest.fn();
+  NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: sync };
+  act(() => { tree = create(<HeroCalendarWidgetSync {...props} design="season-summer-01" />); });
+  const background = () => tree!.root.findByProps({ testID: 'large-widget-background' });
+  act(() => background().props.onDisplay());
+  act(() => { tree!.update(<HeroCalendarWidgetSync {...props} design="city-animation-everyday-01" />); });
+  await act(async () => { jest.advanceTimersByTime(1000); });
+  expect(sync).not.toHaveBeenCalled();
+  act(() => background().props.onDisplay());
+  await act(async () => { jest.advanceTimersByTime(400); });
+  expect(sync).toHaveBeenCalledTimes(1);
+  expect(tree!.root.findByProps({ testID: 'widget-event-2026-11-10' })).toBeDefined();
+  expect(tree!.root.findByProps({ testID: 'widget-date-2026-11-30' })).toBeDefined();
+});
+
+it.each(['mint-sneakers', 'ivory-paper', 'bold'] as const)('uses English weekdays and translucent year ink for %s', design => {
+  NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: jest.fn() };
+  act(() => { tree = create(<HeroCalendarWidgetSync {...props} design={design} />); });
+  const labels = tree!.root.findAllByType(Text);
+  const values = labels.map(label => label.props.children);
+  expect(values.filter(value => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].includes(value))).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+  const year = labels.find(label => label.props.children === 2026);
+  expect(StyleSheet.flatten(year?.props.style).color).toMatch(/99$/);
+  if (design === 'bold') expect(values).toContain('Nov');
+});
+
+it('updates the watercolor widget heading when the displayed month changes', () => {
+  NativeModules.PokitWidgetSync = { syncCalendarWidgetImageForFamily: jest.fn() };
+  act(() => { tree = create(<HeroCalendarWidgetSync {...props} design="textured-watercolor-01" />); });
+  const heading = () => tree!.root.findByProps({ numberOfLines: 1 }).props.children.props.children;
+  expect(heading()).toEqual([expect.objectContaining({ props: expect.objectContaining({ children: 2026 }) }), ' Nov']);
+  act(() => { tree!.update(<HeroCalendarWidgetSync {...props} design="textured-watercolor-01" month={new Date(2027, 0, 1)} />); });
+  expect(heading()).toEqual([expect.objectContaining({ props: expect.objectContaining({ children: 2027 }) }), ' Jan']);
 });

@@ -1,3 +1,4 @@
+import { readIndependentNotes, saveIndependentNotes } from '@pages/day-plan/model/calendarNotes';
 import { addDevelopmentColorMockData, buildColorMockDiaries, buildMockDiaries, buildMockMates, ensureDevelopmentMockData } from './mockData';
 import { localStorageClient, setDevelopmentStorageProfile } from '@shared/lib/storage/localStorageClient';
 import { normalizeComicScenes } from '@pages/day-plan/lib/heroDayStorage';
@@ -148,4 +149,22 @@ it.each(['empty', 'missing'])('repairs a %s mock diary library even when the see
   expect(ensureDevelopmentMockData(false, '2026-10-27')).toBe(false);
   setDevelopmentStorageProfile(null);
   expect(localStorageClient.getJson(COMIC_DIARY_STORAGE_KEY)).toEqual({ personal: true });
+});
+
+it('adds independent notes to the English mock profile once and respects deletions', () => {
+  setDevelopmentStorageProfile('en');
+  localStorageClient.removeItem('pokit:mock-english-independent-notes-v1');
+  const personal = { id: 'own', text: 'My own note', updatedAt: 123 };
+  saveIndependentNotes([personal]);
+  ensureDevelopmentMockData(false, '2026-11-25');
+  const notes = readIndependentNotes();
+  expect(notes).toHaveLength(4);
+  expect(notes[0]).toEqual(personal);
+  expect(notes[1].todos?.map(todo => todo.completed)).toEqual([true, false, false]);
+  saveIndependentNotes([personal]);
+  ensureDevelopmentMockData(false, '2026-11-26');
+  expect(readIndependentNotes()).toEqual([personal]);
+  setDevelopmentStorageProfile('ja');
+  ensureDevelopmentMockData(false, '2026-11-25');
+  expect(readIndependentNotes().some(note => note.id === 'mock-note:picnic')).toBe(false);
 });

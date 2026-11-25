@@ -93,7 +93,7 @@ class PokitWidgetSync: NSObject {
       else { reject("calendar_image_unavailable", "Calendar render unavailable", nil); return }
       // View-shot dimensions can be multiplied by the device display scale.
       // Store a bounded pixel image, not a 1980px snapshot that WidgetKit rejects.
-      let scale = min(1, 660 / max(image.size.width, image.size.height))
+      let scale = min(1, CGFloat(PokitAppGroup.calendarMaxPixelSize) / max(image.size.width, image.size.height))
       let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
       let format = UIGraphicsImageRendererFormat()
       format.scale = 1
@@ -101,7 +101,7 @@ class PokitWidgetSync: NSObject {
       let thumbnail = UIGraphicsImageRenderer(size: size, format: format).image { _ in
         image.draw(in: CGRect(origin: .zero, size: size))
       }
-      guard let data = thumbnail.jpegData(compressionQuality: 0.92) else {
+      guard let data = thumbnail.jpegData(compressionQuality: 0.97) else {
         reject("calendar_image_encode", "Calendar render could not be encoded", nil)
         return
       }

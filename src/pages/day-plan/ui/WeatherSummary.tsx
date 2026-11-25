@@ -100,6 +100,11 @@ function publishWeather(report: WeatherReport, fetchedAt: number) {
 }
 
 let cachedReport: { report: WeatherReport; fetchedAt: number } | null = null;
+const calendarWeatherListeners = new Set<() => void>();
+export function subscribeCalendarWeather(listener: () => void) {
+  calendarWeatherListeners.add(listener);
+  return () => { calendarWeatherListeners.delete(listener); };
+}
 export function getCalendarWeatherReport() { return cachedReport?.report ?? null; }
 
 function gridCell(lat: number, lon: number) {
@@ -346,6 +351,7 @@ export function WeatherSummary({ ink, muted, showUnavailable = false, presentati
       }
       const fetchedAt = Date.now();
       cachedReport = { report: nextReport, fetchedAt };
+      calendarWeatherListeners.forEach(listener => listener());
       publishWeather(nextReport, fetchedAt);
       if (alive.current) {
         setReport(nextReport);

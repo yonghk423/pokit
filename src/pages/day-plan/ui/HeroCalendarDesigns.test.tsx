@@ -126,10 +126,10 @@ it('loads current weather only on the applied weather calendar', () => {
   act(() => tree.unmount());
 });
 
-// Widget snapshots keep record dates, but never create diary photo components.
-it.each(['bold', 'grid', 'photo', 'clipboard', 'weather'] as const)('excludes date photos from both %s widget sizes', design => {
+// The sync layer removes artwork URIs when the calendar layout hides photos.
+it.each(['bold', 'grid', 'photo', 'clipboard', 'weather'] as const)('keeps hidden photo records in both %s widget sizes', design => {
   const { HeroCalendarPhoto } = require('./HeroCalendarPhoto');
-  const diaries = [{ id: 'photo-day', date: '2026-11-09', createdAt: 1, scenes: [{ id: 'photo', artworkUri: 'file:///saved.jpg' }] }] as any;
+  const diaries = [{ id: 'photo-day', date: '2026-11-09', createdAt: 1, scenes: [{ id: 'photo' }] }] as any;
   for (const widgetSize of ['small', 'large'] as const) {
     let tree!: ReactTestRenderer;
     act(() => { tree = create(<CalendarPaper design={design} widgetSize={widgetSize} layoutWidth={330} layoutHeight={widgetSize === 'small' ? 330 : 346} month={new Date(2026, 10, 1)} today={new Date(2026, 10, 9)} diaries={diaries} eventDates={['2026-11-09']} />); });
@@ -144,5 +144,16 @@ it.each(['bold', 'grid', 'photo', 'clipboard', 'weather'] as const)('excludes da
     if (design !== 'clipboard') expect(tree.root.findAllByProps({ testID: 'calendar-paper-day-2026-11-09' }).length).toBeGreaterThan(0);
     act(() => tree.unmount());
   }
-  expect(diaries[0].scenes[0].artworkUri).toBe('file:///saved.jpg');
+});
+
+it('uses the selected monthly cover in Photo Paper and leaves an unselected month empty', () => {
+  localStorageClient.setJson('pokit:calendar-cover:2026-11', 'file:///user-cover.jpg');
+  const props = { design: 'photo', widgetSize: 'large', layoutWidth: 330, layoutHeight: 346, today: new Date(2026, 10, 25) } as const;
+  const render = (month: Date) => <CalendarPaper {...props} diaries={[]} month={month} />;
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(render(new Date(2026, 10, 1))); });
+  expect(tree.root.findByProps({ testID: 'calendar-cover-image' }).findAll(node => node.props.source?.uri === 'file:///user-cover.jpg').length).toBeGreaterThan(0);
+  act(() => { tree.update(render(new Date(2026, 11, 1))); });
+  expect(tree.root.findAllByProps({ testID: 'calendar-cover-image' })).toHaveLength(0);
+  act(() => tree.unmount());
 });

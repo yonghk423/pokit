@@ -9,7 +9,7 @@ import { routineIllustrationSources } from '@shared/ui/icon-symbol/routineIllust
 import { ROUTINE_ILLUSTRATIONS, routineIllustrationLabel } from '@shared/lib/routineIllustrationCatalog';
 import { controlIllustrationArtwork } from '@shared/ui/icon-symbol/controlIllustrationSources';
 import { PaperGrain } from '@shared/ui/paper-grain';
-import { PostItColorGrid } from '@shared/ui/post-it-color-palette';
+import { DiaryNoteColorPalette } from './DiaryNoteColorPalette';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
@@ -40,12 +40,6 @@ import { NativeHhmmWheelPicker } from '@shared/ui/native-hhmm-wheel-picker/Nativ
 import { HanddrawnControl } from '@shared/ui/icon-symbol/handdrawnControls';
 import { setMonthlyCanvasExpanded } from '../model/monthlyCanvasExpansion';
 
-const notePalette = [
-  '#FFF8E8', '#F6E3E6', '#FFD6BA', '#FFF0AE', '#E4EFE4', '#BBE4DB', '#E3EEF6', '#D4DBFF', '#E4D4F4', '#F3C8DF',
-  '#E44251', '#FF7344', '#EDA420', '#E7CF28', '#62AD42', '#179E84', '#208EC4', '#3056C8', '#8553BD', '#BC2780',
-  '#302D2A', '#763849', '#855037', '#706031', '#365444', '#285E64', '#234C67', '#35395E', '#604264', '#814E70',
-  '#FFFFFF', '#D4D0C9', '#9C9691', '#625F5D', '#222222',
-];
 type NoteColor = 'pen' | 'paper';
 const graphiteSources = { ...controlIllustrationArtwork, ...routineIllustrationSources };
 const noteIllustrations = Object.keys(graphiteSources);
@@ -355,15 +349,8 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
         }}
       /></View> : null}
       {editing && picker ? <Animated.ScrollView key={picker} keyboardShouldPersistTaps="always" style={{ position: 'absolute', left: 0, right: 0, bottom: 54, opacity: paletteProgress, transform: [{ translateY: paletteProgress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }], maxHeight: 188, backgroundColor: dark ? '#323433' : '#F5F3F0' }}>
-        <PostItColorGrid texture="pigment" isDark={dark}
-          label={picker === 'pen' ? (translateUiText("글자색")) : (translateUiText("배경색"))}
-          clearLabel={translateUiText("기본색")}
-          onClear={() => chooseColor()}
-          choices={notePalette.map(color => ({
-            id: color, color, label: color, labelKey: 'catalog.postItColorTitle',
-            selected: palette[picker] === color, onSelect: () => chooseColor(color),
-          }))}
-        />
+        <DiaryNoteColorPalette isDark={dark} value={palette[picker]} onChange={chooseColor}
+          label={picker === 'pen' ? translateUiText("글자색") : translateUiText("배경색")} />
       </Animated.ScrollView> : null}
       {editing && <View style={{ position: 'absolute', left: 20, right: 20, bottom: 0, height: 52, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: `${ink}33`, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Pressable testID="hero-canvas-dismiss-keyboard" accessibilityRole="button" accessibilityLabel={translateUiText("키보드 내리기")} onPress={() => { inlineNote.current?.blur(); Keyboard.dismiss(); setEditing(false); }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>

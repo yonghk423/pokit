@@ -29,7 +29,7 @@ import { COMIC_CHARACTERS } from '../lib/heroCharacters';
 import { COMIC_SCENES } from '../lib/heroSceneImages';
 import { AppAlert as Alert } from '@shared/lib/app-alert';
 import { ComicScenePicker } from './HeroScenePicker';
-import { createRef, useState } from 'react';
+import { createRef, useRef, useState } from 'react';
 import { HeroCalendarBackground } from './HeroCalendarBackground';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { IndependentComicPlanner, type ComicDiaryHandle } from './IndependentHeroPlanner';
@@ -42,10 +42,13 @@ jest.mock('@shared/ui/native-hhmm-wheel-picker', () => ({ NativeHhmmWheelPicker:
 jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').Modal }));
 jest.mock('@shared/ui/completion-radio-button', () => ({ CompletionRadioButton: jest.requireActual('react-native').Pressable }));
 jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('./HeroCalendarNote', () => ({ HeroCalendarNote: () => null }));
+jest.mock('./HeroCalendarWidgetSync', () => ({ HeroCalendarWidgetSync: () => null }));
+jest.mock('../model/heroCanvasEvents', () => ({ useCanvasEventDates: () => [] }));
 jest.mock('react-native-gesture-handler', () => {
   const chain = () => {
     const gesture: Record<string, unknown> = {};
-    for (const name of ['manualActivation', 'shouldCancelWhenOutside', 'onTouchesDown', 'maxPointers', 'minDistance', 'blocksExternalGesture', 'onUpdate', 'onFinalize', 'enabled', 'activeOffsetY', 'failOffsetX', 'onEnd', 'onBegin', 'onStart', 'minDuration', 'maxDistance', 'activateAfterLongPress', 'runOnJS']) gesture[name] = (value: unknown) => { gesture[`${name}Value`] = value; return gesture; };
+    for (const name of ['manualActivation', 'shouldCancelWhenOutside', 'onTouchesDown', 'maxPointers', 'minDistance', 'blocksExternalGesture', 'onUpdate', 'onFinalize', 'enabled', 'activeOffsetY', 'failOffsetX', 'activeOffsetX', 'failOffsetY', 'onEnd', 'onBegin', 'onStart', 'minDuration', 'maxDistance', 'activateAfterLongPress', 'runOnJS']) gesture[name] = (value: unknown) => { gesture[`${name}Value`] = value; return gesture; };
     return gesture;
   };
   return { ScrollView: jest.requireActual('react-native').ScrollView, GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Rotation: chain, Race: (...gestures: unknown[]) => ({ gestures }), Pan: chain, LongPress: chain, Native: chain, Simultaneous: (...gestures: unknown[]) => ({ gestures }) } };
@@ -771,10 +774,13 @@ it('saves camera writing to the selected calendar day without mixing another day
 });
 
 it('opens a calendar date on the first tap without a card transition intercepting it', () => {
+  let returnToCalendar: () => void;
   function CalendarHome() {
+    const size = useRef({ width: 0, height: 0 });
     const [day, setDay] = useState('2026-11-09');
     const [calendar, setCalendar] = useState(true);
-    return <IndependentComicPlanner date={day} ink="#222" muted="#888" isDark={false} homeCalendar={calendar ? diaries => <HeroCalendarBackground date={new Date(2026, 10, 9, 12)} month={new Date(2026, 10, 1, 12)} diaries={diaries} isDark={false} onSelectDate={value => { setDay(value); setCalendar(false); }} /> : undefined} onDateChange={changed} />;
+    returnToCalendar = () => setCalendar(true);
+    return <IndependentComicPlanner homeCalendarVisible={calendar} date={day} ink="#222" muted="#888" isDark={false} homeCalendar={diaries => <HeroCalendarBackground lastVisibleSize={size} visible={calendar} date={new Date(2026, 10, 9, 12)} month={new Date(2026, 10, 1, 12)} diaries={diaries} isDark={false} onSelectDate={value => { setDay(value); setCalendar(false); }} />} onDateChange={changed} />;
   }
   const changed = jest.fn();
   let tree!: ReactTestRenderer;
@@ -782,10 +788,19 @@ it('opens a calendar date on the first tap without a card transition interceptin
   try {
     const surface = tree.root.findAllByProps({ testID: 'hero-home-calendar-surface' })[0];
     expect(surface.props.pointerEvents).toBe('auto');
-    act(() => tree.root.findAllByProps({ testID: 'home-calendar-day-2026-11-02' })[0].props.onPress());
+    const canvas = tree.root.findAllByProps({ testID: 'calendar-viewport-measure' })[0];
+    act(() => canvas.props.onLayout({ nativeEvent: { layout: { width: 390, height: 800 } } }));
+    act(() => tree.root.findAllByProps({ accessibilityLabel: '2026-11-02' })[0].props.onPress());
     expect(changed).toHaveBeenLastCalledWith('2026-11-02');
-    expect(tree.root.findAllByProps({ testID: 'hero-home-calendar-surface' })).toHaveLength(0);
+    const hiddenSurface = tree.root.findAllByProps({ testID: 'hero-home-calendar-surface' })[0];
+    expect(hiddenSurface.props.pointerEvents).toBe('none');
     expect(tree.root.findAllByProps({ testID: 'comic-board-transition' }).length).toBeGreaterThan(0);
+    const hiddenCanvas = tree.root.findAllByProps({ testID: 'hero-calendar-applied-design' })[0];
+    expect(tree.root.findAllByProps({ testID: 'calendar-viewport-measure' })).toHaveLength(0);
+    act(() => returnToCalendar());
+    expect(hiddenSurface.props.pointerEvents).toBe('auto');
+    expect(tree.root.findAllByProps({ testID: 'hero-calendar-applied-design' })[0]).toBe(hiddenCanvas);
+    expect(tree.root.findAllByProps({ accessibilityLabel: '2026-11-02' }).length).toBeGreaterThan(0);
   } finally { act(() => tree.unmount()); }
 });
 

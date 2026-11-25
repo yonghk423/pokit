@@ -47,6 +47,7 @@ export function ComicDayPage() {
   const [chosenDate, setChosenDate] = useState<string | null>(null);
   const selectedDate = chosenDate ?? todayKey;
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1, 12));
+  const calendarSize = useRef({ width: 0, height: 0 });
   const [calendarVisible, setCalendarVisible] = useState(true);
   useLayoutEffect(() => { setCalendarBackdropVisible(calendarVisible); }, [calendarVisible]);
   const [photoActive, setPhotoActive] = useState(false);
@@ -177,7 +178,8 @@ export function ComicDayPage() {
       <IndependentComicPlanner
         ref={plannerRef}
         pendingPrintUri={printingUri}
-        homeCalendar={calendarVisible ? diaries => <HeroCalendarBackground bottomInset={Math.max(tabBarHeight, 56 + Math.max(insets.bottom, 34) + 8) + 12} date={today} month={calendarMonth} isDark={isDark} diaries={diaries} onSelectDate={selectCalendarDate} onPreviousMonth={() => setCalendarMonth(value => new Date(value.getFullYear(), value.getMonth() - 1, 1, 12))} onNextMonth={() => setCalendarMonth(value => new Date(value.getFullYear(), value.getMonth() + 1, 1, 12))} /> : undefined}
+        homeCalendarVisible={calendarVisible}
+        homeCalendar={diaries => <HeroCalendarBackground focused={diaryFocused && !photoActive} lastVisibleSize={calendarSize} visible={calendarVisible} bottomInset={Math.max(tabBarHeight, 56 + Math.max(insets.bottom, 34) + 8) + 12} date={today} month={calendarMonth} isDark={isDark} diaries={diaries} onSelectDate={selectCalendarDate} onPreviousMonth={() => setCalendarMonth(value => new Date(value.getFullYear(), value.getMonth() - 1, 1, 12))} onNextMonth={() => setCalendarMonth(value => new Date(value.getFullYear(), value.getMonth() + 1, 1, 12))} />}
         overviewOpen={overviewOpen}
         onOverviewChange={setOverviewOpen}
         onDiarySaved={uri => { setCalendarVisible(false); setOverviewOpen(true); setPrintingUri(uri); }}

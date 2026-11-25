@@ -12,7 +12,11 @@ const editor=document.getElementById('editor');let savedRange=null,promptTimer=n
 const post=(type,extra={})=>window.ReactNativeWebView.postMessage(JSON.stringify({type,...extra}));
 // WebKit leaves <br> or empty blocks after editing; CSS :empty misses those.
 function syncEmpty(){editor.dataset.empty=String(!editor.textContent.trim()&&!editor.querySelectorAll('img').length);}
+let lastHeight=0;
+function reportHeight(){const range=document.createRange();range.selectNodeContents(editor);const height=Math.ceil(Math.max(26,(range.getBoundingClientRect?.().height??26))+24);if(height!==lastHeight){lastHeight=height;post('height',{height});}}
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>reportHeight()).observe(editor);
 function serialize(){
+ reportHeight();
  syncEmpty();
  const clone=editor.cloneNode(true),icons=[];
  clone.querySelectorAll('img').forEach(image=>{icons.push(image.dataset.id);image.replaceWith(document.createTextNode('\\uFFFC'));});
@@ -61,7 +65,7 @@ window.note={
   }
   reportFocus();
  },
- style(value){editor.style.color=value.ink;editor.style.fontSize=value.size+'px';editor.style.lineHeight=value.lineHeight+'px';},
+ style(value){editor.style.textDecoration=value.completed?'line-through':'none';editor.style.color=value.ink;editor.style.fontSize=value.size+'px';editor.style.lineHeight=value.lineHeight+'px';editor.style.backgroundImage=value.ruleColor?'repeating-linear-gradient(to bottom,transparent 0,transparent '+(value.lineHeight-1)+'px,'+value.ruleColor+' '+(value.lineHeight-1)+'px,'+value.ruleColor+' '+value.lineHeight+'px)':'none';},
  font(uri){document.getElementById('font').textContent='@font-face{font-family:diary;src:url('+uri+');}';},
  images(values){editor.querySelectorAll('img').forEach(img=>{const uri=values[img.dataset.id];if(uri&&img.getAttribute('src')!==uri)img.src=uri;});},
  async initialize(value){

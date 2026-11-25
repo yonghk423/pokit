@@ -24,3 +24,11 @@ it('shows one status message without fake temperatures or forecasts when data is
   expect(tree.root.findAllByType(Text).map(node => node.props.children)).toEqual(['날씨 불러오는 중…']);
   act(() => tree.unmount());
 });
+
+it('uses English for widget forecasts even with the default Korean app locale', () => {
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<WeatherCalendarHeader displayLocale="en" preview />); });
+  const labels = tree.root.findAllByType(Text).map(node => node.props.children);
+  expect(labels).toEqual(expect.arrayContaining(['Today', 'Tue', 'Wed']));
+  act(() => tree.unmount());
+});

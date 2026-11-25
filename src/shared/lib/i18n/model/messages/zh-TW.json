@@ -3044,6 +3044,7 @@
   "settings.font.cafe24ShiningStar": "Cafe24 閃耀之星",
   "settings.font.cafe24ShiningStarDesc": "纖細傾斜的書法手寫字體",
   "settings.font.cafe24ShiningStarPreview": "Daylight · 我的一天",
+  "comicCalendar.swipeUpForNotes": "向上滑動開啟筆記",
   "comicCalendar.returnHint": "返回月曆畫面",
   "drive.storage.title": "Google 帳戶儲存空間",
   "drive.storage.remaining": "剩餘 {size}",

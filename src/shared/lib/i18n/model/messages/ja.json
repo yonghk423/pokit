@@ -3044,6 +3044,7 @@
   "comicDay.photo.saveError": "写真を保存できませんでした。もう一度お試しください。",
   "comicDay.gallery.originalPhotos": "自分の写真",
   "comicDiary.history": "履歴",
+  "comicCalendar.swipeUpForNotes": "上にスワイプしてノートを開く",
   "comicCalendar.returnHint": "カレンダー画面に戻ります",
   "drive.storage.title": "Google アカウントの保存容量",
   "drive.storage.remaining": "残り {size}",

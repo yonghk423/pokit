@@ -523,7 +523,7 @@ private func calendarThumbnail(_ data: Data) -> UIImage? {
   guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
         let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
           kCGImageSourceCreateThumbnailFromImageAlways: true,
-          kCGImageSourceThumbnailMaxPixelSize: 660,
+          kCGImageSourceThumbnailMaxPixelSize: PokitAppGroup.calendarMaxPixelSize,
           kCGImageSourceCreateThumbnailWithTransform: true,
           kCGImageSourceShouldCacheImmediately: true
         ] as CFDictionary) else { return nil }
@@ -543,9 +543,12 @@ private struct CalendarDesignWidgetView: View {
         }
       } else {
         VStack(spacing: 8) {
-          Text(Date.now, format: .dateTime.month(.wide).year()).font(.headline)
+          HStack(spacing: 4) {
+            Text(entry.date, format: .dateTime.month(.wide).locale(Locale(identifier: "en_US")))
+            Text(entry.date, format: .dateTime.year().locale(Locale(identifier: "en_US"))).opacity(0.6)
+          }.font(.headline)
           Image(systemName: "calendar").font(.largeTitle)
-          Text("앱에서 달력을 열어주세요").font(.caption2)
+          Text(verbatim: "Open the calendar in the app").font(.caption2)
         }.foregroundStyle(Color.primary)
       }
     }
@@ -561,8 +564,8 @@ struct ComicSceneWidget: Widget {
     StaticConfiguration(kind: kind, provider: CalendarDesignProvider()) { entry in
       CalendarDesignWidgetView(entry: entry)
     }
-    .configurationDisplayName("나의 달력")
-    .description("앱에서 선택한 달력 디자인과 날짜를 보여줘요.")
+    .configurationDisplayName("My Calendar")
+    .description("View dates in your selected calendar design.")
     .supportedFamilies([.systemLarge])
     .contentMarginsDisabled()
   }

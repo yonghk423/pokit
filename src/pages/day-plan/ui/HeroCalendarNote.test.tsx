@@ -1,0 +1,173 @@
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { HeroCalendarNote } from './HeroCalendarNote';
+import { readIndependentNotes, saveIndependentNotes, readCalendarNotes } from '../model/calendarNotes';
+import { calendarNoteStyle } from '../model/calendarNoteStyle';
+jest.mock('react-native-reanimated', () => {
+  const transition = { duration: () => transition, withInitialValues: () => transition, reduceMotion: () => transition };
+  return { __esModule: true, default: { View: jest.requireActual('react-native').View }, FadeInDown: transition, LinearTransition: transition, ReduceMotion: { System: 'system' } };
+});
+jest.mock('@shared/lib/i18n', () => ({ useTranslation: () => ({ locale: 'ko', t: (key: string) => key }) }));
+jest.mock('@shared/ui/themed-text', () => ({ ThemedText: jest.requireActual('react-native').Text }));
+jest.mock('@shared/ui/themed-text-input', () => ({ ThemedTextInput: jest.requireActual('react-native').TextInput }));
+jest.mock('@shared/lib/ui-font', () => ({ useEffectiveAppFontId: () => 'default', useAppFontSizeScale: () => 1 }));
+jest.mock('@shared/lib/storage/localStorageClient', () => {
+  const data = new Map();
+  return { localStorageClient: { listKeys: (prefix: string) => [...data.keys()].filter(key => key.startsWith(prefix)), getJson: (key: string) => data.get(key), setJson: (key: string, value: unknown) => data.set(key, value) } };
+});
+it('persists writing across remount and theme changes, and switches notes without losing text', () => {
+  saveIndependentNotes([]);
+  const props = { monthKey: '2026-11', design: 'city-animation-05', height: 400, onFocus: jest.fn() };
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarNote {...props} />); });
+  const input = () => tree.root.findByProps({ testID: 'calendar-note-input' });
+  act(() => input().props.onChangeText('First note'));
+  act(() => tree.update(<HeroCalendarNote {...props} design="mono-cafe" />));
+  expect(input().props.value).toBe('First note');
+  act(() => tree.root.findByProps({ testID: 'calendar-note-add' }).props.onPress());
+  expect(input().props.value).toBe('');
+  act(() => input().props.onChangeText('Second note'));
+  expect(readIndependentNotes().map(note => note.text)).toEqual(['Second note', 'First note']);
+  expect(readCalendarNotes('2026-12')).toEqual([]);
+  act(() => tree.unmount());
+  act(() => { tree = create(<HeroCalendarNote {...props} />); });
+  expect(input().props.value).toBe('Second note');
+  act(() => tree.unmount());
+});
+it('shares styles within illustration series and gives different series different stationery', () => {
+  expect(calendarNoteStyle('city-animation-everyday-01')).toBe(calendarNoteStyle('city-animation-everyday-15'));
+  expect(calendarNoteStyle('season-winter-02')).not.toBe(calendarNoteStyle('season-summer-02'));
+  expect(calendarNoteStyle('warm-sepia-open-panel-01').binding).toBe('linen');
+});
+it('stores tasks with a note and preserves them when editing the memo', () => {
+  saveIndependentNotes([]);
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-todo' }).props.onPress());
+  act(() => tree.root.findByProps({ testID: 'todo-draft-input' }).props.onDocumentChange({text:'Read',icons:[]})); 
+  const id = readIndependentNotes()[0].todos![0].id;
+  act(() => tree.root.findByProps({ testID: `todo-text-${id}` }).props.onDocumentChange({text:'Read a book',icons:[]}));
+  act(() => tree.root.findByProps({ testID: `todo-check-${id}` }).props.onPress());
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-note' }).props.onPress());
+  act(() => tree.root.findByProps({ testID: 'calendar-note-input' }).props.onChangeText('Monthly thoughts'));
+  expect(readIndependentNotes()[0]).toMatchObject({ text: 'Monthly thoughts', todos: [{ id, text: 'Read a book', completed: true }] });
+  act(() => tree.unmount());
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-todo' }).props.onPress());
+  expect(tree.root.findByProps({ testID: `todo-check-${id}` }).props.accessibilityState.checked).toBe(true);
+  act(() => tree.root.findByProps({ testID: `todo-delete-${id}` }).props.onPress());
+  expect(readIndependentNotes()[0].todos).toEqual([]);
+  expect(readIndependentNotes()[0].text).toBe('Monthly thoughts');
+  act(() => tree.unmount());
+});
+
+const mockEntitlement = { pro: true };
+const mockPaywall = jest.fn(async () => 'cancelled');
+jest.mock('@features/subscriptions/model/subscriptionStore', () => ({ selectIsPro: (state: { pro: boolean }) => state.pro, useSubscriptionStore: Object.assign((select: (state: { pro: boolean }) => boolean) => select(mockEntitlement), { getState: () => mockEntitlement }) }));
+jest.mock('./usePremiumPackPaywall', () => ({ usePremiumPackPaywall: () => ({ present: mockPaywall, modal: null }) }));
+jest.mock('@shared/ui/icon-symbol/handdrawnControls', () => ({ HanddrawnControl: () => null }));
+jest.mock('@shared/ui/app-modal', () => ({ AppModal: jest.requireActual('react-native').View }));
+jest.mock('./DiaryNoteColorPalette', () => ({ DiaryNoteColorPalette: (props: object) => { const React = jest.requireActual('react'); return React.createElement(jest.requireActual('react-native').View, { ...props, testID: 'ink-palette' }); } }));
+beforeEach(() => mockPaywall.mockClear());
+it('gates ink changes behind Pro and persists body color without changing paper', async () => {
+  saveIndependentNotes([]);
+  mockEntitlement.pro = false;
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  await act(async () => { await tree.root.findByProps({ testID: 'note-text-color' }).props.onPress(); });
+  expect(mockPaywall).not.toHaveBeenCalled();
+  await act(async () => { await tree.root.findByProps({ testID: 'ink-palette' }).props.onChange('#E44251'); });
+  expect(mockPaywall).toHaveBeenCalled();
+  expect(tree.root.findAllByProps({ testID: 'ink-palette' })).toHaveLength(0);
+  mockEntitlement.pro = true;
+  act(() => tree.update(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />));
+  await act(async () => { await tree.root.findByProps({ testID: 'note-text-color' }).props.onPress(); });
+  await act(async () => { await tree.root.findByProps({ testID: 'ink-palette' }).props.onChange('#E44251'); });
+  act(() => tree.root.findByProps({ testID: 'calendar-note-input' }).props.onChangeText('Keep my ink'));
+  expect(readIndependentNotes()[0]).toMatchObject({ text: 'Keep my ink', inkHex: '#E44251' });
+  act(() => tree.unmount());
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  expect(tree.root.findByProps({ testID: 'calendar-note-input' }).props.style.color).toBe('#E44251');
+  expect(tree.root.findByProps({ testID: 'calendar-note' }).props.style.backgroundColor).toBe(calendarNoteStyle('bold').paper);
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-todo' }).props.onPress());
+  expect(tree.root.findByProps({ testID: 'todo-draft-input' }).props.ink).toBe('#E44251');
+  act(() => tree.unmount());
+});
+
+it('opens colors above the keyboard without dismissing it and retains the dismiss button for tasks', () => {
+  const Keyboard = jest.requireActual('react-native').Keyboard;
+  const dismiss = jest.spyOn(Keyboard, 'dismiss');
+  saveIndependentNotes([]);
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  const colorButton = () => tree.root.findByProps({ testID: 'note-text-color' });
+  act(() => colorButton().props.onPress());
+  expect(dismiss).not.toHaveBeenCalled();
+  expect(colorButton().props.accessibilityState.expanded).toBe(true);
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-todo' }).props.onPress());
+  expect(tree.root.findAllByProps({ testID: 'note-writing-toolbar' }).length).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'note-illustrations' }).length).toBeGreaterThan(0);
+  act(() => tree.root.findByProps({ testID: 'note-dismiss-keyboard' }).props.onPress());
+  expect(dismiss).toHaveBeenCalled();
+  act(() => tree.unmount());
+  dismiss.mockRestore();
+});
+
+const mockInsertIcon = jest.fn();
+jest.mock('./HeroInlineNote', () => ({ HeroInlineNote: (props: any) => {
+  const React = jest.requireActual('react');
+  React.useImperativeHandle(props.ref, () => ({ focus: jest.fn(), blur: jest.fn(), insertIllustration: mockInsertIcon }));
+  return React.createElement(jest.requireActual('react-native').TextInput, { testID: props.testID ?? 'calendar-note-input', value: props.initialDocument.text, style: { color: props.ink }, onChangeText: (text: string) => props.onDocumentChange({ text, icons: [] }), onDocumentChange: props.onDocumentChange, onFocus: () => props.onFocusChange(true) });
+} }));
+jest.mock('./NoteIllustrationPicker', () => ({ noteSources: { checklist: 1 }, NoteIllustrationPicker: (props: object) => jest.requireActual('react').createElement(jest.requireActual('react-native').View, { ...props, testID: 'icon-picker' }) }));
+it('uses the diary icon picker, gates insertion, and retains inline documents across remount', async () => {
+  saveIndependentNotes([{ id: 'old', text: 'Existing note', updatedAt: 1 }]);
+  mockEntitlement.pro = false;
+  mockInsertIcon.mockClear();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  expect(tree.root.findByProps({ testID: 'calendar-note-input' }).props.value).toBe('Existing note');
+  act(() => tree.root.findByProps({ testID: 'note-illustrations' }).props.onPress());
+  await act(async () => { await tree.root.findByProps({ testID: 'icon-picker' }).props.onSelect('checklist'); });
+  expect(mockInsertIcon).not.toHaveBeenCalled();
+  mockEntitlement.pro = true;
+  await act(async () => { await tree.root.findByProps({ testID: 'icon-picker' }).props.onSelect('checklist'); });
+  expect(mockInsertIcon).toHaveBeenCalledWith('checklist');
+  act(() => tree.root.findByProps({ testID: 'calendar-note-input' }).props.onDocumentChange({ text: 'Existing note\uFFFC', icons: ['checklist'] }));
+  act(() => tree.unmount());
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  expect(readIndependentNotes()[0]).toMatchObject({ text: 'Existing note', inlineDocument: { text: 'Existing note\uFFFC', icons: ['checklist'] } });
+  expect(tree.root.findByProps({ testID: 'calendar-note-input' }).props.value).toBe('Existing note\uFFFC');
+  act(() => tree.unmount());
+});
+
+it('keeps the writing toolbar inside the note bounds and reserves its height', () => {
+  saveIndependentNotes([]);
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  expect(tree.root.findByProps({ testID: 'note-writing-toolbar' }).props.style).toMatchObject({ bottom: 0 });
+  expect(tree.root.findByProps({ testID: 'note-writing-toolbar' }).props.style.top).toBeUndefined();
+  expect(tree.root.findByProps({ testID: 'calendar-note' }).props.style.paddingBottom).toBe(44);
+  act(() => tree.unmount());
+});
+
+it('inserts an icon into the focused task and persists icon-only tasks without duplicating the draft', async () => {
+  saveIndependentNotes([]); mockEntitlement.pro = true; mockInsertIcon.mockClear();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-todo' }).props.onPress());
+  act(() => tree.root.findByProps({ testID: 'todo-draft-input' }).props.onFocusChange(true));
+  act(() => tree.root.findByProps({ testID: 'note-illustrations' }).props.onPress());
+  await act(async () => { await tree.root.findByProps({ testID: 'icon-picker' }).props.onSelect('checklist'); });
+  expect(mockInsertIcon).toHaveBeenCalledWith('checklist');
+  act(() => tree.root.findByProps({ testID: 'todo-draft-input' }).props.onDocumentChange({ text: '\uFFFC', icons: ['checklist'] }));
+  const todo = readIndependentNotes()[0].todos![0];
+  expect(todo.inlineDocument).toEqual({ text: '\uFFFC', icons: ['checklist'] });
+  expect(readIndependentNotes()[0].todos).toHaveLength(1);
+  act(() => tree.root.findByProps({ testID: `todo-check-${todo.id}` }).props.onPress());
+  expect(readIndependentNotes()[0].todos![0].inlineDocument).toEqual(todo.inlineDocument);
+  act(() => tree.unmount());
+  act(() => { tree = create(<HeroCalendarNote design="bold" height={450} keyboardVisible onFocus={jest.fn()} />); });
+  act(() => tree.root.findByProps({ testID: 'calendar-mode-todo' }).props.onPress());
+  expect(tree.root.findByProps({ testID: `todo-text-${todo.id}` }).props.initialDocument.text).toBe('\uFFFC');
+  act(() => tree.unmount());
+});

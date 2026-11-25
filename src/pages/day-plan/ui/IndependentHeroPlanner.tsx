@@ -46,7 +46,7 @@ import { PaperGrain } from '@shared/ui/paper-grain';
 import { newComicScene, type ComicDayScene } from '../lib/heroDayStorage';
 import { ComicDayBoard } from './HeroDayBoard';
 
-type PlannerProps = { pendingPrintUri?: string | null; onDiarySaved?: (uri: string) => void; homeCalendar?: (diaries: ComicDiary[]) => ReactNode; overviewOpen?: boolean; onOverviewChange?: (open: boolean) => void; onPhotoEntryChange?: (active: boolean) => void; onHeaderCharacterListChange?: (content: ReactNode | null) => void; onCharacterChange?: (character: ComicCharacter) => void; onDateChange?: (date: string) => void; entryActionsInHeader?: boolean; onOpenBag?: () => void; date: string; ink: string; muted: string; isDark: boolean; onTitleChange?: (title: string | null) => void; onCharacterNameChange?: (name: string | null) => void; hideCharacterHeading?: boolean };
+type PlannerProps = { pendingPrintUri?: string | null; onDiarySaved?: (uri: string) => void; homeCalendar?: (diaries: ComicDiary[]) => ReactNode; homeCalendarVisible?: boolean; overviewOpen?: boolean; onOverviewChange?: (open: boolean) => void; onPhotoEntryChange?: (active: boolean) => void; onHeaderCharacterListChange?: (content: ReactNode | null) => void; onCharacterChange?: (character: ComicCharacter) => void; onDateChange?: (date: string) => void; entryActionsInHeader?: boolean; onOpenBag?: () => void; date: string; ink: string; muted: string; isDark: boolean; onTitleChange?: (title: string | null) => void; onCharacterNameChange?: (name: string | null) => void; hideCharacterHeading?: boolean };
 export type ComicDiaryHandle = { openNewDiary: () => void; openLibrary: () => void; openCalendar: () => void; openToday: () => void; openPhotoEntry: () => void; openSceneEntry: (restoreOnly?: boolean) => void; openCharacterPicker: () => void; renameDiary: () => void };
 export const IndependentComicPlanner = forwardRef<ComicDiaryHandle, PlannerProps>(function IndependentComicPlanner(props, ref) {
   return <ComicPlannerForDate key={props.date} {...props} ref={ref} />;
@@ -423,22 +423,24 @@ const ComicPlannerForDate = forwardRef<ComicDiaryHandle, PlannerProps>(function 
   useLayoutEffect(() => { useHeroTabArtwork.getState().setHasCards(hasThumbnailCards); }, [hasThumbnailCards]);
   useLayoutEffect(() => () => { useHeroTabArtwork.getState().setHasCards(false); }, []);
   const inlineComposer = inline ? <HeroInlineComposer fullScreen importedPhotoEmbedded={cameraImportOpen} initialOriginalPhoto={inlineTarget?.selectedPhoto} visible={photoEntryVisible} key={inlineRecovery?.id ?? `${inlineTarget?.original ? 'original' : 'ai'}:${inline.sceneId ?? 'new'}`} photoOnly={!!inlineTarget?.original} sceneId={inline.image} {...inline.text} ink={inline.text.pen ?? props.ink} targetDiaryId={inline.diaryId} targetSceneId={inline.sceneId} initialMode={inlineTarget?.original ? 'original' : 'character'} recoveryJob={inlineRecovery} onApply={applyInline} onClose={() => { closeCameraImport(); setPhotoEntryOpen(false); setInlineTarget(null); setRecoveryJob(null); }} /> : null;
+  const homeCalendarVisible = !!props.homeCalendar && props.homeCalendarVisible !== false;
   return <TutorialGuideLayer><View style={{ flex: 1 }}>
     {characterPickerOpen ? <HeroCharacterPickerOverlay onChooseGenerated={reuseGeneratedArtwork} selectedId={character?.id} isDark={props.isDark} onClose={() => setCharacterPickerOpen(false)} onSelect={next => { setCharacterPickerOpen(false); selectHeaderCharacter(next); }} /> : null}
     {!props.onHeaderCharacterListChange ? <HeroCharacterList open={characterListOpen} ink={props.ink} muted={props.muted} selectedId={character?.id} onSelect={selectHeaderCharacter} /> : null}
     <ServiceTutorialCoach characterChoosing={showChooser} steps={showChooser ? [] : showPlanner ? ['comicStart'] : ['comicStart', 'comicCharacter', 'comicName', 'comicReady']} />
     <DayPlanTabFocusContext.Provider value={tabFocused && !photoEntryVisible}>
     <View collapsable={false} style={{ flex: 1 }}>
-    {props.homeCalendar ? <View testID="hero-home-calendar-surface" style={{ flex: 1 }} pointerEvents={photoEntryVisible ? 'none' : 'auto'}>
+    {props.homeCalendar ? <View testID="hero-home-calendar-surface" style={[StyleSheet.absoluteFill, !homeCalendarVisible && { opacity: 0 }]} pointerEvents={homeCalendarVisible && !photoEntryVisible ? 'auto' : 'none'} accessibilityElementsHidden={!homeCalendarVisible || photoEntryVisible} importantForAccessibility={homeCalendarVisible && !photoEntryVisible ? 'auto' : 'no-hide-descendants'}>
       {props.homeCalendar(library.diaries)}
-    </View> : <Animated.View key={showChooser ? `chooser:${characterDraft}` : diary?.id ?? 'today-draft'}
+    </View> : null}
+    {!homeCalendarVisible ? <Animated.View key={showChooser ? `chooser:${characterDraft}` : diary?.id ?? 'today-draft'}
       testID="comic-board-transition"
       style={StyleSheet.absoluteFill} pointerEvents={photoEntryVisible ? 'none' : 'auto'}>
     {showEmptyBoard ? <ComicDayBoard overviewOpen onOverviewChange={props.onOverviewChange} diaryTitle={diary?.title || 'Diary'} items={[]} choices={{}} ink={props.ink} muted={props.muted} isDark={props.isDark} onOpen={() => undefined} onAdd={openCameraAlbum} onAddPhoto={openCameraAlbum} /> : showPlanner ? <CharacterComicPlanner key={diary!.id} {...props} diary={diary!} character={character!} focusSceneId={focusSceneId} writingSceneId={writingSceneId} onWritingOpened={() => setWritingSceneId(null)} onActiveSceneChange={captureActiveScene} onAdditionComplete={() => setAdditionChoice(null)} onAddOriginalPhoto={openCameraAlbum} onOpenCameraAlbum={openCameraAlbum} additionCharacter={additionChoice?.diaryId === diary!.id ? additionChoice.character : null}
       onAddCharacter={openCameraAlbum}
       onUpdate={scenes => commit(updateComicDiary(library, diary!.id, { scenes }))}
       onSelectCharacter={() => { if (!diary!.scenes.length) commit(deleteComicDiaries(library, [diary!.id])); clearComicNavigation(); setChooserReturn('board'); setCharacterDraft(value => value + 1); openCameraAlbum(); }} /> : null}
-    </Animated.View>}
+    </Animated.View> : null}
     </View>
     </DayPlanTabFocusContext.Provider>
     {cameraImportOpen ? <Modal testID="hero-camera-import-host" visible transparent presentationStyle="overFullScreen" animationType="none" onShow={() => { void pickCameraPhoto(); }} onRequestClose={closeCameraImport}>

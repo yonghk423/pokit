@@ -38,3 +38,11 @@ export function comicCalendarDays(month: Date): (number | null)[] {
   const days = new Date(month.getFullYear(), month.getMonth() + 1, 0, 12).getDate();
   return Array.from({ length: Math.ceil((first + days) / 7) * 7 }, (_, index) => index < first || index >= first + days ? null : index - first + 1);
 }
+
+/** Monday-first dates, including muted neighbouring days to preserve the paper grid. */
+export function calendarPaperDays(month: Date) {
+  const year = month.getFullYear(), index = month.getMonth();
+  const offset = (new Date(year, index, 1, 12).getDay() + 6) % 7;
+  const count = new Date(year, index + 1, 0, 12).getDate();
+  return Array.from({ length: Math.ceil((offset + count) / 7) * 7 }, (_, i) => new Date(year, index, i - offset + 1, 12));
+}

@@ -25,14 +25,17 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   const ratio = widgetSize ? (height ?? width) / width : premiumPaperRatios[design];
   const topDot = ['soft-mint', 'spiral-plan', 'kraft-clip', 'ivory-paper'].includes(design);
   const vivid = isRaisedCalendar(design);
+  const kraft = design === 'kraft-clip';
+  const attachmentTopRatio = kraft ? 40 / 330 : 0;
   const compactKraft = design === 'kraft-clip' && !widgetSize;
   const shadowRatio = compactKraft ? 0.06 : 0.14;
   const availableWidth = width * (!miniature && !widgetSize ? compactKraft ? 0.98 : 0.94 : 1 / (1 + 2 * shadowRatio));
-  const paperWidth = Math.min(availableWidth, height ? height / (ratio + 2 * shadowRatio) : availableWidth);
+  const paperWidth = Math.min(availableWidth, height ? height / (ratio + 2 * shadowRatio + attachmentTopRatio) : availableWidth);
   const naturalHeight = paperWidth * ratio;
   const paperHeight = naturalHeight;
   const canvasHeight = paperHeight / (paperWidth / 330);
   const s = paperWidth / 330;
+  const attachmentTop = paperWidth * attachmentTopRatio;
   const asset = miniature ? null : installedPaper(design);
   const theme = asset ?? premiumPapers[design];
   const glass = design === 'mint-glass';
@@ -44,7 +47,6 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   const cobaltBlue = design === 'cobalt-blue';
 
   const soft = design === 'soft-mint' || design === 'mint-planner' || vivid;
-  const kraft = design === 'kraft-clip';
   const spiral = design === 'spiral-plan';
   const ivory = design === 'ivory-paper';
   const [rangeStart, setRangeStart] = useState<string | null>(null);
@@ -59,8 +61,8 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   const navigationBackground = emerald ? '#005C43' : berryPurple ? '#891E60' : '#003A87';
   const font = (size: number) => ({ fontSize: size * s, color: ink });
   const navigate = (delta: number) => { tapHaptic('select'); (delta < 0 ? onPreviousMonth : onNextMonth)?.(); };
-  return <View style={{ width, height: height ?? (paperHeight + 2 * paperWidth * shadowRatio), justifyContent: 'center', alignItems: 'center' }}>
-    <View style={{ width: paperWidth, height: paperHeight, borderRadius: (soft ? 34 : glass ? 27 : 12) * s }}>
+  return <View style={{ width, height: height ?? (paperHeight + 2 * paperWidth * shadowRatio + attachmentTop), justifyContent: kraft ? 'flex-start' : 'center', alignItems: 'center' }}>
+    <View style={{ width: paperWidth, height: paperHeight, marginTop: attachmentTop, borderRadius: (soft ? 34 : glass ? 27 : 12) * s }}>
       <Svg pointerEvents="none" width={paperWidth * (1 + shadowRatio)} height={paperHeight + paperWidth * shadowRatio} viewBox={`0 0 ${330 * (1 + shadowRatio)} ${canvasHeight + 330 * shadowRatio}`} style={{ position: 'absolute', top: 0, left: 0 }}>
         {Array.from({ length: 24 }, (_, index) => {
           const offset = (index + 1) * 330 * shadowRatio / 24;

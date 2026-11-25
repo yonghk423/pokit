@@ -21,7 +21,7 @@ import { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import { applyHeroCalendarDesign, useHeroCalendarDesign, useHeroCalendarCover, saveHeroCalendarCover } from '../model/heroCalendarDesign';
-import { groupCalendarDiaries } from '../lib/heroCalendar';
+import { calendarPaperDays, groupCalendarDiaries } from '../lib/heroCalendar';
 import type { ComicDiary } from '../lib/heroDiaryStorage';
 import { selectCanTestProStoreItems, useSubscriptionStore } from '@features/subscriptions';
 import { usePremiumPackPaywall } from './usePremiumPackPaywall';
@@ -38,14 +38,7 @@ type Design = typeof CALENDAR_DESIGNS[number]['id'] | 'grid' | 'illustration';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const requiresCalendarDownload = (design: string) => isPremiumPaper(design) || design === 'weather';
 
-/** Monday-first dates, including muted neighbouring days to preserve the paper grid. */
-export function calendarPaperDays(month: Date) {
-  const year = month.getFullYear(), index = month.getMonth();
-  const offset = (new Date(year, index, 1, 12).getDay() + 6) % 7;
-  const count = new Date(year, index + 1, 0, 12).getDate();
-  return Array.from({ length: Math.ceil((offset + count) / 7) * 7 }, (_, i) => new Date(year, index, i - offset + 1, 12));
-}
-
+export { calendarPaperDays } from '../lib/heroCalendar';
 
 export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates = [], design, month, today, diaries, onSelectDate, miniature = false, previewSavedCover = false, layoutHeight, layoutWidth, wallpaper = false, hideMonthHeading = false, onPreviousMonth, onNextMonth }: {
   widgetSize?: 'small' | 'large'; selectedPreview?: boolean; eventDates?: string[]; previewSavedCover?: boolean; wallpaper?: boolean; hideMonthHeading?: boolean; onPreviousMonth?: () => void; onNextMonth?: () => void; layoutHeight?: number; layoutWidth?: number; design: Design; month: Date; today: Date; diaries: ComicDiary[]; onSelectDate?: (date: string) => void; miniature?: boolean;
@@ -91,12 +84,12 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
   if (isPremiumPaper(design)) return <PremiumCalendarPaper widgetSize={widgetSize} design={design} month={month} today={today} diaries={miniature ? [] : diaries} eventDates={eventDates} width={width} height={layoutHeight} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
   if (design === 'clipboard') return frame(<HeroClipboardCalendar width={width} height={layoutHeight} month={month} today={today} miniature={miniature} eventDates={eventDates} recordDates={[...grouped.keys()]} photos={Object.fromEntries([...grouped].flatMap(([key, records]) => { const uri = records.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri; return uri ? [[key, uri]] : []; }))} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />);
   const paper = <View testID="calendar-paper" pointerEvents={miniature ? 'none' : 'auto'} onLayout={layoutWidth == null ? e => { const next = e.nativeEvent.layout.width; if (next > 0) setWidth(current => current === next ? current : next); } : undefined} style={[styles.paper, wallpaper && { backgroundColor: framed ? '#FAFAF6' : 'transparent', shadowOpacity: 0, elevation: 0 }, design === 'weather' && { backgroundColor: '#FFFFFF', shadowOpacity: 0, borderRadius: 18 * scale, overflow: 'hidden' }, { padding: 19 * scale, paddingTop: (design === 'weather' && !miniature ? 24 : wallpaper ? 0 : fitted ? 24 : 37) * scale, paddingBottom: (wallpaper ? 6 : 19) * scale, ...(fitted ? { height: weatherLayout?.contentHeight ?? layoutHeight } : {}) }]}>
-    {design === 'weather' && <><View testID="weather-calendar-summary">{miniature ? <WeatherCalendarHeader preview scale={weatherScale} /> : widgetSize ? <WeatherCalendarHeader report={getCalendarWeatherReport()} scale={weatherScale} /> : <WeatherSummary ink="#50514F" muted="#757671" showUnavailable presentation="calendar" scale={weatherScale} />}</View></>}
+    {design === 'weather' && <><View testID="weather-calendar-summary">{miniature ? <WeatherCalendarHeader preview scale={weatherScale} /> : widgetSize ? <WeatherCalendarHeader displayLocale="en" report={getCalendarWeatherReport()} scale={weatherScale} /> : <WeatherSummary ink="#50514F" muted="#757671" showUnavailable presentation="calendar" scale={weatherScale} />}</View></>}
     {!wallpaper && design !== 'weather' && <View pointerEvents="none" style={[styles.clip, { width: (design === 'bold' ? 100 : 19) * scale, height: 10 * scale, top: -3 * scale, backgroundColor: isPhoto ? '#A79564' : '#30312F' }]} />}
     {!hideMonthHeading && <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: isPhoto ? 'center' : 'space-between', marginBottom: (design === 'weather' ? 10 : wallpaper ? 8 : 22) * scale }}>
       {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel={translateUiText("이전 달")} onPress={() => { tapHaptic('select'); onPreviousMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text allowFontScaling={!miniature} style={{ fontSize: 28, color: '#303330' }}>‹</Text></Pressable>}
       <Text allowFontScaling={!miniature} style={{ color: '#202522', fontSize: (design === 'weather' ? 20 : isPhoto ? 12 : isGrid ? 26 : fitted ? 52 : 68) * scale, fontWeight: isPhoto ? '400' : '700', letterSpacing: isPhoto ? 4 * scale : -1 * scale }}>{isPhoto || isGrid ? MONTHS[month.getMonth()].toUpperCase() : MONTHS[month.getMonth()].slice(0, 3)}</Text>
-      {!isPhoto && <Text allowFontScaling={!miniature} style={{ color: '#303330', fontSize: (design === 'weather' ? 11 : 19) * scale }}>{month.getFullYear()}</Text>}
+      {!isPhoto && <Text allowFontScaling={!miniature} style={{ color: widgetSize ? '#30333099' : '#303330', fontSize: (design === 'weather' ? 11 : 19) * scale }}>{month.getFullYear()}</Text>}
       {wallpaper && <Pressable accessibilityRole="button" accessibilityLabel={translateUiText("다음 달")} onPress={() => { tapHaptic('select'); onNextMonth?.(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text allowFontScaling={!miniature} style={{ fontSize: 28, color: '#303330' }}>›</Text></Pressable>}
     </View>}
 
@@ -107,7 +100,7 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
     </Pressable>}
 
     <View style={{ flex: 1, minWidth: 0, ...(isPhoto || weatherLayout ? { minHeight: 0 } : fitted ? { height: '100%' } : {}) }}>
-    <View style={{ flexDirection: 'row', paddingBottom: 10 * scale }}>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => <Text key={day} style={{ width: '14.2857%', textAlign: 'center', fontSize: (isPhoto ? 8 : 11) * scale, color: isGrid && i === 6 ? '#995C54' : '#464944' }}>{isPhoto ? day[0] : day}</Text>)}</View>
+    <View style={{ flexDirection: 'row', paddingBottom: 10 * scale }}>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => <Text key={day} style={{ width: '14.2857%', textAlign: 'center', fontSize: (isPhoto ? 8 : 11) * scale, color: isGrid && i === 6 ? '#995C54' : '#464944' }}>{isPhoto && !widgetSize ? day[0] : day}</Text>)}</View>
     <View style={fitted ? { flex: 1, minHeight: 0 } : undefined}>
     {Array.from({ length: dates.length / 7 }, (_, row) => <View key={row} style={{ flexDirection: 'row', ...(fitted ? { flex: 1, minHeight: 0 } : {}), borderTopWidth: design === 'bold' ? StyleSheet.hairlineWidth : 0, borderColor: '#D1D3CE' }}>
       {dates.slice(row * 7, row * 7 + 7).map(day => {
@@ -133,7 +126,7 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
     </View>
     </View>
     </View>
-    {isPhoto && <Text allowFontScaling={!miniature} style={{ textAlign: 'center', fontSize: 9 * scale, color: '#85877F', marginTop: (wallpaper ? 6 : 12) * scale }}>{month.getFullYear()}</Text>}
+    {isPhoto && <Text allowFontScaling={!miniature} style={{ textAlign: 'center', fontSize: 9 * scale, color: widgetSize ? '#30333099' : '#85877F', marginTop: (wallpaper ? 6 : 12) * scale }}>{month.getFullYear()}</Text>}
     <View style={{ height: (weatherLayout ? 0 : wallpaper ? 4 : 18) * scale }} />
   </View>;
   return frame(paper);

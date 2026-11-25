@@ -1,5 +1,5 @@
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
-import { useTranslation } from '@shared/lib/i18n';
+import { useTranslation, type AppLocale } from '@shared/lib/i18n';
 import { Text, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import type { ForecastDay } from '../lib/weatherForecast';
@@ -17,10 +17,10 @@ export function ForecastMark({ icon, size }: { icon: string; size: number }) {
 }
 
 /** One reading order: location, current temperature and condition, daily outlook. */
-export function WeatherCalendarHeader({ report, scale = 1, preview = false, statusMessage }: { report?: CalendarWeather | null; scale?: number; preview?: boolean; statusMessage?: string }) {
+export function WeatherCalendarHeader({ report, scale = 1, preview = false, statusMessage, displayLocale }: { report?: CalendarWeather | null; scale?: number; preview?: boolean; statusMessage?: string; displayLocale?: AppLocale }) {
   const ink = '#393D3B';
-  const { locale } = useTranslation();
-  const ko = locale.startsWith('ko');
+  const { locale: appLocale } = useTranslation();
+  const locale = displayLocale ?? appLocale;
   // Store cards shrink the entire composition; live weather keeps readable labels.
   const metric = (value: number, minimum: number) => preview ? value * scale : Math.max(minimum * Math.min(1, scale / 0.55), value * scale);
   const data = preview ? { city: 'STOCKHOLM', temperature: 24, description: 'mostly sunny', icon: '01d', forecast: [{ date: '2026-06-01', high: 25, low: 12, icon: '01d' }, { date: '2026-06-02', high: 21, low: 11, icon: '03d' }, { date: '2026-06-03', high: 22, low: 13, icon: '02d' }] } : report;
@@ -30,7 +30,7 @@ export function WeatherCalendarHeader({ report, scale = 1, preview = false, stat
       <View style={{ width: 68 * scale, height: 68 * scale, borderRadius: 34 * scale, backgroundColor: 'rgba(80,81,79,0.06)' }} />
       <View style={{ gap: 10 * scale }}><View style={{ width: 90 * scale, height: 24 * scale, borderRadius: 6 * scale, backgroundColor: 'rgba(80,81,79,0.08)' }} /><View style={{ width: 64 * scale, height: 9 * scale, borderRadius: 4 * scale, backgroundColor: 'rgba(80,81,79,0.05)' }} /></View>
     </View>
-    <Text accessibilityLiveRegion="polite" allowFontScaling={!preview} style={{ color: '#757671', fontSize: metric(12, 10), textAlign: 'center', lineHeight: metric(18, 15) }}>{statusMessage ?? (translateUiText("날씨 정보를 확인해주세요"))}</Text>
+    <Text accessibilityLiveRegion="polite" allowFontScaling={!preview} style={{ color: '#757671', fontSize: metric(12, 10), textAlign: 'center', lineHeight: metric(18, 15) }}>{statusMessage ?? translateUiText("날씨 정보를 확인해주세요", undefined, locale)}</Text>
   </View>;
   return <View testID="weather-calendar-header" style={{ height: 272 * scale, paddingHorizontal: 12 * scale, justifyContent: 'space-evenly' }}>
     <Text testID="weather-calendar-location" allowFontScaling={!preview} numberOfLines={1} style={{ color: ink, fontSize: metric(13, 10), textAlign: 'center', fontWeight: '500' }}>{data.city}</Text>
@@ -45,7 +45,7 @@ export function WeatherCalendarHeader({ report, scale = 1, preview = false, stat
       {days.slice(0, 3).map((day, i) => {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const label = i === 0 && (preview || day.date === today) ? (translateUiText("오늘")) : new Date(day.date + 'T12:00:00Z').toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
+        const label = i === 0 && (preview || day.date === today) ? translateUiText("오늘", undefined, locale) : new Date(day.date + 'T12:00:00Z').toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
         return <View key={day.date} testID={`weather-forecast-column-${i}`} style={{ width: '33.3333%', minWidth: 0, alignItems: 'center', gap: 5 * scale }}>
           <Text allowFontScaling={!preview} numberOfLines={1} style={{ color: '#757671', fontSize: metric(10, 8) }}>{label}</Text>
           <ForecastMark icon={day.icon} size={metric(28, 22)} />

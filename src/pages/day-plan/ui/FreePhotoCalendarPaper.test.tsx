@@ -6,6 +6,7 @@ import { HeroCalendarPhoto } from './HeroCalendarPhoto';
 import { PHOTO_CALENDARS } from '../model/freePhotoCalendars';
 
 jest.mock('@features/subscriptions', () => ({ useSubscriptionStore: () => false, selectCanTestProStoreItems: () => false }));
+jest.mock('../lib/calendarStoreDownload', () => ({ diaryImages: () => undefined }));
 jest.mock('../lib/storeArtwork', () => ({ useStoreArtwork: () => ({ artwork: { board: 1 } }) }));
 jest.mock('./usePremiumPackPaywall', () => ({ usePremiumPackPaywall: () => ({ present: async () => 'cancelled', modal: null }) }));
 jest.mock('./HeroCalendarPhoto', () => ({ HeroCalendarPhoto: () => null }));

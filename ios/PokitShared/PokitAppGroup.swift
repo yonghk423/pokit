@@ -3,6 +3,8 @@ import Foundation
 /// App Group은 Xcode Capabilities 및 Apple Developer의 동일 식별자 등록이 필요합니다.
 public enum PokitAppGroup {
   public static let identifier = "group.com.yonghee.pokit"
+  /// Long edge of the 330 × 346 pt calendar rendered at 3×.
+  public static let calendarMaxPixelSize = 1038
   public static let appFontIdKey = "pokit_widget_app_font_id"
   public static let dayPlanJsonKey = "pokit_day_plan_widget_json"
   /// 홈 위젯 루틴 번들(후보 목록 + 기본키). 인스턴스별 선택은 App Intent 가 담당
