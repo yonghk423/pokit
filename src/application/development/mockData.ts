@@ -1,3 +1,4 @@
+import { seedEnglishBooks } from './mockEnglishBooks';
 import { seedEnglishNotes } from './mockEnglishNotes';
 import { ensureMockNoteArchive } from './mockNoteArchive';
 import { buildInitialCustomFlowDetailConfig, normalizeCustomFlowDetailConfig, type CustomFlowTemplateKey } from '@entities/day-plan/lib/customFlowTemplate';
@@ -135,7 +136,10 @@ export function ensureDevelopmentMockData(force = false, date = getLocalDateKey(
   const locale = getDevelopmentStorageProfile();
   if (!locale) return false;
   ensureMockNoteArchive(date);
-  if (locale === 'en') seedEnglishNotes(date);
+  if (locale === 'en') {
+    seedEnglishNotes(date);
+    seedEnglishBooks(date);
+  }
   const version = `${MOCK_DATA_VERSION}:${date}`;
   // Repair missing home text even when the diary seed version is already current.
   const storyKey = `pokit:canvas-note:${date}`;

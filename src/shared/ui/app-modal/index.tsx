@@ -5,12 +5,14 @@ import { activeAlertScope, useAppAlertStore } from '@shared/lib/app-alert';
 import { AppAlertSurface, useAppAlertScope } from '@shared/ui/app-alert/AppAlertSurface';
 
 /** Keeps native-sheet behavior while hosting paper alerts above the sheet's content. */
-export function AppModal({ children, visible = true, onRequestClose, ...props }: ModalProps) {
+type AppModalProps = ModalProps & { nativeAnimation?: ModalProps['animationType'] };
+
+export function AppModal({ children, visible = true, onRequestClose, nativeAnimation = 'none', ...props }: AppModalProps) {
   const scope = useAppAlertScope(visible);
   return (
     <NativeModal
       {...props}
-      animationType="none"
+      animationType={nativeAnimation}
       visible={visible}
       onRequestClose={(event) => {
         const state = useAppAlertStore.getState();

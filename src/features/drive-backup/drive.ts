@@ -76,7 +76,7 @@ function walk(value: unknown, replace: (s: string) => string): any {
 }
 type Manifest = { format: 'pokit-date'; version: 1; date: string; data: DateData; assets: { ref: string; id: string; size: number; ext: string }[] };
 export async function backupDate(date: string, progress: (s: string) => void) {
-  const { independentNotes, rangePlans, ...data } = collectDate(date);
+  const { independentNotes, rangePlans, libraryBooks, ...data } = collectDate(date);
   data.originals = (await loadHeroOriginalPhotoLibrary()).filter(image => dateOf(image.createdAt) === date);
   const uris = new Set<string>(); walk(data, s => { if (/^(file|content):\/\//.test(s)) uris.add(s); return s; });
   const created: string[] = []; const assets: Manifest['assets'] = []; const refs = new Map<string, string>();
@@ -93,7 +93,7 @@ export async function backupDate(date: string, progress: (s: string) => void) {
       if (Number(remote.size) !== info.size) throw new Error('이미지 저장 크기가 일치하지 않아요.');
       const ref = `pokit-asset:${assets.length}`; refs.set(uri, ref); assets.push({ ref, id, size: info.size, ext });
     }
-    const manifest: Manifest = { format: 'pokit-date', version: 1, date, data: { ...walk(data, s => refs.get(s) ?? s), independentNotes, rangePlans }, assets };
+    const manifest: Manifest = { format: 'pokit-date', version: 1, date, data: { ...walk(data, s => refs.get(s) ?? s), independentNotes, rangePlans, libraryBooks }, assets };
     // A file becomes discoverable only once its complete manifest has been uploaded.
     progress('백업 마무리 중');
     const id = await createFile(`YOUR-DAY-${date}-${Date.now()}.json`, 'application/json', date, 'pokit-pending-v1'); created.push(id);
@@ -131,12 +131,12 @@ export async function restoreDate(backup: DriveBackup, progress: (s: string) => 
       if (result.status !== 200 || !info.exists || info.isDirectory || info.size !== asset.size) throw new Error('이미지 다운로드가 완료되지 않았어요. 다시 시도해 주세요.');
       refs.set(asset.ref, path);
     }
-    const { independentNotes, rangePlans, ...dateData } = manifest.data;
+    const { independentNotes, rangePlans, libraryBooks, ...dateData } = manifest.data;
     const restored: DateData = { ...walk(dateData, s => {
       if (s.startsWith('pokit-asset:')) { const path = refs.get(s); if (!path) throw new Error('백업 이미지가 누락됐어요.'); return path; }
       if (/^(file|content):\/\//.test(s)) throw new Error('백업에 원본 이미지가 누락됐어요.');
       return s;
-    }), independentNotes, rangePlans };
+    }), independentNotes, rangePlans, libraryBooks };
     const writes = mergeDate(restored, restorePreferences);
     if (restored.contentVersion !== 2) {
     const replacedImages = (await loadHeroAiLibrary()).filter(image => dateOf(image.createdAt) === manifest.date);

@@ -444,33 +444,13 @@ export function ReadingSettings({
       addedAtMs: now,
     };
 
-    if (selection.source === 'aladin') {
-      const book = selection.book;
-      setBooks((prev) => [
-        {
-          ...base,
-          title: book.title,
-          aladin: {
-            itemId: book.itemId,
-            link: book.link,
-            coverUrl: book.coverUrl,
-            author: book.author,
-            totalPages: book.totalPages,
-          },
-        },
-        ...prev,
-      ]);
-      return;
-    }
-
     const book = selection.book;
     setBooks((prev) => [
       {
         ...base,
         title: book.title,
-        openLibrary: {
-          workKey: book.workKey,
-          editionKey: book.editionKey,
+        yes24: {
+          itemId: book.itemId,
           link: book.link,
           coverUrl: book.coverUrl,
           author: book.author,

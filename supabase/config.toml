@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.store-download-sandbox]
 verify_jwt = false
+
+[functions.yes24-books]
+verify_jwt = true

@@ -2,16 +2,17 @@ import type { ReadingAladinBook } from './readingAladinBook';
 import type { ReadingBookEntry } from './readingLiveActivityConfig';
 import type { ReadingOpenLibraryBook } from './readingOpenLibraryBook';
 
-export type ReadingBookCatalogSource = 'aladin' | 'openlibrary' | null;
+export type ReadingBookCatalogSource = 'aladin' | 'openlibrary' | 'yes24' | null;
 
-export function resolveReadingBookCatalogSource(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>): ReadingBookCatalogSource {
+export function resolveReadingBookCatalogSource(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary' | 'yes24'>): ReadingBookCatalogSource {
   if (entry.aladin) return 'aladin';
+  if (entry.yes24) return 'yes24';
   if (entry.openLibrary) return 'openlibrary';
   return null;
 }
 
-export function resolveReadingBookAuthor(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>): string {
-  const raw = entry.aladin?.author?.trim() || entry.openLibrary?.author?.trim() || '';
+export function resolveReadingBookAuthor(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary' | 'yes24'>): string {
+  const raw = entry.aladin?.author?.trim() || entry.yes24?.author?.trim() || entry.openLibrary?.author?.trim() || '';
   return formatReadingBookAuthorLine(raw);
 }
 
@@ -25,12 +26,12 @@ export function formatReadingBookAuthorLine(author: string): string {
     .trim();
 }
 
-export function resolveReadingBookCoverUrl(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>): string {
-  return entry.aladin?.coverUrl?.trim() || entry.openLibrary?.coverUrl?.trim() || '';
+export function resolveReadingBookCoverUrl(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary' | 'yes24'>): string {
+  return entry.aladin?.coverUrl?.trim() || entry.yes24?.coverUrl?.trim() || entry.openLibrary?.coverUrl?.trim() || '';
 }
 
-export function resolveReadingBookExternalLink(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>): string {
-  return entry.aladin?.link?.trim() || entry.openLibrary?.link?.trim() || '';
+export function resolveReadingBookExternalLink(entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary' | 'yes24'>): string {
+  return entry.aladin?.link?.trim() || entry.yes24?.link?.trim() || entry.openLibrary?.link?.trim() || '';
 }
 
 function toPositivePageCount(value: unknown): number | null {
@@ -45,22 +46,25 @@ function toPositivePageCount(value: unknown): number | null {
 }
 
 export function resolveReadingBookTotalPages(
-  entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary'>,
+  entry: Pick<ReadingBookEntry, 'aladin' | 'openLibrary' | 'yes24'>,
 ): number | null {
   return (
     toPositivePageCount(entry.aladin?.totalPages) ??
+    toPositivePageCount(entry.yes24?.totalPages) ??
     toPositivePageCount(entry.openLibrary?.totalPages)
   );
 }
 
 export function readingBookExternalLinkLabel(source: ReadingBookCatalogSource): string | null {
   if (source === 'aladin') return '알라딘에서 보기';
+  if (source === 'yes24') return 'YES24에서 보기';
   if (source === 'openlibrary') return 'Open Library에서 보기';
   return null;
 }
 
 export function readingBookShareLinkLabel(source: ReadingBookCatalogSource): string | null {
   if (source === 'aladin') return '알라딘';
+  if (source === 'yes24') return 'YES24';
   if (source === 'openlibrary') return 'Open Library';
   return null;
 }

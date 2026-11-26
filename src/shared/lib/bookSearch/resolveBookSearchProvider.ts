@@ -4,19 +4,14 @@ export function containsHangul(text: string): boolean {
   return HANGUL_RE.test(text);
 }
 
-export type BookSearchProvider = 'aladin' | 'openlibrary';
+export type BookSearchProvider = 'yes24' | 'openlibrary';
 
-/** 검색어 스크립트 기준 provider — 한글은 알라딘, 그 외 Open Library */
+/** 검색어 스크립트 기준 provider — 한글은 YES24, 그 외 Open Library */
 export function resolveBookSearchProvider(query: string): BookSearchProvider {
-  if (containsHangul(query)) return 'aladin';
+  if (containsHangul(query)) return 'yes24';
   return 'openlibrary';
 }
 
 export function bookSearchProviderLabel(provider: BookSearchProvider): string {
-  return provider === 'aladin' ? '알라딘' : 'Open Library';
-}
-
-export function isBookSearchAvailable(provider: BookSearchProvider, aladinConfigured: boolean): boolean {
-  if (provider === 'aladin') return aladinConfigured;
-  return true;
+  return provider === 'yes24' ? 'YES24' : 'Open Library';
 }

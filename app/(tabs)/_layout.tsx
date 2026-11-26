@@ -41,8 +41,7 @@ export default function TabLayout() {
       <TabWallpaper />
       <Tabs
         initialRouteName="index"
-        // Keep native scene visibility in sync with the custom camera/home tabs.
-        detachInactiveScreens={false}
+        detachInactiveScreens
         tabBar={(props) => <DayPlanCustomTabBar {...props} />}
         screenOptions={{
           animation: 'none',
@@ -59,6 +58,7 @@ export default function TabLayout() {
         }}>
         <Tabs.Screen name="index" options={{ title: t('tabs.comicDay') }} />
         <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), lazy: false, animation: 'none' }} />
+        <Tabs.Screen name="library" options={{ title: 'Library' }} />
         <Tabs.Screen name="history" options={{ title: 'Archive' }} />
         <Tabs.Screen
           name="fixed-routines"

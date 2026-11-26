@@ -21,7 +21,32 @@ type OpenLibrarySearchDoc = {
   edition_key?: string[];
   number_of_pages_median?: number;
   first_publish_year?: number;
+  editions?: { docs?: OpenLibraryEditionDoc[] };
 };
+
+type OpenLibraryEditionDoc = {
+  key?: string;
+  title?: string;
+  language?: string[];
+  cover_i?: number;
+  publish_place?: string[];
+};
+
+type PreferredLocale = 'ja' | 'zh-TW';
+
+const traditionalOnly = /[體國學書語樓夢門風龍臺灣東萬與裡這個還說讀經劍圓傳話聲實見]/;
+const simplifiedOnly = /[体国学书语楼梦门风龙台湾东万与里这个还说读经剑圆传话声实见]/;
+
+function editionRank(edition: OpenLibraryEditionDoc | undefined, locale: PreferredLocale): number {
+  if (!edition?.title || !edition.key) return 0;
+  if (locale === 'ja') return edition.language?.includes('jpn') ? 2 : 0;
+  if (!edition.language?.includes('chi') && !edition.language?.includes('zho')) return 0;
+  if (simplifiedOnly.test(edition.title)) return 0;
+  if (traditionalOnly.test(edition.title) || edition.publish_place?.some(
+    place => /Taiwan|Taipei|Hong Kong|臺灣|台灣|臺北|台北|香港/i.test(place),
+  )) return 2;
+  return 1;
+}
 
 type OpenLibrarySearchResponse = {
   numFound?: number;
@@ -52,13 +77,13 @@ function normalizeEditionKey(raw: unknown): string | undefined {
   return trimmed.startsWith('/') ? trimmed : `/books/${trimmed.replace(/^\/books\//, '')}`;
 }
 
-function mapSearchDoc(raw: OpenLibrarySearchDoc): OpenLibrarySearchBookItem | null {
+function mapSearchDoc(raw: OpenLibrarySearchDoc, edition?: OpenLibraryEditionDoc): OpenLibrarySearchBookItem | null {
   const workKey = typeof raw.key === 'string' ? raw.key.trim() : '';
-  const title = clampText(raw.title, 300);
+  const title = clampText(edition?.title ?? raw.title, 300);
   if (!workKey || title.length === 0) return null;
 
-  const editionKey = normalizeEditionKey(raw.edition_key?.[0]);
-  const coverId = toPositiveInt(raw.cover_i);
+  const editionKey = normalizeEditionKey(edition?.key ?? raw.edition_key?.[0]);
+  const coverId = toPositiveInt(edition ? edition.cover_i : raw.cover_i);
   const author = clampText(raw.author_name?.[0], 120);
   const publishYear =
     typeof raw.first_publish_year === 'number' && Number.isFinite(raw.first_publish_year)
@@ -114,7 +139,7 @@ export function toOpenLibraryBookDetailFromSearchItem(
 
 export async function searchOpenLibraryBooks(
   query: string,
-  options?: { limit?: number },
+  options?: { limit?: number; preferredLocale?: PreferredLocale },
 ): Promise<OpenLibrarySearchResult> {
   const trimmed = query.trim();
   if (trimmed.length === 0) {
@@ -126,13 +151,24 @@ export async function searchOpenLibraryBooks(
     limit: String(options?.limit ?? 12),
     fields: 'key,title,author_name,cover_i,edition_key,number_of_pages_median,first_publish_year',
   });
+  const locale = options?.preferredLocale;
+  if (locale) {
+    params.set('lang', locale === 'ja' ? 'ja' : 'zh');
+    params.set('fields', params.get('fields') + ',editions,editions.key,editions.title,editions.language,editions.cover_i,editions.publish_place');
+  }
 
   const data = await fetchOpenLibraryJson<OpenLibrarySearchResponse>(
     `${OPEN_LIBRARY_SEARCH_API}?${params.toString()}`,
   );
 
   const items = (Array.isArray(data.docs) ? data.docs : [])
-    .map(mapSearchDoc)
+    .map(doc => {
+      const edition = doc.editions?.docs?.[0];
+      const rank = locale ? editionRank(edition, locale) : 0;
+      return { doc, edition: rank > 0 ? edition : undefined, rank };
+    })
+    .sort((a, b) => b.rank - a.rank)
+    .map(({ doc, edition }) => mapSearchDoc(doc, edition))
     .filter((item): item is OpenLibrarySearchBookItem => item != null);
 
   return {

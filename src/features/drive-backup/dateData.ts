@@ -1,3 +1,4 @@
+import { libraryBooksKey, type Book } from '@entities/day-plan/lib/libraryBooks';
 import { rangePlansKey, readPlans, reachesPlanLimit, usedPlanColors, type CalendarPlan } from '@pages/day-plan/model/calendarRangePlans';
 import { mergeDependencies, replaceReferences, type BackupDependencies } from './dependencies';
 import { localStorageClient as storage } from '@shared/lib/storage/localStorageClient';
@@ -8,15 +9,17 @@ export function dateOf(value: unknown): string {
   const d = new Date(value as string | number);
   return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-export type DateData = { contentVersion?: 2; rangePlans?: CalendarPlan[]; independentNotes?: CalendarNote[]; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null };
+export type DateData = { contentVersion?: 2; libraryBooks?: Book[]; rangePlans?: CalendarPlan[]; independentNotes?: CalendarNote[]; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null };
 const read = (key: string): Row => storage.getJson<Row>(key) ?? {};
 const diaryDate = (diary: Row): string => validDate(diary.date) ? diary.date : /^legacy:.+:(\d{4}-\d{2}-\d{2})$/.exec(diary.id ?? '')?.[1] ?? dateOf(diary.createdAt);
 export function collectDate(date: string): DateData {
   if (!validDate(date)) throw new Error('올바른 날짜를 선택해 주세요.');
+  const libraryBooks = storage.getJson<Book[]>(libraryBooksKey) ?? [];
   const independentNotes = readIndependentNotes();
   const rangePlans = readPlans();
   return {
     contentVersion: 2, date,
+    ...(libraryBooks.length ? { libraryBooks } : {}),
     ...(rangePlans.length ? { rangePlans } : {}),
     ...(independentNotes.length ? { independentNotes } : {}),
     monthlyNote: storage.getItemRaw(`pokit:monthly-album-note:${date.slice(0, 7)}`),
@@ -34,8 +37,24 @@ export function localDates(): string[] {
   }
   for (const image of storage.getJson<Row[]>('pokit:drive-original-gallery:v1') ?? []) dates.add(dateOf(image.createdAt));
   for (const plan of readPlans()) dates.add(plan.start);
-  if (readIndependentNotes().length) dates.add(dateOf(Date.now()));
+  if (readIndependentNotes().length || storage.getJson<Book[]>(libraryBooksKey)?.length) dates.add(dateOf(Date.now()));
   return [...dates].filter(validDate).sort().reverse();
+}
+function mergeBooks(incoming: Book[]): Book[] {
+  if (!Array.isArray(incoming) || incoming.some(book => !book || typeof book.id !== 'string' || !book.id
+    || typeof book.title !== 'string' || typeof book.author !== 'string' || typeof book.cover !== 'string'
+    || (book.review !== undefined && typeof book.review !== 'string')
+    || (book.link !== undefined && (typeof book.link !== 'string' || (book.link !== '' && !/^https:\/\//i.test(book.link))))
+    || (book.addedMonth !== undefined && !/^\d{4}-(0[1-9]|1[0-2])$/.test(book.addedMonth))
+    || (book.updatedAt !== undefined && !Number.isFinite(book.updatedAt))
+    || (book.placement !== undefined && (!book.placement || ![book.placement.x, book.placement.y, book.placement.angle].every(Number.isFinite))))
+    || new Set(incoming.map(book => book.id)).size !== incoming.length) throw new Error('서재 백업 데이터가 손상됐어요.');
+  const merged = new Map((storage.getJson<Book[]>(libraryBooksKey) ?? []).map(book => [book.id, book]));
+  for (const book of incoming) {
+    const local = merged.get(book.id);
+    if (!local || (book.updatedAt ?? 0) > (local.updatedAt ?? 0)) merged.set(book.id, book);
+  }
+  return [...merged.values()];
 }
 function validNoteDocument(document: CalendarNote['inlineDocument']) {
   return document === undefined || (document !== null && typeof document.text === 'string'
@@ -86,6 +105,7 @@ function mergePhotoDate(data: DateData): Record<string, unknown> {
   const diaries = [...others, ...data.diaries];
   return {
     'pokit:comic-diaries:v1': { ...library, version: 1, diaries, activeId: diaries.some(value => value.id === library.activeId) ? library.activeId : null },
+    ...(data.libraryBooks === undefined ? {} : { [libraryBooksKey]: mergeBooks(data.libraryBooks) }),
     ...(data.rangePlans === undefined ? {} : { [rangePlansKey]: mergeRangePlans(data.rangePlans) }),
     ...(data.independentNotes === undefined ? {} : { [INDEPENDENT_NOTES_KEY]: mergeIndependentNotes(data.independentNotes) }),
     ...(typeof data.monthlyNote === 'string' ? { [`pokit:monthly-album-note:${data.date.slice(0, 7)}`]: data.monthlyNote } : {}),

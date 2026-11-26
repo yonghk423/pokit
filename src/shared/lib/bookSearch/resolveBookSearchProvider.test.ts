@@ -2,7 +2,7 @@ import { containsHangul, resolveBookSearchProvider } from './resolveBookSearchPr
 
 describe('resolveBookSearchProvider', () => {
   it('routes hangul queries to aladin', () => {
-    expect(resolveBookSearchProvider('해리포터')).toBe('aladin');
+    expect(resolveBookSearchProvider('해리포터')).toBe('yes24');
     expect(containsHangul('Harry 포터')).toBe(true);
   });
 

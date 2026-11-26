@@ -168,3 +168,21 @@ it('adds independent notes to the English mock profile once and respects deletio
   ensureDevelopmentMockData(false, '2026-11-25');
   expect(readIndependentNotes().some(note => note.id === 'mock-note:picnic')).toBe(false);
 });
+
+it('seeds thirty distinct books across four months only in the English mock shelf and preserves edits', () => {
+  const key = 'pokit:library:books';
+  setDevelopmentStorageProfile('en');
+  localStorageClient.removeItem('pokit:mock-english-books-v1');
+  localStorageClient.setJson(key, []);
+  ensureDevelopmentMockData(false, '2026-11-27');
+  const books = localStorageClient.getJson<{ id: string; title: string; addedMonth: string }[]>(key)!;
+  expect(new Set(books.map(book => book.id)).size).toBe(30);
+  expect(new Set(books.map(book => book.addedMonth)).size).toBe(4);
+  expect(books.filter(book => book.addedMonth === '2026-11')).toHaveLength(12);
+  books[0].title = 'My edited title';
+  localStorageClient.setJson(key, books);
+  ensureDevelopmentMockData(false, '2026-11-27');
+  expect(localStorageClient.getJson(key)).toEqual(books);
+  setDevelopmentStorageProfile(null);
+  expect(localStorageClient.getJson(key)).not.toEqual(books);
+});

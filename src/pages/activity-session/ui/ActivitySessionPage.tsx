@@ -1,3 +1,4 @@
+import { Linking as NativeLinking } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -922,6 +923,10 @@ export function ActivitySessionPage() {
                       tapHaptic();
                       if (catalogSource === 'aladin') {
                         void openAladinProductPage(externalLink);
+                        return;
+                      }
+                      if (catalogSource === 'yes24') {
+                        void NativeLinking.openURL(externalLink).catch(() => undefined);
                         return;
                       }
                       void openOpenLibraryBookPage(externalLink);

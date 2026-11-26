@@ -143,3 +143,18 @@ it('restores calendar highlights across months and keeps hidden plans hidden', (
   delete snapshot.rangePlans;
   expect(mergeDate(snapshot)[rangePlansKey]).toBeUndefined();
 });
+
+it('round-trips the shelf and preserves newer reviews and books missing from a backup', () => {
+  const key = 'pokit:library:books';
+  const book = { id: 'yes24:1', title: 'Book', author: 'A', cover: '', addedMonth: '2026-11', review: 'First', placement: { x: 2, y: 3, angle: -1 }, updatedAt: 10 };
+  storage.setJson(key, [book]);
+  expect(localDates()).toContain(dateOf(Date.now()));
+  const snapshot = collectDate('2026-11-27');
+  storage.removeItem(key);
+  expect(mergeDate(snapshot)[key]).toEqual([book]);
+  const local = [{ ...book, review: 'Updated', updatedAt: 11 }, { ...book, id: 'other' }];
+  storage.setJson(key, local);
+  expect(mergeDate(snapshot)[key]).toEqual(local);
+  expect(mergeDate({ ...snapshot, libraryBooks: undefined })[key]).toBeUndefined();
+  expect(() => mergeDate({ ...snapshot, libraryBooks: [book, book] })).toThrow();
+});
