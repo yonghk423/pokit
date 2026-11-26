@@ -1772,8 +1772,7 @@ import { SEASON_WINTER_LAYOUTS } from './seasonWinterLayouts';
 Object.assign(CALENDAR_ARTWORK_LAYOUTS, SEASON_WINTER_LAYOUTS);
 import { SEASON_COLLECTION_LAYOUTS } from './seasonCollectionLayouts';
 Object.assign(CALENDAR_ARTWORK_LAYOUTS, SEASON_COLLECTION_LAYOUTS);
-export const CALENDAR_GRID_LAYOUTS: Record<string, CalendarRegion> = Object.fromEntries(Object.entries(CALENDAR_ARTWORK_LAYOUTS).map(([id, layout]) => [id, layout.grid]));
-export const CALENDAR_ARTWORK_SIZES: Record<string, readonly [number, number]> = Object.fromEntries(Object.entries(CALENDAR_ARTWORK_LAYOUTS).map(([id, layout]) => [id, layout.size]));
-
 import { TEXTURED_WATERCOLOR_LAYOUTS } from './texturedWatercolorLayouts';
 Object.assign(CALENDAR_ARTWORK_LAYOUTS, TEXTURED_WATERCOLOR_LAYOUTS);
+export const CALENDAR_GRID_LAYOUTS: Record<string, CalendarRegion> = Object.fromEntries(Object.entries(CALENDAR_ARTWORK_LAYOUTS).map(([id, layout]) => [id, layout.grid]));
+export const CALENDAR_ARTWORK_SIZES: Record<string, readonly [number, number]> = Object.fromEntries(Object.entries(CALENDAR_ARTWORK_LAYOUTS).map(([id, layout]) => [id, layout.size]));

@@ -89,7 +89,7 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
       <ThemedText style={{ color: p.desc }}>{open ? '−' : '+'}</ThemedText>
     </Pressable>
     {open && <View style={styles.content}>
-      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>일정 계획 기록, 직접 추가한 이벤트, 업로드한 사진 원본과 사진에 저장한 글을 날짜별로 백업해요. 해당 월의 월간 기록도 함께 저장해요. 내 Google Drive의 앱 전용 공간에 보관해요.</ThemedText>
+      <ThemedText style={[chrome.itemDesc, { color: p.desc }]}>일정 계획 기록, 직접 추가한 이벤트, 업로드한 사진 원본과 사진에 저장한 글을 날짜별로 백업해요. 해당 월의 월간 기록과 날짜에 관계없는 노트·할 일도 함께 저장해요. 내 Google Drive의 앱 전용 공간에 보관해요.</ThemedText>
       {!email ? <BackupButton label={'Google Drive 연결하기'} onPress={() => void run('Google 연결 중', async () => { setEmail(await connectDrive()); await refresh(); })} disabled={!!busy} p={p} /> : <>
         <View style={[styles.quota, { borderColor: p.border, backgroundColor: p.surface }]}>
           <ThemedText style={{ color: p.title }}>{t('drive.storage.title')}</ThemedText>
@@ -101,7 +101,9 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
         {<BackupButton label={'백업 목록 새로고침'} onPress={() => void run('목록 불러오는 중', refresh)} disabled={!!busy} p={p} />}
         {<BackupButton label={'Google Drive 연결 해제'} onPress={() => Alert.alert('연결 해제', 'Drive에 저장한 백업은 유지돼요.', [{ text: '취소', style: 'cancel' }, { text: '연결 해제', onPress: () => void run('연결 해제 중', async () => { await disconnectDrive(); setEmail(null); setBackups([]); setLoaded(false); }) }])} disabled={!!busy} p={p} />}
         {!loaded && <ThemedText style={{ color: p.desc }}>{listError ? '백업 상태를 확인하지 못했어요. 목록 새로고침을 눌러 다시 확인해 주세요.' : 'Google Drive의 백업 상태를 확인하고 있어요.'}</ThemedText>}
-        <View style={styles.periods}>{periods.map(month => <Pressable key={month} disabled={!!busy} accessibilityRole="button" accessibilityState={{ selected: month === selected }} onPress={() => { setPeriod(month); setExpandedDate(null); }} style={[styles.button, { borderColor: p.border, backgroundColor: month === selected ? p.bg : p.surface }]}><ThemedText style={{ color: p.title }}>{month.slice(0, 4)}년 {Number(month.slice(5))}월</ThemedText></Pressable>)}</View>
+        <ScrollView style={styles.periods} contentContainerStyle={styles.periodsContent} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar>
+          {periods.map(month => <Pressable key={month} disabled={!!busy} accessibilityRole="button" accessibilityState={{ selected: month === selected }} onPress={() => { setPeriod(month); setExpandedDate(null); }} style={[styles.button, { borderColor: p.border, backgroundColor: month === selected ? p.bg : p.surface }]}><ThemedText style={{ color: p.title }}>{month.slice(0, 4)}년 {Number(month.slice(5))}월</ThemedText></Pressable>)}
+        </ScrollView>
         <ThemedText style={{ color: p.desc }}>날짜를 선택해 백업하거나 복구하세요</ThemedText>
         <ScrollView style={styles.dateList} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.dateListContent}>
         {dates.filter(d => d.startsWith(selected ?? '')).map(date => <View key={date} style={[styles.day, { borderColor: p.border }]}>
@@ -114,13 +116,13 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
           </Pressable>
           {expandedDate === date && <View style={styles.dateActions}>
           {loaded && !backups.some(b => b.appProperties.date === date) && <ThemedText style={{ color: p.desc, fontSize: 13, lineHeight: 20 }}>이 날짜의 기록과 사진은 현재 휴대폰에 저장되어 있어요. 아래 백업 버튼을 누르면 Google Drive에도 복사해 보관할 수 있어요.</ThemedText>}
-          {[...localDates(), ...galleryDates].includes(date) && <BackupButton label={'이 날짜 백업하기'} onPress={() => void run('백업 준비 중', async () => { await backupDate(date, setBusy); await refresh(); Alert.alert('백업 완료', `${date}의 기록과 이미지 원본을 Google Drive에 저장했어요.`); })} disabled={!!busy} p={p} />}
+          {[...localDates(), ...galleryDates].includes(date) && <BackupButton label={'이 날짜 백업하기'} onPress={() => void run('백업 준비 중', async () => { await backupDate(date, setBusy); await refresh(); Alert.alert('백업 완료', `${date}의 기록과 이미지 원본, 저장된 노트와 할 일을 Google Drive에 백업했어요.`); })} disabled={!!busy} p={p} />}
           {backups.filter(b => b.appProperties.date === date).map(b => <View key={b.id} style={[styles.backupRow, { borderColor: p.border, backgroundColor: p.surface }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${date} ${new Date(b.createdTime).toLocaleString()} 백업 복구`}
               disabled={!!busy}
-              onPress={() => Alert.alert(`${date} 복구`, `이 날짜의 기록을 복구해요. 백업에 월간 기록이 있으면 해당 월의 글도 함께 복구해요.`, [{ text: '취소', style: 'cancel' }, { text: '복구하기', style: 'destructive', onPress: () => void run('백업 확인 중', async () => { await restoreDate(b, setBusy); Alert.alert('복구 완료', `${date} 기록을 가져왔어요.`, [{ text: '확인', onPress: restartAppSession }]); }) }])}
+              onPress={() => Alert.alert(`${date} 복구`, `이 날짜의 기록을 복구해요. 백업에 월간 기록이나 노트·할 일이 있으면 함께 복구해요.`, [{ text: '취소', style: 'cancel' }, { text: '복구하기', style: 'destructive', onPress: () => void run('백업 확인 중', async () => { await restoreDate(b, setBusy); Alert.alert('복구 완료', `${date} 기록을 가져왔어요.`, [{ text: '확인', onPress: restartAppSession }]); }) }])}
               style={styles.restoreRow}>
               <ThemedText numberOfLines={1} style={{ color: p.title, flexShrink: 1 }}>복구 · {new Date(b.createdTime).toLocaleString()}</ThemedText>
             </Pressable>
@@ -142,4 +144,4 @@ export function DriveBackupSection({ isDark }: { isDark: boolean }) {
     </View>}
   </SettingsSection>;
 }
-const styles = StyleSheet.create({ content: { padding: 16, gap: 12 }, quota: { padding: 12, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 }, button: { paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderRadius: 12 }, periods: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, dateList: { maxHeight: 320, borderRadius: 12 }, dateListContent: { paddingRight: 10 }, dateHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 64, paddingVertical: 10, gap: 12 }, dateActions: { gap: 8, paddingBottom: 12 }, backupRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12 }, restoreRow: { flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14 }, deleteRow: { minWidth: 60, paddingHorizontal: 10, height: 48, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth }, day: { borderTopWidth: StyleSheet.hairlineWidth, gap: 8 } });
+const styles = StyleSheet.create({ content: { padding: 16, gap: 12 }, quota: { padding: 12, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 }, button: { paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderRadius: 12 }, periods: { maxHeight: 168, borderRadius: 12 }, periodsContent: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, dateList: { maxHeight: 320, borderRadius: 12 }, dateListContent: { paddingRight: 10 }, dateHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 64, paddingVertical: 10, gap: 12 }, dateActions: { gap: 8, paddingBottom: 12 }, backupRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12 }, restoreRow: { flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14 }, deleteRow: { minWidth: 60, paddingHorizontal: 10, height: 48, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth }, day: { borderTopWidth: StyleSheet.hairlineWidth, gap: 8 } });

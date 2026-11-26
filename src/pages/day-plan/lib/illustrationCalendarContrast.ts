@@ -1,3 +1,4 @@
+import { SEASON_WINTER_THEMES } from '../model/seasonWinterThemes';
 import { EVERYDAY_CINEMA_THEMES } from '../model/everydayCinemaThemes';
 import { WARM_SEPIA_OPEN_PANEL_THEMES } from '../model/warmSepiaThemes';
 import { CITYPOP_RETRO_THEMES } from '../model/citypopRetroThemes';
@@ -8,7 +9,7 @@ export const CALENDAR_CONTRAST: Record<string, { dates: string[]; weekdays: stri
 // All Everyday plates have light month, weekday and date surfaces.
 const everydayInk = '#28231D';
 const everydayPalette = { title: everydayInk, weekdays: Array(7).fill(everydayInk), dates: Array(42).fill(everydayInk) };
-for (const theme of [...EVERYDAY_CINEMA_THEMES, ...WARM_SEPIA_OPEN_PANEL_THEMES, ...TEXTURED_WATERCOLOR_THEMES, ...CITYPOP_RETRO_THEMES]) {
+for (const theme of [...EVERYDAY_CINEMA_THEMES, ...WARM_SEPIA_OPEN_PANEL_THEMES, ...TEXTURED_WATERCOLOR_THEMES, ...CITYPOP_RETRO_THEMES, ...SEASON_WINTER_THEMES]) {
   CALENDAR_CONTRAST[theme.themeId] = everydayPalette;
 }
 

@@ -4,7 +4,8 @@ import { configurePurchases, isPurchasesConfigured, resetPurchasesConfiguredForT
 const mockConfig = { enabled: true, key: 'appl_test' as string | null };
 jest.mock('@shared/config/revenueCat', () => ({ get REVENUECAT_ENABLED() { return mockConfig.enabled; }, getRevenueCatApiKey: () => mockConfig.key }));
 jest.mock('@shared/lib/supabase/heroAiAuth', () => { throw new Error('Subscription must not import Supabase auth'); });
-jest.mock('react-native-purchases', () => ({ __esModule: true, default: { configure: jest.fn(), setLogLevel: jest.fn(), isAnonymous: jest.fn(), logOut: jest.fn() }, LOG_LEVEL: { DEBUG: 'DEBUG' } }));
+jest.mock('expo-device', () => ({ isDevice: true }));
+jest.mock('react-native-purchases', () => ({ __esModule: true, default: { configure: jest.fn(), setLogLevel: jest.fn(), setLogHandler: jest.fn(), isAnonymous: jest.fn(), logOut: jest.fn() }, LOG_LEVEL: { DEBUG: 'DEBUG' } }));
 beforeEach(() => { resetPurchasesConfiguredForTests(); jest.clearAllMocks(); mockConfig.enabled = true; mockConfig.key = 'appl_test'; Object.defineProperty(Platform, 'OS', { value: 'ios', configurable: true }); jest.mocked(Purchases.isAnonymous).mockResolvedValue(true); });
 it('configures without a custom user ID and reuses the anonymous identity', async () => {
   expect(await configurePurchases()).toBe(true);

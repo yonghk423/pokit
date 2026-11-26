@@ -1,3 +1,4 @@
+import { DateInk } from './CalendarRangePlans';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { Image } from 'expo-image';
 import { useStoreArtwork } from '../lib/storeArtwork';
@@ -38,8 +39,8 @@ export function HeroClipboardCalendar({ width, height, month, today, miniature, 
         {Array.from({ length: 42 }, (_, i) => {
           const day = new Date(month.getFullYear(), month.getMonth(), i - offset + 1, 12), key = getLocalDateKey(day), current = day.getMonth() === month.getMonth();
           return <Pressable key={key} testID={`clipboard-day-${key}`} accessibilityRole="button" accessibilityLabel={key} disabled={miniature || !onSelectDate} onPress={() => { tapHaptic('select'); onSelectDate?.(key); }} style={{ width: 792 * s / 7, height: 787 * s / 6, padding: 7 * s, alignItems: 'flex-end' }}>
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: blue, opacity: current ? 1 : 0.3, fontSize: 25 * s, fontWeight: '600', textDecorationLine: key === getLocalDateKey(today) ? 'underline' : 'none' }}>{day.getDate()}</Text>
+            <View style={{ alignSelf:'stretch', alignItems:'flex-end', justifyContent:'center' }}>
+              <DateInk date={key}/><Text style={{ color: blue, opacity: current ? 1 : 0.3, fontSize: 25 * s, fontWeight: '600', textDecorationLine: key === getLocalDateKey(today) ? 'underline' : 'none' }}>{day.getDate()}</Text>
               {!miniature && (recordDates.includes(key) || eventDates.includes(key)) ? <View pointerEvents="none" testID={`clipboard-date-ring-${key}`} style={{ position: 'absolute', top: -4 * s, bottom: -4 * s, left: -9 * s, right: -9 * s, borderRadius: 50, borderWidth: Math.max(1, 2 * s), borderColor: '#C85B43' }} /> : null}
             </View>
             {photos[key] ? <View pointerEvents="none" testID={`clipboard-photo-${key}`} style={{ position: 'absolute', left: 10 * s, top: 38 * s, width: (792 / 7 - 20) * s, height: (787 / 6 - 46) * s, padding: 2 * s, paddingBottom: 6 * s, backgroundColor: '#FFFFFF' }}><HeroCalendarPhoto key={photos[key]} uri={resolveHeroArtworkUri(photos[key])} /></View> : null}

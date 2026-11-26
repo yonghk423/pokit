@@ -1,18 +1,24 @@
+import { rangePlansKey, readPlans, reachesPlanLimit, usedPlanColors, type CalendarPlan } from '@pages/day-plan/model/calendarRangePlans';
 import { mergeDependencies, replaceReferences, type BackupDependencies } from './dependencies';
 import { localStorageClient as storage } from '@shared/lib/storage/localStorageClient';
+import { INDEPENDENT_NOTES_KEY, readIndependentNotes, type CalendarNote } from '@pages/day-plan/model/calendarNotes';
 type Row = Record<string, any>;
 export const validDate = (s: string) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T12:00:00Z`)) && new Date(`${s}T12:00:00Z`).toISOString().slice(0, 10) === s;
 export function dateOf(value: unknown): string {
   const d = new Date(value as string | number);
   return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-export type DateData = { contentVersion?: 2; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null };
+export type DateData = { contentVersion?: 2; rangePlans?: CalendarPlan[]; independentNotes?: CalendarNote[]; monthlyNote?: string | null; story?: string | null; events?: Row[]; originals?: Row[]; date: string; dependencies?: BackupDependencies; gallery: Row[]; diaries: Row[]; scenes: Record<string, unknown>; stats: Row[]; memo: string | null; assignment: unknown; plan: Row | null };
 const read = (key: string): Row => storage.getJson<Row>(key) ?? {};
 const diaryDate = (diary: Row): string => validDate(diary.date) ? diary.date : /^legacy:.+:(\d{4}-\d{2}-\d{2})$/.exec(diary.id ?? '')?.[1] ?? dateOf(diary.createdAt);
 export function collectDate(date: string): DateData {
   if (!validDate(date)) throw new Error('올바른 날짜를 선택해 주세요.');
+  const independentNotes = readIndependentNotes();
+  const rangePlans = readPlans();
   return {
     contentVersion: 2, date,
+    ...(rangePlans.length ? { rangePlans } : {}),
+    ...(independentNotes.length ? { independentNotes } : {}),
     monthlyNote: storage.getItemRaw(`pokit:monthly-album-note:${date.slice(0, 7)}`),
     story: storage.getItemRaw(`pokit:canvas-note:${date}`),
     events: storage.getJson<Row[]>(`pokit:canvas-events:${date}`) ?? [],
@@ -27,7 +33,45 @@ export function localDates(): string[] {
     for (const key of storage.listKeys(prefix)) dates.add(key.slice(prefix.length));
   }
   for (const image of storage.getJson<Row[]>('pokit:drive-original-gallery:v1') ?? []) dates.add(dateOf(image.createdAt));
+  for (const plan of readPlans()) dates.add(plan.start);
+  if (readIndependentNotes().length) dates.add(dateOf(Date.now()));
   return [...dates].filter(validDate).sort().reverse();
+}
+function validNoteDocument(document: CalendarNote['inlineDocument']) {
+  return document === undefined || (document !== null && typeof document.text === 'string'
+    && Array.isArray(document.icons) && document.icons.every(icon => typeof icon === 'string'));
+}
+function mergeIndependentNotes(incoming: CalendarNote[]): CalendarNote[] {
+  if (!Array.isArray(incoming) || incoming.some(note => !note || typeof note.id !== 'string' || !note.id
+    || typeof note.text !== 'string' || !Number.isFinite(note.updatedAt)
+    || (note.inkHex !== undefined && typeof note.inkHex !== 'string')
+    || (note.inkColorId != null && typeof note.inkColorId !== 'string')
+    || !validNoteDocument(note.inlineDocument)
+    || (note.todos !== undefined && (!Array.isArray(note.todos) || note.todos.some(todo => !todo
+      || typeof todo.id !== 'string' || !todo.id || typeof todo.text !== 'string'
+      || typeof todo.completed !== 'boolean' || !validNoteDocument(todo.inlineDocument))
+      || new Set(note.todos.map(todo => todo.id)).size !== note.todos.length)))
+    || new Set(incoming.map(note => note.id)).size !== incoming.length) throw new Error('노트 백업 데이터가 손상됐어요.');
+  const merged = new Map(readIndependentNotes().map(note => [note.id, note]));
+  for (const note of incoming) {
+    const existing = merged.get(note.id);
+    if (!existing || !Number.isFinite(existing.updatedAt) || note.updatedAt >= existing.updatedAt) merged.set(note.id, note);
+  }
+  return [...merged.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+function mergeRangePlans(incoming: CalendarPlan[]) {
+  if (!Array.isArray(incoming) || incoming.some(p => !p || typeof p.id !== 'string' || !p.id
+    || typeof p.name !== 'string' || !validDate(p.start) || !validDate(p.end) || p.end < p.start
+    || typeof p.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(p.color) || typeof p.visibleOnCalendar !== 'boolean')
+    || new Set(incoming.map(p => p.id)).size !== incoming.length) throw new Error('기간 계획 백업 데이터가 손상됐어요.');
+  const ids = new Set(incoming.map(p => p.id));
+  const merged = [...incoming];
+  for (const plan of readPlans()) {
+    if (ids.has(plan.id)) continue;
+    const conflict = plan.visibleOnCalendar && (reachesPlanLimit(merged, plan) || usedPlanColors(merged, plan).has(plan.color));
+    merged.push(conflict ? { ...plan, visibleOnCalendar: false } : plan);
+  }
+  return merged;
 }
 function mergePhotoDate(data: DateData): Record<string, unknown> {
   if (!validDate(data.date) || !Array.isArray(data.diaries) || !Array.isArray(data.events) || !Array.isArray(data.originals)
@@ -42,6 +86,8 @@ function mergePhotoDate(data: DateData): Record<string, unknown> {
   const diaries = [...others, ...data.diaries];
   return {
     'pokit:comic-diaries:v1': { ...library, version: 1, diaries, activeId: diaries.some(value => value.id === library.activeId) ? library.activeId : null },
+    ...(data.rangePlans === undefined ? {} : { [rangePlansKey]: mergeRangePlans(data.rangePlans) }),
+    ...(data.independentNotes === undefined ? {} : { [INDEPENDENT_NOTES_KEY]: mergeIndependentNotes(data.independentNotes) }),
     ...(typeof data.monthlyNote === 'string' ? { [`pokit:monthly-album-note:${data.date.slice(0, 7)}`]: data.monthlyNote } : {}),
     [`pokit:canvas-note:${data.date}`]: data.story ?? '',
     [`pokit:canvas-events:${data.date}`]: data.events,

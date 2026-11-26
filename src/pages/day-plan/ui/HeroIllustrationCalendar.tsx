@@ -1,3 +1,4 @@
+import { DateInk } from './CalendarRangePlans';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { HeroCalendarPhoto } from './HeroCalendarPhoto';
 import { CalendarPaper } from './HeroCalendarDesigns';
@@ -132,6 +133,7 @@ function ArtworkCalendar({ assets, eventDates = [], width, height, month, today,
       const artwork = records.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri;
       const selected = key === getLocalDateKey(today);
       return <Pressable key={slot} testID={`illustration-calendar-day-${key}`} accessibilityRole="button" accessibilityLabel={`${key}${records.length ? translateUiText(", 기록 있음") : ''}${events.has(key) ? translateUiText(", 이벤트 또는 연동 일정 있음") : ''}`} accessibilityState={{ selected }} onPress={() => { tapHaptic('select'); onSelectDate(key); }} style={({ pressed }) => ({ position: 'absolute', ...frame, opacity: pressed ? .7 : 1 })}>
+        <DateInk date={key} top={content.numberTop} height={content.numberHeight}/>
         <Text testID={`illustration-calendar-number-${key}`} pointerEvents="none" allowFontScaling={false} style={{ ...textContrast(ink), ...(artwork ? { textShadowColor: ink === '#FFF8E8' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)', textShadowRadius: 2 } : {}), zIndex: 2, position: 'absolute', left: 0, top: content.numberTop, width: '100%', height: content.numberHeight, fontFamily: SERIF, textAlign: 'center', fontSize: content.numberSize, lineHeight: content.numberHeight, includeFontPadding: false, fontWeight: selected ? '700' : '400' }}>{day.getDate()}</Text>
         {events.has(key) ? <View pointerEvents="none" testID={`illustration-event-ring-${key}`} style={{ position: 'absolute', zIndex: 3, top: content.numberTop - content.numberSize * .06, left: (frame.width - content.numberSize * 1.6) / 2, width: content.numberSize * 1.6, height: content.numberHeight + content.numberSize * .12, borderRadius: 50, borderWidth: 1.3, borderColor: ink === '#FFF8E8' ? '#FFD294' : '#9B3E25', transform: [{ rotate: '-8deg' }] }} /> : null}
         {artwork ? <View pointerEvents="none" testID={`illustration-calendar-polaroid-${key}`} style={{ position: 'absolute', left: (frame.width - content.photoWidth) / 2, top: content.photoTop, width: content.photoWidth, height: content.photoHeight, zIndex: 0, padding: 0.75, backgroundColor: '#fff9e9', shadowColor: '#251c14', shadowOpacity: .20, shadowRadius: 1, shadowOffset: { width: 0, height: 1 } }}>

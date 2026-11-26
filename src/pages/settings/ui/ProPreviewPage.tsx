@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@shared/config/featureFlags';
 import { BrandColors } from '@shared/config/retroFlat';
 import { Image } from 'expo-image';
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
@@ -291,6 +292,8 @@ export function ProPreviewPage({ onClose, onActivated, onBusyChange, storeItems 
   const text = { color: p.title };
   const muted = { color: p.desc };
 
+  const appleOnly = FEATURE_FLAGS.googleCalendarFreeDuringReview;
+  const calendarBenefit = t(appleOnly ? 'proPreview.appleCalendarIntegration' : 'proPreview.calendarIntegration');
   const benefits = <>
     {([
       ['proPreview.filterTitle', 'proPreview.filterDetail', ['photo']],
@@ -311,9 +314,9 @@ export function ProPreviewPage({ onClose, onActivated, onBusyChange, storeItems 
         <ThemedText style={[styles.showcaseKicker, muted]}>05 / PRO</ThemedText>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <SettingsPenIcon name="calendar" size={36} color={p.title} />
-          <ThemedText style={[styles.showcaseTitle, text, { flex: 1 }]}>{t('proPreview.calendarIntegration')}</ThemedText>
+          <ThemedText style={[styles.showcaseTitle, text, { flex: 1 }]}>{calendarBenefit}</ThemedText>
         </View>
-        <ThemedText style={[styles.showcaseCopy, muted]}>{t('proPreview.calendarIntegrationDetail')}</ThemedText>
+        <ThemedText style={[styles.showcaseCopy, muted]}>{t(appleOnly ? 'proPreview.appleCalendarIntegrationDetail' : 'proPreview.calendarIntegrationDetail')}</ThemedText>
       </View>
     </ProReveal>
     <View style={styles.benefitFootnote}>
@@ -380,12 +383,13 @@ export function ProPreviewPage({ onClose, onActivated, onBusyChange, storeItems 
               <ThemedText style={[styles.benefitTableName, styles.description, text]}>{t('proPreview.table.feature')}</ThemedText>
               <ThemedText style={[styles.benefitTableValue, styles.description, text]}>Pro</ThemedText>
             </View>
-            {(['calendars', 'films', 'writing', 'tools', 'calendarSync', 'future'] as const).map(key => (
-              <View key={key} accessible accessibilityLabel={`${t(`proPreview.table.${key}`)}, ${t('proPreview.table.included')}`} style={[styles.benefitTableRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.border }]}>
-                <ThemedText style={[styles.benefitTableName, styles.description, text]}>{t(`proPreview.table.${key}`)}</ThemedText>
+            {(['calendars', 'films', 'writing', 'tools', 'calendarSync', 'future'] as const).map(key => {
+              const label = appleOnly && key === 'calendarSync' ? calendarBenefit : t(`proPreview.table.${key}`);
+              return <View key={key} accessible accessibilityLabel={`${label}, ${t('proPreview.table.included')}`} style={[styles.benefitTableRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.border }]}>
+                <ThemedText style={[styles.benefitTableName, styles.description, text]}>{label}</ThemedText>
                 <ThemedText style={[styles.benefitTableValue, styles.description, text]}>{t('proPreview.table.included')}</ThemedText>
-              </View>
-            ))}
+              </View>;
+            })}
           </View>
         </View>
         <ProReveal><IllustratedCalendarShowcase titleColor={p.title} detailColor={p.desc} /></ProReveal>

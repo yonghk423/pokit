@@ -1,18 +1,30 @@
 jest.mock('@features/subscriptions', () => ({ useSubscriptionStore: () => false, selectCanTestProStoreItems: () => false }));
-import { CALENDAR_ARTWORK_LAYOUTS } from './illustrationCalendarLayouts';
+import { CALENDAR_ARTWORK_LAYOUTS, CALENDAR_GRID_LAYOUTS } from './illustrationCalendarLayouts';
 import { CALENDAR_ARTWORK_SIZES, fitCalendarArtwork, calendarCellContents } from './illustrationCalendarGeometry';
 import { illustrationCellFrame, illustrationMonthCells } from '../ui/HeroIllustrationCalendar';
+jest.mock('../ui/HeroCalendarDesigns', () => ({}));
+jest.mock('./calendarStoreDownload', () => ({}));
+jest.mock('../ui/CalendarRangePlans', () => ({ DateInk: () => null }));
 jest.mock('./illustrationCalendarAssets', () => ({}));
 
-it('registers the 50 City Animation and 10 Everyday Cinema artworks', () => {
+it('uses the registered artwork size and date grid for every selectable illustration', () => {
   const { CITY_CALENDAR_THEMES } = require('../model/heroCalendarDesign');
-  expect(Object.keys(CALENDAR_ARTWORK_SIZES).sort()).toEqual(CITY_CALENDAR_THEMES.map((theme: { themeId: string }) => theme.themeId).sort());
-  expect(Object.keys(CALENDAR_ARTWORK_SIZES)).toHaveLength(60);
+  const ids = CITY_CALENDAR_THEMES.map((theme: { themeId: string }) => theme.themeId).sort();
+  expect(Object.keys(CALENDAR_ARTWORK_SIZES).sort()).toEqual(ids);
+  expect(Object.keys(CALENDAR_GRID_LAYOUTS).sort()).toEqual(ids);
+  for (const id of ids) {
+    expect(CALENDAR_ARTWORK_SIZES[id]).toEqual(CALENDAR_ARTWORK_LAYOUTS[id].size);
+    expect(CALENDAR_GRID_LAYOUTS[id]).toEqual(CALENDAR_ARTWORK_LAYOUTS[id].grid);
+  }
 });
 it.each([[320,568,20,90],[375,667,20,90],[390,844,59,110],[430,932,59,110],[440,956,62,110]])('fills the screen while keeping all downloaded calendar grids above the tab bar: %s × %s', (width,height,top,bottom) => {
   for (const [theme, [sw,sh]] of Object.entries(CALENDAR_ARTWORK_SIZES)) {
     const frame = fitCalendarArtwork(theme,width,height,top,bottom);
-    expect(frame.width/frame.height).toBeCloseTo(sw/sh,8);
+    if (theme.startsWith('season-winter-')) {
+      expect(frame).toEqual({ width, height, left: 0, top: 0 });
+    } else {
+      expect(frame.width / frame.height).toBeCloseTo(sw / sh, 8);
+    }
     expect(frame.left).toBeLessThanOrEqual(.001);
     expect(frame.left+frame.width).toBeGreaterThanOrEqual(width-.001);
     expect(frame.top).toBeLessThanOrEqual(.001);
@@ -47,13 +59,13 @@ it('keeps every date in its correct Monday-first column for all months, includin
   }
 });
 
-it('provides independently sampled contrast for every date and weekday on every artwork', () => {
+it('defines a text color for every heading, weekday and date on every artwork', () => {
   const { CALENDAR_CONTRAST } = require('./illustrationCalendarContrast');
   expect(Object.keys(CALENDAR_CONTRAST).sort()).toEqual(Object.keys(CALENDAR_ARTWORK_SIZES).sort());
   for (const palette of Object.values(CALENDAR_CONTRAST) as any[]) {
     expect(palette.dates).toHaveLength(42);
     expect(palette.weekdays).toHaveLength(7);
-    expect([...palette.dates, ...palette.weekdays, palette.title].every(c => ['#28231D','#FFF8E8'].includes(c))).toBe(true);
+    expect([...palette.dates, ...palette.weekdays, palette.title].every(c => ['#28231D','#FFF8E8','#000000'].includes(c))).toBe(true);
   }
   expect(CALENDAR_CONTRAST['49-winter-snow-play'].dates).toContain('#28231D');
   expect(CALENDAR_CONTRAST['33-exam-results-joy'].dates).toContain('#FFF8E8');

@@ -279,7 +279,7 @@ export function HeroCanvasNote({ date, ink, initialHeight = 0, monthlyHeight, ke
             style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingVertical: 9,
               borderBottomWidth: index < calendarRows.length - 1 ? StyleSheet.hairlineWidth : 0, borderStyle: 'dotted', borderColor: `${noteInk}55` }}>
             <ThemedText style={{ color: noteInk, fontSize: 14, minWidth: 44 }}>{event.allDay ? translateUiText("종일") : new Date(event.startDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
-            <ThemedText style={{ flex: 1, color: noteInk, fontSize: 16 }}>{event.title}</ThemedText>
+            <ThemedText style={{ flex: 1, color: noteInk, fontSize: 16 }}>{event.title?.trim() || translateUiText("제목 없는 일정")}</ThemedText>
             <ThemedText style={{ color: noteInk, opacity: 0.65, fontSize: 13, maxWidth: '32%', textAlign: 'right' }}>
               {provider}{event.calendarId?.startsWith('google-task:') ? ' · ' + translateUiText("할 일") : ''}
             </ThemedText>

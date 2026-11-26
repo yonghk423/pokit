@@ -1,3 +1,4 @@
+import { isDevice } from 'expo-device';
 import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
@@ -23,6 +24,18 @@ async function initializePurchases(): Promise<boolean> {
 
   try {
     if (__DEV__) {
+      if (Platform.OS === 'ios' && !isDevice) {
+        Purchases.setLogHandler((level, message) => {
+          const storeKitDiagnostic = message.includes('StoreKitInternalError.noAccount')
+            || message.includes("Couldn't find previous transactions or an AppTransaction")
+            || message.includes('There was a problem with the App Store.');
+          const output = `[RevenueCat] ${message}`;
+          if (storeKitDiagnostic) console.info(output);
+          else if (level === LOG_LEVEL.ERROR) console.error(output);
+          else if (level === LOG_LEVEL.WARN) console.warn(output);
+          else console.debug(output);
+        });
+      }
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
     }
     if (!sdkInitialized) { Purchases.configure({ apiKey }); sdkInitialized = true; }

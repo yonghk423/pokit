@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as fs from 'expo-file-system/legacy';
 import { resolveHeroArtworkUri } from '../../pages/day-plan/lib/heroArtworkUri';
-import { localStorageClient as storage, flushLocalStorageClientWrites } from '@shared/lib/storage/localStorageClient';
+import { localStorageClient as storage, flushLocalStorageClientWrites, physicalStorageKey } from '@shared/lib/storage/localStorageClient';
 import { loadHeroAiLibrary } from '../../pages/day-plan/lib/heroAiLibrary';
 import { dateOf, collectDate, mergeDate, type DateData, validDate } from './dateData';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
@@ -76,7 +76,7 @@ function walk(value: unknown, replace: (s: string) => string): any {
 }
 type Manifest = { format: 'pokit-date'; version: 1; date: string; data: DateData; assets: { ref: string; id: string; size: number; ext: string }[] };
 export async function backupDate(date: string, progress: (s: string) => void) {
-  const data = collectDate(date);
+  const { independentNotes, rangePlans, ...data } = collectDate(date);
   data.originals = (await loadHeroOriginalPhotoLibrary()).filter(image => dateOf(image.createdAt) === date);
   const uris = new Set<string>(); walk(data, s => { if (/^(file|content):\/\//.test(s)) uris.add(s); return s; });
   const created: string[] = []; const assets: Manifest['assets'] = []; const refs = new Map<string, string>();
@@ -93,7 +93,7 @@ export async function backupDate(date: string, progress: (s: string) => void) {
       if (Number(remote.size) !== info.size) throw new Error('이미지 저장 크기가 일치하지 않아요.');
       const ref = `pokit-asset:${assets.length}`; refs.set(uri, ref); assets.push({ ref, id, size: info.size, ext });
     }
-    const manifest: Manifest = { format: 'pokit-date', version: 1, date, data: walk(data, s => refs.get(s) ?? s), assets };
+    const manifest: Manifest = { format: 'pokit-date', version: 1, date, data: { ...walk(data, s => refs.get(s) ?? s), independentNotes, rangePlans }, assets };
     // A file becomes discoverable only once its complete manifest has been uploaded.
     progress('백업 마무리 중');
     const id = await createFile(`YOUR-DAY-${date}-${Date.now()}.json`, 'application/json', date, 'pokit-pending-v1'); created.push(id);
@@ -131,11 +131,12 @@ export async function restoreDate(backup: DriveBackup, progress: (s: string) => 
       if (result.status !== 200 || !info.exists || info.isDirectory || info.size !== asset.size) throw new Error('이미지 다운로드가 완료되지 않았어요. 다시 시도해 주세요.');
       refs.set(asset.ref, path);
     }
-    const restored = walk(manifest.data, s => {
+    const { independentNotes, rangePlans, ...dateData } = manifest.data;
+    const restored: DateData = { ...walk(dateData, s => {
       if (s.startsWith('pokit-asset:')) { const path = refs.get(s); if (!path) throw new Error('백업 이미지가 누락됐어요.'); return path; }
       if (/^(file|content):\/\//.test(s)) throw new Error('백업에 원본 이미지가 누락됐어요.');
       return s;
-    });
+    }), independentNotes, rangePlans };
     const writes = mergeDate(restored, restorePreferences);
     if (restored.contentVersion !== 2) {
     const replacedImages = (await loadHeroAiLibrary()).filter(image => dateOf(image.createdAt) === manifest.date);
@@ -144,26 +145,42 @@ export async function restoreDate(backup: DriveBackup, progress: (s: string) => 
     for (const image of restored.gallery) { const name = image.uri?.split('/').pop(); if (name) deleted.delete(name); }
     writes['pokit:hero-ai-library-deleted:v1'] = [...deleted];
     }
-    const previous = Object.fromEntries(Object.keys(writes).map(key => [key, storage.getItemRaw(key)]));
+    const records = Object.entries(writes).map(([key, value]) => ({
+      key,
+      nativeKey: physicalStorageKey(key),
+      previous: storage.getItemRaw(key),
+      next: key.startsWith('pokit:canvas-note:') || key.startsWith('pokit:monthly-album-note:')
+        ? String(value)
+        : JSON.stringify(value),
+    }));
+    const previous = Object.fromEntries(records.map(record => [record.nativeKey, record.previous]));
     progress('날짜별 기록 복구 중');
-    // Persist rollback material before changing any records. Retained for recovery.
-    const journal = `${dir}rollback.json`;
-    await fs.writeAsStringAsync(journal, JSON.stringify({ date: manifest.date, previous }));
-    storage.setJson('pokit:drive-restore-rollback', { date: manifest.date, previous }); await flushLocalStorageClientWrites();
+    // Recovery uses physical keys so it can run before the storage profile is hydrated.
+    const journal = { date: manifest.date, previous };
+    await fs.writeAsStringAsync(`${dir}rollback.json`, JSON.stringify(journal));
+    storage.setJson('pokit:drive-restore-rollback', journal);
+    await flushLocalStorageClientWrites();
     await AsyncStorage.setItem('pokit:drive-restore-pending', JSON.stringify(previous));
     try {
-      for (const [key, value] of Object.entries(writes)) { if ((key.startsWith('pokit:canvas-note:') || key.startsWith('pokit:monthly-album-note:'))) storage.setItemRaw(key, String(value)); else storage.setJson(key, value); }
+      for (const record of records) storage.setItemRaw(record.key, record.next);
       await flushLocalStorageClientWrites();
       if (Platform.OS !== 'web') {
-        const persisted = await AsyncStorage.multiGet(Object.keys(writes));
-        for (const [key, value] of persisted) if (value !== ((key.startsWith('pokit:canvas-note:') || key.startsWith('pokit:monthly-album-note:')) ? String(writes[key]) : JSON.stringify(writes[key]))) throw new Error('기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.');
+        const persisted = new Map(await AsyncStorage.multiGet(records.map(record => record.nativeKey)));
+        if (records.some(record => persisted.get(record.nativeKey) !== record.next)) {
+          throw new Error('기기 저장을 확인하지 못했어요. 이전 기록으로 되돌립니다.');
+        }
       }
       await AsyncStorage.removeItem('pokit:drive-restore-pending');
-    }
-    catch (error) { for (const [key, value] of Object.entries(previous)) { if (value === null) storage.removeItem(key); else storage.setItemRaw(key, value); } await flushLocalStorageClientWrites();
+    } catch (error) {
+      for (const record of records) {
+        if (record.previous === null) storage.removeItem(record.key);
+        else storage.setItemRaw(record.key, record.previous);
+      }
+      await flushLocalStorageClientWrites();
       await AsyncStorage.multiSet(Object.entries(previous).filter((entry): entry is [string, string] => entry[1] !== null));
       await AsyncStorage.multiRemove(Object.entries(previous).filter(([, value]) => value === null).map(([key]) => key));
       await AsyncStorage.removeItem('pokit:drive-restore-pending');
-      throw error; }
+      throw error;
+    }
   } catch (error) { await fs.deleteAsync(dir, { idempotent: true }); throw error; }
 }

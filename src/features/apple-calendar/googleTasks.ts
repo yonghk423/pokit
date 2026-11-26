@@ -1,4 +1,4 @@
-import { hasCalendarProAccess } from './calendarProAccess';
+import { hasGoogleCalendarAccess } from './calendarProAccess';
 import type { DeviceEvent } from './calendarDates';
 import { googleSdk } from '../googleSignin';
 
@@ -7,7 +7,7 @@ const base = 'https://tasks.googleapis.com/tasks/v1';
 async function readPages<T>(path: string, token: string, params: URLSearchParams): Promise<T[]> {
   const items: T[] = [];
   do {
-    if (!hasCalendarProAccess()) return [];
+    if (!hasGoogleCalendarAccess()) return [];
     const response = await fetch(base + path + '?' + params, { headers: { Authorization: 'Bearer ' + token } });
     if (!response.ok) throw new Error('google_tasks_fetch');
     const page = await response.json() as { items?: T[]; nextPageToken?: string };
@@ -23,7 +23,7 @@ function localDate(date: Date) {
 }
 
 export async function googleTasks(email: string, start: Date, end: Date): Promise<DeviceEvent[]> {
-  if (!hasCalendarProAccess()) return [];
+  if (!hasGoogleCalendarAccess()) return [];
   const sdk = googleSdk();
   const login = await sdk.signInSilently();
   if (login.type !== 'success' || login.data.user.email !== email) throw new Error('google_reconnect');
@@ -43,5 +43,5 @@ export async function googleTasks(email: string, start: Date, end: Date): Promis
       events.push({ id: 'google-task:' + list.id + ':' + task.id, calendarId: 'google-task:' + list.id, calendarTitle: 'Google Tasks · ' + list.title, sourceName: 'Google', title: task.title, startDate, endDate, allDay: true });
     }
   }
-  return hasCalendarProAccess() ? events : [];
+  return hasGoogleCalendarAccess() ? events : [];
 }

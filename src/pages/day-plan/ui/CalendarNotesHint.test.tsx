@@ -15,26 +15,83 @@ jest.mock('./HeroIllustrationCalendar', () => ({ HeroIllustrationCalendar: () =>
 jest.mock('./HeroCalendarWidgetSync', () => ({ HeroCalendarWidgetSync: () => null }));
 jest.mock('./HeroCalendarNote', () => ({ HeroCalendarNote: () => null }));
 
+jest.mock('./CalendarRangePlans', () => {
+  const { createContext } = require('react');
+  return { CalendarPlansPanel: () => null, PlanAccentContext: createContext(null), PlanContext: createContext([]), readPlans: () => [] };
+});
+
+it('shows first-time plans guidance independently for someone who has opened notes', () => {
+  const notesKey = 'pokit:calendar-notes-opened-v1';
+  const plansKey = 'pokit:calendar-plans-opened-v1';
+  localStorageClient.setItemRaw(notesKey, 'opened');
+  localStorageClient.removeItem(plansKey);
+  const params = { date: new Date(2026, 10, 1), month: new Date(2026, 10, 1), diaries: [], isDark: false, onSelectDate: jest.fn(), lastVisibleSize: { current: { width: 390, height: 700 } } };
+  const scrollTo = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => { tree = create(<HeroCalendarBackground {...params} />, { createNodeMock: () => ({ scrollTo }) }); });
+  const plansHints = () => tree.root.findAllByProps({ accessibilityLabel: 'comicCalendar.swipeDownForPlans' });
+  try {
+    expect(tree.root.findAllByProps({ accessibilityLabel: 'comicCalendar.swipeUpForNotes' })).toHaveLength(0);
+    expect(plansHints().length).toBeGreaterThan(0);
+    act(() => plansHints()[0].props.onPress());
+    expect(plansHints()).toHaveLength(0);
+    expect(localStorageClient.getItemRaw(plansKey)).toBe('opened');
+    act(() => tree.update(<HeroCalendarBackground {...params} focused={false} />));
+    act(() => tree.update(<HeroCalendarBackground {...params} />));
+    expect(plansHints()).toHaveLength(0);
+  } finally {
+    act(() => tree.unmount());
+    localStorageClient.removeItem(notesKey);
+    localStorageClient.removeItem(plansKey);
+  }
+});
+
 it.each(['tap', 'swipe'])('shows the hint once and dismisses it on %s', action => {
-  const key = 'pokit:calendar-notes-hint-seen-v1';
+  const key = 'pokit:calendar-notes-opened-v1';
+  const plansKey = 'pokit:calendar-plans-opened-v1';
+  const previousHintKey = 'pokit:calendar-notes-hint-seen-v1';
+  localStorageClient.setItemRaw(previousHintKey, 'seen');
   localStorageClient.removeItem(key);
+  localStorageClient.removeItem(plansKey);
   const params = { date: new Date(2026, 10, 1), month: new Date(2026, 10, 1), diaries: [], isDark: false, onSelectDate: jest.fn(), lastVisibleSize: { current: { width: 390, height: 700 } } };
   const scrollTo = jest.fn();
   let tree!: ReactTestRenderer;
   act(() => { tree = create(<HeroCalendarBackground {...params} visible={false} />, { createNodeMock: () => ({ scrollTo }) }); });
   const hints = () => tree.root.findAllByProps({ accessibilityLabel: 'comicCalendar.swipeUpForNotes' });
+  const plansHints = () => tree.root.findAllByProps({ accessibilityLabel: 'comicCalendar.swipeDownForPlans' });
   try {
     expect(localStorageClient.getItemRaw(key)).toBeNull();
     act(() => tree.update(<HeroCalendarBackground {...params} />));
     expect(hints().length).toBeGreaterThan(0);
-    if (action === 'tap') act(() => hints()[0].props.onPress());
-    else act(() => tree.root.findByProps({ testID: 'calendar-note-scroll' }).props.onScroll({ nativeEvent: { contentOffset: { y: 60 } } }));
+    expect(plansHints()).toHaveLength(0);
+    expect(localStorageClient.getItemRaw(key)).toBeNull();
+    act(() => tree.update(<HeroCalendarBackground {...params} focused={false} />));
+    act(() => tree.update(<HeroCalendarBackground {...params} />));
+    expect(hints().length).toBeGreaterThan(0);
+    const scroll = tree.root.findByProps({ testID: 'calendar-note-scroll' }).props;
+    const scrollToOffset = (y: number) => scroll.onScroll({ nativeEvent: { contentOffset: { y } } });
+    act(() => scrollToOffset(0));
+    expect(localStorageClient.getItemRaw(plansKey)).toBeNull();
+    if (action === 'tap') {
+      act(() => hints()[0].props.onPress());
+      expect(localStorageClient.getItemRaw(plansKey)).toBeNull();
+    } else {
+      act(() => scrollToOffset(364));
+      act(() => { scroll.onScrollBeginDrag({ nativeEvent: { contentOffset: { y: 364 } } }); scrollToOffset(420); });
+      expect(localStorageClient.getItemRaw(key)).toBeNull();
+      act(() => scrollToOffset(728));
+    }
     expect(hints()).toHaveLength(0);
-    expect(localStorageClient.getItemRaw(key)).toBe('seen');
+    expect(localStorageClient.getItemRaw(key)).toBe('opened');
+    expect(plansHints()).toHaveLength(0);
+    act(() => { scroll.onScrollBeginDrag({ nativeEvent: { contentOffset: { y: 728 } } }); scrollToOffset(0); });
+    expect(localStorageClient.getItemRaw(plansKey)).toBeNull();
+    act(() => scrollToOffset(364));
+    expect(plansHints().length).toBeGreaterThan(0);
     act(() => tree.update(<HeroCalendarBackground {...params} visible={false} />));
     act(() => tree.update(<HeroCalendarBackground {...params} />));
     expect(hints()).toHaveLength(0);
-  } finally { act(() => tree.unmount()); localStorageClient.removeItem(key); }
+  } finally { act(() => tree.unmount()); localStorageClient.removeItem(key); localStorageClient.removeItem(plansKey); localStorageClient.removeItem(previousHintKey); }
 });
 
 jest.mock('react-native-reanimated', () => ({

@@ -1,4 +1,4 @@
-import { hasCalendarProAccess } from './calendarProAccess';
+import { hasGoogleCalendarAccess } from './calendarProAccess';
 import { create } from 'zustand';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { googleSdk } from '../googleSignin';
@@ -22,7 +22,7 @@ export function selectGoogleCalendar(email: string | null) {
   useGoogleCalendar.setState({ email, tasksEmail: null });
 }
 export async function connectGoogleCalendar() {
-  if (!hasCalendarProAccess()) throw new Error('subscription_required');
+  if (!hasGoogleCalendarAccess()) throw new Error('subscription_required');
   const sdk = googleSdk();
   await sdk.hasPlayServices();
   const existing = useGoogleCalendar.getState().email;
@@ -40,7 +40,7 @@ export async function connectGoogleCalendar() {
   if (grant.data.user.email !== email || !required.every(permission => grant.data.scopes.includes(permission))) {
     throw new Error('google_permissions');
   }
-  if (!hasCalendarProAccess() || useGoogleCalendar.getState().email !== existing) return;
+  if (!hasGoogleCalendarAccess() || useGoogleCalendar.getState().email !== existing) return;
   localStorageClient.setJson(key, email);
   localStorageClient.setJson(tasksKey, email);
   useGoogleCalendar.setState({ email, tasksEmail: email });
@@ -51,7 +51,7 @@ function timestamp(value: GoogleDate) {
   return value.dateTime ?? value.date + 'T00:00:00';
 }
 export async function googleEvents(email: string, start: Date, end: Date): Promise<DeviceEvent[]> {
-  if (!hasCalendarProAccess()) return [];
+  if (!hasGoogleCalendarAccess()) return [];
   const sdk = googleSdk();
   const login = await sdk.signInSilently();
   if (login.type !== 'success' || login.data.user.email !== email) throw new Error('google_reconnect');
@@ -59,7 +59,7 @@ export async function googleEvents(email: string, start: Date, end: Date): Promi
   const events: DeviceEvent[] = [];
   const params = new URLSearchParams({ singleEvents: 'true', timeMin: start.toISOString(), timeMax: end.toISOString(), maxResults: '2500' });
   do {
-    if (!hasCalendarProAccess()) return [];
+    if (!hasGoogleCalendarAccess()) return [];
     const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?' + params, { headers: { Authorization: 'Bearer ' + accessToken } });
     if (!response.ok) throw new Error('google_calendar_fetch');
     const page = await response.json() as { nextPageToken?: string; items?: { id: string; summary?: string; start?: GoogleDate; end?: GoogleDate; status?: string }[] };
@@ -70,5 +70,5 @@ export async function googleEvents(email: string, start: Date, end: Date): Promi
     if (!page.nextPageToken) break;
     params.set('pageToken', page.nextPageToken);
   } while (true);
-  return hasCalendarProAccess() ? events : [];
+  return hasGoogleCalendarAccess() ? events : [];
 }

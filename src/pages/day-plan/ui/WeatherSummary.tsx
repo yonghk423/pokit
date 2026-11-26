@@ -20,8 +20,7 @@ import { ServiceTutorialCoach } from '../../welcome-intro/ui/ServiceTutorialCoac
 import { useServiceTutorial } from '../../welcome-intro/model/serviceTutorial';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 
-// Keep outfit artwork available while temporarily hiding the weather character.
-const SHOW_WEATHER_CHARACTER = false;
+const SHOW_WEATHER_CHARACTER = true;
 
 const OPENWEATHER_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY?.trim();
 const CACHE_MS = 15 * 60 * 1000;

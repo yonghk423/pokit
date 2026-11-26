@@ -12,10 +12,10 @@ export function saveCalendarNotes(month: string, notes: CalendarNote[]) {
   localStorageClient.setJson(key(month), notes);
 }
 
-const independentKey = 'pokit:independent-notes';
+export const INDEPENDENT_NOTES_KEY = 'pokit:independent-notes';
 /** Preserve old monthly records, including repeated draft IDs, without deleting originals. */
 export function readIndependentNotes(): CalendarNote[] {
-  const saved = localStorageClient.getJson<CalendarNote[]>(independentKey);
+  const saved = localStorageClient.getJson<CalendarNote[]>(INDEPENDENT_NOTES_KEY);
   if (Array.isArray(saved)) return saved;
   return localStorageClient.listKeys('pokit:calendar-notes:')
     .filter(storageKey => /^pokit:calendar-notes:\d{4}-\d{2}$/.test(storageKey))
@@ -25,5 +25,5 @@ export function readIndependentNotes(): CalendarNote[] {
     }).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 export function saveIndependentNotes(notes: CalendarNote[]) {
-  localStorageClient.setJson(independentKey, notes);
+  localStorageClient.setJson(INDEPENDENT_NOTES_KEY, notes);
 }

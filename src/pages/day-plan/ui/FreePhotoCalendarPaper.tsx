@@ -1,3 +1,4 @@
+import { DateInk } from './CalendarRangePlans';
 import { CalendarEventDot } from './CalendarEventDot';
 import { Image, Platform, Pressable, Text, View } from 'react-native';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -54,7 +55,7 @@ export function FreePhotoCalendarPaper({ eventDates = [], widgetSize, design, wi
  const selected=key===getLocalDateKey(today);
  return <Pressable key={key} accessibilityLabel={key} disabled={miniature || !onSelectDate} onPress={() => { tapHaptic('select'); onSelectDate?.(key); }} style={{ width:'14.2857%', height:rowHeight, alignItems:'center', overflow:'hidden' }}>
  {!miniature && <CalendarEventDot date={key} visible={eventDates.includes(key)} size={dotSize} color={ink === '#FFF5E4' ? '#FFE19D' : '#A64C37'} outline={outlineEventDot ? '#FFF5E4' : undefined} />}
- <Text allowFontScaling={false} style={{ color:ink, opacity:active?1:.4, fontFamily:font, fontSize:dateSize, lineHeight:dateHeight, height:dateHeight + 2, flexShrink:0, borderWidth:selected?1:0, borderColor:ink, borderRadius:20, paddingHorizontal:3 }}>{date.getDate()}</Text>
+ <View style={{width:"100%",alignItems:"center"}}><DateInk date={key}/><Text allowFontScaling={false} style={{ color:ink, opacity:active?1:.4, fontFamily:font, fontSize:dateSize, lineHeight:dateHeight, height:dateHeight + 2, flexShrink:0, borderWidth:selected?1:0, borderColor:ink, borderRadius:20, paddingHorizontal:3 }}>{date.getDate()}</Text></View>
  {uri && !miniature && <View style={{ width:grid.width/7*.8, height:Math.max(0, rowHeight - dotSpace - dateHeight - 3), borderWidth:1, borderColor:'#F8F0E5', borderRadius:2, overflow:'hidden' }}><HeroCalendarPhoto uri={uri}/></View>}
  </Pressable>;
  })}</View>

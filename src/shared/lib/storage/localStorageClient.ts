@@ -142,7 +142,8 @@ export function getDevelopmentStorageProfile(): DevelopmentStorageProfile | null
     return value === 'ko' || value === 'en' || value === 'ja' || value === 'zh-TW' ? value : null;
   } catch { return null; }
 }
-function physicalStorageKey(key: string): string {
+/** Resolve the native key for operations that verify or recover persisted data. */
+export function physicalStorageKey(key: string): string {
   const profile = getDevelopmentStorageProfile();
   return profile && isPokitStorageKey(key) && !key.startsWith(DEV_PROFILE_PREFIX)
     ? `${DEV_PROFILE_PREFIX}${profile}:data:${key}` : key;

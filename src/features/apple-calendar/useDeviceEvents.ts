@@ -1,5 +1,6 @@
 import { selectIsPro, useSubscriptionStore } from '@features/subscriptions/model/subscriptionStore';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
+import { canUseGoogleCalendar } from './calendarProAccess';
 import { googleTasks } from './googleTasks';
 import { t } from '@shared/lib/i18n/model/translate';
 import { googleEvents, useGoogleCalendar } from './googleCalendar';
@@ -9,17 +10,18 @@ import { calendarError, deviceEvents, useAppleCalendar } from './appleCalendar';
 import type { DeviceEvent } from './calendarDates';
 export function useDeviceEvents(year: number, month: number, ko: boolean, enabled = true, nearbyMonths = false) {
   const isPro = useSubscriptionStore(selectIsPro);
-  const canRead = enabled && isPro;
+  const canReadApple = enabled && isPro;
+  const canReadGoogle = enabled && canUseGoogleCalendar(isPro);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = useCallback(() => setRefreshKey(value => value + 1), []);
   const [loading, setLoading] = useState(false);
   const email = useGoogleCalendar(state => state.email);
   const tasksEmail = useGoogleCalendar(state => state.tasksEmail);
   const ids = useAppleCalendar(state => state.ids);
-  const connected = canRead && (!!email || ids.length > 0);
+  const connected = (canReadGoogle && !!email) || (canReadApple && ids.length > 0);
   type MonthResult = { events: DeviceEvent[]; error: string };
   const cache = useRef(new Map<string, MonthResult>());
-  const source = JSON.stringify([email, tasksEmail, ids, ko]);
+  const source = JSON.stringify([canReadGoogle, canReadApple, email, tasksEmail, ids, ko]);
   const key = (y: number, m: number) => JSON.stringify([source, y, m]);
   const [, redraw] = useState(0);
   useEffect(() => {
@@ -34,9 +36,9 @@ export function useDeviceEvents(year: number, month: number, ko: boolean, enable
       try {
         const start = new Date(year, month - Number(nearbyMonths), 1), end = new Date(year, month + 1 + Number(nearbyMonths), 1);
         const [device, google, tasks] = await Promise.allSettled([
-          deviceEvents(ids, start, end),
-          email ? googleEvents(email, start, end) : Promise.resolve([] as DeviceEvent[]),
-          email && tasksEmail === email ? googleTasks(email, start, end) : Promise.resolve([] as DeviceEvent[]),
+          canReadApple ? deviceEvents(ids, start, end) : Promise.resolve([] as DeviceEvent[]),
+          canReadGoogle && email ? googleEvents(email, start, end) : Promise.resolve([] as DeviceEvent[]),
+          canReadGoogle && email && tasksEmail === email ? googleTasks(email, start, end) : Promise.resolve([] as DeviceEvent[]),
         ]);
         const remote = google.status === 'fulfilled' ? google.value : [];
         const identity = (event: DeviceEvent) => JSON.stringify([event.title, +new Date(event.startDate), +new Date(event.endDate)]);
@@ -65,7 +67,7 @@ export function useDeviceEvents(year: number, month: number, ko: boolean, enable
     };
     void refresh();
     return () => { alive = false; };
-  }, [email, tasksEmail, ids, year, month, ko, refreshKey, connected, nearbyMonths, source]);
+  }, [email, tasksEmail, ids, year, month, ko, refreshKey, connected, nearbyMonths, canReadApple, canReadGoogle, source]);
   // Clear synchronously on disconnect, even before the effect runs.
   return { connected, ...((connected && cache.current.get(key(year, month))) || { events: [], error: '' }), loading: connected && loading, refresh };
 }

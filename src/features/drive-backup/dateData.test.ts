@@ -86,3 +86,60 @@ it('ignores retired puzzle data in older backups without reading or overwriting 
   expect(collectDate('2026-11-06')).not.toHaveProperty('puzzles');
   expect(storage.getJson('pokit:puzzle-history')).toEqual(stored);
 });
+
+it('backs up date-independent Notes and to-dos even when there are no dated records', () => {
+  const key = 'pokit:independent-notes';
+  const notes = [{
+    id: 'note', text: 'file:///a literal note', updatedAt: 100,
+    inlineDocument: { text: 'file:///a literal note', icons: [] },
+    inkHex: '#342211',
+    todos: [{ id: 'task', text: 'Pack the blanket', completed: true, inlineDocument: { text: 'Pack the blanket', icons: ['checklist'] } }],
+  }];
+  storage.setJson(key, notes);
+  expect(localDates()).toContain(dateOf(Date.now()));
+  const snapshot = JSON.parse(JSON.stringify(collectDate('2026-11-06')));
+  expect(snapshot.independentNotes).toEqual(notes);
+  storage.removeItem(key);
+  const writes = mergeDate(snapshot);
+  expect(writes[key]).toEqual(notes);
+  storage.setJson(key, writes[key]);
+  expect(mergeDate(snapshot)[key]).toEqual(notes);
+});
+
+it('keeps newer local notes and unrelated notes when restoring, and accepts older backup formats', () => {
+  const key = 'pokit:independent-notes';
+  const original = { id: 'note', text: 'Before', updatedAt: 100 };
+  const newer = { ...original, text: 'After', updatedAt: 200 };
+  const unrelated = { id: 'unrelated', text: 'Keep', updatedAt: 150 };
+  storage.setJson(key, [original]);
+  const snapshot = collectDate('2026-11-06');
+  storage.setJson(key, [newer, unrelated]);
+  expect(mergeDate(snapshot)[key]).toEqual([newer, unrelated]);
+  expect(mergeDate({ ...snapshot, independentNotes: undefined })).not.toHaveProperty(key);
+});
+
+it('rejects invalid note tasks and duplicate note IDs before restoring', () => {
+  const note = { id: 'note', text: 'Note', updatedAt: 100 };
+  const snapshot = collectDate('2026-11-06');
+  expect(() => mergeDate({ ...snapshot, independentNotes: [note, note] })).toThrow('노트 백업 데이터가 손상됐어요.');
+  const malformed = { ...note, todos: [{ id: 'task', text: 'Task' }] };
+  expect(() => mergeDate({ ...snapshot, independentNotes: [malformed] } as typeof snapshot)).toThrow('노트 백업 데이터가 손상됐어요.');
+});
+
+it('restores calendar highlights across months and keeps hidden plans hidden', () => {
+  const { readPlans, plansOnDate, rangePlansKey } = require('../../pages/day-plan/model/calendarRangePlans');
+  const visible = { id: 'one', name: 'file:///literal', start: '2026-11-29', end: '2026-12-02', color: '#E6E0F6', visibleOnCalendar: true };
+  const hidden = { ...visible, id: 'two', color: '#E4B3AD', visibleOnCalendar: false };
+  storage.setJson(rangePlansKey, [visible, hidden]);
+  expect(localDates()).toContain(visible.start);
+  const snapshot = JSON.parse(JSON.stringify(collectDate(visible.start)));
+  storage.removeItem(rangePlansKey);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    storage.setJson(rangePlansKey, mergeDate(snapshot)[rangePlansKey]);
+    expect(readPlans()).toEqual([visible, hidden]);
+    for (const date of [visible.start, '2026-12-01', visible.end]) expect(plansOnDate(readPlans(), date)).toEqual([visible]);
+    expect(plansOnDate(readPlans(), '2026-12-03')).toEqual([]);
+  }
+  delete snapshot.rangePlans;
+  expect(mergeDate(snapshot)[rangePlansKey]).toBeUndefined();
+});

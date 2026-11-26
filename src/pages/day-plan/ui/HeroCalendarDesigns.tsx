@@ -1,3 +1,4 @@
+import { DateInk } from './CalendarRangePlans';
 import { matchesStoreAccess, type StoreAccessFilter } from '../model/storeAccessFilter';
 import { RETIRED_CALENDAR_DESIGNS } from '../model/retiredCalendarDesigns';
 import { PHOTO_CALENDARS, freePhotoCalendar } from '../model/freePhotoCalendars';
@@ -18,7 +19,7 @@ import { HeroPolaroidSurface, HeroPhotoEmulsion } from './HeroPolaroidSurface';
 import { resolveHeroArtworkUri } from '../lib/heroArtworkUri';
 import { AppAlert } from '@shared/lib/app-alert';
 import { useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
 import { applyHeroCalendarDesign, useHeroCalendarDesign, useHeroCalendarCover, saveHeroCalendarCover } from '../model/heroCalendarDesign';
 import { calendarPaperDays, groupCalendarDiaries } from '../lib/heroCalendar';
@@ -40,8 +41,8 @@ const requiresCalendarDownload = (design: string) => isPremiumPaper(design) || d
 
 export { calendarPaperDays } from '../lib/heroCalendar';
 
-export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates = [], design, month, today, diaries, onSelectDate, miniature = false, previewSavedCover = false, layoutHeight, layoutWidth, wallpaper = false, hideMonthHeading = false, onPreviousMonth, onNextMonth }: {
-  widgetSize?: 'small' | 'large'; selectedPreview?: boolean; eventDates?: string[]; previewSavedCover?: boolean; wallpaper?: boolean; hideMonthHeading?: boolean; onPreviousMonth?: () => void; onNextMonth?: () => void; layoutHeight?: number; layoutWidth?: number; design: Design; month: Date; today: Date; diaries: ComicDiary[]; onSelectDate?: (date: string) => void; miniature?: boolean;
+export function CalendarPaper({ viewportHeight, paperCenterProgress, widgetSize, selectedPreview = false, eventDates = [], design, month, today, diaries, onSelectDate, miniature = false, previewSavedCover = false, layoutHeight, layoutWidth, wallpaper = false, hideMonthHeading = false, onPreviousMonth, onNextMonth }: {
+  viewportHeight?: number; paperCenterProgress?: Animated.AnimatedInterpolation<number>; widgetSize?: 'small' | 'large'; selectedPreview?: boolean; eventDates?: string[]; previewSavedCover?: boolean; wallpaper?: boolean; hideMonthHeading?: boolean; onPreviousMonth?: () => void; onNextMonth?: () => void; layoutHeight?: number; layoutWidth?: number; design: Design; month: Date; today: Date; diaries: ComicDiary[]; onSelectDate?: (date: string) => void; miniature?: boolean;
 }) {
   const widgetImageReady = useCalendarWidgetImageReady();
   const [measuredWidth, setWidth] = useState(miniature ? 100 : 330);
@@ -81,7 +82,7 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
   const photoWidth = Math.min(width - 88 * scale, layoutHeight != null ? layoutHeight * 0.42 / 1.2 : 220 * scale) * coverScale;
   const photoHeight = photoWidth * 1.2 + 25 * scale * coverScale;
   if (freePhotoCalendar(design)) return <FreePhotoCalendarPaper eventDates={eventDates} widgetSize={widgetSize} design={design} width={frameWidth} height={layoutHeight ?? frameWidth * 1.8} month={month} today={today} diaries={diaries} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
-  if (isPremiumPaper(design)) return <PremiumCalendarPaper widgetSize={widgetSize} design={design} month={month} today={today} diaries={miniature ? [] : diaries} eventDates={eventDates} width={width} height={layoutHeight} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
+  if (isPremiumPaper(design)) return <PremiumCalendarPaper viewportHeight={viewportHeight} paperCenterProgress={paperCenterProgress} widgetSize={widgetSize} design={design} month={month} today={today} diaries={miniature ? [] : diaries} eventDates={eventDates} width={width} height={layoutHeight} miniature={miniature} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />;
   if (design === 'clipboard') return frame(<HeroClipboardCalendar width={width} height={layoutHeight} month={month} today={today} miniature={miniature} eventDates={eventDates} recordDates={[...grouped.keys()]} photos={Object.fromEntries([...grouped].flatMap(([key, records]) => { const uri = records.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri; return uri ? [[key, uri]] : []; }))} onSelectDate={onSelectDate} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} />);
   const paper = <View testID="calendar-paper" pointerEvents={miniature ? 'none' : 'auto'} onLayout={layoutWidth == null ? e => { const next = e.nativeEvent.layout.width; if (next > 0) setWidth(current => current === next ? current : next); } : undefined} style={[styles.paper, wallpaper && { backgroundColor: framed ? '#FAFAF6' : 'transparent', shadowOpacity: 0, elevation: 0 }, design === 'weather' && { backgroundColor: '#FFFFFF', shadowOpacity: 0, borderRadius: 18 * scale, overflow: 'hidden' }, { padding: 19 * scale, paddingTop: (design === 'weather' && !miniature ? 24 : wallpaper ? 0 : fitted ? 24 : 37) * scale, paddingBottom: (wallpaper ? 6 : 19) * scale, ...(fitted ? { height: weatherLayout?.contentHeight ?? layoutHeight } : {}) }]}>
     {design === 'weather' && <><View testID="weather-calendar-summary">{miniature ? <WeatherCalendarHeader preview scale={weatherScale} /> : widgetSize ? <WeatherCalendarHeader displayLocale="en" report={getCalendarWeatherReport()} scale={weatherScale} /> : <WeatherSummary ink="#50514F" muted="#757671" showUnavailable presentation="calendar" scale={weatherScale} />}</View></>}
@@ -110,8 +111,8 @@ export function CalendarPaper({ widgetSize, selectedPreview = false, eventDates 
         const hasRecord = grouped.has(key), isToday = key === getLocalDateKey(today);
         return <Pressable key={key} disabled={miniature || !onSelectDate} testID={miniature ? undefined : `calendar-paper-day-${key}`} accessibilityRole="button" accessibilityLabel={`${key}${hasRecord ? translateUiText(", 기록 있음") : ''}${eventDates.includes(key) ? translateUiText(", 이벤트 또는 연동 일정 있음") : ''}`} onPress={() => { tapHaptic('select'); onSelectDate?.(key); }} style={({ pressed }) => ({ width: '14.2857%', ...(fitted ? { height: '100%' } : { height: miniature ? (isPhoto ? 25 : isGrid ? 53 : 47) * scale : Math.max(44, (isPhoto ? 25 : isGrid ? 53 : 47) * scale) }), padding: 3 * scale, opacity: pressed ? 0.45 : 1 })}>
           <View style={{ flex: 1, borderWidth: isGrid ? StyleSheet.hairlineWidth : 0, borderColor: isIllustration ? 'rgba(83, 77, 64, 0.32)' : '#BFC3BC', padding: isGrid ? 3 * scale : 0, alignItems: isGrid ? 'flex-start' : 'center', backgroundColor: isIllustration ? 'rgba(255, 250, 240, 0.42)' : 'transparent' }}>
-            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }}>
-            <Text testID={miniature ? `calendar-preview-date-${key}` : undefined} allowFontScaling={!miniature} numberOfLines={1} style={{ color: current ? '#252A26' : '#C7CAC4', fontSize: fitted && !miniature ? Math.max(12, (design === 'weather' ? 13 : isPhoto ? 12 : isIllustration ? 20 : isGrid ? 12 : 21) * scale) : (design === 'weather' ? 13 : isPhoto ? 9 : isIllustration ? 20 : isGrid ? 12 : 21) * scale, fontWeight: isIllustration || design === 'bold' ? '700' : '400', textDecorationLine: isToday ? 'underline' : 'none' }}>{day.getDate()}</Text>
+            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <DateInk date={key}/><Text testID={miniature ? `calendar-preview-date-${key}` : undefined} allowFontScaling={!miniature} numberOfLines={1} style={{ color: current ? '#252A26' : '#C7CAC4', fontSize: fitted && !miniature ? Math.max(12, (design === 'weather' ? 13 : isPhoto ? 12 : isIllustration ? 20 : isGrid ? 12 : 21) * scale) : (design === 'weather' ? 13 : isPhoto ? 9 : isIllustration ? 20 : isGrid ? 12 : 21) * scale, fontWeight: isIllustration || design === 'bold' ? '700' : '400', textDecorationLine: isToday ? 'underline' : 'none' }}>{day.getDate()}</Text>
               {eventDates.includes(key) ? <View pointerEvents="none" testID={`calendar-event-ring-${key}`} style={{ position: 'absolute', top: -2, bottom: -2, left: -6, right: -6, borderRadius: 50, borderWidth: 1.2, borderColor: '#A5644F', transform: [{ rotate: '-8deg' }] }} /> : null}
             </View>
             {isGrid && !isIllustration && current && !thumbnail && <View pointerEvents="none" style={{ width: '100%', flex: 1, justifyContent: 'space-evenly' }}>{[0, 1, 2].map(line => <View key={line} style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E0E2DC' }} />)}</View>}

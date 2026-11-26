@@ -1,8 +1,9 @@
+import { DateInk } from './CalendarRangePlans';
 import { CalendarEventDot } from './CalendarEventDot';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { installedPaper } from '../lib/calendarStoreDownload';
-import { useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Animated, Image, Pressable, Text, View } from 'react-native';
 import Svg, { Rect, Line, Ellipse, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { type PremiumPaper, premiumPapers, isRaisedCalendar } from '../model/premiumCalendarPapers';
 import { getLocalDateKey } from '@entities/day-plan/lib/localDateKey';
@@ -17,8 +18,8 @@ export const premiumPaperRatios: Record<PremiumPaper, number> = {
 };
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries, eventDates, width, height, miniature, onSelectDate, onPreviousMonth, onNextMonth }: {
-  widgetSize?: 'small' | 'large'; design: PremiumPaper; month: Date; today: Date; diaries: ComicDiary[]; eventDates: string[];
+export function PremiumCalendarPaper({ viewportHeight, paperCenterProgress, widgetSize, design, month, today, diaries, eventDates, width, height, miniature, onSelectDate, onPreviousMonth, onNextMonth }: {
+  viewportHeight?: number; paperCenterProgress?: Animated.AnimatedInterpolation<number>; widgetSize?: 'small' | 'large'; design: PremiumPaper; month: Date; today: Date; diaries: ComicDiary[]; eventDates: string[];
   width: number; height?: number; miniature: boolean; onSelectDate?: (date: string) => void;
   onPreviousMonth?: () => void; onNextMonth?: () => void;
 }) {
@@ -61,8 +62,18 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
   const navigationBackground = emerald ? '#005C43' : berryPurple ? '#891E60' : '#003A87';
   const font = (size: number) => ({ fontSize: size * s, color: ink });
   const navigate = (delta: number) => { tapHaptic('select'); (delta < 0 ? onPreviousMonth : onNextMonth)?.(); };
-  return <View style={{ width, height: height ?? (paperHeight + 2 * paperWidth * shadowRatio + attachmentTop), justifyContent: kraft ? 'flex-start' : 'center', alignItems: 'center' }}>
-    <View style={{ width: paperWidth, height: paperHeight, marginTop: attachmentTop, borderRadius: (soft ? 34 : glass ? 27 : 12) * s }}>
+  const centerOffset = useMemo(() => paperCenterProgress && height
+    ? paperCenterProgress.interpolate({
+        inputRange: [0, 1, 2],
+        outputRange: [
+          0,
+          kraft ? 0 : Math.max(0, (height - paperHeight) / 2),
+          Math.max(0, (viewportHeight ?? height) - paperHeight - attachmentTop - 8),
+        ],
+      })
+    : 0, [paperCenterProgress, height, kraft, paperHeight, viewportHeight, attachmentTop]);
+  return <View style={{ width, height: height ?? (paperHeight + 2 * paperWidth * shadowRatio + attachmentTop), justifyContent: kraft || paperCenterProgress ? 'flex-start' : 'center', alignItems: 'center' }}>
+    <Animated.View style={{ transform: [{ translateY: centerOffset }], width: paperWidth, height: paperHeight, marginTop: attachmentTop, borderRadius: (soft ? 34 : glass ? 27 : 12) * s }}>
       <Svg pointerEvents="none" width={paperWidth * (1 + shadowRatio)} height={paperHeight + paperWidth * shadowRatio} viewBox={`0 0 ${330 * (1 + shadowRatio)} ${canvasHeight + 330 * shadowRatio}`} style={{ position: 'absolute', top: 0, left: 0 }}>
         {Array.from({ length: 24 }, (_, index) => {
           const offset = (index + 1) * 330 * shadowRatio / 24;
@@ -117,10 +128,11 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
             const thumbnail = grouped.get(key)?.flatMap(record => record.scenes).find(scene => scene.artworkUri)?.artworkUri;
             const active = key === getLocalDateKey(today) || key === rangeStart;
             return <Pressable key={key} disabled={miniature} accessibilityLabel={key} onPress={() => { tapHaptic('select'); setRangeStart(key); onSelectDate?.(key); }} style={{ width: '14.2857%', padding: 2 * s }}>
-              <View style={{ flex: 1, alignItems: 'center', borderWidth: glass || metal || leather || ivory ? 0.5 : 0, borderColor: glass ? '#8AB89A' : '#D7CFC3', backgroundColor: glass ? 'rgba(255,255,255,0.21)' : 'transparent', borderRadius: glass ? 5 * s : 0 }}>
+              <View style={{ flex: 1, alignItems: 'center', backgroundColor: glass ? 'rgba(255,255,255,0.21)' : 'transparent', borderRadius: glass ? 5 * s : 0 }}>
                 {topDot && !miniature && <CalendarEventDot date={key} visible={eventDates.includes(key)} color="#A64C37" size={Math.min(4, 3 * s)} />}
-                <View style={{ borderWidth: active || (!topDot && eventDates.includes(key)) ? 1 : 0, borderColor: navy ? '#94B9D3' : emerald ? '#DAFFEC' : berryPurple ? '#FFE8F4' : cobaltBlue ? '#E2ECFF' : soft ? '#419C82' : '#BC7565', borderRadius: soft ? 5 * s : 20 * s, backgroundColor: active && soft ? navy ? '#456D94' : vivid ? activeDayBackground : '#65B99C' : 'transparent', paddingHorizontal: 3 * s }}>
-                  <Text allowFontScaling={false} style={[font(13), { color: current ? active && soft ? vivid ? activeDayInk : '#FFFFFF' : ink : mutedInk, fontFamily: metal || ivory || leather ? 'Georgia' : undefined }]}>{day.getDate()}</Text>
+                <View style={{ alignSelf:"stretch", alignItems:"center", borderRadius: soft ? 5 * s : 20 * s, backgroundColor: active && soft ? navy ? '#456D94' : vivid ? activeDayBackground : '#65B99C' : 'transparent', paddingHorizontal: 3 * s }}>
+                  <DateInk date={key}/><Text allowFontScaling={false} style={[font(13), { color: current ? active && soft ? vivid ? activeDayInk : '#FFFFFF' : ink : mutedInk, fontFamily: metal || ivory || leather ? 'Georgia' : undefined }]}>{day.getDate()}</Text>
+                  {(active || (!topDot && eventDates.includes(key))) && <View pointerEvents="none" style={{ position: 'absolute', zIndex: 3, top: 0, bottom: 0, left: 0, right: 0, borderWidth: 1, borderColor: navy ? '#94B9D3' : emerald ? '#DAFFEC' : berryPurple ? '#FFE8F4' : cobaltBlue ? '#E2ECFF' : soft ? '#419C82' : '#BC7565', borderRadius: soft ? 5 * s : 20 * s }} />}
                 </View>
                 {thumbnail && current && <View style={{ flex: 1, minHeight: 0, width: '70%' }}><HeroCalendarPhoto uri={thumbnail} /></View>}
               </View>
@@ -128,6 +140,6 @@ export function PremiumCalendarPaper({ widgetSize, design, month, today, diaries
           })}</View>)}
         </View>
       </View>
-    </View>
+    </Animated.View>
   </View>;
 }

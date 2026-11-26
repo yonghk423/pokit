@@ -1,4 +1,4 @@
-jest.mock('./calendarProAccess', () => ({ hasCalendarProAccess: jest.fn(() => true) }));
+jest.mock('./calendarProAccess', () => ({ hasGoogleCalendarAccess: jest.fn(() => true) }));
 import { googleTasks } from './googleTasks';
 import { googleSdk } from '../googleSignin';
 import { eventsOnDay } from './calendarDates';
