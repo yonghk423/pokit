@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AppAlert } from '@shared/lib/app-alert';
 import { Keyboard, Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import Svg, { Path, Rect } from 'react-native-svg';
@@ -24,10 +25,10 @@ const newNoteId = () => `note-${Date.now()}-${Math.random().toString(36).slice(2
 const newTaskId = () => `todo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const copy = {
-  ko: { taskHint: '어떤 일을 해야 하나요?', hint: '기억하고 싶은 생각을 자유롭게 적어보세요.', add: '새 노트', list: '목록', back: '노트로 돌아가기', done: '완료', empty: '아직 노트가 없어요. 새 노트를 써보세요.', untitled: '새 노트' },
-  en: { taskHint: 'What needs to be done?', hint: 'Write down anything you want to remember.', add: 'New note', list: 'List', back: 'Back to note', done: 'Done', empty: 'No notes yet. Start a new note.', untitled: 'New note' },
-  ja: { taskHint: '何をする予定ですか？', hint: '覚えておきたいことを自由に書いてみましょう。', add: '新しいノート', list: '一覧', back: 'ノートに戻る', done: '完了', empty: 'ノートはまだありません。新しく書いてみましょう。', untitled: '新しいノート' },
-  zh: { taskHint: '有什麼待辦事項？', hint: '自由寫下想記住的事。', add: '新增筆記', list: '列表', back: '返回筆記', done: '完成', empty: '還沒有筆記，開始寫一篇吧。', untitled: '新筆記' },
+  ko: { deleteNote: '이 노트를 삭제할까요?', taskHint: '어떤 일을 해야 하나요?', hint: '기억하고 싶은 생각을 자유롭게 적어보세요.', add: '새 노트', list: '목록', back: '노트로 돌아가기', done: '완료', empty: '아직 노트가 없어요. 새 노트를 써보세요.', untitled: '새 노트' },
+  en: { deleteNote: 'Delete this note?', taskHint: 'What needs to be done?', hint: 'Write down anything you want to remember.', add: 'New note', list: 'List', back: 'Back to note', done: 'Done', empty: 'No notes yet. Start a new note.', untitled: 'New note' },
+  ja: { deleteNote: 'このノートを削除しますか？', taskHint: '何をする予定ですか？', hint: '覚えておきたいことを自由に書いてみましょう。', add: '新しいノート', list: '一覧', back: 'ノートに戻る', done: '完了', empty: 'ノートはまだありません。新しく書いてみましょう。', untitled: '新しいノート' },
+  zh: { deleteNote: '要刪除這篇筆記嗎？', taskHint: '有什麼待辦事項？', hint: '自由寫下想記住的事。', add: '新增筆記', list: '列表', back: '返回筆記', done: '完成', empty: '還沒有筆記，開始寫一篇吧。', untitled: '新筆記' },
 };
 
 export function HeroCalendarNote({ design, height, keyboardVisible = false, onFocus }: { design: string; height: number; keyboardVisible?: boolean; onFocus: () => void }) {
@@ -89,6 +90,19 @@ export function HeroCalendarNote({ design, height, keyboardVisible = false, onFo
     setColorOpen(false);
   };
   const commit = (next: CalendarNote[]) => { saveIndependentNotes(next); setNotes(next); };
+  const confirmDelete = (item: CalendarNote, title: string) => {
+    AppAlert.alert(labels.deleteNote, title, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => {
+        const remaining = readIndependentNotes().filter(entry => entry.id !== item.id);
+        commit(remaining);
+        if (selected === item.id) {
+          setSelected(remaining[0]?.id ?? newNoteId());
+          setMode('note');
+        }
+      } },
+    ]);
+  };
   const todos = note?.todos ?? [];
   const [draftTodoId, setDraftTodoId] = useState(newTaskId);
   const displayedTodos: CalendarTodo[] = [...todos, { id: draftTodoId, text: '', completed: false }];
@@ -134,7 +148,18 @@ export function HeroCalendarNote({ design, height, keyboardVisible = false, onFo
     <View style={{ flex: 1, backgroundColor: theme.paper, overflow: 'hidden' }}>
 
       {listing ? <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {notes.length === 0 ? <ThemedText style={{ paddingVertical: 20, color: theme.ink }}>{labels.empty}</ThemedText> : notes.map(item => <Pressable key={item.id} accessibilityRole="button" onPress={() => { setSelected(item.id); setListing(false); }} style={{ paddingVertical: 14, borderBottomWidth: .5, borderColor: theme.rule }}><ThemedText numberOfLines={2} style={{ color: theme.ink }}>{item.text.trim() || item.todos?.find(todo => todo.text.trim())?.text || labels.untitled}</ThemedText></Pressable>)}
+        {notes.length === 0 ? <ThemedText style={{ paddingVertical: 20, color: theme.ink }}>{labels.empty}</ThemedText> : notes.map(item => {
+          const preview = item.text.trim() || item.todos?.find(todo => todo.text.trim())?.text || labels.untitled;
+          const title = preview.split('\n')[0];
+          return <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5, borderColor: theme.rule }}>
+            <Pressable accessibilityRole="button" onPress={() => { setSelected(item.id); setListing(false); }} style={{ flex: 1, paddingVertical: 14 }}>
+              <ThemedText numberOfLines={2} style={{ color: theme.ink }}>{preview}</ThemedText>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${t('common.delete')} · ${title}`} onPress={() => confirmDelete(item, title)} style={{ ...buttonStyle, alignItems: 'center' }}>
+              <Svg width={19} height={19} viewBox="0 0 24 24" accessible={false}><Path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 10.5v6M14 10.5v6" fill="none" stroke={theme.ink} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+            </Pressable>
+          </View>;
+        })}
       </ScrollView> : mode === 'todo' ? <ScrollView ref={todoScroll} onLayout={event => { setTodoViewport(event.nativeEvent.layout.height); if (activeTodo.current) revealTodo(activeTodo.current); }} keyboardDismissMode="none" nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 80 }}>
         {displayedTodos.map(todo => <Animated.View key={todo.id} entering={todo.id === draftTodoId ? TODO_ROW_ENTER : undefined} onLayout={event => { todoLayouts.current[todo.id] = event.nativeEvent.layout; }} style={{ flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: .5, borderColor: theme.rule }}>
           <Pressable testID={`todo-check-${todo.id}`} accessibilityRole="checkbox" accessibilityLabel={todo.text || 'Task'} accessibilityState={{ checked: todo.completed, disabled: todo.id === draftTodoId }} disabled={todo.id === draftTodoId} onPress={() => handleUpdateTodos(todos.map(item => item.id === todo.id ? { ...item, completed: !item.completed } : item))} style={{ minWidth: 44, height: todoControlHeight, justifyContent: 'center' }}><Svg width={23} height={23} viewBox="0 0 24 24" accessible={false}><Rect x={3} y={3} width={18} height={18} rx={4} fill={todo.completed ? theme.ink : 'none'} fillOpacity={todo.completed ? .1 : 1} stroke={theme.ink} strokeOpacity={todo.completed ? .65 : .4} strokeWidth={1.3} />{todo.completed && <Path d="m7.5 12 3 3 6-6" fill="none" stroke={theme.ink} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />}</Svg></Pressable>

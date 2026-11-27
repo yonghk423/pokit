@@ -99,6 +99,7 @@ export const HeroInlineNote = memo(function HeroInlineNote({ storageKey, sources
     {!initialized && !failed ? <HeroContentSkeleton ink={ink} testID="hero-note-skeleton" /> : null}
     {failed ? <Pressable testID="hero-note-retry" accessibilityRole="button" onPress={() => { generation.current++; ready.current = false; setFailed(false); setInitialized(false); setAttempt(value => value + 1); }} style={{ minHeight: 48, justifyContent: 'center' }}><ThemedText style={{ color: ink }}>{translateUiText('기록을 다시 불러오려면 눌러주세요.')}</ThemedText></Pressable> : null}
     <WebView key={attempt} ref={web} testID={testID ?? "hero-canvas-note"} source={source} originWhitelist={['about:blank']} javaScriptEnabled
+      showsVerticalScrollIndicator={false}
     onLayout={() => {
       // Entering editing changes the WebView's frame. Restore the selection only
       // after that native layout has settled, without needing another user tap.

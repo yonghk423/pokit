@@ -9,7 +9,7 @@ import { HeroPhotoWall, PhotoWallHeader, PhotoWallClip, PHOTO_WALL_HEADER_HEIGHT
 import { HeroTrashIcon } from './HeroTrashIcon';
 import type { TrashBinStyle } from '@shared/ui/icon-symbol/TrashIcon';
 import { useHeroTrashBinStyle } from '../model/heroTrashBinStyle';
-import { heroCameraBottom } from './HeroCameraPrintAnimation';
+import { HeroCameraPrintAnimation, heroCameraBottom } from './HeroCameraPrintAnimation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DayPlanCanvasContext } from '../model/dayPlanHeaderActions';
 import { HeroRestingCamera, cameraFootprints } from './HeroRestingCamera';
@@ -68,7 +68,8 @@ let lastBoardWidth = 0;
 type BoardItem = Omit<CircularRoutineItem, 'completed'> & { photoFit?: 'cover' | 'contain'; completed?: boolean; memo?: string; artworkUri?: string; archiveDate?: string; exportDate?: string | number; fontId?: AppFontId };
 type Common = { ink: string; muted: string; isDark: boolean; choices: Record<string, ComicSceneId> };
 type SceneLibrary = readonly typeof COMIC_SCENES[number][];
-export function ComicDayBoard({ syncMainState = true, presentationOverride, emptyContent, focusSceneId, onOpenBag, historyOverview = false, overviewOpen, onOverviewChange, onAddPhoto, onCreateRandom, onDraftChange, onActiveSceneChange, hideEntryActions = false, sceneLibrary = SELECTABLE_COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, trashBinStyle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, character = COMIC_CHARACTERS[0], onSelectCharacter, onRenameCharacter }: Common & {
+export function ComicDayBoard({ pendingPrintUri, syncMainState = true, presentationOverride, emptyContent, focusSceneId, onOpenBag, historyOverview = false, overviewOpen, onOverviewChange, onAddPhoto, onCreateRandom, onDraftChange, onActiveSceneChange, hideEntryActions = false, sceneLibrary = SELECTABLE_COMIC_SCENES, hideCharacterHeading = false, detailOpen = false, diaryTitle, trashBinStyle, items, ink, muted, isDark, choices, onOpen, onEditCard, onComplete, onAdd, onEditTime, onRemove, onRemoveMany, characterName, character = COMIC_CHARACTERS[0], onSelectCharacter, onRenameCharacter }: Common & {
+  pendingPrintUri?: string | null;
   syncMainState?: boolean;
   presentationOverride?: 'stack' | 'carousel';
   emptyContent?: ReactNode;
@@ -360,8 +361,8 @@ export function ComicDayBoard({ syncMainState = true, presentationOverride, empt
   const mainCamera = dockVisible && (syncMainState || historyOverview) ? <Pressable
     testID="hero-duvet-camera" accessibilityRole="button" accessibilityLabel={t('comicDay.photo.choose')}
     onPress={() => { tapHaptic(); (onAddPhoto ?? onAdd)(); }}
-    style={({ pressed }) => ({ position: 'absolute', right: 20, bottom: dockBottom, zIndex: 3, width: 75, height: 53, transform: [ { translateY: pressed ? 1.5 : 0 }, { scale: pressed ? 0.985 : 1 }] })}>
-    {({ pressed }) => <View style={{ position: 'absolute', right: 0, bottom: 0, width: photoWallActive ? 51 : 64, height: photoWallActive ? 36 : 45.2 }}><HeroRestingCamera active={pressed} dark={isDark} raised={historyOverview} onPhotoWall={photoWallActive} /></View>}
+    style={{ position: 'absolute', right: 20, bottom: dockBottom, zIndex: 3, width: 75, height: 53 }}>
+    {({ pressed }) => <View style={{ position: 'absolute', right: 0, bottom: 0, width: photoWallActive ? 51 : 64, height: photoWallActive ? 36 : 45.2 }}>{pendingPrintUri && <HeroCameraPrintAnimation key={pendingPrintUri} uri={pendingPrintUri} />}<HeroRestingCamera active={pressed || !!pendingPrintUri} dark={isDark} raised={historyOverview} onPhotoWall={photoWallActive} /></View>}
   </Pressable> : null;
   const trashIconSize = photoWallActive ? 32 : 35;
   const cameraGroundInset = (53 - cameraFootprints[cameraStyle].y) * (photoWallActive ? 0.8 : 1);

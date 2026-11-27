@@ -2,7 +2,7 @@ import { AppWallpaperBackground } from '@shared/ui/app-wallpaper';
 import { translateUiText } from '@shared/lib/i18n/lib/translateUiText';
 import { ProDiaryDecoration } from './ProDiaryDecoration';
 import { ThemedText as Text } from '@shared/ui/themed-text';
-import { HeroCameraPrintAnimation, heroCameraBottom } from './HeroCameraPrintAnimation';
+import { CAMERA_PRINT_DURATION } from './HeroCameraPrintAnimation';
 import { HeroCanvasNote } from './HeroCanvasNote';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setCalendarBackdropVisible } from '../model/heroCalendarDesign';
@@ -37,7 +37,11 @@ export function ComicDayPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const [printingUri, setPrintingUri] = useState<string | null>(null);
-  const finishPrinting = useCallback(() => setPrintingUri(null), []);
+  useEffect(() => {
+    if (!printingUri) return;
+    const timer = setTimeout(() => setPrintingUri(null), CAMERA_PRINT_DURATION);
+    return () => clearTimeout(timer);
+  }, [printingUri]);
   const [canvasHeight, setCanvasHeight] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(true);
   const { generationJob, historyCreate, historyPhotoDate, historyEntry, diaryDate, calendarWidget } = useLocalSearchParams<{ generationJob?: string; historyCreate?: string; historyPhotoDate?: string; historyEntry?: string; diaryDate?: string; calendarWidget?: string }>();
@@ -194,7 +198,6 @@ export function ComicDayPage() {
         muted={muted}
         isDark={isDark}
       />
-      {printingUri && !calendarVisible ? <HeroCameraPrintAnimation key={printingUri} uri={printingUri} bottom={heroCameraBottom(insets.bottom)} dark={isDark} onComplete={finishPrinting} /> : null}
       {!calendarVisible && !photoActive && overviewOpen ? <HeroCanvasNote key={selectedDate} initialHeight={canvasHeight} date={selectedDate} ink={ink} returnAction={leadingActions} /> : null}
     </View>
   );

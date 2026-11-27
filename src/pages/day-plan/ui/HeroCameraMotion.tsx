@@ -40,8 +40,10 @@ export function HeroCameraMotion({ active, children, cameraId = 'mini-evo' }: { 
     </Animated.View>
     <Animated.View testID="hero-camera-bounce" style={[StyleSheet.absoluteFill, { transform: [
       { translateY: progress.interpolate({ inputRange: [0, 0.2, 0.45, 0.7, 1], outputRange: [0, -profile.lift, profile.lift / 4, -profile.lift / 4, 0] }) },
+      ...(cameraId === 'mini-evo' ? [] : [
       { scale: progress.interpolate({ inputRange: [0, 0.2, 0.45, 1], outputRange: [1, 1 + profile.lift / 80, 0.99, 1] }) },
       { rotate: progress.interpolate({ inputRange: [0, 0.2, 0.45, 0.7, 1], outputRange: ['0deg', profile.tilt + 'deg', -profile.tilt / 2 + 'deg', profile.tilt / 4 + 'deg', '0deg'] }) },
+      ]),
     ] }]}>{children}</Animated.View>
   </View>;
 }

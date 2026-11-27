@@ -44,6 +44,7 @@ export const proDiaryFolders: Record<string, string> = {
   "date-label-bunny": "date-labels",
   "tab-label-bunny": "tab-labels",
   "mini-bunny-trash": "trash-bins",
+  "mini-chick-clip": "clips",
   "mini-bunny-clip": "clips",
   "date-label-toast": "date-labels",
   "mini-toast-label": "tab-labels",

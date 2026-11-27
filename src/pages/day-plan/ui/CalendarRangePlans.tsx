@@ -460,7 +460,7 @@ const s=StyleSheet.create({row:{flexDirection:'row',alignItems:'center',justifyC
   basicSwatchButton: { width: 44, height: 44, justifyContent: 'center', flexShrink: 1 },
   basicSwatch: { width: '91%', height: 34, borderWidth: 1, borderRadius: 2 },
   visibilityToggle: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  highlighterHeading: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  highlighterHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   colorPreview: { width: 24, height: 13, borderWidth: StyleSheet.hairlineWidth, borderRadius: 2 },
   moreColors: { width: 44, height: 44, flexShrink: 1, alignItems: 'center', justifyContent: 'center' },
   proPalette: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 4, paddingTop: 4 },
