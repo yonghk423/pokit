@@ -360,6 +360,21 @@ export default function Library() {
   const catalogMenuButton = <Pressable accessibilityRole="button" accessibilityLabel={t('library.catalog.menu')} accessibilityState={{ expanded: menu }} onPress={() => setMenu(!menu)} style={styles.arrow}>
     <Svg width={22} height={22} viewBox="0 0 22 22"><Path d="M3 5h16M3 11h16M3 17h16" stroke={ink} strokeWidth={1.6} strokeLinecap="round" /></Svg>
   </Pressable>;
+  const bookPicksButton = <Pressable
+    accessibilityRole="button"
+    accessibilityLabel="Book Picks"
+    hitSlop={{ top: 8, bottom: 8 }}
+    style={({ pressed }) => [styles.bookPicksButton, pressed && styles.bookPicksPressed]}
+    onPress={() => { tapHaptic('select'); router.push('/daylight-library'); }}
+  >
+    <View pointerEvents="none" style={styles.bookPicksPaper}>
+      <PaperGrain opacity={0.92} />
+    </View>
+    <Svg width={18} height={18} viewBox="0 0 20 20">
+      <Path d="M10 5.2C8.2 3.8 5.4 3.5 2.5 4.2v11c2.9-.7 5.7-.4 7.5 1.1m0-11.1c1.8-1.4 4.6-1.7 7.5-1v11c-2.9-.7-5.7-.4-7.5 1.1m0-11.1v11.1" stroke={ink} strokeWidth={1.35} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+    <ThemedText style={styles.bookPicksLabel}>Book Picks</ThemedText>
+  </Pressable>;
   return <View style={{ flex: 1, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
     <View style={styles.header}>
       <View style={styles.headerSide}><Pressable accessibilityRole="button" accessibilityLabel={t('settings.title')} onPress={() => { tapHaptic('select'); router.push('/settings'); }} style={styles.arrow}>
@@ -369,17 +384,24 @@ export default function Library() {
       <Pressable accessibilityRole="button" accessibilityLabel={daily ? 'Previous day' : period !== 'Yearly' ? 'Previous month' : 'Previous year'} style={styles.arrow} onPress={() => movePeriod(-1)}>
         <PeriodArrow previous />
       </Pressable>
-      {catalogMenuButton}
       <ThemedText numberOfLines={1} adjustsFontSizeToFit style={styles.periodDate}>{daily ? cursor.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : period !== 'Yearly' ? monthFormatter.format(cursor) : String(cursor.getFullYear())}</ThemedText>
       <Pressable accessibilityRole="button" accessibilityLabel={daily ? 'Next day' : period !== 'Yearly' ? 'Next month' : 'Next year'} style={styles.arrow} onPress={() => movePeriod(1)}>
         <PeriodArrow />
       </Pressable>
-      </> : <>{catalogMenuButton}<ThemedText style={styles.periodDate}>YES24</ThemedText></>}
+      </> : <ThemedText style={styles.periodDate}>YES24</ThemedText>}
       <View style={[styles.headerSide, { alignItems: 'flex-end' }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('goalDetail.reading.searchBook')} onPress={() => setSearch(true)} style={styles.arrow}>
           <IconSymbol name="magnifyingglass" size={19} color={ink} />
         </Pressable>
       </View>
+    </View>
+    <View style={styles.switchRow}>
+      {catalogMenuButton}
+      {(['Monthly', 'Yearly'] as const).map(option => <Pressable key={option} accessibilityRole="tab"
+        accessibilityState={{ selected: period === option }} style={[styles.mode, period === option && styles.activeMode]} onPress={() => { setDeleteIds(null); setAddedBookId(null); setPeriod(option); }}>
+        <ThemedText style={styles.text}>{option}</ThemedText>
+      </Pressable>)}
+      {bookPicksButton}
     </View>
     {menu ? <ScrollView style={styles.scroll} contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 90 }}>
       {catalogFeeds.map((key, index) => <Reanimated.View key={key} entering={FadeInDown
@@ -390,12 +412,6 @@ export default function Library() {
         </Pressable>
       </Reanimated.View>)}
     </ScrollView> : <>
-    <View style={styles.switchRow}>
-      {(['Monthly', 'Yearly'] as const).map(option => <Pressable key={option} accessibilityRole="tab"
-        accessibilityState={{ selected: period === option }} style={[styles.mode, period === option && styles.activeMode]} onPress={() => { setDeleteIds(null); setAddedBookId(null); setPeriod(option); }}>
-        <ThemedText style={styles.text}>{option}</ThemedText>
-      </Pressable>)}
-    </View>
     {period === 'YES24 Bestsellers' ? <>
       <ThemedText style={styles.count}>{t(`library.catalog.${feed}`)}</ThemedText>
       <Bestsellers key={JSON.stringify(selection)} selection={selection} onPreview={setPreviewBook} />
@@ -562,6 +578,38 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   selectedBadge: { position: 'absolute', top: 3, right: '11%', borderRadius: 12, padding: 3, backgroundColor: ink },
   shelfTools: { minHeight: 44, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bookPicksButton: {
+    minHeight: 28,
+    alignSelf: 'center',
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: '#DDEEE7',
+    borderWidth: 1,
+    borderColor: '#B2CBC0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#98B5A7',
+    shadowColor: '#476458',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.19,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  bookPicksPressed: {
+    backgroundColor: '#CFE4DA',
+    transform: [{ translateY: 1 }],
+    shadowOpacity: 0.05,
+    elevation: 0,
+  },
+  bookPicksPaper: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 13,
+    overflow: 'hidden',
+  },
+  bookPicksLabel: { color: ink, fontSize: 13, fontWeight: '600' },
   menuItem: { minHeight: 44, justifyContent: 'center' },
   rankRow: { minHeight: 96, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   rank: { width: 27, fontSize: 18, color: ink },

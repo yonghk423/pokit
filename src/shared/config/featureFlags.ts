@@ -12,7 +12,7 @@ export const FEATURE_FLAGS = {
   proAiUpgrade: false,
   /** AI 생성 기능을 보류하며 하단 카메라 탭을 임시로 숨긴다. */
   heroAiCameraTab: false,
-  /** 책(스토리) 탭은 화면·데이터를 유지하고 진입과 콘텐츠 로딩을 임시로 중단한다. */
+  /** 기존 스토리 탭은 사용하지 않는다. */
   pokitStory: false,
   /** 메이트 기능·데이터는 유지하고 주인공 화면의 가방 진입 버튼을 임시로 숨긴다. */
   mateShortcut: false,

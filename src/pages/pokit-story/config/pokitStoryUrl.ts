@@ -11,3 +11,9 @@ export function resolvePokitStoryUrl(locale: AppLocale): string {
   const webLocale = locale === 'ko' ? 'ko' : locale === 'ja' ? 'ja' : 'en';
   return `${POKIT_STORY_URL}/${webLocale}/app/yourday-story?pokit_app=1`;
 }
+
+/** Open the public Daylight Library page from the native book shelf. */
+export function resolveDaylightLibraryUrl(locale: AppLocale): string {
+  const webLocale = locale === 'ko' ? 'ko' : locale === 'ja' ? 'ja' : 'en';
+  return `${POKIT_STORY_URL}/${webLocale}/app/library?pokit_app=1`;
+}

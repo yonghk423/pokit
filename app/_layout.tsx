@@ -133,6 +133,7 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none', gestureEnabled: false, fullScreenGestureEnabled: false }} />
                   <Stack.Screen name="day-plan" options={{ headerShown: false, presentation: 'card', gestureEnabled: false }} />
                   <Stack.Screen name="reading-library" options={{ headerShown: false, presentation: 'card' }} />
+                  <Stack.Screen name="daylight-library" options={{ headerShown: false, presentation: 'card' }} />
                   <Stack.Screen
                     name="goal-detail-settings"
                     options={{ headerShown: false, presentation: 'card' }}
