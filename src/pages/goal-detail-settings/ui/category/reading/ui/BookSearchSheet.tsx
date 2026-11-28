@@ -347,6 +347,7 @@ export function BookSearchSheet({ initialBook, diaryStyle, visible, ink, muted, 
             </>
           ) : (
             <ScrollView
+              showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 styles.detailContent,
                 { paddingBottom: Math.max(insets.bottom, 16) },

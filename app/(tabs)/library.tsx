@@ -8,7 +8,7 @@ import Svg, { Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg
 import { Image } from 'expo-image';
 import { AppModal } from '@shared/ui/app-modal';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
-import { Animated, Easing, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Keyboard, KeyboardAvoidingView, Linking, NativeModules, Platform, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
 import Reanimated, { Easing as MotionEasing, FadeInDown, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
@@ -248,7 +248,14 @@ export default function Library() {
     AppAlert.alert(t('common.delete'), t('library.confirmDelete', { count: deleteIds.size }), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('common.delete'), style: 'destructive', onPress: () => {
-        save(booksRef.current.filter(book => !deleteIds.has(book.id)));
+        const current = booksRef.current;
+        const remaining = current.filter(book => !deleteIds.has(book.id));
+        const retainedCovers = new Set(remaining.map(book => book.cover));
+        const removedCovers = new Set(current.filter(book => deleteIds.has(book.id)).map(book => book.cover));
+        save(remaining);
+        for (const cover of removedCovers) {
+          if (cover && !retainedCovers.has(cover)) NativeModules.PokitBookCoverCache?.removeCover(cover);
+        }
         setDeleteIds(null);
       } },
     ]);
@@ -512,7 +519,7 @@ export default function Library() {
           <View style={styles.detailHeader}>
             <Pressable accessibilityRole="button" accessibilityLabel={t('dayPlan.close')}
               style={styles.closeButton} onPress={() => setSelectedId(null)}>
-              <IconSymbol name="xmark" size={20} color={ink} />
+              <IconSymbol name="xmark" size={24} color={ink} />
             </Pressable>
           </View>
         <ScrollView ref={reviewScrollRef} style={{ flex: 1 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.detailContent}>
@@ -615,14 +622,14 @@ const styles = StyleSheet.create({
   rank: { width: 27, fontSize: 18, color: ink },
   collection: { position: 'relative' },
   card: { position: 'absolute' },
-  detailHeader: { alignItems: 'flex-end', paddingHorizontal: 18 },
+  detailHeader: { alignItems: 'flex-end', paddingHorizontal: 24 },
   detailContent: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 32, gap: 12 },
   bookSummary: { gap: 16, alignItems: 'center', marginBottom: 24 },
   bookInfo: { alignSelf: 'stretch', alignItems: 'center', gap: 6 },
   detailTitle: { textAlign: 'center', color: ink, fontSize: 24, lineHeight: 31 },
   detailAuthor: { textAlign: 'center', color: '#746D63', fontSize: 16 },
   largeBook: { width: '42%', maxWidth: 176, marginBottom: 0 },
-  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  closeButton: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   reviewPaper: { minHeight: 88, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#C8C1B4' },
   rule: { position: 'absolute', top: 56, left: 0, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: '#C8C1B4' },
   reviewInput: { minHeight: 88, color: ink, paddingHorizontal: 4, paddingVertical: 4, fontSize: 17, lineHeight: 24, textAlignVertical: 'top', backgroundColor: 'transparent' },

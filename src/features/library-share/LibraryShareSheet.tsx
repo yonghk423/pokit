@@ -2,7 +2,7 @@ import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { SnsIcon } from './SnsIcon';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Sharing from 'expo-sharing';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
@@ -36,7 +36,9 @@ export function LibraryShareSheet({ books, heading, titleFor, renderBook, placem
     setBusy(true);
     let uri: string | undefined;
     try {
-      uri = await captureRef(canvas, { format: 'png', result: 'tmpfile', width: 1080, height: 1350 });
+      // The iOS renderer takes points and applies the device scale when encoding.
+      const captureScale = Platform.OS === 'ios' ? screen.scale : 1;
+      uri = await captureRef(canvas, { format: 'png', result: 'tmpfile', width: 1080 / captureScale, height: 1350 / captureScale });
       await Sharing.shareAsync(uri.startsWith('/') ? 'file://' + uri : uri, { mimeType: 'image/png', UTI: 'public.png' });
     } catch {
       AppAlert.alert(t('studyNote.shareFailedTitle'), t('history.puzzle.shareFailedBody'));
@@ -50,13 +52,36 @@ export function LibraryShareSheet({ books, heading, titleFor, renderBook, placem
   const top = layout.length ? Math.min(...layout.map(item => item.y)) : 0;
   const spanX = Math.max(1, ...layout.map(item => item.x - left + bookWidth));
   const spanY = Math.max(1, ...layout.map(item => item.y - top + bookWidth / 0.69));
-  const scale = Math.min(width * 0.84 / spanX, width * ratio * 0.66 / spanY);
-  const pickerScale = (screen.width - 64) / spanX;
+  const columns = Math.max(1, Math.ceil(Math.sqrt(selected.length)));
+  const rows = Math.max(1, Math.ceil(selected.length / columns));
+  const gap = width * 0.025;
+  // Fit the rotated cover bounds inside each cell, including custom shelf angles.
+  const radians = selected.map(({ angle }) => angle * Math.PI / 180);
+  const widthFactor = Math.max(1, ...radians.map(a => Math.abs(Math.cos(a)) + Math.abs(Math.sin(a)) / 0.69));
+  const heightFactor = Math.max(1, ...radians.map(a => Math.abs(Math.sin(a)) + Math.abs(Math.cos(a)) / 0.69));
+  const shareBookWidth = Math.min(
+    (width * 0.88 - gap * (columns - 1)) / (columns * widthFactor),
+    (width * ratio * 0.76 - gap * (rows - 1)) / (rows * heightFactor),
+  );
+  const cellWidth = shareBookWidth * widthFactor;
+  const cellHeight = shareBookWidth * heightFactor;
+  const shareGroupHeight = rows * cellHeight + (rows - 1) * gap;
+  // Let the selected books fill the picker while leaving enough room for the
+  // sheet header and title. Reserve extra vertical space for rotated covers.
+  const pickerScale = Math.min(
+    (screen.width - 64) * 0.92 / spanX,
+    Math.max(1, screen.height - 240) / (spanY * 1.1),
+  );
   return <AppModal visible nativeAnimation="slide" presentationStyle="pageSheet" onRequestClose={() => { if (!busy) close(); }}>
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F4EE', paddingHorizontal: 16 }}>
       <PaperGrain opacity={0.42} />
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}>
-        <View style={{ flex: 1, alignItems: 'flex-start' }}><Pressable disabled={busy} onPress={close}><ThemedText>{t('common.close')}</ThemedText></Pressable></View>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <Pressable accessibilityRole="button" disabled={busy} onPress={close}
+            style={{ minHeight: 48, minWidth: 60, justifyContent: 'center', paddingHorizontal: 12 }}>
+            <ThemedText style={{ fontSize: 20, lineHeight: 28 }}>{t('common.close')}</ThemedText>
+          </Pressable>
+        </View>
         <ThemedText>{ids.length} / 9</ThemedText>
         <View style={{ flex: 1, alignItems: 'flex-end' }}><Pressable accessibilityRole="button" accessibilityLabel="SNS" disabled={!ready || busy} onPress={share} style={{ opacity: ready && !busy ? 1 : 0.4, padding: 5 }}>
           <SnsIcon color="#403A32" />
@@ -66,19 +91,25 @@ export function LibraryShareSheet({ books, heading, titleFor, renderBook, placem
       <View ref={canvas} collapsable={false} style={{ width, height: width * ratio, alignSelf: 'center', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F2EC' }}>
         <PaperGrain opacity={0.42} />
         <ThemedText style={{ color: '#403A32', marginBottom: 10 }}>{heading}</ThemedText>
-        <View style={{ width: spanX * scale, height: spanY * scale }}>
-          {selected.map(({ book, x, y, angle }) => <View key={book.id} style={{
-            position: 'absolute', left: (x - left) * scale, top: (y - top) * scale,
-            width: bookWidth * scale, transform: [{ rotate: angle + 'deg' }],
+        <View style={{ width, height: shareGroupHeight }}>
+          {selected.map(({ book, angle }, index) => {
+            const row = Math.floor(index / columns);
+            const rowCount = Math.min(columns, selected.length - row * columns);
+            const rowWidth = rowCount * cellWidth + (rowCount - 1) * gap;
+            return <View key={book.id} style={{
+            position: 'absolute',
+            left: (width - rowWidth + cellWidth - shareBookWidth) / 2 + (index % columns) * (cellWidth + gap),
+            top: row * (cellHeight + gap) + (cellHeight - shareBookWidth / 0.69) / 2,
+            width: shareBookWidth, transform: [{ rotate: angle + 'deg' }],
           }}>
             {renderBook(book, () => setLoaded(prev => prev[book.id] ? prev : { ...prev, [book.id]: true }))}
-          </View>)}
+          </View>; })}
         </View>
       </View>
       </View>
         <ThemedText style={{ alignSelf: 'center', marginVertical: 16, fontSize: 22 }}>{heading}</ThemedText>
         <ScrollView contentContainerStyle={{ padding: 16 }}>
-          <View style={{ height: spanY * pickerScale }}>
+          <View style={{ width: spanX * pickerScale, height: spanY * pickerScale, alignSelf: 'center' }}>
           {layout.map(({ book, x, y, angle }) => {
             const position = ids.indexOf(book.id);
             const selected = position >= 0;
