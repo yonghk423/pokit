@@ -10,10 +10,11 @@ import { ThemedText } from '@shared/ui/themed-text';
 
 type Props = {
   progress: number;
+  library?: boolean;
 };
 
 /** 스토리 WebView 첫 로딩 — 민트 진행률 바 + 퍼센트 */
-export function PokitStoryWebViewProgressLoader({ progress }: Props) {
+export function PokitStoryWebViewProgressLoader({ progress, library = false }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
@@ -21,6 +22,7 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
   const clamped = Math.min(100, Math.max(0, progress));
   const displayPercent = clamped >= 100 ? 100 : clamped;
   const fillW = Math.max(displayPercent, clamped > 0 ? 4 : 0);
+  const fillColor = library ? (isDark ? '#A6D4C6' : '#BCE5D8') : (isDark ? c.bgMint : c.primaryContainer);
   const face = isDark ? c.surfaceAlt : '#FFFFFF';
 
   return (
@@ -35,18 +37,18 @@ export function PokitStoryWebViewProgressLoader({ progress }: Props) {
       ]}>
       <View style={styles.center}>
         <ThemedText style={[styles.brand, { color: c.text }]}>
-          {t('settings.shareApp.shareTitle')}
+          {library ? 'Daylight' : t('settings.shareApp.shareTitle')}
         </ThemedText>
-        <ThemedText
+        {!library && <ThemedText
           style={[styles.caption, { color: c.textMuted }]}
           lightColor={c.textMuted}
           darkColor={c.textMuted}>
           {t('storyImport.loadingStory')}
-        </ThemedText>
+        </ThemedText>}
 
-        <View style={styles.trackShell}>
+        <View accessible accessibilityRole="progressbar" accessibilityLabel={library ? "Daylight" : t("storyImport.loadingStory")} accessibilityValue={{ min: 0, max: 100, now: clamped }} style={styles.trackShell}>
           <View style={[styles.trackFace, { backgroundColor: face }]}>
-            <View style={[styles.fill, { width: `${fillW}%`, backgroundColor: isDark ? c.bgMint : c.primaryContainer }]}><PaperGrain /></View>
+            <View style={[styles.fill, { width: `${fillW}%`, backgroundColor: fillColor }]}><PaperGrain /></View>
           </View>
           <Svg width="100%" height="100%" viewBox="0 0 280 16" preserveAspectRatio="none" style={StyleSheet.absoluteFill} accessible={false}>
             <Path d="M2 3Q130 1.8 278 3l-.3 10Q135 14.1 2 13Z" stroke={c.textMuted} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" fill="none" />

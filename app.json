@@ -2,7 +2,7 @@
   "expo": {
     "name": "Daylight",
     "slug": "pokit",
-    "version": "2.4.4",
+    "version": "2.4.5",
     "orientation": "portrait",
     "icon": "./assets/daylight-photo-calendar-icon.png",
     "scheme": "pokit",
@@ -22,7 +22,7 @@
       "supportsTablet": true,
       "requireFullScreen": true,
       "bundleIdentifier": "com.yonghee.pokit",
-      "buildNumber": "149",
+      "buildNumber": "150",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "LSApplicationQueriesSchemes": ["instagram"],
@@ -53,8 +53,8 @@
       }
     },
     "android": {
-      "version": "2.4.4",
-      "versionCode": 149,
+      "version": "2.4.5",
+      "versionCode": 150,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/daylight-photo-calendar-icon.png"

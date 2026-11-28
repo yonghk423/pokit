@@ -925,7 +925,7 @@ export function ActivitySessionPage() {
                         void openAladinProductPage(externalLink);
                         return;
                       }
-                      if (catalogSource === 'yes24') {
+                      if (catalogSource === 'yes24' || catalogSource === 'apple-books') {
                         void NativeLinking.openURL(externalLink).catch(() => undefined);
                         return;
                       }

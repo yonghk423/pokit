@@ -9,18 +9,17 @@ import { Image } from 'expo-image';
 import { AppModal } from '@shared/ui/app-modal';
 import { ThemedTextInput } from '@shared/ui/themed-text-input';
 import { Animated, Easing, Keyboard, KeyboardAvoidingView, Linking, NativeModules, Platform, Pressable, ScrollView, StyleSheet, View, useAnimatedValue, useWindowDimensions } from 'react-native';
-import Reanimated, { Easing as MotionEasing, FadeInDown, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
+import Reanimated, { FadeInDown, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { tapHaptic } from '@shared/lib/haptics/tapHaptic';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookSearchSheet, type BookSearchSelection } from '../../src/pages/goal-detail-settings/ui/category/reading/ui/BookSearchSheet';
+import { LibraryPicker, type LibrarySelection } from '@pages/pokit-story/ui/LibraryPicker';
 import { localStorageClient } from '@shared/lib/storage/localStorageClient';
 import { useTranslation } from '@shared/lib/i18n';
 import { ThemedText } from '@shared/ui/themed-text';
 import { PaperGrain } from '@shared/ui/paper-grain';
 import { HanddrawnFrame } from '@shared/ui/handdrawn-frame';
 import { controlIllustrationArtwork } from '@shared/ui/icon-symbol/controlIllustrationSources';
-import { catalogFeeds, requestYes24, type CatalogFeed, type CatalogSelection, type Yes24BookDetail } from '@features/yes24-book-search';
 import { IconSymbol } from '@shared/ui/icon-symbol';
 
 import { libraryBooksKey as key, type Book, type Placement } from '@entities/day-plan/lib/libraryBooks';
@@ -193,39 +192,6 @@ function PeriodArrow({ previous = false }: { previous?: boolean }) {
   </Svg>;
 }
 
-function Bestsellers({ selection, onPreview }: { selection: CatalogSelection; onPreview: (book: Yes24BookDetail) => void }) {
-  const { locale } = useTranslation();
-  const [items, setItems] = useState<Yes24BookDetail[] | null>(null);
-  const { feed, query, categoryId } = selection;
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let active = true;
-    requestYes24<{ items: Yes24BookDetail[] }>({ operation: 'catalog', feed, query, categoryId }).then(result => {
-      if (active) {
-        setItems(result.items ?? []);
-      }
-    }).catch(() => { if (active) setFailed(true); });
-    return () => { active = false; };
-  }, [feed, query, categoryId, attempt]);
-  return <ScrollView style={styles.scroll} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }}>
-    {failed ? <Pressable accessibilityRole="button" onPress={() => { setFailed(false); setAttempt(n => n + 1); }}>
-      <ThemedText style={styles.count}>Couldn’t load bestsellers. Tap to retry.</ThemedText>
-    </Pressable> : !items || !items.length ? <ThemedText style={styles.count}>
-      {items ? 'No results available.' : 'Loading…'}
-    </ThemedText> : items.map((book, index) => <Pressable key={book.itemId} accessibilityRole="button"
-      style={styles.rankRow} onPress={() => onPreview(book)}>
-      <ThemedText style={styles.rank}>{String(book.rank ?? index + 1).padStart(2, '0')}</ThemedText>
-      <Image source={book.coverUrl || controlIllustrationArtwork.book} style={{ width: 54, height: 76 }} contentFit="contain" />
-      <View style={{ flex: 1 }}>
-        <ThemedText numberOfLines={2} style={styles.text}>{getYes24DisplayTitle(book.title, locale).title}</ThemedText>
-        <ThemedText numberOfLines={2} style={styles.author}>{book.author}</ThemedText>
-      </View>
-      <PeriodArrow />
-    </Pressable>)}
-  </ScrollView>;
-}
-
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -235,7 +201,7 @@ const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: '
 export default function Library() {
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const [period, setPeriod] = useState<'Monthly' | 'Yearly' | 'YES24 Bestsellers'>('Monthly');
+  const [period, setPeriod] = useState<'Monthly' | 'Yearly'>('Monthly');
   const [cursor, setCursor] = useState(() => new Date());
   const [books, setBooks] = useState(() => localStorageClient.getJson<Book[]>(key) ?? []);
   const [sharing, setSharing] = useState(false);
@@ -260,21 +226,7 @@ export default function Library() {
       } },
     ]);
   }
-  const [menu, setMenu] = useState(false);
-  const [feed, setFeed] = useState<CatalogFeed>('bestsellerMonthly');
-  const exploring = period === 'YES24 Bestsellers';
-  const daily = exploring && feed === 'bestsellerDaily';
   const month = monthKey(cursor);
-  const showsDate = !exploring || daily || feed === 'bestsellerMonthly';
-  const day = String(cursor.getDate()).padStart(2, '0');
-  const selection = { feed, query: month + '-' + (daily ? day : '01'), categoryId: '001' };
-  function chooseFeed(next: CatalogFeed) {
-    setDeleteIds(null);
-    setFeed(next);
-    setAddedBookId(null);
-    setMenu(false);
-    setPeriod('YES24 Bestsellers');
-  }
   const visibleBooks = books.filter(book => {
     const added = book.addedMonth ?? monthKey(new Date());
     return period !== 'Yearly' ? added === month : added.slice(0, 4) === month.slice(0, 4);
@@ -282,15 +234,13 @@ export default function Library() {
   function movePeriod(delta: number) {
     setDeleteIds(null);
     setAddedBookId(null);
-    if (daily) { setCursor(date => new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta)); return; }
     setCursor(date => new Date(date.getFullYear(), date.getMonth() + delta * (period !== 'Yearly' ? 1 : 12), 1));
   }
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const reviewScrollRef = useRef<ScrollView>(null);
   const reviewInputFocused = useRef(false);
-  const [previewBook, setPreviewBook] = useState<Yes24BookDetail | null>(null);
-  const [search, setSearch] = useState(false);
+  const [picker, setPicker] = useState<'browse' | 'search' | 'categories' | null>(null);
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [viewport, setViewport] = useState(() => ({
@@ -299,7 +249,6 @@ export default function Library() {
   }));
   const [scroll] = useState(() => Gesture.Native());
   const booksRef = useRef(books);
-  const pendingBook = useRef<Book | null>(null);
   const [arrangeVersion, setArrangeVersion] = useState(0);
   const [addedBookId, setAddedBookId] = useState<string | null>(null);
   useEffect(() => {
@@ -320,20 +269,12 @@ export default function Library() {
       save(stored.map(book => book.addedMonth ? book : { ...book, addedMonth: fallback }));
     }
   }, []);
-  function add(selection: BookSearchSelection) {
-    const id = 'yes24:' + selection.book.itemId;
-    const existing = booksRef.current.find(book => book.id === id);
-    if (existing) return;
-    const { title, author, coverUrl, link } = selection.book;
-    pendingBook.current = { id, title, author, cover: coverUrl, link, addedMonth: month, updatedAt: Date.now() };
-    if (Platform.OS !== 'ios') finishAddingBook();
-  }
-  function finishAddingBook() {
-    const book = pendingBook.current;
-    pendingBook.current = null;
-    if (!book) return;
-    setAddedBookId(book.id);
-    save([...booksRef.current, book]);
+  function add(selection: LibrarySelection) {
+    const { title, author, coverUrl, link, itemId } = selection.book;
+    const id = selection.source + ':' + itemId;
+    if (booksRef.current.some(book => book.id === id)) return;
+    setAddedBookId(id);
+    save([...booksRef.current, { id, title, author, cover: coverUrl, link, addedMonth: month, updatedAt: Date.now() }]);
   }
   const columnWidth = Math.max(0, Math.floor((viewport.width - 2 * (boardPadding + columnGap)) / 3));
   const rowHeight = Math.ceil(columnWidth * shelfCoverPercent / 100 / 0.69 + 26);
@@ -353,7 +294,7 @@ export default function Library() {
   const mockSearch = selected?.id.startsWith('mock-book:');
   const yes24Url = mockSearch
     ? 'https://www.yes24.com/Product/Search?domain=ALL&query=' + encodeURIComponent(selected!.title)
-    : selected?.id.startsWith('yes24:') ? selected.link : undefined;
+    : (selected?.id.startsWith('yes24:') || selected?.id.startsWith('apple-books:')) ? selected.link : undefined;
   function titleFor(book: Book) {
     return book.id.startsWith('yes24:') ? getYes24DisplayTitle(book.title, locale).title : book.title;
   }
@@ -363,16 +304,12 @@ export default function Library() {
     setSelectedId(null);
   }
   const gridActive = visibleBooks.length > 0 && visibleBooks.every(book => book.aligned);
-  const showsYes24Books = visibleBooks.some(book => book.id.startsWith('yes24:'));
-  const catalogMenuButton = <Pressable accessibilityRole="button" accessibilityLabel={t('library.catalog.menu')} accessibilityState={{ expanded: menu }} onPress={() => setMenu(!menu)} style={styles.arrow}>
-    <Svg width={22} height={22} viewBox="0 0 22 22"><Path d="M3 5h16M3 11h16M3 17h16" stroke={ink} strokeWidth={1.6} strokeLinecap="round" /></Svg>
-  </Pressable>;
   const bookPicksButton = <Pressable
     accessibilityRole="button"
     accessibilityLabel="Book Picks"
     hitSlop={{ top: 8, bottom: 8 }}
     style={({ pressed }) => [styles.bookPicksButton, pressed && styles.bookPicksPressed]}
-    onPress={() => { tapHaptic('select'); router.push('/daylight-library'); }}
+    onPress={() => { tapHaptic('select'); setPicker('browse'); }}
   >
     <View pointerEvents="none" style={styles.bookPicksPaper}>
       <PaperGrain opacity={0.92} />
@@ -381,48 +318,29 @@ export default function Library() {
       <Path d="M10 5.2C8.2 3.8 5.4 3.5 2.5 4.2v11c2.9-.7 5.7-.4 7.5 1.1m0-11.1c1.8-1.4 4.6-1.7 7.5-1v11c-2.9-.7-5.7-.4-7.5 1.1m0-11.1v11.1" stroke={ink} strokeWidth={1.35} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
     <ThemedText style={styles.bookPicksLabel}>Book Picks</ThemedText>
+    <IconSymbol name="magnifyingglass" size={15} color={ink} />
   </Pressable>;
   return <View style={{ flex: 1, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
     <View style={styles.header}>
       <View style={styles.headerSide}><Pressable accessibilityRole="button" accessibilityLabel={t('settings.title')} onPress={() => { tapHaptic('select'); router.push('/settings'); }} style={styles.arrow}>
         <Svg width={22} height={22} viewBox="0 0 22 22"><Path d="M5 11h.1M11 11h.1M17 11h.1" stroke={ink} strokeWidth={2.6} strokeLinecap="round" /></Svg>
       </Pressable></View>
-      {showsDate ? <>
-      <Pressable accessibilityRole="button" accessibilityLabel={daily ? 'Previous day' : period !== 'Yearly' ? 'Previous month' : 'Previous year'} style={styles.arrow} onPress={() => movePeriod(-1)}>
+      <Pressable accessibilityRole="button" accessibilityLabel={period !== 'Yearly' ? 'Previous month' : 'Previous year'} style={styles.arrow} onPress={() => movePeriod(-1)}>
         <PeriodArrow previous />
       </Pressable>
-      <ThemedText numberOfLines={1} adjustsFontSizeToFit style={styles.periodDate}>{daily ? cursor.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : period !== 'Yearly' ? monthFormatter.format(cursor) : String(cursor.getFullYear())}</ThemedText>
-      <Pressable accessibilityRole="button" accessibilityLabel={daily ? 'Next day' : period !== 'Yearly' ? 'Next month' : 'Next year'} style={styles.arrow} onPress={() => movePeriod(1)}>
+      <ThemedText numberOfLines={1} adjustsFontSizeToFit style={styles.periodDate}>{period !== 'Yearly' ? monthFormatter.format(cursor) : String(cursor.getFullYear())}</ThemedText>
+      <Pressable accessibilityRole="button" accessibilityLabel={period !== 'Yearly' ? 'Next month' : 'Next year'} style={styles.arrow} onPress={() => movePeriod(1)}>
         <PeriodArrow />
       </Pressable>
-      </> : <ThemedText style={styles.periodDate}>YES24</ThemedText>}
-      <View style={[styles.headerSide, { alignItems: 'flex-end' }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('goalDetail.reading.searchBook')} onPress={() => setSearch(true)} style={styles.arrow}>
-          <IconSymbol name="magnifyingglass" size={19} color={ink} />
-        </Pressable>
-      </View>
+      <View style={styles.headerSide} />
     </View>
     <View style={styles.switchRow}>
-      {catalogMenuButton}
       {(['Monthly', 'Yearly'] as const).map(option => <Pressable key={option} accessibilityRole="tab"
         accessibilityState={{ selected: period === option }} style={[styles.mode, period === option && styles.activeMode]} onPress={() => { setDeleteIds(null); setAddedBookId(null); setPeriod(option); }}>
         <ThemedText style={styles.text}>{option}</ThemedText>
       </Pressable>)}
       {bookPicksButton}
     </View>
-    {menu ? <ScrollView style={styles.scroll} contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 90 }}>
-      {catalogFeeds.map((key, index) => <Reanimated.View key={key} entering={FadeInDown
-        .duration(360).delay(index * 22).easing(MotionEasing.out(MotionEasing.cubic))
-        .withInitialValues({ opacity: 0, transform: [{ translateY: -6 }] }).reduceMotion(ReduceMotion.System)}>
-        <Pressable accessibilityRole="button" style={styles.menuItem} onPress={() => chooseFeed(key)}>
-          <ThemedText style={styles.text}>{t(`library.catalog.${key}`)}</ThemedText>
-        </Pressable>
-      </Reanimated.View>)}
-    </ScrollView> : <>
-    {period === 'YES24 Bestsellers' ? <>
-      <ThemedText style={styles.count}>{t(`library.catalog.${feed}`)}</ThemedText>
-      <Bestsellers key={JSON.stringify(selection)} selection={selection} onPreview={setPreviewBook} />
-    </> : <>
     <View style={styles.shelfTools}>
       <ThemedText style={styles.count}>{deleteIds?.size ? t('library.selectedCount', { count: deleteIds.size }) : deleting ? t('library.pickDelete') : `${visibleBooks.length} ${visibleBooks.length === 1 ? 'book' : 'books'}`}</ThemedText>
       {!!visibleBooks.length && <View style={{ flexDirection: 'row' }}>
@@ -455,7 +373,7 @@ export default function Library() {
         setViewport(previous => previous.width === width && previous.height === height ? previous : { width, height });
       }}>
         <View style={[styles.collection, { minHeight: boardHeight }, !visibleBooks.length && styles.emptyBoard]}>
-        {!visibleBooks.length && <Pressable accessibilityRole="button" onPress={() => setSearch(true)} style={styles.empty}>
+        {!visibleBooks.length && <Pressable accessibilityRole="button" onPress={() => setPicker('search')} style={styles.empty}>
           <Svg accessible={false} width={48} height={48} viewBox="0 0 48 48">
             <Defs>
               <RadialGradient id="bookShadow" cx="50%" cy="50%" rx="50%" ry="50%">
@@ -508,9 +426,6 @@ export default function Library() {
         </View>
       </ScrollView>
     </GestureDetector>
-    {showsYes24Books && <ThemedText style={styles.attribution}>YES24</ThemedText>}
-    </>}
-    </>}
     {sharing && <LibraryShareSheet placementFor={placementFor} bookWidth={columnWidth * shelfCoverPercent / 100} renderBook={(book, onReady) => <LibraryBookArt share onReady={onReady} book={book} displayTitle={titleFor(book)} />} books={visibleBooks} heading={period === 'Yearly' ? String(cursor.getFullYear()) : monthFormatter.format(cursor)} titleFor={titleFor} close={() => setSharing(false)} />}
     {selected && <AppModal visible nativeAnimation="slide" presentationStyle="pageSheet" onRequestClose={() => setSelectedId(null)}>
       <SafeAreaView style={styles.page}>
@@ -531,7 +446,7 @@ export default function Library() {
               {yes24Url && (
                 <Pressable accessibilityRole="link" style={styles.action}
                   onPress={() => void Linking.openURL(yes24Url).catch(() => undefined)}>
-                  <ThemedText style={styles.author}>{mockSearch ? t('library.searchYes24') : 'YES24'}</ThemedText>
+                  <ThemedText style={styles.author}>{mockSearch ? t('library.searchYes24') : selected.id.startsWith('apple-books:') ? 'Apple Books' : 'YES24'}</ThemedText>
                   <Svg width={17} height={17} viewBox="0 0 20 20"><Path d="M4.8 15.2Q9.6 10.1 15.1 4.9M6.9 5.2Q11 5 15.3 4.7Q15 8.8 15.1 13" stroke="#746D63" strokeWidth={1.55} strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>
                 </Pressable>
               )}
@@ -567,7 +482,7 @@ export default function Library() {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </AppModal>}
-    <BookSearchSheet diaryStyle initialBook={previewBook} visible={search || !!previewBook} ink={ink} muted="#726C63" surface={paper} line="#ABA398" onClose={() => { setSearch(false); setPreviewBook(null); }} onDismiss={finishAddingBook} onSelect={add} />
+    {picker && <LibraryPicker section={picker} onClose={() => setPicker(null)} onSelect={add} />}
   </View>;
 }
 const styles = StyleSheet.create({
@@ -612,7 +527,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   bookPicksPaper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 13,
     overflow: 'hidden',
   },
@@ -664,7 +579,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill, borderRadius: 3, borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.45)',
   },
-  attribution: { color: '#746D63', fontSize: 11, lineHeight: 16, textAlign: 'right', paddingHorizontal: 20 },
   author: { color: '#746D63', fontSize: 14 },
   emptyBoard: { justifyContent: 'center' },
   empty: { gap: 8, alignSelf: 'center', alignItems: 'center', padding: 12 },

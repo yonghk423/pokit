@@ -34,7 +34,7 @@ import {
   type ReadingLibrarySortOrder,
   type ReadingLiveActivityConfig,
 } from '@entities/day-plan';
-import { BookSearchSheet, type BookSearchSelection } from './BookSearchSheet';
+import { LibraryPicker, type LibrarySelection } from '@pages/pokit-story/ui/LibraryPicker';
 import { RetroFlatColors } from '@shared/config/retroFlat';
 import { useColorScheme } from '@shared/lib/hooks/use-color-scheme';
 import { useTranslation, type AppLocale } from '@shared/lib/i18n';
@@ -434,7 +434,7 @@ export function ReadingSettings({
     ]);
   };
 
-  const addCatalogBook = (selection: BookSearchSelection) => {
+  const addCatalogBook = (selection: LibrarySelection) => {
     const now = Date.now();
     const base = {
       id: makeReadingBookId(),
@@ -449,7 +449,7 @@ export function ReadingSettings({
       {
         ...base,
         title: book.title,
-        yes24: {
+        [selection.source === 'yes24' ? 'yes24' : 'appleBooks']: {
           itemId: book.itemId,
           link: book.link,
           coverUrl: book.coverUrl,
@@ -772,15 +772,11 @@ export function ReadingSettings({
         onOpenSearch={() => setSearchSheetVisible(true)}
       />
 
-      <BookSearchSheet
-        visible={searchSheetVisible}
-        ink={c.onSurface}
-        muted={c.onVariant}
-        surface={c.surfaceLowest}
-        line={c.outline}
+      {searchSheetVisible && <LibraryPicker
+        section="search"
         onClose={() => setSearchSheetVisible(false)}
         onSelect={addCatalogBook}
-      />
+      />}
     </View>
   );
 }

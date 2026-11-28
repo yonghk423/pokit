@@ -41,6 +41,3 @@ verify_jwt = false
 
 [functions.yes24-books]
 verify_jwt = true
-
-[functions.pokitstory-books]
-verify_jwt = false

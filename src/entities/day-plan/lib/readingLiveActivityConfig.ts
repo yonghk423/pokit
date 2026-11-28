@@ -38,6 +38,7 @@ export type ReadingBookEntry = {
   aladin?: ReadingAladinBook | null;
   openLibrary?: ReadingOpenLibraryBook | null;
   yes24?: ReadingAladinBook | null;
+  appleBooks?: ReadingAladinBook | null;
 };
 
 export function normalizeReadingBookMemo(raw: unknown): string {
@@ -211,7 +212,7 @@ export function currentReadingBookTitles(books: readonly ReadingBookEntry[]): st
 export function bookMatchesReadingLibraryQuery(book: ReadingBookEntry, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  const author = book.aladin?.author?.trim() ?? book.yes24?.author?.trim() ?? book.openLibrary?.author?.trim() ?? '';
+  const author = book.aladin?.author?.trim() ?? book.yes24?.author?.trim() ?? book.appleBooks?.author?.trim() ?? book.openLibrary?.author?.trim() ?? '';
   const status = normalizeReadingBookStatus(book.status);
   const statusKo = status === 'want' ? '읽고 싶은' : status === 'done' ? '완료' : '읽는 중';
   return [book.title, author, statusKo].some((part) => part.toLowerCase().includes(q));
@@ -229,13 +230,14 @@ function normalizeBookEntry(
   const aladin = normalizeReadingAladinBook(raw.aladin);
   const openLibrary = normalizeReadingOpenLibraryBook(raw.openLibrary);
   const yes24 = normalizeReadingAladinBook(raw.yes24);
+  const appleBooks = normalizeReadingAladinBook(raw.appleBooks);
   return {
     id,
     title,
     startPage: toNonNegativeInt(raw.startPage, DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage),
     targetPage: toNonNegativeInt(
       raw.targetPage,
-      defaultTargetPageForBook(aladin ?? yes24, openLibrary, fallbackTarget),
+      defaultTargetPageForBook(aladin ?? yes24 ?? appleBooks, openLibrary, fallbackTarget),
     ),
     status: normalizeReadingBookStatus(raw.status),
     addedAtMs: normalizeReadingBookAddedAtMs(raw.addedAtMs, id),
@@ -244,6 +246,7 @@ function normalizeBookEntry(
     aladin,
     openLibrary,
     ...(yes24 ? { yes24 } : {}),
+    ...(appleBooks ? { appleBooks } : {}),
   };
 }
 
@@ -254,12 +257,13 @@ export function ensureReadingBookPages(
   const aladin = entry.aladin ?? null;
   const openLibrary = entry.openLibrary ?? null;
   const yes24 = entry.yes24 ?? null;
+  const appleBooks = entry.appleBooks ?? null;
   return {
     ...entry,
     startPage: toNonNegativeInt(entry.startPage, DEFAULT_READING_LIVE_ACTIVITY_CONFIG.startPage),
     targetPage: toNonNegativeInt(
       entry.targetPage,
-      defaultTargetPageForBook(aladin ?? yes24, openLibrary, fallbackTarget),
+      defaultTargetPageForBook(aladin ?? yes24 ?? appleBooks, openLibrary, fallbackTarget),
     ),
     status: normalizeReadingBookStatus(entry.status),
     addedAtMs: normalizeReadingBookAddedAtMs(entry.addedAtMs, entry.id),
@@ -268,6 +272,7 @@ export function ensureReadingBookPages(
     aladin,
     openLibrary,
     ...(yes24 ? { yes24 } : {}),
+    ...(appleBooks ? { appleBooks } : {}),
   };
 }
 
@@ -455,7 +460,7 @@ export function deriveReadingProgress(config: ReadingLiveActivityConfig): {
         targetPage: book.targetPage,
         totalPages:
           book.aladin?.totalPages ??
-          book.yes24?.totalPages ??
+          book.yes24?.totalPages ?? book.appleBooks?.totalPages ??
           book.openLibrary?.totalPages ??
           null,
         pageLogs: book.pageLogs,
@@ -464,7 +469,7 @@ export function deriveReadingProgress(config: ReadingLiveActivityConfig): {
     const pagesRead = totals.reduce((sum, item) => sum + item.pagesRead, 0);
     const pagesLeft = totals.reduce((sum, item) => sum + item.pagesLeft, 0);
     const booksWithTotal = config.books.filter((book) => {
-      const totalPages = book.aladin?.totalPages ?? book.yes24?.totalPages ?? book.openLibrary?.totalPages;
+      const totalPages = book.aladin?.totalPages ?? book.yes24?.totalPages ?? book.appleBooks?.totalPages ?? book.openLibrary?.totalPages;
       return typeof totalPages === 'number' && totalPages > 0;
     });
     const progressPct =
@@ -477,7 +482,7 @@ export function deriveReadingProgress(config: ReadingLiveActivityConfig): {
               Math.round(
                 (booksWithTotal.reduce((sum, book) => sum + book.targetPage, 0) /
                   booksWithTotal.reduce(
-                    (sum, book) => sum + (book.aladin?.totalPages ?? book.yes24?.totalPages ?? book.openLibrary!.totalPages!),
+                    (sum, book) => sum + (book.aladin?.totalPages ?? book.yes24?.totalPages ?? book.appleBooks?.totalPages ?? book.openLibrary!.totalPages!),
                     0,
                   )) *
                   100,

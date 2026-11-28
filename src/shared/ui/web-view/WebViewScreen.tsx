@@ -22,8 +22,9 @@ import { ThemedView } from '@shared/ui/themed-view';
 
 type Props = {
   uri: string;
+  topInset?: boolean;
   allowedHostSuffixes?: readonly string[];
-  onMessage?: (data: unknown) => void;
+  onMessage?: (data: unknown, senderUrl: string) => void;
   /** 기본 true — 스토리 WebView 등에서 당겨서 새로고침 */
   pullToRefreshEnabled?: boolean;
   /** 첫 로딩 중 표시 UI — progress 0~100 */
@@ -50,6 +51,7 @@ function shouldOpenExternally(url: string): boolean {
 
 export function WebViewScreen({
   uri,
+  topInset = true,
   allowedHostSuffixes = [],
   onMessage,
   pullToRefreshEnabled = true,
@@ -71,6 +73,7 @@ export function WebViewScreen({
   const handleRetry = useCallback(() => {
     setHasError(false);
     setIsLoading(true);
+    setHasLoadedOnce(false);
     setLoadProgress(0);
     webViewRef.current?.reload();
   }, []);
@@ -105,11 +108,11 @@ export function WebViewScreen({
   }, []);
 
   const handleMessage = useCallback(
-    (event: { nativeEvent: { data: string } }) => {
+    (event: { nativeEvent: { data: string; url: string } }) => {
       if (!onMessage) return;
       try {
         const parsed = JSON.parse(event.nativeEvent.data);
-        onMessage(parsed);
+        onMessage(parsed, event.nativeEvent.url);
       } catch {
         /* invalid JSON — ignore */
       }
@@ -119,7 +122,7 @@ export function WebViewScreen({
 
   return (
     <ThemedView style={[styles.container, style]}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={topInset ? ['top'] : []}>
         {hasError ? (
           <View style={[styles.errorContainer, { backgroundColor: tone.bg }]}>
             <ThemedText style={[styles.errorTitle, { color: tone.text }]}>
@@ -161,7 +164,7 @@ export function WebViewScreen({
             }}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onMessage={onMessage ? handleMessage : undefined}
-            startInLoadingState
+            startInLoadingState={!renderInitialLoading}
             allowsBackForwardNavigationGestures
             sharedCookiesEnabled
             thirdPartyCookiesEnabled
